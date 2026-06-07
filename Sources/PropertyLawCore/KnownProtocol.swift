@@ -39,6 +39,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
     case commutativeMonoid
     case group
     case semilattice
+    case ring
 
     /// Maps a single inheritance-clause type name to a `KnownProtocol`.
     /// `Encodable`/`Decodable` are intentionally absent — only the pair
@@ -79,7 +80,8 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         "Monoid": .monoid,
         "CommutativeMonoid": .commutativeMonoid,
         "Group": .group,
-        "Semilattice": .semilattice
+        "Semilattice": .semilattice,
+        "Ring": .ring
     ]
 
     /// Resolve a list of raw inherited-type names into the recognized
@@ -226,6 +228,13 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
             // `: Semigroup, Monoid, CommutativeMonoid, Semilattice` emits
             // only the Semilattice call.
             return [.commutativeMonoid, .monoid, .semigroup]
+        case .ring:
+            // Ring is standalone — its two operations (add / multiply) don't
+            // share the chain's single `combine`, so it neither subsumes nor
+            // is subsumed by the Semigroup→…→Semilattice chain. A type that's
+            // both Ring and (via a different op) Monoid surfaces both checks.
+            // See Ring.swift and docs/Protocols/v1.10 plan.md "Why standalone".
+            return []
         case .equatable, .codable, .iteratorProtocol, .setAlgebra,
              .rawRepresentable, .losslessStringConvertible, .identifiable,
              .caseIterable, .additiveArithmetic, .semigroup: return []
@@ -268,6 +277,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         case .commutativeMonoid: return "checkCommutativeMonoidPropertyLaws"
         case .group: return "checkGroupPropertyLaws"
         case .semilattice: return "checkSemilatticePropertyLaws"
+        case .ring: return "checkRingPropertyLaws"
         }
     }
 
@@ -308,9 +318,13 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         case .commutativeMonoid: return "CommutativeMonoid"
         case .group: return "Group"
         case .semilattice: return "Semilattice"
+        case .ring: return "Ring"
         }
     }
 
+}
+
+extension KnownProtocol {
     /// `@Test func` name fragment — `<prefix>_<TypeName>` makes generated
     /// tests greppable in test output.
     package var testNameFragment: String {
@@ -347,6 +361,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         case .commutativeMonoid: return "commutativeMonoid"
         case .group: return "group"
         case .semilattice: return "semilattice"
+        case .ring: return "ring"
         }
     }
 }
