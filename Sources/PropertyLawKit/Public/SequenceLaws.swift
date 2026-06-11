@@ -33,24 +33,24 @@ public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: Send
     laws: LawSelection = .all
 ) async throws -> [CheckResult]
 where Value.Element: Equatable & Sendable {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkIteratorProtocolPropertyLaws(
-                for: type,
-                using: generator,
-                options: $0
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkIteratorProtocolPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0
+                )
+            })
+        }
+        results.append(await checkUnderestimated(generator: generator, options: options))
+        if sequenceOptions.passing == .multiPass {
+            results.append(await checkMultiPass(generator: generator, options: options))
+            results.append(await checkIndependence(generator: generator, options: options))
+        }
+        return results
     }
-    results.append(await checkUnderestimated(generator: generator, options: options))
-    if sequenceOptions.passing == .multiPass {
-        results.append(await checkMultiPass(generator: generator, options: options))
-        results.append(await checkIndependence(generator: generator, options: options))
-    }
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkUnderestimated<S: Sequence & Sendable, Sh: SendableSequenceType>(

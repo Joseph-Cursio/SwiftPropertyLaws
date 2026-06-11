@@ -22,25 +22,25 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable, Shrinker: Send
     laws: LawSelection = .all,
     coverage: AnyCoverageClassifier<Value>? = nil
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkEquatablePropertyLaws(
-                for: type,
-                using: generator,
-                options: $0,
-                coverage: coverage
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkEquatablePropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0,
+                    coverage: coverage
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkEqualityConsistency(generator: generator, options: options),
+            await checkStabilityWithinProcess(generator: generator, options: options, coverage: coverage),
+            await checkDistribution(generator: generator, options: options, coverage: coverage)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkEqualityConsistency(generator: generator, options: options),
-        await checkStabilityWithinProcess(generator: generator, options: options, coverage: coverage),
-        await checkDistribution(generator: generator, options: options, coverage: coverage)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkEqualityConsistency<Value: Hashable & Sendable, Shrinker: SendableSequenceType>(

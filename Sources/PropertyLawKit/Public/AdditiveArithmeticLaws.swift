@@ -34,16 +34,15 @@ public func checkAdditiveArithmeticPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkAdditionAssociativity(generator: generator, options: options),
-        await checkAdditionCommutativity(generator: generator, options: options),
-        await checkZeroAdditiveIdentity(generator: generator, options: options),
-        await checkSubtractionInverse(generator: generator, options: options),
-        await checkSelfSubtractionIsZero(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkAdditionAssociativity(generator: generator, options: options),
+            await checkAdditionCommutativity(generator: generator, options: options),
+            await checkZeroAdditiveIdentity(generator: generator, options: options),
+            await checkSubtractionInverse(generator: generator, options: options),
+            await checkSelfSubtractionIsZero(generator: generator, options: options)
+        ]
+    }
 }
 
 private func checkAdditionAssociativity<

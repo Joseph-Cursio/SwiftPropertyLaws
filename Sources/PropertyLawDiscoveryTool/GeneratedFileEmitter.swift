@@ -121,16 +121,11 @@ enum GeneratedFileEmitter {
         typeName: String,
         generatorExpr: String
     ) -> [String] {
-        let testName = "\(conformance.testNameFragment)_\(typeName)"
-        let checkFn = conformance.checkFunctionName
-        return [
-            "    @Test func \(testName)() async throws {",
-            "        try await \(checkFn)(",
-            "            for: \(typeName).self,",
-            "            using: \(generatorExpr)",
-            "        )",
-            "    }"
-        ]
+        PropertyLawTestStub.lines(
+            conformance: conformance,
+            typeName: typeName,
+            generatorExpr: generatorExpr
+        )
     }
 
     private static func suppressedTestLines(

@@ -32,12 +32,11 @@ public func checkCaseIterablePropertyLaws<
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
     _ = generator
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkExactlyOnce(for: type, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    return try await runPropertyLawSuite(options: options) {
+        [
+            await checkExactlyOnce(for: type, options: options)
+        ]
+    }
 }
 
 private func checkExactlyOnce<Value: CaseIterable & Hashable & Sendable>(

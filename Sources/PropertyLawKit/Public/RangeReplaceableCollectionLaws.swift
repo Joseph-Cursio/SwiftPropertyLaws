@@ -33,26 +33,26 @@ public func checkRangeReplaceableCollectionPropertyLaws<
     laws: LawSelection = .all
 ) async throws -> [CheckResult]
 where Value.Element: Equatable & Sendable {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkCollectionPropertyLaws(
-                for: type,
-                using: generator,
-                options: $0,
-                sequenceOptions: sequenceOptions
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkCollectionPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0,
+                    sequenceOptions: sequenceOptions
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkEmptyInitIsEmpty(generator: generator, options: options),
+            await checkRemoveAtInsertRoundTrip(generator: generator, options: options),
+            await checkRemoveAllMakesEmpty(generator: generator, options: options),
+            await checkReplaceSubrangeAppliesEdit(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkEmptyInitIsEmpty(generator: generator, options: options),
-        await checkRemoveAtInsertRoundTrip(generator: generator, options: options),
-        await checkRemoveAllMakesEmpty(generator: generator, options: options),
-        await checkReplaceSubrangeAppliesEdit(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkEmptyInitIsEmpty<

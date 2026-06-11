@@ -21,35 +21,35 @@ public func checkBinaryFloatingPointPropertyLaws<
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { rebased in
-            // Forward allowNaN into the inherited FloatingPoint check; the standard
-            // helper does not carry this field, so rebuild here to preserve behaviour.
-            let withNaN = LawCheckOptions(
-                budget: rebased.budget,
-                enforcement: rebased.enforcement,
-                seed: rebased.seed,
-                suppressions: rebased.suppressions,
-                backend: rebased.backend,
-                allowNaN: options.allowNaN
-            )
-            return try await checkFloatingPointPropertyLaws(
-                for: type,
-                using: generator,
-                options: withNaN
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { rebased in
+                // Forward allowNaN into the inherited FloatingPoint check; the standard
+                // helper does not carry this field, so rebuild here to preserve behaviour.
+                let withNaN = LawCheckOptions(
+                    budget: rebased.budget,
+                    enforcement: rebased.enforcement,
+                    seed: rebased.seed,
+                    suppressions: rebased.suppressions,
+                    backend: rebased.backend,
+                    allowNaN: options.allowNaN
+                )
+                return try await checkFloatingPointPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: withNaN
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkRadix2Constraint(type: type, options: options),
+            await checkSignificandExponentReconstruction(generator: generator, options: options),
+            await checkBinadeMembership(generator: generator, options: options),
+            await checkConvertingFromIntegerExactness(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkRadix2Constraint(type: type, options: options),
-        await checkSignificandExponentReconstruction(generator: generator, options: options),
-        await checkBinadeMembership(generator: generator, options: options),
-        await checkConvertingFromIntegerExactness(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkRadix2Constraint<Value: BinaryFloatingPoint & Sendable>(

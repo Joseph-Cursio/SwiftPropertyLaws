@@ -31,46 +31,45 @@ public func checkCodablePropertyLaws<
     config: CodableLawConfig<Value> = CodableLawConfig(),
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let lawName = "Codable.roundTripFidelity[\(config.codec.identifier)]"
-    let codec = config.codec
-    let mode = config.mode
-    let collector: NearMissCollector? = mode.tracksFieldLevelNearMisses
-        ? NearMissCollector()
-        : nil
-    let result = await PerLawDriver.run(
-        protocolLaw: lawName,
-        tier: .conventional,
-        options: options,
-        check: LawCheck(
-            sample: { rng in
-                CodableTrial<Value>.run(generator: generator, rng: &rng, codec: codec)
-            },
-            property: { trial in
-                switch trial {
-                case .roundTripped(let original, let restored):
-                    let passed = comparesEqual(original, restored, mode: mode)
-                    if passed, let collector {
-                        recordFieldDiffs(
-                            original: original,
-                            restored: restored,
-                            into: collector
-                        )
+    try await runPropertyLawSuite(options: options) {
+        let lawName = "Codable.roundTripFidelity[\(config.codec.identifier)]"
+        let codec = config.codec
+        let mode = config.mode
+        let collector: NearMissCollector? = mode.tracksFieldLevelNearMisses
+            ? NearMissCollector()
+            : nil
+        let result = await PerLawDriver.run(
+            protocolLaw: lawName,
+            tier: .conventional,
+            options: options,
+            check: LawCheck(
+                sample: { rng in
+                    CodableTrial<Value>.run(generator: generator, rng: &rng, codec: codec)
+                },
+                property: { trial in
+                    switch trial {
+                    case .roundTripped(let original, let restored):
+                        let passed = comparesEqual(original, restored, mode: mode)
+                        if passed, let collector {
+                            recordFieldDiffs(
+                                original: original,
+                                restored: restored,
+                                into: collector
+                            )
+                        }
+                        return passed
+                    case .threw:
+                        return false
                     }
-                    return passed
-                case .threw:
-                    return false
+                },
+                formatCounterexample: { trial, _ in
+                    CodableTrial<Value>.format(trial: trial, mode: mode)
                 }
-            },
-            formatCounterexample: { trial, _ in
-                CodableTrial<Value>.format(trial: trial, mode: mode)
-            }
-        ),
-        observation: PerLawDriver.Observation(nearMissCollector: collector)
-    )
-    let results = [result]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+            ),
+            observation: PerLawDriver.Observation(nearMissCollector: collector)
+        )
+        return [result]
+    }
 }
 
 /// Whole-trial sample for Codable: captures the original input, the restored

@@ -29,22 +29,21 @@ public func checkRingPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkAddAssociativity(generator: generator, options: options),
-        await checkAddCommutativity(generator: generator, options: options),
-        await checkAddLeftIdentity(generator: generator, options: options),
-        await checkAddRightIdentity(generator: generator, options: options),
-        await checkAddLeftInverse(generator: generator, options: options),
-        await checkAddRightInverse(generator: generator, options: options),
-        await checkMultiplyAssociativity(generator: generator, options: options),
-        await checkMultiplyLeftIdentity(generator: generator, options: options),
-        await checkMultiplyRightIdentity(generator: generator, options: options),
-        await checkLeftDistributivity(generator: generator, options: options),
-        await checkRightDistributivity(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkAddAssociativity(generator: generator, options: options),
+            await checkAddCommutativity(generator: generator, options: options),
+            await checkAddLeftIdentity(generator: generator, options: options),
+            await checkAddRightIdentity(generator: generator, options: options),
+            await checkAddLeftInverse(generator: generator, options: options),
+            await checkAddRightInverse(generator: generator, options: options),
+            await checkMultiplyAssociativity(generator: generator, options: options),
+            await checkMultiplyLeftIdentity(generator: generator, options: options),
+            await checkMultiplyRightIdentity(generator: generator, options: options),
+            await checkLeftDistributivity(generator: generator, options: options),
+            await checkRightDistributivity(generator: generator, options: options)
+        ]
+    }
 }
 
 // MARK: - Additive abelian group

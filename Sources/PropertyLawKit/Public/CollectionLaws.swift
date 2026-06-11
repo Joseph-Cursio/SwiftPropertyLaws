@@ -29,25 +29,25 @@ public func checkCollectionPropertyLaws<Value: Collection & Sendable, Shrinker: 
     laws: LawSelection = .all
 ) async throws -> [CheckResult]
 where Value.Element: Equatable & Sendable {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkSequencePropertyLaws(
-                for: type,
-                using: generator,
-                options: $0,
-                sequenceOptions: sequenceOptions
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkSequencePropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0,
+                    sequenceOptions: sequenceOptions
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkCount(generator: generator, options: options),
+            await checkIndexValidity(generator: generator, options: options),
+            await checkNonMutation(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkCount(generator: generator, options: options),
-        await checkIndexValidity(generator: generator, options: options),
-        await checkNonMutation(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkCount<C: Collection & Sendable, Sh: SendableSequenceType>(

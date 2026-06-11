@@ -32,27 +32,27 @@ public func checkNumericPropertyLaws<
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkAdditiveArithmeticPropertyLaws(
-                for: type,
-                using: generator,
-                options: $0
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkAdditiveArithmeticPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkMultiplicationAssociativity(generator: generator, options: options),
+            await checkMultiplicationCommutativity(generator: generator, options: options),
+            await checkOneMultiplicativeIdentity(generator: generator, options: options),
+            await checkZeroAnnihilation(generator: generator, options: options),
+            await checkLeftDistributivity(generator: generator, options: options),
+            await checkRightDistributivity(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkMultiplicationAssociativity(generator: generator, options: options),
-        await checkMultiplicationCommutativity(generator: generator, options: options),
-        await checkOneMultiplicativeIdentity(generator: generator, options: options),
-        await checkZeroAnnihilation(generator: generator, options: options),
-        await checkLeftDistributivity(generator: generator, options: options),
-        await checkRightDistributivity(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkMultiplicationAssociativity<

@@ -25,23 +25,23 @@ public func checkGroupPropertyLaws<
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkMonoidPropertyLaws(
-                for: type,
-                using: generator,
-                options: $0
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkMonoidPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkCombineLeftInverse(generator: generator, options: options),
+            await checkCombineRightInverse(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkCombineLeftInverse(generator: generator, options: options),
-        await checkCombineRightInverse(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkCombineLeftInverse<

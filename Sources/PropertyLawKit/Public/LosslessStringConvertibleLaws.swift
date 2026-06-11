@@ -22,12 +22,11 @@ public func checkLosslessStringConvertiblePropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkRoundTrip(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkRoundTrip(generator: generator, options: options)
+        ]
+    }
 }
 
 private func checkRoundTrip<

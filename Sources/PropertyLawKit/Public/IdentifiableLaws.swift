@@ -22,12 +22,11 @@ public func checkIdentifiablePropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] where Value.ID: Sendable {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkIdStability(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkIdStability(generator: generator, options: options)
+        ]
+    }
 }
 
 private func checkIdStability<

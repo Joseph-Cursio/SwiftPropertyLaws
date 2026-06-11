@@ -175,15 +175,17 @@ public struct PropertyLawSuiteMacro: PeerMacro {
         typeName: String,
         generatorExpr: String
     ) -> String {
-        let testFuncName = "\(conformance.testNameFragment)_\(typeName)"
-        let checkFn = conformance.checkFunctionName
-        return """
-            @Test func \(testFuncName)() async throws {
-                    try await \(checkFn)(
-                        for: \(typeName).self,
-                        using: \(generatorExpr)
-                    )
-                }
-            """
+        let lines = PropertyLawTestStub.lines(
+            conformance: conformance,
+            typeName: typeName,
+            generatorExpr: generatorExpr
+        )
+        // The @Suite template (`emitPeerSuite`) supplies the leading indent
+        // for the method's first line, so strip the shared stub's 4-space
+        // base indent there; the remaining lines keep their indentation.
+        let adjusted = lines.enumerated().map { index, line in
+            index == 0 ? String(line.drop(while: { $0 == " " })) : line
+        }
+        return adjusted.joined(separator: "\n")
     }
 }

@@ -16,15 +16,14 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: Se
     options: LawCheckOptions = LawCheckOptions(),
     coverage: AnyCoverageClassifier<Value>? = nil
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkReflexivity(generator: generator, options: options, coverage: coverage),
-        await checkSymmetry(generator: generator, options: options),
-        await checkTransitivity(generator: generator, options: options),
-        await checkNegationConsistency(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkReflexivity(generator: generator, options: options, coverage: coverage),
+            await checkSymmetry(generator: generator, options: options),
+            await checkTransitivity(generator: generator, options: options),
+            await checkNegationConsistency(generator: generator, options: options)
+        ]
+    }
 }
 
 private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(

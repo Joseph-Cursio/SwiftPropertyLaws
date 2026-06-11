@@ -44,19 +44,18 @@ public func checkInteractionInvariantPropertyLaws<
 where
     Invariant.State: Sendable,
     Action.AllCases: Sendable & RandomAccessCollection {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkInvariantHoldsAfterEachStep(
-            invariant: invariant,
-            initialState: initialState,
-            reducer: reducer,
-            length: length,
-            statefulGuards: statefulGuards,
-            options: options
-        )
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkInvariantHoldsAfterEachStep(
+                invariant: invariant,
+                initialState: initialState,
+                reducer: reducer,
+                length: length,
+                statefulGuards: statefulGuards,
+                options: options
+            )
+        ]
+    }
 }
 
 /// v2.4.0 — runtime harness for `ActionIdempotenceInvariant`. Per
@@ -88,19 +87,18 @@ where
     Invariant.State: Sendable,
     Invariant.Action: CaseIterable & Sendable,
     Invariant.Action.AllCases: Sendable & RandomAccessCollection {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkActionIdempotenceDoubleApplication(
-            invariant: invariant,
-            initialState: initialState,
-            reducer: reducer,
-            length: length,
-            statefulGuards: statefulGuards,
-            options: options
-        )
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkActionIdempotenceDoubleApplication(
+                invariant: invariant,
+                initialState: initialState,
+                reducer: reducer,
+                length: length,
+                statefulGuards: statefulGuards,
+                options: options
+            )
+        ]
+    }
 }
 
 // MARK: - Per-law internals

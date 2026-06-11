@@ -15,25 +15,25 @@ public func checkComparablePropertyLaws<Value: Comparable & Sendable, Shrinker: 
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkEquatablePropertyLaws(
-                for: type,
-                using: generator,
-                options: $0
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkEquatablePropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkAntisymmetry(generator: generator, options: options),
+            await checkTransitivity(generator: generator, options: options),
+            await checkTotality(generator: generator, options: options),
+            await checkOperatorConsistency(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkAntisymmetry(generator: generator, options: options),
-        await checkTransitivity(generator: generator, options: options),
-        await checkTotality(generator: generator, options: options),
-        await checkOperatorConsistency(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkAntisymmetry<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(

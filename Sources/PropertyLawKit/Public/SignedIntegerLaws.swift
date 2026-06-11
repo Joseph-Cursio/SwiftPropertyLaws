@@ -23,33 +23,33 @@ public func checkSignedIntegerPropertyLaws<
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = []
-    if laws == .all {
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            try await checkBinaryIntegerPropertyLaws(
-                for: type,
-                using: generator,
-                options: $0
-            )
-        })
-        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-            // SignedNumeric's own laws only — skipping its inherited Numeric suite
-            // here because the BinaryInteger collector already ran Numeric. Without
-            // the .ownOnly cap we'd run Numeric's six laws twice.
-            try await checkSignedNumericPropertyLaws(
-                for: type,
-                using: generator,
-                options: $0,
-                laws: .ownOnly
-            )
-        })
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkBinaryIntegerPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0
+                )
+            })
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                // SignedNumeric's own laws only — skipping its inherited Numeric suite
+                // here because the BinaryInteger collector already ran Numeric. Without
+                // the .ownOnly cap we'd run Numeric's six laws twice.
+                try await checkSignedNumericPropertyLaws(
+                    for: type,
+                    using: generator,
+                    options: $0,
+                    laws: .ownOnly
+                )
+            })
+        }
+        results.append(contentsOf: [
+            await checkSignednessConsistency(generator: generator, options: options)
+        ])
+        return results
     }
-    results.append(contentsOf: [
-        await checkSignednessConsistency(generator: generator, options: options)
-    ])
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 private func checkSignednessConsistency<

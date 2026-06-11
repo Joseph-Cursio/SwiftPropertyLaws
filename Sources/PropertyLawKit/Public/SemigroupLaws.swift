@@ -25,12 +25,11 @@ public func checkSemigroupPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkCombineAssociativity(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkCombineAssociativity(generator: generator, options: options)
+        ]
+    }
 }
 
 private func checkCombineAssociativity<

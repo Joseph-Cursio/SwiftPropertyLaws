@@ -34,20 +34,19 @@ public func checkSetAlgebraPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await checkUnionIdempotence(generator: generator, options: options),
-        await checkIntersectionIdempotence(generator: generator, options: options),
-        await checkUnionCommutativity(generator: generator, options: options),
-        await checkIntersectionCommutativity(generator: generator, options: options),
-        await checkEmptyIdentity(generator: generator, options: options),
-        await checkSymmetricDifferenceSelfIsEmpty(generator: generator, options: options),
-        await checkSymmetricDifferenceEmptyIdentity(generator: generator, options: options),
-        await checkSymmetricDifferenceCommutativity(generator: generator, options: options),
-        await checkSymmetricDifferenceDefinition(generator: generator, options: options)
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await checkUnionIdempotence(generator: generator, options: options),
+            await checkIntersectionIdempotence(generator: generator, options: options),
+            await checkUnionCommutativity(generator: generator, options: options),
+            await checkIntersectionCommutativity(generator: generator, options: options),
+            await checkEmptyIdentity(generator: generator, options: options),
+            await checkSymmetricDifferenceSelfIsEmpty(generator: generator, options: options),
+            await checkSymmetricDifferenceEmptyIdentity(generator: generator, options: options),
+            await checkSymmetricDifferenceCommutativity(generator: generator, options: options),
+            await checkSymmetricDifferenceDefinition(generator: generator, options: options)
+        ]
+    }
 }
 
 private func checkUnionIdempotence<

@@ -21,31 +21,30 @@ public func checkIteratorProtocolPropertyLaws<S: Sequence & Sendable, Sh: Sendab
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult]
 where S.Element: Equatable & Sendable {
-    try ReplayEnvironmentValidator.verify(options)
-    let results = [
-        await runUnaryLaw(
-            "IteratorProtocol.terminationStability",
-            tier: .conventional,
-            generator: generator,
-            options: options,
-            property: { sample in iteratorTerminationCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                iteratorTerminationCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        ),
-        await runUnaryLaw(
-            "IteratorProtocol.singlePassYield",
-            tier: .conventional,
-            generator: generator,
-            options: options,
-            property: { sample in iteratorSinglePassCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
-    ]
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
+    try await runPropertyLawSuite(options: options) {
+        [
+            await runUnaryLaw(
+                "IteratorProtocol.terminationStability",
+                tier: .conventional,
+                generator: generator,
+                options: options,
+                property: { sample in iteratorTerminationCounterexample(for: sample) == nil },
+                formatCounterexample: { sample, _ in
+                    iteratorTerminationCounterexample(for: sample) ?? "<no counterexample>"
+                }
+            ),
+            await runUnaryLaw(
+                "IteratorProtocol.singlePassYield",
+                tier: .conventional,
+                generator: generator,
+                options: options,
+                property: { sample in iteratorSinglePassCounterexample(for: sample) == nil },
+                formatCounterexample: { sample, _ in
+                    iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
+                }
+            )
+        ]
+    }
 }
 
 /// Returns the counterexample string when termination stability is violated,

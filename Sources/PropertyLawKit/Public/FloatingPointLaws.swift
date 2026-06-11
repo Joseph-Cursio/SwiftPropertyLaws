@@ -44,29 +44,29 @@ public func checkFloatingPointPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try ReplayEnvironmentValidator.verify(options)
-    var results: [CheckResult] = [
-        await checkInfinityIsInfinite(type: type, options: options),
-        await checkNegativeInfinityComparison(type: type, options: options),
-        await checkZeroIsZero(type: type, options: options),
-        await checkSignedZeroEquality(type: type, options: options),
-        await checkRoundedZeroIdentity(type: type, options: options),
-        await checkAdditiveInverseFinite(generator: generator, options: options),
-        await checkNextUpDownRoundTrip(generator: generator, options: options),
-        await checkSignMatchesIsLessThanZero(generator: generator, options: options),
-        await checkAbsoluteValueNonNegative(generator: generator, options: options)
-    ]
-    if options.allowNaN {
-        results.append(contentsOf: [
-            await checkNaNIsNaN(type: type, options: options),
-            await checkNaNInequality(type: type, options: options),
-            await checkNaNPropagatesAddition(generator: generator, options: options),
-            await checkNaNPropagatesMultiplication(generator: generator, options: options),
-            await checkNaNComparisonIsUnordered(generator: generator, options: options)
-        ])
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = [
+            await checkInfinityIsInfinite(type: type, options: options),
+            await checkNegativeInfinityComparison(type: type, options: options),
+            await checkZeroIsZero(type: type, options: options),
+            await checkSignedZeroEquality(type: type, options: options),
+            await checkRoundedZeroIdentity(type: type, options: options),
+            await checkAdditiveInverseFinite(generator: generator, options: options),
+            await checkNextUpDownRoundTrip(generator: generator, options: options),
+            await checkSignMatchesIsLessThanZero(generator: generator, options: options),
+            await checkAbsoluteValueNonNegative(generator: generator, options: options)
+        ]
+        if options.allowNaN {
+            results.append(contentsOf: [
+                await checkNaNIsNaN(type: type, options: options),
+                await checkNaNInequality(type: type, options: options),
+                await checkNaNPropagatesAddition(generator: generator, options: options),
+                await checkNaNPropagatesMultiplication(generator: generator, options: options),
+                await checkNaNComparisonIsUnordered(generator: generator, options: options)
+            ])
+        }
+        return results
     }
-    try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
-    return results
 }
 
 // MARK: - Always-on laws
