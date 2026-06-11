@@ -53,28 +53,19 @@ private func checkAdditionAssociativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "AdditiveArithmetic.additionAssociativity",
-        tier: .strict,
+    await runTernaryLaw(
+        "AdditiveArithmetic.additionAssociativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two, three) = input
-                return (one + two) + three == one + (two + three)
-            },
-            formatCounterexample: { input, _ in
-                let (one, two, three) = input
-                let lhs = (one + two) + three
-                let rhs = one + (two + three)
-                return "x = \(one), y = \(two), z = \(three); "
-                    + "(x + y) + z = \(lhs), x + (y + z) = \(rhs)"
-            }
-        )
+        property: { one, two, three in
+            (one + two) + three == one + (two + three)
+        },
+        formatCounterexample: { one, two, three, _ in
+            let lhs = (one + two) + three
+            let rhs = one + (two + three)
+            return "x = \(one), y = \(two), z = \(three); "
+                + "(x + y) + z = \(lhs), x + (y + z) = \(rhs)"
+        }
     )
 }
 
@@ -85,22 +76,17 @@ private func checkAdditionCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "AdditiveArithmetic.additionCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "AdditiveArithmetic.additionCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first + second == second + first
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x + y = \(first + second), y + x = \(second + first)"
-            }
-        )
+        property: { first, second in
+            first + second == second + first
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x + y = \(first + second), y + x = \(second + first)"
+        }
     )
 }
 
@@ -111,17 +97,14 @@ private func checkZeroAdditiveIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "AdditiveArithmetic.zeroAdditiveIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "AdditiveArithmetic.zeroAdditiveIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample + .zero == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x + .zero = \(sample + .zero), expected x"
-            }
-        )
+        property: { sample in sample + .zero == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x + .zero = \(sample + .zero), expected x"
+        }
     )
 }
 
@@ -132,23 +115,18 @@ private func checkSubtractionInverse<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "AdditiveArithmetic.subtractionInverse",
-        tier: .strict,
+    await runBinaryLaw(
+        "AdditiveArithmetic.subtractionInverse",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return (first + second) - second == first
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                let lhs = (first + second) - second
-                return "x = \(first), y = \(second); "
-                    + "(x + y) - y = \(lhs), expected x = \(first)"
-            }
-        )
+        property: { first, second in
+            (first + second) - second == first
+        },
+        formatCounterexample: { first, second, _ in
+            let lhs = (first + second) - second
+            return "x = \(first), y = \(second); "
+                + "(x + y) - y = \(lhs), expected x = \(first)"
+        }
     )
 }
 
@@ -159,16 +137,13 @@ private func checkSelfSubtractionIsZero<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "AdditiveArithmetic.selfSubtractionIsZero",
-        tier: .strict,
+    await runUnaryLaw(
+        "AdditiveArithmetic.selfSubtractionIsZero",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample - sample == .zero },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x - x = \(sample - sample), expected .zero"
-            }
-        )
+        property: { sample in sample - sample == .zero },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x - x = \(sample - sample), expected .zero"
+        }
     )
 }

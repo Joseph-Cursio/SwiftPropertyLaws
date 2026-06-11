@@ -68,27 +68,24 @@ private func checkDistanceRoundTrip<
     // `strideGenerator` is unused here but kept in the signature for
     // symmetry with checkAdvanceRoundTrip — silences the unused warning.
     _ = strideGenerator
-    return await PerLawDriver.run(
-        protocolLaw: "Strideable.distanceRoundTrip",
-        tier: .strict,
+    return await runBinaryLaw(
+        "Strideable.distanceRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first.advanced(by: first.distance(to: second)) == second
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                let step = first.distance(to: second)
-                let round = first.advanced(by: step)
-                return "x = \(first), y = \(second); "
-                    + "x.advanced(by: x.distance(to: y)) = \(round), expected y = \(second)"
-            }
-        )
+        property: { first, second in
+            first.advanced(by: first.distance(to: second)) == second
+        },
+        formatCounterexample: { first, second, _ in
+            let step = first.distance(to: second)
+            let round = first.advanced(by: step)
+            return "x = \(first), y = \(second); "
+                + "x.advanced(by: x.distance(to: y)) = \(round), expected y = \(second)"
+        }
     )
 }
 
+// Not eligible for runBinaryLaw: draws from two DIFFERENT generators
+// (generator for Value, strideGenerator for Value.Stride).
 private func checkAdvanceRoundTrip<
     Value: Strideable & Sendable,
     ValueShrinker: SendableSequenceType,
@@ -126,18 +123,15 @@ private func checkZeroAdvanceIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Strideable.zeroAdvanceIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Strideable.zeroAdvanceIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.advanced(by: .zero) == sample },
-            formatCounterexample: { sample, _ in
-                let advanced = sample.advanced(by: .zero)
-                return "x = \(sample); x.advanced(by: .zero) = \(advanced), expected x"
-            }
-        )
+        property: { sample in sample.advanced(by: .zero) == sample },
+        formatCounterexample: { sample, _ in
+            let advanced = sample.advanced(by: .zero)
+            return "x = \(sample); x.advanced(by: .zero) = \(advanced), expected x"
+        }
     )
 }
 
@@ -148,17 +142,14 @@ private func checkSelfDistanceIsZero<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Strideable.selfDistanceIsZero",
-        tier: .strict,
+    await runUnaryLaw(
+        "Strideable.selfDistanceIsZero",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.distance(to: sample) == .zero },
-            formatCounterexample: { sample, _ in
-                let measured = sample.distance(to: sample)
-                return "x = \(sample); x.distance(to: x) = \(measured), expected .zero"
-            }
-        )
+        property: { sample in sample.distance(to: sample) == .zero },
+        formatCounterexample: { sample, _ in
+            let measured = sample.distance(to: sample)
+            return "x = \(sample); x.distance(to: x) = \(measured), expected .zero"
+        }
     )
 }

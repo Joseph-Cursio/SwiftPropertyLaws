@@ -75,26 +75,21 @@ private func checkDivisionMultiplicationRoundTrip<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.divisionMultiplicationRoundTrip",
-        tier: .strict,
+    await runBinaryLaw(
+        "BinaryInteger.divisionMultiplicationRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (numerator, denominator) = input
-                guard denominator != 0 else { return true }
-                return (numerator / denominator) * denominator + (numerator % denominator)
-                    == numerator
-            },
-            formatCounterexample: { input, _ in
-                let (numerator, denominator) = input
-                if denominator == 0 { return "denominator was zero (skipped)" }
-                let lhs = (numerator / denominator) * denominator + (numerator % denominator)
-                return "x = \(numerator), y = \(denominator); "
-                    + "(x / y) * y + (x % y) = \(lhs), expected x"
-            }
-        )
+        property: { numerator, denominator in
+            guard denominator != 0 else { return true }
+            return (numerator / denominator) * denominator + (numerator % denominator)
+                == numerator
+        },
+        formatCounterexample: { numerator, denominator, _ in
+            if denominator == 0 { return "denominator was zero (skipped)" }
+            let lhs = (numerator / denominator) * denominator + (numerator % denominator)
+            return "x = \(numerator), y = \(denominator); "
+                + "(x / y) * y + (x % y) = \(lhs), expected x"
+        }
     )
 }
 
@@ -105,27 +100,22 @@ private func checkRemainderMagnitudeBound<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.remainderMagnitudeBound",
-        tier: .strict,
+    await runBinaryLaw(
+        "BinaryInteger.remainderMagnitudeBound",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (numerator, denominator) = input
-                guard denominator != 0 else { return true }
-                let remainder = numerator % denominator
-                return remainder.magnitude < denominator.magnitude
-                    || remainder == 0
-            },
-            formatCounterexample: { input, _ in
-                let (numerator, denominator) = input
-                if denominator == 0 { return "denominator was zero (skipped)" }
-                let remainder = numerator % denominator
-                return "x = \(numerator), y = \(denominator); "
-                    + "x % y = \(remainder); |\(remainder)| ≮ |\(denominator)|"
-            }
-        )
+        property: { numerator, denominator in
+            guard denominator != 0 else { return true }
+            let remainder = numerator % denominator
+            return remainder.magnitude < denominator.magnitude
+                || remainder == 0
+        },
+        formatCounterexample: { numerator, denominator, _ in
+            if denominator == 0 { return "denominator was zero (skipped)" }
+            let remainder = numerator % denominator
+            return "x = \(numerator), y = \(denominator); "
+                + "x % y = \(remainder); |\(remainder)| ≮ |\(denominator)|"
+        }
     )
 }
 
@@ -136,21 +126,18 @@ private func checkSelfDivisionIsOne<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.selfDivisionIsOne",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.selfDivisionIsOne",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard sample != 0 else { return true }
-                return sample / sample == 1
-            },
-            formatCounterexample: { sample, _ in
-                if sample == 0 { return "x was zero (skipped)" }
-                return "x = \(sample); x / x = \(sample / sample), expected 1"
-            }
-        )
+        property: { sample in
+            guard sample != 0 else { return true }
+            return sample / sample == 1
+        },
+        formatCounterexample: { sample, _ in
+            if sample == 0 { return "x was zero (skipped)" }
+            return "x = \(sample); x / x = \(sample / sample), expected 1"
+        }
     )
 }
 
@@ -161,17 +148,14 @@ private func checkDivisionByOneIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.divisionByOneIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.divisionByOneIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample / 1 == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x / 1 = \(sample / 1), expected x"
-            }
-        )
+        property: { sample in sample / 1 == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x / 1 = \(sample / 1), expected x"
+        }
     )
 }
 
@@ -182,28 +166,23 @@ private func checkQuotientAndRemainderConsistency<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.quotientAndRemainderConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "BinaryInteger.quotientAndRemainderConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (numerator, denominator) = input
-                guard denominator != 0 else { return true }
-                let pair = numerator.quotientAndRemainder(dividingBy: denominator)
-                return pair.quotient == numerator / denominator
-                    && pair.remainder == numerator % denominator
-            },
-            formatCounterexample: { input, _ in
-                let (numerator, denominator) = input
-                if denominator == 0 { return "denominator was zero (skipped)" }
-                let pair = numerator.quotientAndRemainder(dividingBy: denominator)
-                return "x = \(numerator), y = \(denominator); "
-                    + "quotientAndRemainder = \(pair); "
-                    + "(x/y, x%y) = (\(numerator / denominator), \(numerator % denominator))"
-            }
-        )
+        property: { numerator, denominator in
+            guard denominator != 0 else { return true }
+            let pair = numerator.quotientAndRemainder(dividingBy: denominator)
+            return pair.quotient == numerator / denominator
+                && pair.remainder == numerator % denominator
+        },
+        formatCounterexample: { numerator, denominator, _ in
+            if denominator == 0 { return "denominator was zero (skipped)" }
+            let pair = numerator.quotientAndRemainder(dividingBy: denominator)
+            return "x = \(numerator), y = \(denominator); "
+                + "quotientAndRemainder = \(pair); "
+                + "(x/y, x%y) = (\(numerator / denominator), \(numerator % denominator))"
+        }
     )
 }
 
@@ -216,17 +195,14 @@ private func checkBitwiseAndIdempotence<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseAndIdempotence",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.bitwiseAndIdempotence",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (sample & sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x & x = \(sample & sample), expected x"
-            }
-        )
+        property: { sample in (sample & sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x & x = \(sample & sample), expected x"
+        }
     )
 }
 
@@ -237,17 +213,14 @@ private func checkBitwiseOrIdempotence<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseOrIdempotence",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.bitwiseOrIdempotence",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (sample | sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x | x = \(sample | sample), expected x"
-            }
-        )
+        property: { sample in (sample | sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x | x = \(sample | sample), expected x"
+        }
     )
 }
 
@@ -258,22 +231,17 @@ private func checkBitwiseAndCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseAndCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "BinaryInteger.bitwiseAndCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return (first & second) == (second & first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x & y = \(first & second), y & x = \(second & first)"
-            }
-        )
+        property: { first, second in
+            (first & second) == (second & first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x & y = \(first & second), y & x = \(second & first)"
+        }
     )
 }
 
@@ -284,22 +252,17 @@ private func checkBitwiseOrCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseOrCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "BinaryInteger.bitwiseOrCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return (first | second) == (second | first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x | y = \(first | second), y | x = \(second | first)"
-            }
-        )
+        property: { first, second in
+            (first | second) == (second | first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x | y = \(first | second), y | x = \(second | first)"
+        }
     )
 }
 
@@ -310,17 +273,14 @@ private func checkBitwiseXorSelfIsZero<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseXorSelfIsZero",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.bitwiseXorSelfIsZero",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (sample ^ sample) == 0 },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x ^ x = \(sample ^ sample), expected 0"
-            }
-        )
+        property: { sample in (sample ^ sample) == 0 },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x ^ x = \(sample ^ sample), expected 0"
+        }
     )
 }
 
@@ -331,17 +291,14 @@ private func checkBitwiseXorZeroIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseXorZeroIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.bitwiseXorZeroIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (sample ^ 0) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x ^ 0 = \(sample ^ 0), expected x"
-            }
-        )
+        property: { sample in (sample ^ 0) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x ^ 0 = \(sample ^ 0), expected x"
+        }
     )
 }
 
@@ -352,17 +309,14 @@ private func checkBitwiseDoubleNegation<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseDoubleNegation",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.bitwiseDoubleNegation",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in ~(~sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); ~~x = \(~(~sample)), expected x"
-            }
-        )
+        property: { sample in ~(~sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); ~~x = \(~(~sample)), expected x"
+        }
     )
 }
 
@@ -373,28 +327,19 @@ private func checkBitwiseAndDistributesOverOr<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseAndDistributesOverOr",
-        tier: .strict,
+    await runTernaryLaw(
+        "BinaryInteger.bitwiseAndDistributesOverOr",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two, three) = input
-                return (one & (two | three)) == ((one & two) | (one & three))
-            },
-            formatCounterexample: { input, _ in
-                let (one, two, three) = input
-                let lhs = one & (two | three)
-                let rhs = (one & two) | (one & three)
-                return "x = \(one), y = \(two), z = \(three); "
-                    + "x & (y | z) = \(lhs), (x & y) | (x & z) = \(rhs)"
-            }
-        )
+        property: { one, two, three in
+            (one & (two | three)) == ((one & two) | (one & three))
+        },
+        formatCounterexample: { one, two, three, _ in
+            let lhs = one & (two | three)
+            let rhs = (one & two) | (one & three)
+            return "x = \(one), y = \(two), z = \(three); "
+                + "x & (y | z) = \(lhs), (x & y) | (x & z) = \(rhs)"
+        }
     )
 }
 
@@ -405,22 +350,17 @@ private func checkBitwiseDeMorgan<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.bitwiseDeMorgan",
-        tier: .strict,
+    await runBinaryLaw(
+        "BinaryInteger.bitwiseDeMorgan",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return ~(first & second) == (~first | ~second)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "~(x & y) = \(~(first & second)), ~x | ~y = \(~first | ~second)"
-            }
-        )
+        property: { first, second in
+            ~(first & second) == (~first | ~second)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "~(x & y) = \(~(first & second)), ~x | ~y = \(~first | ~second)"
+        }
     )
 }
 
@@ -433,17 +373,14 @@ private func checkShiftByZeroIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.shiftByZeroIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.shiftByZeroIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (sample << 0) == sample && (sample >> 0) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x << 0 = \(sample << 0), x >> 0 = \(sample >> 0)"
-            }
-        )
+        property: { sample in (sample << 0) == sample && (sample >> 0) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x << 0 = \(sample << 0), x >> 0 = \(sample >> 0)"
+        }
     )
 }
 
@@ -456,21 +393,18 @@ private func checkTrailingZeroBitCountRange<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryInteger.trailingZeroBitCountRange",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryInteger.trailingZeroBitCountRange",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let count = sample.trailingZeroBitCount
-                return count >= 0 && count <= sample.bitWidth
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); trailingZeroBitCount = \(sample.trailingZeroBitCount), "
-                    + "bitWidth = \(sample.bitWidth)"
-            }
-        )
+        property: { sample in
+            let count = sample.trailingZeroBitCount
+            return count >= 0 && count <= sample.bitWidth
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); trailingZeroBitCount = \(sample.trailingZeroBitCount), "
+                + "bitWidth = \(sample.bitWidth)"
+        }
     )
 }
 

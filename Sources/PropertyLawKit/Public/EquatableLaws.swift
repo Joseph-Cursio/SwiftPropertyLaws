@@ -38,18 +38,15 @@ private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSeq
     } else {
         classify = nil
     }
-    return await PerLawDriver.run(
-        protocolLaw: "Equatable.reflexivity",
-        tier: .strict,
+    return await runUnaryLaw(
+        "Equatable.reflexivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x == x evaluated to false"
-            }
-        ),
-        observation: PerLawDriver.Observation(classify: classify)
+        observation: PerLawDriver.Observation(classify: classify),
+        property: { sample in sample == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x == x evaluated to false"
+        }
     )
 }
 
@@ -57,22 +54,17 @@ private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequen
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Equatable.symmetry",
-        tier: .strict,
+    await runBinaryLaw(
+        "Equatable.symmetry",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return (first == second) == (second == first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x == y → \(first == second), y == x → \(second == first)"
-            }
-        )
+        property: { first, second in
+            (first == second) == (second == first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x == y → \(first == second), y == x → \(second == first)"
+        }
     )
 }
 
@@ -80,24 +72,17 @@ private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSe
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Equatable.transitivity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Equatable.transitivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in
-                (generator.run(using: &rng), generator.run(using: &rng), generator.run(using: &rng))
-            },
-            property: { input in
-                let (first, second, third) = input
-                return !(first == second && second == third) || (first == third)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second, third) = input
-                return "x = \(first), y = \(second), z = \(third); "
-                    + "x == y and y == z but x != z"
-            }
-        )
+        property: { first, second, third in
+            !(first == second && second == third) || (first == third)
+        },
+        formatCounterexample: { first, second, third, _ in
+            "x = \(first), y = \(second), z = \(third); "
+                + "x == y and y == z but x != z"
+        }
     )
 }
 
@@ -110,21 +95,16 @@ private func checkNegationConsistency<Value: Equatable & Sendable, Shrinker: Sen
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Equatable.negationConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "Equatable.negationConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return (first != second) == !(first == second)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x != y → \(first != second), !(x == y) → \(!(first == second))"
-            }
-        )
+        property: { first, second in
+            (first != second) == !(first == second)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x != y → \(first != second), !(x == y) → \(!(first == second))"
+        }
     )
 }

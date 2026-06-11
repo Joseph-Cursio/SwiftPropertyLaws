@@ -40,30 +40,21 @@ private func checkCombineAssociativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Semigroup.combineAssociativity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Semigroup.combineAssociativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two, three) = input
-                let leftGrouped = Value.combine(Value.combine(one, two), three)
-                let rightGrouped = Value.combine(one, Value.combine(two, three))
-                return leftGrouped == rightGrouped
-            },
-            formatCounterexample: { input, _ in
-                let (one, two, three) = input
-                let lhs = Value.combine(Value.combine(one, two), three)
-                let rhs = Value.combine(one, Value.combine(two, three))
-                return "x = \(one), y = \(two), z = \(three); "
-                    + "combine(combine(x, y), z) = \(lhs), "
-                    + "combine(x, combine(y, z)) = \(rhs)"
-            }
-        )
+        property: { one, two, three in
+            let leftGrouped = Value.combine(Value.combine(one, two), three)
+            let rightGrouped = Value.combine(one, Value.combine(two, three))
+            return leftGrouped == rightGrouped
+        },
+        formatCounterexample: { one, two, three, _ in
+            let lhs = Value.combine(Value.combine(one, two), three)
+            let rhs = Value.combine(one, Value.combine(two, three))
+            return "x = \(one), y = \(two), z = \(three); "
+                + "combine(combine(x, y), z) = \(lhs), "
+                + "combine(x, combine(y, z)) = \(rhs)"
+        }
     )
 }

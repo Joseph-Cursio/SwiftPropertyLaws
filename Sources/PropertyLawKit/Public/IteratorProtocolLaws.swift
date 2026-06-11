@@ -23,29 +23,25 @@ public func checkIteratorProtocolPropertyLaws<S: Sequence & Sendable, Sh: Sendab
 where S.Element: Equatable & Sendable {
     try ReplayEnvironmentValidator.verify(options)
     let results = [
-        await PerLawDriver.run(
-            protocolLaw: "IteratorProtocol.terminationStability",
+        await runUnaryLaw(
+            "IteratorProtocol.terminationStability",
             tier: .conventional,
+            generator: generator,
             options: options,
-            check: LawCheck(
-                sample: { rng in generator.run(using: &rng) },
-                property: { sample in iteratorTerminationCounterexample(for: sample) == nil },
-                formatCounterexample: { sample, _ in
-                    iteratorTerminationCounterexample(for: sample) ?? "<no counterexample>"
-                }
-            )
+            property: { sample in iteratorTerminationCounterexample(for: sample) == nil },
+            formatCounterexample: { sample, _ in
+                iteratorTerminationCounterexample(for: sample) ?? "<no counterexample>"
+            }
         ),
-        await PerLawDriver.run(
-            protocolLaw: "IteratorProtocol.singlePassYield",
+        await runUnaryLaw(
+            "IteratorProtocol.singlePassYield",
             tier: .conventional,
+            generator: generator,
             options: options,
-            check: LawCheck(
-                sample: { rng in generator.run(using: &rng) },
-                property: { sample in iteratorSinglePassCounterexample(for: sample) == nil },
-                formatCounterexample: { sample, _ in
-                    iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
-                }
-            )
+            property: { sample in iteratorSinglePassCounterexample(for: sample) == nil },
+            formatCounterexample: { sample, _ in
+                iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
+            }
         )
     ]
     try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)

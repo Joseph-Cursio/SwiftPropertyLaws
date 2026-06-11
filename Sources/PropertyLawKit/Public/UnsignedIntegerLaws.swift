@@ -48,17 +48,14 @@ private func checkNonNegative<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "UnsignedInteger.nonNegative",
-        tier: .strict,
+    await runUnaryLaw(
+        "UnsignedInteger.nonNegative",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample >= 0 },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); expected x >= 0"
-            }
-        )
+        property: { sample in sample >= 0 },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); expected x >= 0"
+        }
     )
 }
 
@@ -69,16 +66,13 @@ private func checkMagnitudeIsSelf<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "UnsignedInteger.magnitudeIsSelf",
-        tier: .strict,
+    await runUnaryLaw(
+        "UnsignedInteger.magnitudeIsSelf",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.magnitude == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.magnitude = \(sample.magnitude), expected \(sample)"
-            }
-        )
+        property: { sample in sample.magnitude == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.magnitude = \(sample.magnitude), expected \(sample)"
+        }
     )
 }

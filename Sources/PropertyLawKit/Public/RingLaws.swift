@@ -56,29 +56,20 @@ private func checkAddAssociativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.addAssociativity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Ring.addAssociativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (first, second, third) = input
-                return Value.add(Value.add(first, second), third)
-                    == Value.add(first, Value.add(second, third))
-            },
-            formatCounterexample: { input, _ in
-                let (first, second, third) = input
-                let lhs = Value.add(Value.add(first, second), third)
-                let rhs = Value.add(first, Value.add(second, third))
-                return "x = \(first), y = \(second), z = \(third); "
-                    + "add(add(x, y), z) = \(lhs), add(x, add(y, z)) = \(rhs)"
-            }
-        )
+        property: { first, second, third in
+            Value.add(Value.add(first, second), third)
+                == Value.add(first, Value.add(second, third))
+        },
+        formatCounterexample: { first, second, third, _ in
+            let lhs = Value.add(Value.add(first, second), third)
+            let rhs = Value.add(first, Value.add(second, third))
+            return "x = \(first), y = \(second), z = \(third); "
+                + "add(add(x, y), z) = \(lhs), add(x, add(y, z)) = \(rhs)"
+        }
     )
 }
 
@@ -89,26 +80,18 @@ private func checkAddCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.addCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "Ring.addCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (first, second) = input
-                return Value.add(first, second) == Value.add(second, first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "add(x, y) = \(Value.add(first, second)), "
-                    + "add(y, x) = \(Value.add(second, first))"
-            }
-        )
+        property: { first, second in
+            Value.add(first, second) == Value.add(second, first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "add(x, y) = \(Value.add(first, second)), "
+                + "add(y, x) = \(Value.add(second, first))"
+        }
     )
 }
 
@@ -119,17 +102,14 @@ private func checkAddLeftIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.addLeftIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Ring.addLeftIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.add(Value.zero, sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); add(.zero, x) = \(Value.add(Value.zero, sample)), expected x"
-            }
-        )
+        property: { sample in Value.add(Value.zero, sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); add(.zero, x) = \(Value.add(Value.zero, sample)), expected x"
+        }
     )
 }
 
@@ -140,17 +120,14 @@ private func checkAddRightIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.addRightIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Ring.addRightIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.add(sample, Value.zero) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); add(x, .zero) = \(Value.add(sample, Value.zero)), expected x"
-            }
-        )
+        property: { sample in Value.add(sample, Value.zero) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); add(x, .zero) = \(Value.add(sample, Value.zero)), expected x"
+        }
     )
 }
 
@@ -161,18 +138,15 @@ private func checkAddLeftInverse<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.addLeftInverse",
-        tier: .strict,
+    await runUnaryLaw(
+        "Ring.addLeftInverse",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.add(Value.negate(sample), sample) == Value.zero },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); add(negate(x), x) = "
-                    + "\(Value.add(Value.negate(sample), sample)), expected .zero"
-            }
-        )
+        property: { sample in Value.add(Value.negate(sample), sample) == Value.zero },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); add(negate(x), x) = "
+                + "\(Value.add(Value.negate(sample), sample)), expected .zero"
+        }
     )
 }
 
@@ -183,18 +157,15 @@ private func checkAddRightInverse<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.addRightInverse",
-        tier: .strict,
+    await runUnaryLaw(
+        "Ring.addRightInverse",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.add(sample, Value.negate(sample)) == Value.zero },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); add(x, negate(x)) = "
-                    + "\(Value.add(sample, Value.negate(sample))), expected .zero"
-            }
-        )
+        property: { sample in Value.add(sample, Value.negate(sample)) == Value.zero },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); add(x, negate(x)) = "
+                + "\(Value.add(sample, Value.negate(sample))), expected .zero"
+        }
     )
 }
 
@@ -207,30 +178,21 @@ private func checkMultiplyAssociativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.multiplyAssociativity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Ring.multiplyAssociativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (first, second, third) = input
-                return Value.multiply(Value.multiply(first, second), third)
-                    == Value.multiply(first, Value.multiply(second, third))
-            },
-            formatCounterexample: { input, _ in
-                let (first, second, third) = input
-                let lhs = Value.multiply(Value.multiply(first, second), third)
-                let rhs = Value.multiply(first, Value.multiply(second, third))
-                return "x = \(first), y = \(second), z = \(third); "
-                    + "multiply(multiply(x, y), z) = \(lhs), "
-                    + "multiply(x, multiply(y, z)) = \(rhs)"
-            }
-        )
+        property: { first, second, third in
+            Value.multiply(Value.multiply(first, second), third)
+                == Value.multiply(first, Value.multiply(second, third))
+        },
+        formatCounterexample: { first, second, third, _ in
+            let lhs = Value.multiply(Value.multiply(first, second), third)
+            let rhs = Value.multiply(first, Value.multiply(second, third))
+            return "x = \(first), y = \(second), z = \(third); "
+                + "multiply(multiply(x, y), z) = \(lhs), "
+                + "multiply(x, multiply(y, z)) = \(rhs)"
+        }
     )
 }
 
@@ -241,18 +203,15 @@ private func checkMultiplyLeftIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.multiplyLeftIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Ring.multiplyLeftIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.multiply(Value.one, sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); multiply(.one, x) = "
-                    + "\(Value.multiply(Value.one, sample)), expected x"
-            }
-        )
+        property: { sample in Value.multiply(Value.one, sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); multiply(.one, x) = "
+                + "\(Value.multiply(Value.one, sample)), expected x"
+        }
     )
 }
 
@@ -263,18 +222,15 @@ private func checkMultiplyRightIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.multiplyRightIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Ring.multiplyRightIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.multiply(sample, Value.one) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); multiply(x, .one) = "
-                    + "\(Value.multiply(sample, Value.one)), expected x"
-            }
-        )
+        property: { sample in Value.multiply(sample, Value.one) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); multiply(x, .one) = "
+                + "\(Value.multiply(sample, Value.one)), expected x"
+        }
     )
 }
 
@@ -287,30 +243,21 @@ private func checkLeftDistributivity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.leftDistributivity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Ring.leftDistributivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (first, second, third) = input
-                return Value.multiply(first, Value.add(second, third))
-                    == Value.add(Value.multiply(first, second), Value.multiply(first, third))
-            },
-            formatCounterexample: { input, _ in
-                let (first, second, third) = input
-                let lhs = Value.multiply(first, Value.add(second, third))
-                let rhs = Value.add(Value.multiply(first, second), Value.multiply(first, third))
-                return "x = \(first), y = \(second), z = \(third); "
-                    + "multiply(x, add(y, z)) = \(lhs), "
-                    + "add(multiply(x, y), multiply(x, z)) = \(rhs)"
-            }
-        )
+        property: { first, second, third in
+            Value.multiply(first, Value.add(second, third))
+                == Value.add(Value.multiply(first, second), Value.multiply(first, third))
+        },
+        formatCounterexample: { first, second, third, _ in
+            let lhs = Value.multiply(first, Value.add(second, third))
+            let rhs = Value.add(Value.multiply(first, second), Value.multiply(first, third))
+            return "x = \(first), y = \(second), z = \(third); "
+                + "multiply(x, add(y, z)) = \(lhs), "
+                + "add(multiply(x, y), multiply(x, z)) = \(rhs)"
+        }
     )
 }
 
@@ -321,29 +268,20 @@ private func checkRightDistributivity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Ring.rightDistributivity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Ring.rightDistributivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (first, second, third) = input
-                return Value.multiply(Value.add(first, second), third)
-                    == Value.add(Value.multiply(first, third), Value.multiply(second, third))
-            },
-            formatCounterexample: { input, _ in
-                let (first, second, third) = input
-                let lhs = Value.multiply(Value.add(first, second), third)
-                let rhs = Value.add(Value.multiply(first, third), Value.multiply(second, third))
-                return "x = \(first), y = \(second), z = \(third); "
-                    + "multiply(add(x, y), z) = \(lhs), "
-                    + "add(multiply(x, z), multiply(y, z)) = \(rhs)"
-            }
-        )
+        property: { first, second, third in
+            Value.multiply(Value.add(first, second), third)
+                == Value.add(Value.multiply(first, third), Value.multiply(second, third))
+        },
+        formatCounterexample: { first, second, third, _ in
+            let lhs = Value.multiply(Value.add(first, second), third)
+            let rhs = Value.add(Value.multiply(first, third), Value.multiply(second, third))
+            return "x = \(first), y = \(second), z = \(third); "
+                + "multiply(add(x, y), z) = \(lhs), "
+                + "add(multiply(x, z), multiply(y, z)) = \(rhs)"
+        }
     )
 }

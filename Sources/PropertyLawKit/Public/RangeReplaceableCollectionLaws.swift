@@ -62,20 +62,17 @@ private func checkEmptyInitIsEmpty<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "RangeReplaceableCollection.emptyInitIsEmpty",
-        tier: .strict,
+    await runUnaryLaw(
+        "RangeReplaceableCollection.emptyInitIsEmpty",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { _ in
-                let empty = C()
-                return empty.isEmpty
-            },
-            formatCounterexample: { _, _ in
-                "Self() reported isEmpty = \(C().isEmpty), expected true"
-            }
-        )
+        property: { _ in
+            let empty = C()
+            return empty.isEmpty
+        },
+        formatCounterexample: { _, _ in
+            "Self() reported isEmpty = \(C().isEmpty), expected true"
+        }
     )
 }
 
@@ -87,17 +84,14 @@ private func checkRemoveAtInsertRoundTrip<
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "RangeReplaceableCollection.removeAtInsertRoundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "RangeReplaceableCollection.removeAtInsertRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in removeInsertCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                removeInsertCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in removeInsertCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            removeInsertCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -109,24 +103,21 @@ private func checkRemoveAllMakesEmpty<
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "RangeReplaceableCollection.removeAllMakesEmpty",
-        tier: .strict,
+    await runUnaryLaw(
+        "RangeReplaceableCollection.removeAllMakesEmpty",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                var copy = sample
-                copy.removeAll()
-                return copy.isEmpty
-            },
-            formatCounterexample: { sample, _ in
-                var copy = sample
-                copy.removeAll()
-                return "removeAll() on \(Array(sample.prefix(8)))… left "
-                    + "\(Array(copy.prefix(8)))…, expected empty"
-            }
-        )
+        property: { sample in
+            var copy = sample
+            copy.removeAll()
+            return copy.isEmpty
+        },
+        formatCounterexample: { sample, _ in
+            var copy = sample
+            copy.removeAll()
+            return "removeAll() on \(Array(sample.prefix(8)))… left "
+                + "\(Array(copy.prefix(8)))…, expected empty"
+        }
     )
 }
 
@@ -138,32 +129,29 @@ private func checkReplaceSubrangeAppliesEdit<
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "RangeReplaceableCollection.replaceSubrangeAppliesEdit",
-        tier: .strict,
+    await runUnaryLaw(
+        "RangeReplaceableCollection.replaceSubrangeAppliesEdit",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                if sample.isEmpty { return true }
-                var copy = sample
-                copy.replaceSubrange(
-                    copy.startIndex..<copy.endIndex,
-                    with: EmptyCollection<C.Element>()
-                )
-                return copy.isEmpty
-            },
-            formatCounterexample: { sample, _ in
-                var copy = sample
-                copy.replaceSubrange(
-                    copy.startIndex..<copy.endIndex,
-                    with: EmptyCollection<C.Element>()
-                )
-                return "replaceSubrange(0..<count, with: <empty>) on "
-                    + "\(Array(sample).prefix(8))… left \(Array(copy).prefix(8))…, "
-                    + "expected empty"
-            }
-        )
+        property: { sample in
+            if sample.isEmpty { return true }
+            var copy = sample
+            copy.replaceSubrange(
+                copy.startIndex..<copy.endIndex,
+                with: EmptyCollection<C.Element>()
+            )
+            return copy.isEmpty
+        },
+        formatCounterexample: { sample, _ in
+            var copy = sample
+            copy.replaceSubrange(
+                copy.startIndex..<copy.endIndex,
+                with: EmptyCollection<C.Element>()
+            )
+            return "replaceSubrange(0..<count, with: <empty>) on "
+                + "\(Array(sample).prefix(8))… left \(Array(copy).prefix(8))…, "
+                + "expected empty"
+        }
     )
 }
 

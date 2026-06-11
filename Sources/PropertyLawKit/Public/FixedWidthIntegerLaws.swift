@@ -67,18 +67,15 @@ private func checkBitWidthMatchesType<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.bitWidthMatchesType",
-        tier: .strict,
+    await runUnaryLaw(
+        "FixedWidthInteger.bitWidthMatchesType",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.bitWidth == Value.bitWidth },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.bitWidth = \(sample.bitWidth), "
-                    + "Self.bitWidth = \(Value.bitWidth)"
-            }
-        )
+        property: { sample in sample.bitWidth == Value.bitWidth },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.bitWidth = \(sample.bitWidth), "
+                + "Self.bitWidth = \(Value.bitWidth)"
+        }
     )
 }
 
@@ -91,25 +88,20 @@ private func checkAddingReportingOverflowConsistency<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.addingReportingOverflowConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "FixedWidthInteger.addingReportingOverflowConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (lhs, rhs) = input
-                let pair = lhs.addingReportingOverflow(rhs)
-                return pair.partialValue == lhs &+ rhs
-            },
-            formatCounterexample: { input, _ in
-                let (lhs, rhs) = input
-                let pair = lhs.addingReportingOverflow(rhs)
-                return "x = \(lhs), y = \(rhs); "
-                    + "addingReportingOverflow.partialValue = \(pair.partialValue), "
-                    + "x &+ y = \(lhs &+ rhs)"
-            }
-        )
+        property: { lhs, rhs in
+            let pair = lhs.addingReportingOverflow(rhs)
+            return pair.partialValue == lhs &+ rhs
+        },
+        formatCounterexample: { lhs, rhs, _ in
+            let pair = lhs.addingReportingOverflow(rhs)
+            return "x = \(lhs), y = \(rhs); "
+                + "addingReportingOverflow.partialValue = \(pair.partialValue), "
+                + "x &+ y = \(lhs &+ rhs)"
+        }
     )
 }
 
@@ -120,25 +112,20 @@ private func checkSubtractingReportingOverflowConsistency<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.subtractingReportingOverflowConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "FixedWidthInteger.subtractingReportingOverflowConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (lhs, rhs) = input
-                let pair = lhs.subtractingReportingOverflow(rhs)
-                return pair.partialValue == lhs &- rhs
-            },
-            formatCounterexample: { input, _ in
-                let (lhs, rhs) = input
-                let pair = lhs.subtractingReportingOverflow(rhs)
-                return "x = \(lhs), y = \(rhs); "
-                    + "subtractingReportingOverflow.partialValue = \(pair.partialValue), "
-                    + "x &- y = \(lhs &- rhs)"
-            }
-        )
+        property: { lhs, rhs in
+            let pair = lhs.subtractingReportingOverflow(rhs)
+            return pair.partialValue == lhs &- rhs
+        },
+        formatCounterexample: { lhs, rhs, _ in
+            let pair = lhs.subtractingReportingOverflow(rhs)
+            return "x = \(lhs), y = \(rhs); "
+                + "subtractingReportingOverflow.partialValue = \(pair.partialValue), "
+                + "x &- y = \(lhs &- rhs)"
+        }
     )
 }
 
@@ -149,25 +136,20 @@ private func checkMultipliedReportingOverflowConsistency<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.multipliedReportingOverflowConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "FixedWidthInteger.multipliedReportingOverflowConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (lhs, rhs) = input
-                let pair = lhs.multipliedReportingOverflow(by: rhs)
-                return pair.partialValue == lhs &* rhs
-            },
-            formatCounterexample: { input, _ in
-                let (lhs, rhs) = input
-                let pair = lhs.multipliedReportingOverflow(by: rhs)
-                return "x = \(lhs), y = \(rhs); "
-                    + "multipliedReportingOverflow.partialValue = \(pair.partialValue), "
-                    + "x &* y = \(lhs &* rhs)"
-            }
-        )
+        property: { lhs, rhs in
+            let pair = lhs.multipliedReportingOverflow(by: rhs)
+            return pair.partialValue == lhs &* rhs
+        },
+        formatCounterexample: { lhs, rhs, _ in
+            let pair = lhs.multipliedReportingOverflow(by: rhs)
+            return "x = \(lhs), y = \(rhs); "
+                + "multipliedReportingOverflow.partialValue = \(pair.partialValue), "
+                + "x &* y = \(lhs &* rhs)"
+        }
     )
 }
 
@@ -178,22 +160,19 @@ private func checkDividedReportingOverflowOnDivByZero<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.dividedReportingOverflowOnDivByZero",
-        tier: .strict,
+    await runUnaryLaw(
+        "FixedWidthInteger.dividedReportingOverflowOnDivByZero",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let pair = sample.dividedReportingOverflow(by: 0)
-                return pair.overflow == true
-            },
-            formatCounterexample: { sample, _ in
-                let pair = sample.dividedReportingOverflow(by: 0)
-                return "x = \(sample); x.dividedReportingOverflow(by: 0) = \(pair); "
-                    + "expected overflow == true"
-            }
-        )
+        property: { sample in
+            let pair = sample.dividedReportingOverflow(by: 0)
+            return pair.overflow == true
+        },
+        formatCounterexample: { sample, _ in
+            let pair = sample.dividedReportingOverflow(by: 0)
+            return "x = \(sample); x.dividedReportingOverflow(by: 0) = \(pair); "
+                + "expected overflow == true"
+        }
     )
 }
 
@@ -206,24 +185,19 @@ private func checkWrappingArithmeticDoesNotTrap<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.wrappingArithmeticDoesNotTrap",
-        tier: .strict,
+    await runBinaryLaw(
+        "FixedWidthInteger.wrappingArithmeticDoesNotTrap",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (lhs, rhs) = input
-                _ = lhs &+ rhs
-                _ = lhs &- rhs
-                _ = lhs &* rhs
-                return true
-            },
-            formatCounterexample: { input, _ in
-                let (lhs, rhs) = input
-                return "x = \(lhs), y = \(rhs); &+ &- &* should not trap"
-            }
-        )
+        property: { lhs, rhs in
+            _ = lhs &+ rhs
+            _ = lhs &- rhs
+            _ = lhs &* rhs
+            return true
+        },
+        formatCounterexample: { lhs, rhs, _ in
+            "x = \(lhs), y = \(rhs); &+ &- &* should not trap"
+        }
     )
 }
 
@@ -234,18 +208,15 @@ private func checkMinMaxBoundsAreReachable<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.minMaxBoundsAreReachable",
-        tier: .strict,
+    await runUnaryLaw(
+        "FixedWidthInteger.minMaxBoundsAreReachable",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in Value.min <= sample && sample <= Value.max },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); Value.min = \(Value.min), Value.max = \(Value.max); "
-                    + "expected min <= x <= max"
-            }
-        )
+        property: { sample in Value.min <= sample && sample <= Value.max },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); Value.min = \(Value.min), Value.max = \(Value.max); "
+                + "expected min <= x <= max"
+        }
     )
 }
 
@@ -258,18 +229,15 @@ private func checkByteSwappedInvolution<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.byteSwappedInvolution",
-        tier: .strict,
+    await runUnaryLaw(
+        "FixedWidthInteger.byteSwappedInvolution",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.byteSwapped.byteSwapped == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.byteSwapped.byteSwapped = "
-                    + "\(sample.byteSwapped.byteSwapped), expected x"
-            }
-        )
+        property: { sample in sample.byteSwapped.byteSwapped == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.byteSwapped.byteSwapped = "
+                + "\(sample.byteSwapped.byteSwapped), expected x"
+        }
     )
 }
 
@@ -282,20 +250,17 @@ private func checkNonzeroBitCountRange<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FixedWidthInteger.nonzeroBitCountRange",
-        tier: .strict,
+    await runUnaryLaw(
+        "FixedWidthInteger.nonzeroBitCountRange",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let count = sample.nonzeroBitCount
-                return count >= 0 && count <= sample.bitWidth
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); nonzeroBitCount = \(sample.nonzeroBitCount), "
-                    + "bitWidth = \(sample.bitWidth)"
-            }
-        )
+        property: { sample in
+            let count = sample.nonzeroBitCount
+            return count >= 0 && count <= sample.bitWidth
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); nonzeroBitCount = \(sample.nonzeroBitCount), "
+                + "bitWidth = \(sample.bitWidth)"
+        }
     )
 }

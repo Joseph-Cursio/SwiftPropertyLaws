@@ -58,18 +58,15 @@ private func checkNegationInvolution<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SignedNumeric.negationInvolution",
-        tier: .strict,
+    await runUnaryLaw(
+        "SignedNumeric.negationInvolution",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in -(-sample) == sample },
-            formatCounterexample: { sample, _ in
-                let doubled = -(-sample)
-                return "x = \(sample); -(-x) = \(doubled), expected x"
-            }
-        )
+        property: { sample in -(-sample) == sample },
+        formatCounterexample: { sample, _ in
+            let doubled = -(-sample)
+            return "x = \(sample); -(-x) = \(doubled), expected x"
+        }
     )
 }
 
@@ -80,18 +77,15 @@ private func checkAdditiveInverse<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SignedNumeric.additiveInverse",
-        tier: .strict,
+    await runUnaryLaw(
+        "SignedNumeric.additiveInverse",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample + (-sample) == .zero },
-            formatCounterexample: { sample, _ in
-                let sum = sample + (-sample)
-                return "x = \(sample); x + (-x) = \(sum), expected .zero"
-            }
-        )
+        property: { sample in sample + (-sample) == .zero },
+        formatCounterexample: { sample, _ in
+            let sum = sample + (-sample)
+            return "x = \(sample); x + (-x) = \(sum), expected .zero"
+        }
     )
 }
 
@@ -102,24 +96,19 @@ private func checkNegationDistributesOverAddition<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SignedNumeric.negationDistributesOverAddition",
-        tier: .strict,
+    await runBinaryLaw(
+        "SignedNumeric.negationDistributesOverAddition",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return -(first + second) == (-first) + (-second)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                let lhs = -(first + second)
-                let rhs = (-first) + (-second)
-                return "x = \(first), y = \(second); "
-                    + "-(x + y) = \(lhs), (-x) + (-y) = \(rhs)"
-            }
-        )
+        property: { first, second in
+            -(first + second) == (-first) + (-second)
+        },
+        formatCounterexample: { first, second, _ in
+            let lhs = -(first + second)
+            let rhs = (-first) + (-second)
+            return "x = \(first), y = \(second); "
+                + "-(x + y) = \(lhs), (-x) + (-y) = \(rhs)"
+        }
     )
 }
 
@@ -130,23 +119,20 @@ private func checkNegateMutationConsistency<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SignedNumeric.negateMutationConsistency",
-        tier: .strict,
+    await runUnaryLaw(
+        "SignedNumeric.negateMutationConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                var mutated = sample
-                mutated.negate()
-                return mutated == -sample
-            },
-            formatCounterexample: { sample, _ in
-                var mutated = sample
-                mutated.negate()
-                return "x = \(sample); var y = x; y.negate() ⇒ y = \(mutated), "
-                    + "expected -x = \(-sample)"
-            }
-        )
+        property: { sample in
+            var mutated = sample
+            mutated.negate()
+            return mutated == -sample
+        },
+        formatCounterexample: { sample, _ in
+            var mutated = sample
+            mutated.negate()
+            return "x = \(sample); var y = x; y.negate() ⇒ y = \(mutated), "
+                + "expected -x = \(-sample)"
+        }
     )
 }

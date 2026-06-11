@@ -40,21 +40,16 @@ private func checkAntisymmetry<Value: Comparable & Sendable, Shrinker: SendableS
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Comparable.antisymmetry",
-        tier: .strict,
+    await runBinaryLaw(
+        "Comparable.antisymmetry",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return !(first <= second && second <= first) || (first == second)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); x <= y and y <= x but x != y"
-            }
-        )
+        property: { first, second in
+            !(first <= second && second <= first) || (first == second)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); x <= y and y <= x but x != y"
+        }
     )
 }
 
@@ -62,24 +57,17 @@ private func checkTransitivity<Value: Comparable & Sendable, Shrinker: SendableS
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Comparable.transitivity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Comparable.transitivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in
-                (generator.run(using: &rng), generator.run(using: &rng), generator.run(using: &rng))
-            },
-            property: { input in
-                let (first, second, third) = input
-                return !(first <= second && second <= third) || (first <= third)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second, third) = input
-                return "x = \(first), y = \(second), z = \(third); "
-                    + "x <= y and y <= z but !(x <= z)"
-            }
-        )
+        property: { first, second, third in
+            !(first <= second && second <= third) || (first <= third)
+        },
+        formatCounterexample: { first, second, third, _ in
+            "x = \(first), y = \(second), z = \(third); "
+                + "x <= y and y <= z but !(x <= z)"
+        }
     )
 }
 
@@ -87,21 +75,17 @@ private func checkTotality<Value: Comparable & Sendable, Shrinker: SendableSeque
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Comparable.totality",
+    await runBinaryLaw(
+        "Comparable.totality",
         tier: .conventional,
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first <= second || second <= first
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); neither x <= y nor y <= x (NaN-like)"
-            }
-        )
+        property: { first, second in
+            first <= second || second <= first
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); neither x <= y nor y <= x (NaN-like)"
+        }
     )
 }
 
@@ -115,17 +99,16 @@ private func checkOperatorConsistency<Value: Comparable & Sendable, Shrinker: Se
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Comparable.operatorConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "Comparable.operatorConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in operatorConsistencyCounterexample(for: input) == nil },
-            formatCounterexample: { input, _ in
-                operatorConsistencyCounterexample(for: input) ?? "<no counterexample>"
-            }
-        )
+        property: { first, second in
+            operatorConsistencyCounterexample(for: (first, second)) == nil
+        },
+        formatCounterexample: { first, second, _ in
+            operatorConsistencyCounterexample(for: (first, second)) ?? "<no counterexample>"
+        }
     )
 }
 

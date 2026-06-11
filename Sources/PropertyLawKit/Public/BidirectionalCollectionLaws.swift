@@ -54,17 +54,14 @@ private func checkIndexBeforeAfter<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BidirectionalCollection.indexBeforeAfterRoundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "BidirectionalCollection.indexBeforeAfterRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in indexBeforeAfterCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                indexBeforeAfterCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in indexBeforeAfterCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            indexBeforeAfterCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -75,17 +72,14 @@ private func checkIndexAfterBefore<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BidirectionalCollection.indexAfterBeforeRoundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "BidirectionalCollection.indexAfterBeforeRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in indexAfterBeforeCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                indexAfterBeforeCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in indexAfterBeforeCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            indexAfterBeforeCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -96,17 +90,14 @@ private func checkReverseTraversal<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BidirectionalCollection.reverseTraversalConsistency",
-        tier: .strict,
+    await runUnaryLaw(
+        "BidirectionalCollection.reverseTraversalConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in reverseTraversalCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                reverseTraversalCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in reverseTraversalCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            reverseTraversalCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 

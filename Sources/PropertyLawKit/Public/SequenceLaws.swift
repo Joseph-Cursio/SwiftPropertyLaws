@@ -58,17 +58,14 @@ private func checkUnderestimated<S: Sequence & Sendable, Sh: SendableSequenceTyp
     options: LawCheckOptions
 ) async -> CheckResult
 where S.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "Sequence.underestimatedCountLowerBound",
-        tier: .strict,
+    await runUnaryLaw(
+        "Sequence.underestimatedCountLowerBound",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in underestimatedCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                underestimatedCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in underestimatedCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            underestimatedCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -77,17 +74,15 @@ private func checkMultiPass<S: Sequence & Sendable, Sh: SendableSequenceType>(
     options: LawCheckOptions
 ) async -> CheckResult
 where S.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "Sequence.multiPassConsistency",
+    await runUnaryLaw(
+        "Sequence.multiPassConsistency",
         tier: .conventional,
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in multiPassCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                multiPassCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in multiPassCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            multiPassCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -96,17 +91,15 @@ private func checkIndependence<S: Sequence & Sendable, Sh: SendableSequenceType>
     options: LawCheckOptions
 ) async -> CheckResult
 where S.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "Sequence.makeIteratorIndependence",
+    await runUnaryLaw(
+        "Sequence.makeIteratorIndependence",
         tier: .conventional,
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in independenceCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                independenceCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in independenceCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            independenceCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 

@@ -51,20 +51,17 @@ private func checkCombineLeftInverse<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Group.combineLeftInverse",
-        tier: .strict,
+    await runUnaryLaw(
+        "Group.combineLeftInverse",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                Value.combine(Value.inverse(sample), sample) == Value.identity
-            },
-            formatCounterexample: { sample, _ in
-                let actual = Value.combine(Value.inverse(sample), sample)
-                return "x = \(sample); combine(inverse(x), x) = \(actual), expected .identity"
-            }
-        )
+        property: { sample in
+            Value.combine(Value.inverse(sample), sample) == Value.identity
+        },
+        formatCounterexample: { sample, _ in
+            let actual = Value.combine(Value.inverse(sample), sample)
+            return "x = \(sample); combine(inverse(x), x) = \(actual), expected .identity"
+        }
     )
 }
 
@@ -75,19 +72,16 @@ private func checkCombineRightInverse<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Group.combineRightInverse",
-        tier: .strict,
+    await runUnaryLaw(
+        "Group.combineRightInverse",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                Value.combine(sample, Value.inverse(sample)) == Value.identity
-            },
-            formatCounterexample: { sample, _ in
-                let actual = Value.combine(sample, Value.inverse(sample))
-                return "x = \(sample); combine(x, inverse(x)) = \(actual), expected .identity"
-            }
-        )
+        property: { sample in
+            Value.combine(sample, Value.inverse(sample)) == Value.identity
+        },
+        formatCounterexample: { sample, _ in
+            let actual = Value.combine(sample, Value.inverse(sample))
+            return "x = \(sample); combine(x, inverse(x)) = \(actual), expected .identity"
+        }
     )
 }

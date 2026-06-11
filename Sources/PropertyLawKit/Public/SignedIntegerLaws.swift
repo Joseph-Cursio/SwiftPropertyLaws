@@ -59,22 +59,19 @@ private func checkSignednessConsistency<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SignedInteger.signednessConsistency",
-        tier: .strict,
+    await runUnaryLaw(
+        "SignedInteger.signednessConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let signum = sample.signum()
-                if sample > 0 { return signum == 1 }
-                if sample < 0 { return signum == -1 }
-                return signum == 0
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.signum() = \(sample.signum()); "
-                    + "x ⋚ 0 ⇒ signum should be 1/0/-1"
-            }
-        )
+        property: { sample in
+            let signum = sample.signum()
+            if sample > 0 { return signum == 1 }
+            if sample < 0 { return signum == -1 }
+            return signum == 0
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.signum() = \(sample.signum()); "
+                + "x ⋚ 0 ⇒ signum should be 1/0/-1"
+        }
     )
 }

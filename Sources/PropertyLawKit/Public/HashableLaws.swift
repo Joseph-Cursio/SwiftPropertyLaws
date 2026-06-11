@@ -47,22 +47,17 @@ private func checkEqualityConsistency<Value: Hashable & Sendable, Shrinker: Send
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Hashable.equalityConsistency",
-        tier: .strict,
+    await runBinaryLaw(
+        "Hashable.equalityConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return !(first == second) || (first.hashValue == second.hashValue)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); x == y but hashValues differ "
-                    + "(\(first.hashValue) vs \(second.hashValue))"
-            }
-        )
+        property: { first, second in
+            !(first == second) || (first.hashValue == second.hashValue)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); x == y but hashValues differ "
+                + "(\(first.hashValue) vs \(second.hashValue))"
+        }
     )
 }
 
@@ -77,19 +72,17 @@ private func checkStabilityWithinProcess<Value: Hashable & Sendable, Shrinker: S
     } else {
         classify = nil
     }
-    return await PerLawDriver.run(
-        protocolLaw: "Hashable.stabilityWithinProcess",
+    return await runUnaryLaw(
+        "Hashable.stabilityWithinProcess",
         tier: .conventional,
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.hashValue == sample.hashValue },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); hashValue returned \(sample.hashValue) "
-                    + "then \(sample.hashValue) within the same process"
-            }
-        ),
-        observation: PerLawDriver.Observation(classify: classify)
+        observation: PerLawDriver.Observation(classify: classify),
+        property: { sample in sample.hashValue == sample.hashValue },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); hashValue returned \(sample.hashValue) "
+                + "then \(sample.hashValue) within the same process"
+        }
     )
 }
 

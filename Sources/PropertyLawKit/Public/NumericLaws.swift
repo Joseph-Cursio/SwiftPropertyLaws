@@ -62,28 +62,19 @@ private func checkMultiplicationAssociativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Numeric.multiplicationAssociativity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Numeric.multiplicationAssociativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two, three) = input
-                return (one * two) * three == one * (two * three)
-            },
-            formatCounterexample: { input, _ in
-                let (one, two, three) = input
-                let lhs = (one * two) * three
-                let rhs = one * (two * three)
-                return "x = \(one), y = \(two), z = \(three); "
-                    + "(x * y) * z = \(lhs), x * (y * z) = \(rhs)"
-            }
-        )
+        property: { one, two, three in
+            (one * two) * three == one * (two * three)
+        },
+        formatCounterexample: { one, two, three, _ in
+            let lhs = (one * two) * three
+            let rhs = one * (two * three)
+            return "x = \(one), y = \(two), z = \(three); "
+                + "(x * y) * z = \(lhs), x * (y * z) = \(rhs)"
+        }
     )
 }
 
@@ -94,22 +85,17 @@ private func checkMultiplicationCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Numeric.multiplicationCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "Numeric.multiplicationCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first * second == second * first
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x * y = \(first * second), y * x = \(second * first)"
-            }
-        )
+        property: { first, second in
+            first * second == second * first
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x * y = \(first * second), y * x = \(second * first)"
+        }
     )
 }
 
@@ -120,17 +106,14 @@ private func checkOneMultiplicativeIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Numeric.oneMultiplicativeIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Numeric.oneMultiplicativeIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample * 1 == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x * 1 = \(sample * 1), expected x"
-            }
-        )
+        property: { sample in sample * 1 == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x * 1 = \(sample * 1), expected x"
+        }
     )
 }
 
@@ -141,17 +124,14 @@ private func checkZeroAnnihilation<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Numeric.zeroAnnihilation",
-        tier: .strict,
+    await runUnaryLaw(
+        "Numeric.zeroAnnihilation",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample * 0 == .zero },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x * 0 = \(sample * 0), expected .zero"
-            }
-        )
+        property: { sample in sample * 0 == .zero },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x * 0 = \(sample * 0), expected .zero"
+        }
     )
 }
 
@@ -162,28 +142,19 @@ private func checkLeftDistributivity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Numeric.leftDistributivity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Numeric.leftDistributivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two, three) = input
-                return one * (two + three) == one * two + one * three
-            },
-            formatCounterexample: { input, _ in
-                let (one, two, three) = input
-                let lhs = one * (two + three)
-                let rhs = one * two + one * three
-                return "x = \(one), y = \(two), z = \(three); "
-                    + "x * (y + z) = \(lhs), x*y + x*z = \(rhs)"
-            }
-        )
+        property: { one, two, three in
+            one * (two + three) == one * two + one * three
+        },
+        formatCounterexample: { one, two, three, _ in
+            let lhs = one * (two + three)
+            let rhs = one * two + one * three
+            return "x = \(one), y = \(two), z = \(three); "
+                + "x * (y + z) = \(lhs), x*y + x*z = \(rhs)"
+        }
     )
 }
 
@@ -194,27 +165,18 @@ private func checkRightDistributivity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Numeric.rightDistributivity",
-        tier: .strict,
+    await runTernaryLaw(
+        "Numeric.rightDistributivity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two, three) = input
-                return (one + two) * three == one * three + two * three
-            },
-            formatCounterexample: { input, _ in
-                let (one, two, three) = input
-                let lhs = (one + two) * three
-                let rhs = one * three + two * three
-                return "x = \(one), y = \(two), z = \(three); "
-                    + "(x + y) * z = \(lhs), x*z + y*z = \(rhs)"
-            }
-        )
+        property: { one, two, three in
+            (one + two) * three == one * three + two * three
+        },
+        formatCounterexample: { one, two, three, _ in
+            let lhs = (one + two) * three
+            let rhs = one * three + two * three
+            return "x = \(one), y = \(two), z = \(three); "
+                + "(x + y) * z = \(lhs), x*z + y*z = \(rhs)"
+        }
     )
 }

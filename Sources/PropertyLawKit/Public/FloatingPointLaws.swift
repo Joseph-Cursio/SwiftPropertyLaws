@@ -71,6 +71,7 @@ public func checkFloatingPointPropertyLaws<
 
 // MARK: - Always-on laws
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkInfinityIsInfinite<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -89,6 +90,7 @@ private func checkInfinityIsInfinite<Value: FloatingPoint & Sendable>(
     )
 }
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkNegativeInfinityComparison<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -107,6 +109,7 @@ private func checkNegativeInfinityComparison<Value: FloatingPoint & Sendable>(
     )
 }
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkZeroIsZero<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -125,6 +128,7 @@ private func checkZeroIsZero<Value: FloatingPoint & Sendable>(
     )
 }
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkSignedZeroEquality<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -143,6 +147,7 @@ private func checkSignedZeroEquality<Value: FloatingPoint & Sendable>(
     )
 }
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkRoundedZeroIdentity<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -168,21 +173,18 @@ private func checkAdditiveInverseFinite<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.additiveInverseFinite",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.additiveInverseFinite",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard sample.isFinite else { return true }
-                return sample + (-sample) == .zero
-            },
-            formatCounterexample: { sample, _ in
-                if !sample.isFinite { return "x = \(sample) (non-finite, skipped)" }
-                return "x = \(sample); x + (-x) = \(sample + (-sample)), expected .zero"
-            }
-        )
+        property: { sample in
+            guard sample.isFinite else { return true }
+            return sample + (-sample) == .zero
+        },
+        formatCounterexample: { sample, _ in
+            if !sample.isFinite { return "x = \(sample) (non-finite, skipped)" }
+            return "x = \(sample); x + (-x) = \(sample + (-sample)), expected .zero"
+        }
     )
 }
 
@@ -193,27 +195,24 @@ private func checkNextUpDownRoundTrip<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.nextUpDownRoundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.nextUpDownRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                // Skip non-finite, the two extreme finite values, and -0
-                // (whose nextDown is -leastNonzeroMagnitude — round-trip up
-                // does not return to -0 but to +0 in some implementations).
-                guard sample.isFinite,
-                      sample != Value.greatestFiniteMagnitude,
-                      sample != -Value.greatestFiniteMagnitude,
-                      !sample.isZero
-                else { return true }
-                return sample.nextUp.nextDown == sample
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.nextUp.nextDown = \(sample.nextUp.nextDown), expected x"
-            }
-        )
+        property: { sample in
+            // Skip non-finite, the two extreme finite values, and -0
+            // (whose nextDown is -leastNonzeroMagnitude — round-trip up
+            // does not return to -0 but to +0 in some implementations).
+            guard sample.isFinite,
+                  sample != Value.greatestFiniteMagnitude,
+                  sample != -Value.greatestFiniteMagnitude,
+                  !sample.isZero
+            else { return true }
+            return sample.nextUp.nextDown == sample
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.nextUp.nextDown = \(sample.nextUp.nextDown), expected x"
+        }
     )
 }
 
@@ -224,21 +223,18 @@ private func checkSignMatchesIsLessThanZero<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.signMatchesIsLessThanZero",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.signMatchesIsLessThanZero",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard sample.isFinite, !sample.isZero else { return true }
-                if sample < 0 { return sample.sign == .minus }
-                return sample.sign == .plus
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.sign = \(sample.sign), x < 0 = \(sample < 0)"
-            }
-        )
+        property: { sample in
+            guard sample.isFinite, !sample.isZero else { return true }
+            if sample < 0 { return sample.sign == .minus }
+            return sample.sign == .plus
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.sign = \(sample.sign), x < 0 = \(sample < 0)"
+        }
     )
 }
 
@@ -249,25 +245,23 @@ private func checkAbsoluteValueNonNegative<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.absoluteValueNonNegative",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.absoluteValueNonNegative",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard !sample.isNaN else { return true }
-                return sample.magnitude >= 0
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.magnitude = \(sample.magnitude), expected >= 0"
-            }
-        )
+        property: { sample in
+            guard !sample.isNaN else { return true }
+            return sample.magnitude >= 0
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.magnitude = \(sample.magnitude), expected >= 0"
+        }
     )
 }
 
 // MARK: - NaN-domain laws (gated by allowNaN)
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkNaNIsNaN<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -286,6 +280,7 @@ private func checkNaNIsNaN<Value: FloatingPoint & Sendable>(
     )
 }
 
+// Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkNaNInequality<Value: FloatingPoint & Sendable>(
     type: Value.Type,
     options: LawCheckOptions
@@ -315,17 +310,14 @@ private func checkNaNPropagatesAddition<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.nanPropagatesAddition",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.nanPropagatesAddition",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (Value.nan + sample).isNaN },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); (Value.nan + x) = \(Value.nan + sample), expected NaN"
-            }
-        )
+        property: { sample in (Value.nan + sample).isNaN },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); (Value.nan + x) = \(Value.nan + sample), expected NaN"
+        }
     )
 }
 
@@ -336,17 +328,14 @@ private func checkNaNPropagatesMultiplication<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.nanPropagatesMultiplication",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.nanPropagatesMultiplication",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in (Value.nan * sample).isNaN },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); (Value.nan * x) = \(Value.nan * sample), expected NaN"
-            }
-        )
+        property: { sample in (Value.nan * sample).isNaN },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); (Value.nan * x) = \(Value.nan * sample), expected NaN"
+        }
     )
 }
 
@@ -357,19 +346,16 @@ private func checkNaNComparisonIsUnordered<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "FloatingPoint.nanComparisonIsUnordered",
-        tier: .strict,
+    await runUnaryLaw(
+        "FloatingPoint.nanComparisonIsUnordered",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let nanValue = Value.nan
-                return !(nanValue < sample) && !(nanValue > sample) && !(nanValue == sample)
-            },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); NaN < x or NaN > x or NaN == x returned true"
-            }
-        )
+        property: { sample in
+            let nanValue = Value.nan
+            return !(nanValue < sample) && !(nanValue > sample) && !(nanValue == sample)
+        },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); NaN < x or NaN > x or NaN == x returned true"
+        }
     )
 }

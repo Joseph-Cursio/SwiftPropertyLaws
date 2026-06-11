@@ -57,17 +57,14 @@ private func checkSwapAtSwapsValues<
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "MutableCollection.swapAtSwapsValues",
-        tier: .strict,
+    await runUnaryLaw(
+        "MutableCollection.swapAtSwapsValues",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in swapAtSwapsValuesCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                swapAtSwapsValuesCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in swapAtSwapsValuesCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            swapAtSwapsValuesCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -79,17 +76,14 @@ private func checkSwapAtInvolution<
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "MutableCollection.swapAtInvolution",
-        tier: .strict,
+    await runUnaryLaw(
+        "MutableCollection.swapAtInvolution",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in swapAtInvolutionCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                swapAtInvolutionCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in swapAtInvolutionCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            swapAtInvolutionCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 

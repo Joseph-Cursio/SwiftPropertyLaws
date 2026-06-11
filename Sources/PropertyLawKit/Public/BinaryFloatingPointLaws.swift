@@ -77,31 +77,28 @@ private func checkSignificandExponentReconstruction<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryFloatingPoint.significandExponentReconstruction",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryFloatingPoint.significandExponentReconstruction",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard sample.isFinite, !sample.isZero else { return true }
-                let reconstructed = Value(
-                    sign: sample.sign,
-                    exponent: sample.exponent,
-                    significand: sample.significand
-                )
-                return reconstructed == sample
-            },
-            formatCounterexample: { sample, _ in
-                let reconstructed = Value(
-                    sign: sample.sign,
-                    exponent: sample.exponent,
-                    significand: sample.significand
-                )
-                return "x = \(sample); Value(sign:, exponent:, significand:) = "
-                    + "\(reconstructed), expected x"
-            }
-        )
+        property: { sample in
+            guard sample.isFinite, !sample.isZero else { return true }
+            let reconstructed = Value(
+                sign: sample.sign,
+                exponent: sample.exponent,
+                significand: sample.significand
+            )
+            return reconstructed == sample
+        },
+        formatCounterexample: { sample, _ in
+            let reconstructed = Value(
+                sign: sample.sign,
+                exponent: sample.exponent,
+                significand: sample.significand
+            )
+            return "x = \(sample); Value(sign:, exponent:, significand:) = "
+                + "\(reconstructed), expected x"
+        }
     )
 }
 
@@ -112,30 +109,27 @@ private func checkBinadeMembership<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "BinaryFloatingPoint.binadeMembership",
-        tier: .strict,
+    await runUnaryLaw(
+        "BinaryFloatingPoint.binadeMembership",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard sample.isFinite, !sample.isZero, !sample.isSubnormal else { return true }
-                // `binade` carries the sign of the original value and is
-                // the largest power of two ≤ |x| in magnitude. The next
-                // binade up is `2 * |binade|` for normal floats. Both
-                // bounds use magnitude so the law holds for negative
-                // samples too.
-                let absoluteBinade = sample.binade.magnitude
-                let absoluteValue = sample.magnitude
-                let nextBinade = absoluteBinade * 2
-                return absoluteBinade <= absoluteValue && absoluteValue < nextBinade
-            },
-            formatCounterexample: { sample, _ in
-                let absoluteBinade = sample.binade.magnitude
-                return "x = \(sample); |binade| = \(absoluteBinade), |x| = \(sample.magnitude); "
-                    + "expected |binade| <= |x| < 2·|binade|"
-            }
-        )
+        property: { sample in
+            guard sample.isFinite, !sample.isZero, !sample.isSubnormal else { return true }
+            // `binade` carries the sign of the original value and is
+            // the largest power of two ≤ |x| in magnitude. The next
+            // binade up is `2 * |binade|` for normal floats. Both
+            // bounds use magnitude so the law holds for negative
+            // samples too.
+            let absoluteBinade = sample.binade.magnitude
+            let absoluteValue = sample.magnitude
+            let nextBinade = absoluteBinade * 2
+            return absoluteBinade <= absoluteValue && absoluteValue < nextBinade
+        },
+        formatCounterexample: { sample, _ in
+            let absoluteBinade = sample.binade.magnitude
+            return "x = \(sample); |binade| = \(absoluteBinade), |x| = \(sample.magnitude); "
+                + "expected |binade| <= |x| < 2·|binade|"
+        }
     )
 }
 

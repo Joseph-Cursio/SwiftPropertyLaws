@@ -56,17 +56,14 @@ private func checkDistanceConsistency<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "RandomAccessCollection.distanceConsistency",
-        tier: .strict,
+    await runUnaryLaw(
+        "RandomAccessCollection.distanceConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in distanceConsistencyCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                distanceConsistencyCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in distanceConsistencyCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            distanceConsistencyCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -77,17 +74,14 @@ private func checkOffsetConsistency<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "RandomAccessCollection.offsetConsistency",
-        tier: .strict,
+    await runUnaryLaw(
+        "RandomAccessCollection.offsetConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in offsetConsistencyCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                offsetConsistencyCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in offsetConsistencyCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            offsetConsistencyCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -98,17 +92,14 @@ private func checkNegativeOffsetInversion<
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "RandomAccessCollection.negativeOffsetInversion",
-        tier: .strict,
+    await runUnaryLaw(
+        "RandomAccessCollection.negativeOffsetInversion",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in negativeOffsetInversionCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                negativeOffsetInversionCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in negativeOffsetInversionCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            negativeOffsetInversionCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 

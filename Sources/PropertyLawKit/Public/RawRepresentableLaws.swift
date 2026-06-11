@@ -35,25 +35,22 @@ private func checkRoundTrip<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "RawRepresentable.roundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "RawRepresentable.roundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard let round = Value(rawValue: sample.rawValue) else { return false }
-                return round == sample
-            },
-            formatCounterexample: { sample, _ in
-                let raw = sample.rawValue
-                if let round = Value(rawValue: raw) {
-                    return "x = \(sample), x.rawValue = \(raw); "
-                        + "T(rawValue: x.rawValue) = \(round), expected x"
-                }
+        property: { sample in
+            guard let round = Value(rawValue: sample.rawValue) else { return false }
+            return round == sample
+        },
+        formatCounterexample: { sample, _ in
+            let raw = sample.rawValue
+            if let round = Value(rawValue: raw) {
                 return "x = \(sample), x.rawValue = \(raw); "
-                    + "T(rawValue: x.rawValue) returned nil"
+                    + "T(rawValue: x.rawValue) = \(round), expected x"
             }
-        )
+            return "x = \(sample), x.rawValue = \(raw); "
+                + "T(rawValue: x.rawValue) returned nil"
+        }
     )
 }

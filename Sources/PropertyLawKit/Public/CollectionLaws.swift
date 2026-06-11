@@ -56,27 +56,24 @@ private func checkCount<C: Collection & Sendable, Sh: SendableSequenceType>(
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
     let collector = NearMissCollector()
-    return await PerLawDriver.run(
-        protocolLaw: "Collection.countConsistency",
-        tier: .strict,
+    return await runUnaryLaw(
+        "Collection.countConsistency",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let detail = countDetail(for: sample)
-                if let detail, detail.isOffByOne {
-                    collector.record(
-                        "off-by-one: count = \(detail.reportedCount), "
-                            + "iterated = \(detail.iteratedCount) on \(sample)"
-                    )
-                }
-                return detail == nil
-            },
-            formatCounterexample: { sample, _ in
-                countDetail(for: sample)?.message ?? "<no counterexample>"
+        observation: PerLawDriver.Observation(nearMissCollector: collector),
+        property: { sample in
+            let detail = countDetail(for: sample)
+            if let detail, detail.isOffByOne {
+                collector.record(
+                    "off-by-one: count = \(detail.reportedCount), "
+                        + "iterated = \(detail.iteratedCount) on \(sample)"
+                )
             }
-        ),
-        observation: PerLawDriver.Observation(nearMissCollector: collector)
+            return detail == nil
+        },
+        formatCounterexample: { sample, _ in
+            countDetail(for: sample)?.message ?? "<no counterexample>"
+        }
     )
 }
 
@@ -85,17 +82,14 @@ private func checkIndexValidity<C: Collection & Sendable, Sh: SendableSequenceTy
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "Collection.indexValidity",
-        tier: .strict,
+    await runUnaryLaw(
+        "Collection.indexValidity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in indexValidityCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                indexValidityCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in indexValidityCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            indexValidityCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 
@@ -104,17 +98,15 @@ private func checkNonMutation<C: Collection & Sendable, Sh: SendableSequenceType
     options: LawCheckOptions
 ) async -> CheckResult
 where C.Element: Equatable & Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "Collection.nonMutation",
+    await runUnaryLaw(
+        "Collection.nonMutation",
         tier: .conventional,
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in nonMutationCounterexample(for: sample) == nil },
-            formatCounterexample: { sample, _ in
-                nonMutationCounterexample(for: sample) ?? "<no counterexample>"
-            }
-        )
+        property: { sample in nonMutationCounterexample(for: sample) == nil },
+        formatCounterexample: { sample, _ in
+            nonMutationCounterexample(for: sample) ?? "<no counterexample>"
+        }
     )
 }
 

@@ -37,18 +37,16 @@ private func checkIdStability<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult where Value.ID: Sendable {
-    await PerLawDriver.run(
-        protocolLaw: "Identifiable.idStability",
+    await runUnaryLaw(
+        "Identifiable.idStability",
         tier: .conventional,
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.id == sample.id },
-            formatCounterexample: { sample, _ in
-                let first = sample.id
-                let second = sample.id
-                return "x = \(sample); x.id evaluated twice: \(first) ≠ \(second)"
-            }
-        )
+        property: { sample in sample.id == sample.id },
+        formatCounterexample: { sample, _ in
+            let first = sample.id
+            let second = sample.id
+            return "x = \(sample); x.id evaluated twice: \(first) ≠ \(second)"
+        }
     )
 }

@@ -47,27 +47,19 @@ private func checkCombineCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "CommutativeMonoid.combineCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "CommutativeMonoid.combineCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (
-                generator.run(using: &rng),
-                generator.run(using: &rng)
-            ) },
-            property: { input in
-                let (one, two) = input
-                return Value.combine(one, two) == Value.combine(two, one)
-            },
-            formatCounterexample: { input, _ in
-                let (one, two) = input
-                let lhs = Value.combine(one, two)
-                let rhs = Value.combine(two, one)
-                return "x = \(one), y = \(two); "
-                    + "combine(x, y) = \(lhs), "
-                    + "combine(y, x) = \(rhs)"
-            }
-        )
+        property: { one, two in
+            Value.combine(one, two) == Value.combine(two, one)
+        },
+        formatCounterexample: { one, two, _ in
+            let lhs = Value.combine(one, two)
+            let rhs = Value.combine(two, one)
+            return "x = \(one), y = \(two); "
+                + "combine(x, y) = \(lhs), "
+                + "combine(y, x) = \(rhs)"
+        }
     )
 }

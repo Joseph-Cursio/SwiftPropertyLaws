@@ -37,25 +37,22 @@ private func checkRoundTrip<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "LosslessStringConvertible.roundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "LosslessStringConvertible.roundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                guard let round = Value(String(describing: sample)) else { return false }
-                return round == sample
-            },
-            formatCounterexample: { sample, _ in
-                let described = String(describing: sample)
-                if let round = Value(described) {
-                    return "x = \(sample), String(describing: x) = \"\(described)\"; "
-                        + "T(String(describing: x)) = \(round), expected x"
-                }
+        property: { sample in
+            guard let round = Value(String(describing: sample)) else { return false }
+            return round == sample
+        },
+        formatCounterexample: { sample, _ in
+            let described = String(describing: sample)
+            if let round = Value(described) {
                 return "x = \(sample), String(describing: x) = \"\(described)\"; "
-                    + "T(String(describing: x)) returned nil"
+                    + "T(String(describing: x)) = \(round), expected x"
             }
-        )
+            return "x = \(sample), String(describing: x) = \"\(described)\"; "
+                + "T(String(describing: x)) returned nil"
+        }
     )
 }

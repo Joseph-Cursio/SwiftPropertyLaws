@@ -57,17 +57,14 @@ private func checkUnionIdempotence<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.unionIdempotence",
-        tier: .strict,
+    await runUnaryLaw(
+        "SetAlgebra.unionIdempotence",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.union(sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.union(x) = \(sample.union(sample)), expected \(sample)"
-            }
-        )
+        property: { sample in sample.union(sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.union(x) = \(sample.union(sample)), expected \(sample)"
+        }
     )
 }
 
@@ -78,18 +75,15 @@ private func checkIntersectionIdempotence<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.intersectionIdempotence",
-        tier: .strict,
+    await runUnaryLaw(
+        "SetAlgebra.intersectionIdempotence",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.intersection(sample) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.intersection(x) = \(sample.intersection(sample)), "
-                    + "expected \(sample)"
-            }
-        )
+        property: { sample in sample.intersection(sample) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.intersection(x) = \(sample.intersection(sample)), "
+                + "expected \(sample)"
+        }
     )
 }
 
@@ -100,22 +94,17 @@ private func checkUnionCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.unionCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "SetAlgebra.unionCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first.union(second) == second.union(first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); x.union(y) = \(first.union(second)), "
-                    + "y.union(x) = \(second.union(first))"
-            }
-        )
+        property: { first, second in
+            first.union(second) == second.union(first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); x.union(y) = \(first.union(second)), "
+                + "y.union(x) = \(second.union(first))"
+        }
     )
 }
 
@@ -126,23 +115,18 @@ private func checkIntersectionCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.intersectionCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "SetAlgebra.intersectionCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first.intersection(second) == second.intersection(first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x.intersection(y) = \(first.intersection(second)), "
-                    + "y.intersection(x) = \(second.intersection(first))"
-            }
-        )
+        property: { first, second in
+            first.intersection(second) == second.intersection(first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x.intersection(y) = \(first.intersection(second)), "
+                + "y.intersection(x) = \(second.intersection(first))"
+        }
     )
 }
 
@@ -153,17 +137,14 @@ private func checkEmptyIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.emptyIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "SetAlgebra.emptyIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.union(Value()) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.union(Self()) = \(sample.union(Value())), expected \(sample)"
-            }
-        )
+        property: { sample in sample.union(Value()) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.union(Self()) = \(sample.union(Value())), expected \(sample)"
+        }
     )
 }
 
@@ -174,18 +155,15 @@ private func checkSymmetricDifferenceSelfIsEmpty<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.symmetricDifferenceSelfIsEmpty",
-        tier: .strict,
+    await runUnaryLaw(
+        "SetAlgebra.symmetricDifferenceSelfIsEmpty",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.symmetricDifference(sample) == Value() },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.symmetricDifference(x) = "
-                    + "\(sample.symmetricDifference(sample)), expected \(Value())"
-            }
-        )
+        property: { sample in sample.symmetricDifference(sample) == Value() },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.symmetricDifference(x) = "
+                + "\(sample.symmetricDifference(sample)), expected \(Value())"
+        }
     )
 }
 
@@ -196,18 +174,15 @@ private func checkSymmetricDifferenceEmptyIdentity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.symmetricDifferenceEmptyIdentity",
-        tier: .strict,
+    await runUnaryLaw(
+        "SetAlgebra.symmetricDifferenceEmptyIdentity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.symmetricDifference(Value()) == sample },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.symmetricDifference(Self()) = "
-                    + "\(sample.symmetricDifference(Value())), expected \(sample)"
-            }
-        )
+        property: { sample in sample.symmetricDifference(Value()) == sample },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.symmetricDifference(Self()) = "
+                + "\(sample.symmetricDifference(Value())), expected \(sample)"
+        }
     )
 }
 
@@ -218,23 +193,18 @@ private func checkSymmetricDifferenceCommutativity<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.symmetricDifferenceCommutativity",
-        tier: .strict,
+    await runBinaryLaw(
+        "SetAlgebra.symmetricDifferenceCommutativity",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                return first.symmetricDifference(second) == second.symmetricDifference(first)
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                return "x = \(first), y = \(second); "
-                    + "x.symmetricDifference(y) = \(first.symmetricDifference(second)), "
-                    + "y.symmetricDifference(x) = \(second.symmetricDifference(first))"
-            }
-        )
+        property: { first, second in
+            first.symmetricDifference(second) == second.symmetricDifference(first)
+        },
+        formatCounterexample: { first, second, _ in
+            "x = \(first), y = \(second); "
+                + "x.symmetricDifference(y) = \(first.symmetricDifference(second)), "
+                + "y.symmetricDifference(x) = \(second.symmetricDifference(first))"
+        }
     )
 }
 
@@ -245,26 +215,21 @@ private func checkSymmetricDifferenceDefinition<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "SetAlgebra.symmetricDifferenceDefinition",
-        tier: .strict,
+    await runBinaryLaw(
+        "SetAlgebra.symmetricDifferenceDefinition",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { input in
-                let (first, second) = input
-                let viaSymDiff = first.symmetricDifference(second)
-                let viaDefinition = first.union(second).subtracting(first.intersection(second))
-                return viaSymDiff == viaDefinition
-            },
-            formatCounterexample: { input, _ in
-                let (first, second) = input
-                let viaSymDiff = first.symmetricDifference(second)
-                let viaDefinition = first.union(second).subtracting(first.intersection(second))
-                return "x = \(first), y = \(second); "
-                    + "x.symmetricDifference(y) = \(viaSymDiff), "
-                    + "(x ∪ y) \\ (x ∩ y) = \(viaDefinition)"
-            }
-        )
+        property: { first, second in
+            let viaSymDiff = first.symmetricDifference(second)
+            let viaDefinition = first.union(second).subtracting(first.intersection(second))
+            return viaSymDiff == viaDefinition
+        },
+        formatCounterexample: { first, second, _ in
+            let viaSymDiff = first.symmetricDifference(second)
+            let viaDefinition = first.union(second).subtracting(first.intersection(second))
+            return "x = \(first), y = \(second); "
+                + "x.symmetricDifference(y) = \(viaSymDiff), "
+                + "(x ∪ y) \\ (x ∩ y) = \(viaDefinition)"
+        }
     )
 }

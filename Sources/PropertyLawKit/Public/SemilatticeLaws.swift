@@ -47,19 +47,16 @@ private func checkCombineIdempotence<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "Semilattice.combineIdempotence",
-        tier: .strict,
+    await runUnaryLaw(
+        "Semilattice.combineIdempotence",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                Value.combine(sample, sample) == sample
-            },
-            formatCounterexample: { sample, _ in
-                let actual = Value.combine(sample, sample)
-                return "x = \(sample); combine(x, x) = \(actual), expected x"
-            }
-        )
+        property: { sample in
+            Value.combine(sample, sample) == sample
+        },
+        formatCounterexample: { sample, _ in
+            let actual = Value.combine(sample, sample)
+            return "x = \(sample); combine(x, x) = \(actual), expected x"
+        }
     )
 }

@@ -62,24 +62,21 @@ private func checkStringInitRoundTrip<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.stringInitRoundTrip",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.stringInitRoundTrip",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let onceConverted = String(sample)
-                let twiceConverted = String(String(sample))
-                return onceConverted == twiceConverted
-            },
-            formatCounterexample: { sample, _ in
-                let once = String(sample)
-                let twice = String(String(sample))
-                return "x = \(sample); String(x) = \"\(once)\"; "
-                    + "String(String(x)) = \"\(twice)\""
-            }
-        )
+        property: { sample in
+            let onceConverted = String(sample)
+            let twiceConverted = String(String(sample))
+            return onceConverted == twiceConverted
+        },
+        formatCounterexample: { sample, _ in
+            let once = String(sample)
+            let twice = String(String(sample))
+            return "x = \(sample); String(x) = \"\(once)\"; "
+                + "String(String(x)) = \"\(twice)\""
+        }
     )
 }
 
@@ -90,18 +87,15 @@ private func checkCountMatchesStringInit<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.countMatchesStringInit",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.countMatchesStringInit",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.count == String(sample).count },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.count = \(sample.count), "
-                    + "String(x).count = \(String(sample).count)"
-            }
-        )
+        property: { sample in sample.count == String(sample).count },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.count = \(sample.count), "
+                + "String(x).count = \(String(sample).count)"
+        }
     )
 }
 
@@ -112,17 +106,14 @@ private func checkIsEmptyMatchesCountZero<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.isEmptyMatchesCountZero",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.isEmptyMatchesCountZero",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.isEmpty == (sample.count == 0) },
-            formatCounterexample: { sample, _ in
-                "x = \(sample); x.isEmpty = \(sample.isEmpty), x.count == 0 = \(sample.count == 0)"
-            }
-        )
+        property: { sample in sample.isEmpty == (sample.count == 0) },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x.isEmpty = \(sample.isEmpty), x.count == 0 = \(sample.count == 0)"
+        }
     )
 }
 
@@ -135,18 +126,15 @@ private func checkHasPrefixEmpty<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.hasPrefixEmpty",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.hasPrefixEmpty",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.hasPrefix("") },
-            formatCounterexample: { sample, _ in
-                let result = sample.hasPrefix("")
-                return "x = \(sample); x.hasPrefix(empty) = \(result)"
-            }
-        )
+        property: { sample in sample.hasPrefix("") },
+        formatCounterexample: { sample, _ in
+            let result = sample.hasPrefix("")
+            return "x = \(sample); x.hasPrefix(empty) = \(result)"
+        }
     )
 }
 
@@ -157,18 +145,15 @@ private func checkHasSuffixEmpty<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.hasSuffixEmpty",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.hasSuffixEmpty",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in sample.hasSuffix("") },
-            formatCounterexample: { sample, _ in
-                let result = sample.hasSuffix("")
-                return "x = \(sample); x.hasSuffix(empty) = \(result)"
-            }
-        )
+        property: { sample in sample.hasSuffix("") },
+        formatCounterexample: { sample, _ in
+            let result = sample.hasSuffix("")
+            return "x = \(sample); x.hasSuffix(empty) = \(result)"
+        }
     )
 }
 
@@ -181,24 +166,21 @@ private func checkLowercasedIdempotent<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.lowercasedIdempotent",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.lowercasedIdempotent",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let once = sample.lowercased()
-                let twice = once.lowercased()
-                return once == twice
-            },
-            formatCounterexample: { sample, _ in
-                let once = sample.lowercased()
-                let twice = once.lowercased()
-                return "x = \(sample); x.lowercased() = \"\(once)\"; "
-                    + ".lowercased().lowercased() = \"\(twice)\""
-            }
-        )
+        property: { sample in
+            let once = sample.lowercased()
+            let twice = once.lowercased()
+            return once == twice
+        },
+        formatCounterexample: { sample, _ in
+            let once = sample.lowercased()
+            let twice = once.lowercased()
+            return "x = \(sample); x.lowercased() = \"\(once)\"; "
+                + ".lowercased().lowercased() = \"\(twice)\""
+        }
     )
 }
 
@@ -209,24 +191,21 @@ private func checkUppercasedIdempotent<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.uppercasedIdempotent",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.uppercasedIdempotent",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                let once = sample.uppercased()
-                let twice = once.uppercased()
-                return once == twice
-            },
-            formatCounterexample: { sample, _ in
-                let once = sample.uppercased()
-                let twice = once.uppercased()
-                return "x = \(sample); x.uppercased() = \"\(once)\"; "
-                    + ".uppercased().uppercased() = \"\(twice)\""
-            }
-        )
+        property: { sample in
+            let once = sample.uppercased()
+            let twice = once.uppercased()
+            return once == twice
+        },
+        formatCounterexample: { sample, _ in
+            let once = sample.uppercased()
+            let twice = once.uppercased()
+            return "x = \(sample); x.uppercased() = \"\(once)\"; "
+                + ".uppercased().uppercased() = \"\(twice)\""
+        }
     )
 }
 
@@ -239,25 +218,22 @@ private func checkUtf8ViewInvariance<
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: "StringProtocol.utf8ViewInvariance",
-        tier: .strict,
+    await runUnaryLaw(
+        "StringProtocol.utf8ViewInvariance",
+        generator: generator,
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: { sample in
-                // The UTF-8 view of a StringProtocol value must equal the
-                // UTF-8 view of its String conversion — i.e. encoding is
-                // invariant of the view (Substring vs String shouldn't
-                // change byte-level representation).
-                Array(sample.utf8) == Array(String(sample).utf8)
-            },
-            formatCounterexample: { sample, _ in
-                let viaSelf = Array(sample.utf8)
-                let viaString = Array(String(sample).utf8)
-                return "x = \(sample); x.utf8 = \(viaSelf); "
-                    + "String(x).utf8 = \(viaString)"
-            }
-        )
+        property: { sample in
+            // The UTF-8 view of a StringProtocol value must equal the
+            // UTF-8 view of its String conversion — i.e. encoding is
+            // invariant of the view (Substring vs String shouldn't
+            // change byte-level representation).
+            Array(sample.utf8) == Array(String(sample).utf8)
+        },
+        formatCounterexample: { sample, _ in
+            let viaSelf = Array(sample.utf8)
+            let viaString = Array(String(sample).utf8)
+            return "x = \(sample); x.utf8 = \(viaSelf); "
+                + "String(x).utf8 = \(viaString)"
+        }
     )
 }
