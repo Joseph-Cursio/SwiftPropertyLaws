@@ -32,12 +32,14 @@ where Value.Element: Equatable & Sendable {
     try ReplayEnvironmentValidator.verify(options)
     var results: [CheckResult] = []
     if laws == .all {
-        results.append(contentsOf: await collectInheritedSequence(
-            for: type,
-            using: generator,
-            options: options,
-            sequenceOptions: sequenceOptions
-        ))
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            try await checkSequencePropertyLaws(
+                for: type,
+                using: generator,
+                options: $0,
+                sequenceOptions: sequenceOptions
+            )
+        })
     }
     results.append(contentsOf: [
         await checkCount(generator: generator, options: options),
@@ -114,34 +116,6 @@ where C.Element: Equatable & Sendable {
             }
         )
     )
-}
-
-private func collectInheritedSequence<C: Collection & Sendable, Sh: SendableSequenceType>(
-    for type: C.Type,
-    using generator: Generator<C, Sh>,
-    options: LawCheckOptions,
-    sequenceOptions: SequenceLawOptions
-) async -> [CheckResult]
-where C.Element: Equatable & Sendable {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkSequencePropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions,
-            sequenceOptions: sequenceOptions
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
 }
 
 /// Detail record for a `count` mismatch — `nil` when the law holds. Returned

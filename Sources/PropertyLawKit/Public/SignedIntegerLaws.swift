@@ -26,82 +26,30 @@ public func checkSignedIntegerPropertyLaws<
     try ReplayEnvironmentValidator.verify(options)
     var results: [CheckResult] = []
     if laws == .all {
-        results.append(contentsOf: await collectInheritedBinaryIntegerForSignedInteger(
-            for: type,
-            using: generator,
-            options: options
-        ))
-        results.append(contentsOf: await collectInheritedSignedNumericForSignedInteger(
-            for: type,
-            using: generator,
-            options: options
-        ))
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            try await checkBinaryIntegerPropertyLaws(
+                for: type,
+                using: generator,
+                options: $0
+            )
+        })
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            // SignedNumeric's own laws only — skipping its inherited Numeric suite
+            // here because the BinaryInteger collector already ran Numeric. Without
+            // the .ownOnly cap we'd run Numeric's six laws twice.
+            try await checkSignedNumericPropertyLaws(
+                for: type,
+                using: generator,
+                options: $0,
+                laws: .ownOnly
+            )
+        })
     }
     results.append(contentsOf: [
         await checkSignednessConsistency(generator: generator, options: options)
     ])
     try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
     return results
-}
-
-private func collectInheritedBinaryIntegerForSignedInteger<
-    Value: SignedInteger & Sendable,
-    Shrinker: SendableSequenceType
->(
-    for type: Value.Type,
-    using generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
-) async -> [CheckResult] {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkBinaryIntegerPropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
-}
-
-private func collectInheritedSignedNumericForSignedInteger<
-    Value: SignedInteger & Sendable,
-    Shrinker: SendableSequenceType
->(
-    for type: Value.Type,
-    using generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
-) async -> [CheckResult] {
-    // SignedNumeric's own laws only — skipping its inherited Numeric suite
-    // here because the BinaryInteger collector already ran Numeric. Without
-    // the .ownOnly cap we'd run Numeric's six laws twice.
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkSignedNumericPropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions,
-            laws: .ownOnly
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
 }
 
 private func checkSignednessConsistency<

@@ -32,12 +32,14 @@ where Value.Element: Equatable & Sendable {
     try ReplayEnvironmentValidator.verify(options)
     var results: [CheckResult] = []
     if laws == .all {
-        results.append(contentsOf: await collectInheritedCollection(
-            for: type,
-            using: generator,
-            options: options,
-            sequenceOptions: sequenceOptions
-        ))
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            try await checkCollectionPropertyLaws(
+                for: type,
+                using: generator,
+                options: $0,
+                sequenceOptions: sequenceOptions
+            )
+        })
     }
     results.append(contentsOf: [
         await checkSwapAtSwapsValues(generator: generator, options: options),
@@ -45,37 +47,6 @@ where Value.Element: Equatable & Sendable {
     ])
     try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
     return results
-}
-
-private func collectInheritedCollection<
-    C: MutableCollection & Sendable,
-    Sh: SendableSequenceType
->(
-    for type: C.Type,
-    using generator: Generator<C, Sh>,
-    options: LawCheckOptions,
-    sequenceOptions: SequenceLawOptions
-) async -> [CheckResult]
-where C.Element: Equatable & Sendable {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkCollectionPropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions,
-            sequenceOptions: sequenceOptions
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
 }
 
 private func checkSwapAtSwapsValues<

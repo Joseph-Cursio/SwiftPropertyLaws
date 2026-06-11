@@ -1,4 +1,5 @@
 import PropertyLawCore
+import PropertyLawSyntaxSupport
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros

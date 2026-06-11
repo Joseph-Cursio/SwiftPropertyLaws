@@ -43,8 +43,7 @@ public func checkInteractionInvariantPropertyLaws<
 ) async throws -> [CheckResult]
 where
     Invariant.State: Sendable,
-    Action.AllCases: Sendable & RandomAccessCollection
-{
+    Action.AllCases: Sendable & RandomAccessCollection {
     try ReplayEnvironmentValidator.verify(options)
     let results = [
         await checkInvariantHoldsAfterEachStep(
@@ -88,8 +87,7 @@ public func checkActionIdempotenceInvariantPropertyLaws<
 where
     Invariant.State: Sendable,
     Invariant.Action: CaseIterable & Sendable,
-    Invariant.Action.AllCases: Sendable & RandomAccessCollection
-{
+    Invariant.Action.AllCases: Sendable & RandomAccessCollection {
     try ReplayEnvironmentValidator.verify(options)
     let results = [
         await checkActionIdempotenceDoubleApplication(
@@ -106,6 +104,12 @@ where
 }
 
 // MARK: - Per-law internals
+
+// Both per-law helpers mirror their public harness's 6-parameter shape; the
+// leading `invariant: Invariant.Type` is load-bearing for type inference (the
+// generic `Invariant` isn't deducible from `Invariant.State` alone), so it
+// can't be dropped to satisfy the parameter-count rule.
+// swiftlint:disable function_parameter_count
 
 /// v2.4.0 — per-step invariant check. Sample an action sequence,
 /// apply it step-by-step, verify `invariantHolds` after each step.
@@ -124,8 +128,7 @@ private func checkInvariantHoldsAfterEachStep<
 ) async -> CheckResult
 where
     Invariant.State: Sendable,
-    Action.AllCases: Sendable & RandomAccessCollection
-{
+    Action.AllCases: Sendable & RandomAccessCollection {
     let sequenceGen = ActionSequenceFactory.actionSequence(
         forCaseIterable: Action.self,
         length: length,
@@ -175,8 +178,7 @@ private func checkActionIdempotenceDoubleApplication<
 where
     Invariant.State: Sendable,
     Invariant.Action: CaseIterable & Sendable,
-    Invariant.Action.AllCases: Sendable & RandomAccessCollection
-{
+    Invariant.Action.AllCases: Sendable & RandomAccessCollection {
     let sequenceGen = ActionSequenceFactory.actionSequence(
         forCaseIterable: Invariant.Action.self,
         length: length,
@@ -211,6 +213,8 @@ where
         )
     )
 }
+
+// swiftlint:enable function_parameter_count
 
 // MARK: - Counterexample formatting
 

@@ -1,6 +1,11 @@
 import Testing
 @testable import PropertyLawKit
 
+// Helper conformance fixtures (State/Action + invariant conformers) are
+// scoped inside the @Suite struct, nesting them one level deeper than the
+// rule's default — idiomatic for Swift Testing fixtures.
+// swiftlint:disable nesting
+
 // v2.3.0 — InteractionInvariant + the four refining state-predicate
 // sub-protocols + ActionIdempotenceInvariant (sibling shape).
 // Type-level / conformance-shape coverage only; the verify harness
@@ -161,3 +166,5 @@ struct InteractionInvariantTests {
         acceptsRoot(InboxActionIdempotence.self)
     }
 }
+
+// swiftlint:enable nesting

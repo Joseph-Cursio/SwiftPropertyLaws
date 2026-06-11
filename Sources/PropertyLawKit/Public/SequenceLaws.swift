@@ -36,11 +36,13 @@ where Value.Element: Equatable & Sendable {
     try ReplayEnvironmentValidator.verify(options)
     var results: [CheckResult] = []
     if laws == .all {
-        results.append(contentsOf: await collectInheritedIterator(
-            for: type,
-            using: generator,
-            options: options
-        ))
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            try await checkIteratorProtocolPropertyLaws(
+                for: type,
+                using: generator,
+                options: $0
+            )
+        })
     }
     results.append(await checkUnderestimated(generator: generator, options: options))
     if sequenceOptions.passing == .multiPass {
@@ -106,32 +108,6 @@ where S.Element: Equatable & Sendable {
             }
         )
     )
-}
-
-private func collectInheritedIterator<S: Sequence & Sendable, Sh: SendableSequenceType>(
-    for type: S.Type,
-    using generator: Generator<S, Sh>,
-    options: LawCheckOptions
-) async -> [CheckResult]
-where S.Element: Equatable & Sendable {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkIteratorProtocolPropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
 }
 
 private func underestimatedCounterexample<S: Sequence>(for sample: S) -> String? {

@@ -85,6 +85,19 @@ let package = Package(
             name: "PropertyLawCoreTests",
             dependencies: ["PropertyLawCore"]
         ),
+        // Shared SwiftSyntax helpers consumed by both the macro impl and the
+        // discovery plugin. Leaf target depending only on PropertyLawCore +
+        // SwiftSyntax (the parsing lib both already link) — deliberately not
+        // SwiftCompilerPlugin/SwiftSyntaxMacros, so the discovery plugin keeps
+        // its independence from PropertyLawMacroImpl (PRD §9 Decision 4) while
+        // the `MemberBlockInspector` logic lives in exactly one place.
+        .target(
+            name: "PropertyLawSyntaxSupport",
+            dependencies: [
+                "PropertyLawCore",
+                .product(name: "SwiftSyntax", package: "swift-syntax")
+            ]
+        ),
         // User-facing macro target — declarations only. Re-exports
         // PropertyLawKit so users importing PropertyLawMacro can call the
         // generated `checkXxxPropertyLaws` functions without a second import.
@@ -101,6 +114,7 @@ let package = Package(
             name: "PropertyLawMacroImpl",
             dependencies: [
                 "PropertyLawCore",
+                "PropertyLawSyntaxSupport",
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
@@ -128,6 +142,7 @@ let package = Package(
             name: "PropertyLawDiscoveryTool",
             dependencies: [
                 "PropertyLawCore",
+                "PropertyLawSyntaxSupport",
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax")
             ]

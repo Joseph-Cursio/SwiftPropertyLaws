@@ -241,44 +241,13 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         }
     }
 
-    /// Function-name prefix for the kit's check call. The macro composes the
-    /// final identifier as `check<prefixCapitalized>PropertyLaws`.
+    /// Function-name identifier for the kit's check call, composed as
+    /// `check<declarationName>PropertyLaws` — a pure function of
+    /// `declarationName`, the single source of truth for each protocol's
+    /// spelled name. (Every `check…PropertyLaws` in `PropertyLawKit` follows
+    /// this naming convention without exception.)
     package var checkFunctionName: String {
-        switch self {
-        case .equatable: return "checkEquatablePropertyLaws"
-        case .hashable: return "checkHashablePropertyLaws"
-        case .comparable: return "checkComparablePropertyLaws"
-        case .codable: return "checkCodablePropertyLaws"
-        case .iteratorProtocol: return "checkIteratorProtocolPropertyLaws"
-        case .sequence: return "checkSequencePropertyLaws"
-        case .collection: return "checkCollectionPropertyLaws"
-        case .bidirectionalCollection: return "checkBidirectionalCollectionPropertyLaws"
-        case .randomAccessCollection: return "checkRandomAccessCollectionPropertyLaws"
-        case .mutableCollection: return "checkMutableCollectionPropertyLaws"
-        case .rangeReplaceableCollection: return "checkRangeReplaceableCollectionPropertyLaws"
-        case .setAlgebra: return "checkSetAlgebraPropertyLaws"
-        case .strideable: return "checkStrideablePropertyLaws"
-        case .rawRepresentable: return "checkRawRepresentablePropertyLaws"
-        case .losslessStringConvertible: return "checkLosslessStringConvertiblePropertyLaws"
-        case .identifiable: return "checkIdentifiablePropertyLaws"
-        case .caseIterable: return "checkCaseIterablePropertyLaws"
-        case .additiveArithmetic: return "checkAdditiveArithmeticPropertyLaws"
-        case .numeric: return "checkNumericPropertyLaws"
-        case .signedNumeric: return "checkSignedNumericPropertyLaws"
-        case .binaryInteger: return "checkBinaryIntegerPropertyLaws"
-        case .signedInteger: return "checkSignedIntegerPropertyLaws"
-        case .unsignedInteger: return "checkUnsignedIntegerPropertyLaws"
-        case .fixedWidthInteger: return "checkFixedWidthIntegerPropertyLaws"
-        case .floatingPoint: return "checkFloatingPointPropertyLaws"
-        case .binaryFloatingPoint: return "checkBinaryFloatingPointPropertyLaws"
-        case .stringProtocol: return "checkStringProtocolPropertyLaws"
-        case .semigroup: return "checkSemigroupPropertyLaws"
-        case .monoid: return "checkMonoidPropertyLaws"
-        case .commutativeMonoid: return "checkCommutativeMonoidPropertyLaws"
-        case .group: return "checkGroupPropertyLaws"
-        case .semilattice: return "checkSemilatticePropertyLaws"
-        case .ring: return "checkRingPropertyLaws"
-        }
+        "check\(declarationName)PropertyLaws"
     }
 
     /// User-facing protocol name used in diagnostics and inheritance-clause
@@ -326,42 +295,11 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
 
 extension KnownProtocol {
     /// `@Test func` name fragment — `<prefix>_<TypeName>` makes generated
-    /// tests greppable in test output.
+    /// tests greppable in test output. It's `declarationName` with a
+    /// lower-cased first letter (e.g. `IteratorProtocol` → `iteratorProtocol`),
+    /// derived rather than re-listed so the spelled name has one source.
     package var testNameFragment: String {
-        switch self {
-        case .equatable: return "equatable"
-        case .hashable: return "hashable"
-        case .comparable: return "comparable"
-        case .codable: return "codable"
-        case .iteratorProtocol: return "iteratorProtocol"
-        case .sequence: return "sequence"
-        case .collection: return "collection"
-        case .bidirectionalCollection: return "bidirectionalCollection"
-        case .randomAccessCollection: return "randomAccessCollection"
-        case .mutableCollection: return "mutableCollection"
-        case .rangeReplaceableCollection: return "rangeReplaceableCollection"
-        case .setAlgebra: return "setAlgebra"
-        case .strideable: return "strideable"
-        case .rawRepresentable: return "rawRepresentable"
-        case .losslessStringConvertible: return "losslessStringConvertible"
-        case .identifiable: return "identifiable"
-        case .caseIterable: return "caseIterable"
-        case .additiveArithmetic: return "additiveArithmetic"
-        case .numeric: return "numeric"
-        case .signedNumeric: return "signedNumeric"
-        case .binaryInteger: return "binaryInteger"
-        case .signedInteger: return "signedInteger"
-        case .unsignedInteger: return "unsignedInteger"
-        case .fixedWidthInteger: return "fixedWidthInteger"
-        case .floatingPoint: return "floatingPoint"
-        case .binaryFloatingPoint: return "binaryFloatingPoint"
-        case .stringProtocol: return "stringProtocol"
-        case .semigroup: return "semigroup"
-        case .monoid: return "monoid"
-        case .commutativeMonoid: return "commutativeMonoid"
-        case .group: return "group"
-        case .semilattice: return "semilattice"
-        case .ring: return "ring"
-        }
+        let name = declarationName
+        return name.prefix(1).lowercased() + name.dropFirst()
     }
 }

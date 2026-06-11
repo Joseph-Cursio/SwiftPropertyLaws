@@ -27,43 +27,17 @@ public func checkSemilatticePropertyLaws<
     try ReplayEnvironmentValidator.verify(options)
     var results: [CheckResult] = []
     if laws == .all {
-        results.append(contentsOf: await collectInheritedCommutativeMonoid(
-            for: type,
-            using: generator,
-            options: options
-        ))
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            try await checkCommutativeMonoidPropertyLaws(
+                for: type,
+                using: generator,
+                options: $0
+            )
+        })
     }
     results.append(await checkCombineIdempotence(generator: generator, options: options))
     try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
     return results
-}
-
-private func collectInheritedCommutativeMonoid<
-    Value: Semilattice & Equatable & Sendable,
-    Shrinker: SendableSequenceType
->(
-    for type: Value.Type,
-    using generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
-) async -> [CheckResult] {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkCommutativeMonoidPropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
 }
 
 private func checkCombineIdempotence<

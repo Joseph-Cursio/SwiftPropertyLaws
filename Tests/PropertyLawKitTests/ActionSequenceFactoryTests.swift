@@ -2,6 +2,11 @@ import Testing
 import PropertyBased
 @testable import PropertyLawKit
 
+// StatefulGuard conformance fixtures are scoped inside the @Suite struct,
+// nesting them one level deeper than the rule's default — idiomatic for
+// Swift Testing fixtures.
+// swiftlint:disable nesting
+
 // v2.2.0 — ActionSequenceFactory: primary entry consumed by
 // SwiftInferProperties v2.0 M2 / M3 for synthesizing action sequences
 // for interaction-invariant verify. The convenience CaseIterable entry
@@ -229,3 +234,5 @@ struct ActionSequenceFactoryTests {
         #expect(!result.contains(.bar))
     }
 }
+
+// swiftlint:enable nesting

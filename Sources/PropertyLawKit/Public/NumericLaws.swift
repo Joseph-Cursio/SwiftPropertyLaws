@@ -35,11 +35,13 @@ public func checkNumericPropertyLaws<
     try ReplayEnvironmentValidator.verify(options)
     var results: [CheckResult] = []
     if laws == .all {
-        results.append(contentsOf: await collectInheritedAdditiveArithmetic(
-            for: type,
-            using: generator,
-            options: options
-        ))
+        results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            try await checkAdditiveArithmeticPropertyLaws(
+                for: type,
+                using: generator,
+                options: $0
+            )
+        })
     }
     results.append(contentsOf: [
         await checkMultiplicationAssociativity(generator: generator, options: options),
@@ -51,34 +53,6 @@ public func checkNumericPropertyLaws<
     ])
     try PropertyLawViolation.throwIfViolations(in: results, enforcement: options.enforcement)
     return results
-}
-
-private func collectInheritedAdditiveArithmetic<
-    Value: Numeric & Equatable & Sendable,
-    Shrinker: SendableSequenceType
->(
-    for type: Value.Type,
-    using generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
-) async -> [CheckResult] {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
-    do {
-        return try await checkAdditiveArithmeticPropertyLaws(
-            for: type,
-            using: generator,
-            options: inheritedOptions
-        )
-    } catch let violation as PropertyLawViolation {
-        return violation.results
-    } catch {
-        return []
-    }
 }
 
 private func checkMultiplicationAssociativity<

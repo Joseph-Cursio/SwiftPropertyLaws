@@ -1,5 +1,6 @@
 import Foundation
 import PropertyLawCore
+import PropertyLawSyntaxSupport
 import SwiftSyntax
 import SwiftParser
 
@@ -272,10 +273,10 @@ enum ModuleScanner {
             node: node,
             hasUserGen: hasGenMethod(in: memberBlock),
             storedMembers: kind == .struct
-                ? PluginMemberInspector.storedMembers(in: memberBlock)
+                ? MemberBlockInspector.storedMembers(in: memberBlock)
                 : [],
             hasUserInit: kind == .struct
-                ? PluginMemberInspector.hasUserInit(in: memberBlock)
+                ? MemberBlockInspector.hasUserInit(in: memberBlock)
                 : false,
             witnesses: WitnessFinder.find(in: memberBlock),
             memberFunctions: RoundTripFinder.findMembers(in: memberBlock)
