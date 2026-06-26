@@ -21,7 +21,7 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: Se
         [
             await checkReflexivity(generator: generator, options: options, coverage: coverage, shrink: shrink),
             await checkSymmetry(generator: generator, options: options, shrink: shrink),
-            await checkTransitivity(generator: generator, options: options),
+            await checkTransitivity(generator: generator, options: options, shrink: shrink),
             await checkNegationConsistency(generator: generator, options: options, shrink: shrink)
         ]
     }
@@ -74,7 +74,8 @@ private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequen
 
 private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
     generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
+    options: LawCheckOptions,
+    shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     await runTernaryLaw(
         "Equatable.transitivity",
@@ -86,7 +87,8 @@ private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSe
         formatCounterexample: { first, second, third, _ in
             "x = \(first), y = \(second), z = \(third); "
                 + "x == y and y == z but x != z"
-        }
+        },
+        shrink: shrink
     )
 }
 

@@ -80,20 +80,35 @@ func runBinaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     )
 }
 
+// `large_tuple` is waived for this helper by design: a 3-value law's input is
+// intrinsically a triple, so the shrinker's type must name `(Value, Value,
+// Value)`. The waiver is scoped here rather than relaxing the project rule.
+// swiftlint:disable large_tuple
+
+/// Lift a per-element shrinker into a triple shrinker that shrinks one position
+/// at a time, holding the others fixed.
+private func liftToTripleShrinker<Value>(
+    _ element: (@Sendable (Value) -> [Value])?
+) -> (@Sendable ((Value, Value, Value)) -> [(Value, Value, Value)])? {
+    guard let element else { return nil }
+    return { (triple: (Value, Value, Value)) -> [(Value, Value, Value)] in
+        let first: [(Value, Value, Value)] = element(triple.0).map { ($0, triple.1, triple.2) }
+        let second: [(Value, Value, Value)] = element(triple.1).map { (triple.0, $0, triple.2) }
+        let third: [(Value, Value, Value)] = element(triple.2).map { (triple.0, triple.1, $0) }
+        return first + second + third
+    }
+}
+// swiftlint:enable large_tuple
+
 /// Three-value law: `property(x, y, z)` must hold for every sampled triple.
-///
-/// Ternary shrinking is deferred (v2.4 covers unary + binary): a 3-value law's
-/// counterexample is relational, so minimizing each component independently is
-/// of marginal value, and the explicit `(Value, Value, Value)` shrinker type
-/// would be the kit's only `large_tuple` site. Triple laws report the first
-/// failing triple verbatim, exactly as before v2.4.
 func runTernaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions,
     property: @escaping @Sendable (Value, Value, Value) async throws -> Bool,
-    formatCounterexample: @escaping @Sendable (Value, Value, Value, ErrorBox?) -> String
+    formatCounterexample: @escaping @Sendable (Value, Value, Value, ErrorBox?) -> String,
+    shrink: (@Sendable (Value) -> [Value])? = nil
 ) async -> CheckResult {
     await PerLawDriver.run(
         protocolLaw: protocolLaw,
@@ -104,7 +119,8 @@ func runTernaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
                 (generator.run(using: &rng), generator.run(using: &rng), generator.run(using: &rng))
             },
             property: { try await property($0.0, $0.1, $0.2) },
-            formatCounterexample: { formatCounterexample($0.0, $0.1, $0.2, $1) }
+            formatCounterexample: { formatCounterexample($0.0, $0.1, $0.2, $1) },
+            shrink: liftToTripleShrinker(shrink)
         )
     )
 }

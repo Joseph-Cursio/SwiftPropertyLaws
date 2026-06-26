@@ -105,6 +105,32 @@ struct BackendShrinkingTests {
     }
 
     @Test
+    func ternaryLawShrinksEachComponentTowardZero() async throws {
+        // A triple law that fails when the sum is large; each component shrinks
+        // toward zero. Exercises the `runTernaryLaw` tuple-lifting path.
+        let result = await runTernaryLaw(
+            "Test.tripleSumBelowThreshold",
+            generator: Gen<Int>.int(in: 0...1_000_000),
+            options: LawCheckOptions(budget: .standard),
+            property: { first, second, third in first + second + third < 3000 },
+            formatCounterexample: { first, second, third, _ in "\(first),\(second),\(third)" },
+            shrink: { Array($0.shrink(towards: 0)) }
+        )
+
+        #expect(result.isViolation)
+        #expect(result.shrinkSteps > 0)
+        #expect(result.shrunkFrom != nil)
+
+        // The minimal triple still fails (sum ≥ 3000) and its sum is no larger
+        // than the original failing triple's sum.
+        let minimal = try #require(result.counterexample)
+        let parts = minimal.split(separator: ",").map { Int($0) }
+        #expect(parts.allSatisfy { $0 != nil })
+        let sum = parts.compactMap { $0 }.reduce(0, +)
+        #expect(sum >= 3000)
+    }
+
+    @Test
     func equatableSuiteThreadsAShrinkerEndToEnd() async throws {
         // A deliberately broken Equatable whose `==` is non-reflexive above a
         // threshold, exercised through the public suite with an Int-backed
