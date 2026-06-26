@@ -26,6 +26,17 @@ public struct CheckResult: Sendable, Hashable {
     /// Distribution / boundary metadata. Reserved; see PRD §4.6. M1 always reports `nil`.
     public let coverageHints: CoverageHints?
 
+    /// The pre-shrink counterexample, when shrinking reduced a `.failed` to a
+    /// smaller still-failing input (v2.4). `outcome`'s `counterexample` always
+    /// holds the *minimal* form; `shrunkFrom` holds the original first-failing
+    /// form. `nil` when no shrinking happened (`shrinkSteps == 0`).
+    public let shrunkFrom: String?
+
+    /// Number of shrink steps applied to reach the minimal counterexample
+    /// (v2.4). `0` when the law supplied no shrinker, the carrier isn't
+    /// shrinkable, or the first failing input was already minimal.
+    public let shrinkSteps: Int
+
     public init(
         protocolLaw: String,
         tier: StrictnessTier,
@@ -34,7 +45,9 @@ public struct CheckResult: Sendable, Hashable {
         environment: Environment,
         outcome: Outcome,
         nearMisses: [String]? = nil,
-        coverageHints: CoverageHints? = nil
+        coverageHints: CoverageHints? = nil,
+        shrunkFrom: String? = nil,
+        shrinkSteps: Int = 0
     ) {
         self.protocolLaw = protocolLaw
         self.tier = tier
@@ -44,6 +57,8 @@ public struct CheckResult: Sendable, Hashable {
         self.outcome = outcome
         self.nearMisses = nearMisses
         self.coverageHints = coverageHints
+        self.shrunkFrom = shrunkFrom
+        self.shrinkSteps = shrinkSteps
     }
 
     public var isViolation: Bool {

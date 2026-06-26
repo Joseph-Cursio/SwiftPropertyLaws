@@ -14,14 +14,15 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: Se
     for type: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
-    coverage: AnyCoverageClassifier<Value>? = nil
+    coverage: AnyCoverageClassifier<Value>? = nil,
+    shrink: (@Sendable (Value) -> [Value])? = nil
 ) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         [
-            await checkReflexivity(generator: generator, options: options, coverage: coverage),
-            await checkSymmetry(generator: generator, options: options),
+            await checkReflexivity(generator: generator, options: options, coverage: coverage, shrink: shrink),
+            await checkSymmetry(generator: generator, options: options, shrink: shrink),
             await checkTransitivity(generator: generator, options: options),
-            await checkNegationConsistency(generator: generator, options: options)
+            await checkNegationConsistency(generator: generator, options: options, shrink: shrink)
         ]
     }
 }
@@ -29,7 +30,8 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: Se
 private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions,
-    coverage: AnyCoverageClassifier<Value>?
+    coverage: AnyCoverageClassifier<Value>?,
+    shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     let classify: (@Sendable (Value) -> (classes: Set<String>, boundaries: Set<String>))?
     if let coverage {
@@ -45,13 +47,15 @@ private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSeq
         property: { sample in sample == sample },
         formatCounterexample: { sample, _ in
             "x = \(sample); x == x evaluated to false"
-        }
+        },
+        shrink: shrink
     )
 }
 
 private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
     generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
+    options: LawCheckOptions,
+    shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     await runBinaryLaw(
         "Equatable.symmetry",
@@ -63,7 +67,8 @@ private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequen
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); "
                 + "x == y → \(first == second), y == x → \(second == first)"
-        }
+        },
+        shrink: shrink
     )
 }
 
@@ -92,7 +97,8 @@ private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSe
 // passes.
 private func checkNegationConsistency<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
     generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
+    options: LawCheckOptions,
+    shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     await runBinaryLaw(
         "Equatable.negationConsistency",
@@ -104,6 +110,7 @@ private func checkNegationConsistency<Value: Equatable & Sendable, Shrinker: Sen
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); "
                 + "x != y → \(first != second), !(x == y) → \(!(first == second))"
-        }
+        },
+        shrink: shrink
     )
 }
