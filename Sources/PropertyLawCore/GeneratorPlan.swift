@@ -22,8 +22,12 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
     case set(GeneratorPlan)
     /// `[K: V]` → `zip(<key>, <value>).dictionary(ofAtMost: 0...8)`.
     case dictionary(key: GeneratorPlan, value: GeneratorPlan)
+    /// An unresolvable slot — a type with no derivable generator. Renders as
+    /// a Swift editor placeholder for the developer to fill (scaffolding).
+    case hole(typeName: String, reason: String)
 
-    /// The `swift-property-based` source expression for this plan.
+    /// The `swift-property-based` source expression for this plan. A `.hole`
+    /// renders as a `<#Generator<T>#>` editor placeholder.
     public var rendered: String {
         switch self {
         case .leaf(let expression, _):
@@ -36,6 +40,8 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
             return "\(element.rendered).set(ofAtMost: 0...8)"
         case .dictionary(let key, let value):
             return "zip(\(key.rendered), \(value.rendered)).dictionary(ofAtMost: 0...8)"
+        case .hole(let typeName, _):
+            return "<#Generator<\(typeName)>#>"
         }
     }
 
@@ -48,6 +54,22 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
             return element.requiredImports
         case .dictionary(let key, let value):
             return key.requiredImports.union(value.requiredImports)
+        case .hole:
+            return []
+        }
+    }
+
+    /// `true` when no slot in the tree is a `.hole` — i.e. fully derivable.
+    public var isComplete: Bool {
+        switch self {
+        case .leaf:
+            return true
+        case .optional(let element), .array(let element), .set(let element):
+            return element.isComplete
+        case .dictionary(let key, let value):
+            return key.isComplete && value.isComplete
+        case .hole:
+            return false
         }
     }
 }
