@@ -10,7 +10,7 @@ enum ScaffoldFileEmitter {
     /// The scaffold file text, or `nil` when nothing is scaffoldable (every
     /// type either fully derives or has no constructor to lift through).
     static func emit(map: ConformanceMap) -> String? {
-        let resolver = GeneratorResolver(types: Array(map.shapesByName.values))
+        let resolver = GeneratorResolver(types: Array(map.shapesByName.values), aliases: map.aliases)
         var stubs: [String] = []
         // `entries` is already sorted by type name → deterministic output.
         for entry in map.entries {

@@ -24,13 +24,17 @@
 /// swift-syntax) re-resolve shared subtrees exponentially.
 public final class GeneratorResolver {
     private let shapesByName: [String: TypeShape]
+    /// User-declared typealiases collected from the scanned source, mapping
+    /// the alias name to its underlying type spelling (e.g. `UserID` → `Int`).
+    private let aliases: [String: String]
     private var memo: [String: DerivationStrategist.ComposedGenerator?] = [:]
 
-    public init(types: [TypeShape]) {
+    public init(types: [TypeShape], aliases: [String: String] = [:]) {
         self.shapesByName = Dictionary(
             types.map { ($0.name, $0) },
             uniquingKeysWith: { first, _ in first }
         )
+        self.aliases = aliases
     }
 
     /// Resolve closure for `DerivationStrategist.strategy(for:resolve:)` and
@@ -48,6 +52,15 @@ public final class GeneratorResolver {
     ) -> DerivationStrategist.ComposedGenerator? {
         if let cached = memo[name] { return cached }         // already fully resolved
         guard !visiting.contains(name) else { return nil }   // recursive cycle (don't memoize the sentinel)
+
+        // A user typealias → derive from its underlying type spelling.
+        if let underlying = aliases[name] {
+            let result = DerivationStrategist.composedGenerator(forTypeName: underlying) { inner in
+                self.resolve(inner, visiting: visiting.union([name]))
+            }
+            memo[name] = result
+            return result
+        }
         guard let shape = shapesByName[name] else { return nil }   // external / unknown
 
         let result = derive(shape, visiting: visiting)

@@ -139,7 +139,27 @@ extension DerivationStrategist {
         if let known = knownValueGenerator(forTypeName: text) {
             return known
         }
+        // Known stdlib/Foundation typealias → derive from the underlying type.
+        // Factual resolution (e.g. TimeInterval *is* Double), not a guess.
+        if let underlying = knownTypeAlias(text) {
+            return composedGenerator(forTypeName: underlying, resolve: resolve)
+        }
         return resolve(text)
+    }
+
+    /// Common stdlib/Foundation typealiases the scanner can't see the
+    /// declaration of (they live in another module), mapped to their
+    /// underlying type spelling. User-declared aliases are resolved
+    /// separately, from the scanned source.
+    private static func knownTypeAlias(_ text: String) -> String? {
+        switch text {
+        case "TimeInterval", "NSTimeInterval", "Float64":
+            return "Double"
+        case "Float32":
+            return "Float"
+        default:
+            return nil
+        }
     }
 
     /// Stdlib/Foundation value types outside the `RawRepresentable` raw-type

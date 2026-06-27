@@ -24,6 +24,7 @@ enum ModuleScanner {
         var perType: [String: TypeAggregate] = [:]
         var failures: [ConformanceMap.ParseFailure] = []
         var topLevelFunctions: [FunctionSignature] = []
+        var aliases: [String: String] = [:]
 
         // Sorted input → sorted scan order → deterministic output.
         for filePath in sourceFiles.sorted() {
@@ -44,6 +45,9 @@ enum ModuleScanner {
             // pairing pass.
             topLevelFunctions.append(contentsOf: RoundTripFinder.findTopLevel(in: parsed))
             for statement in parsed.statements {
+                if let alias = statement.item.as(TypeAliasDeclSyntax.self) {
+                    aliases[alias.name.text] = alias.initializer.value.trimmedDescription
+                }
                 accumulate(
                     statement: statement.item,
                     context: RecordingContext(filePath: filePath, converter: converter),
@@ -53,12 +57,13 @@ enum ModuleScanner {
         }
         let shapes = makeShapes(from: perType)
         return ConformanceMap(
-            entries: makeEntries(from: perType, shapes: shapes),
+            entries: makeEntries(from: perType, shapes: shapes, aliases: aliases),
             parseFailures: failures,
             witnesses: makeWitnesses(from: perType),
             memberFunctions: makeMemberFunctions(from: perType),
             topLevelFunctions: topLevelFunctions,
-            shapesByName: shapes
+            shapesByName: shapes,
+            aliases: aliases
         )
     }
 
@@ -129,13 +134,14 @@ enum ModuleScanner {
 
     private static func makeEntries(
         from perType: [String: TypeAggregate],
-        shapes shapesByName: [String: TypeShape]
+        shapes shapesByName: [String: TypeShape],
+        aliases: [String: String]
     ) -> [ConformanceMap.Entry] {
         // The whole-module type universe (built once in `scan`) lets nested
         // custom-type members/parameters resolve (Tier 3). Every scanned type
         // is included — even non-conformance-bearing helper types — so a
         // referenced type still resolves when it isn't itself a test target.
-        let resolver = GeneratorResolver(types: Array(shapesByName.values))
+        let resolver = GeneratorResolver(types: Array(shapesByName.values), aliases: aliases)
         return perType.keys.sorted().map { typeName -> ConformanceMap.Entry in
             let aggregate = perType[typeName]!
             let raw = KnownProtocol.set(from: aggregate.inheritedNames)

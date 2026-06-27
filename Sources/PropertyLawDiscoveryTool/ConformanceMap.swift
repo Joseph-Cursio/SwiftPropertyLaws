@@ -68,6 +68,11 @@ struct ConformanceMap: Sendable, Equatable {
     /// don't scaffold.
     let shapesByName: [String: TypeShape]
 
+    /// Top-level user typealiases (`name` → underlying type spelling) collected
+    /// from the scanned source, so the resolver can derive a member/parameter
+    /// typed as an alias. Defaults to empty.
+    let aliases: [String: String]
+
     struct ParseFailure: Sendable, Equatable {
         let filePath: String
         let message: String
@@ -79,7 +84,8 @@ struct ConformanceMap: Sendable, Equatable {
         witnesses: [String: WitnessSet] = [:],
         memberFunctions: [String: [FunctionSignature]] = [:],
         topLevelFunctions: [FunctionSignature] = [],
-        shapesByName: [String: TypeShape] = [:]
+        shapesByName: [String: TypeShape] = [:],
+        aliases: [String: String] = [:]
     ) {
         self.entries = entries
         self.parseFailures = parseFailures
@@ -87,6 +93,7 @@ struct ConformanceMap: Sendable, Equatable {
         self.memberFunctions = memberFunctions
         self.topLevelFunctions = topLevelFunctions
         self.shapesByName = shapesByName
+        self.aliases = aliases
     }
 }
 
