@@ -214,4 +214,31 @@ dominates the user-init count; the real-app corpora are small. Broaden the
 corpus (a few real SwiftUI/server apps) to firm up the ranking. But the
 "composite-member gap is tiny / structural reasons dominate" signal is
 consistent across all three.
+
+### Tier 6 shipped — and the tiers interlock
+
+After building Tier 6 (initializer-based derivation), re-measured vs. the
+Tier-1/2 HEAD:
+
+| Corpus | before | after | unlocked |
+|---|---|---|---|
+| Sitrep | 19 | 18 | +1 |
+| swift-property-based | 22 | 22 | 0 |
+| swift-syntax | 997 | 980 | +17 |
+
+The `user-defined init` bucket on swift-syntax only fell 664 → 647. **Most
+user-init types also have custom-type init parameters** (or failable/throwing
+inits), so they stay `.todo` — now reported with the init-specific reason.
+The lesson: **the tiers are not independent.** Tier 6 is a *prerequisite*
+that compounds with **Tier 3 (nested custom types)** — a struct with
+`init(child: Customer)` needs both the init lift *and* a generator for
+`Customer` (which itself usually needs Tier 6). Neither tier alone unlocks
+these; together they should cascade.
+
+**Revised next step:** Tier 3 (nested custom types) via a whole-module
+resolver that recurses into member/parameter types using the same
+`DerivationStrategist` — now justified by the data, and multiplicative with
+the Tier 6 work already in place. Also worth doing: exclude non-addressable
+types (extensions on external types, namespace enums) from the scoreboard so
+the addressable-yield denominator is honest.
 ```
