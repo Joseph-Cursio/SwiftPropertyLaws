@@ -56,6 +56,31 @@ struct ModuleScannerTests {
         #expect(arguments[0].generatorExpression == "Gen<Int>.int()")
     }
 
+    @Test func scanResolvesNestedCustomTypeMember() throws {
+        let dir = try makeFixtureDir([
+            "Models.swift": """
+                struct Customer: Equatable { let name: String }
+                struct Order: Equatable {
+                    let id: Int
+                    let customer: Customer
+                }
+                """
+        ])
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
+        let order = try #require(map.entries.first { $0.typeName == "Order" })
+        guard case .memberwiseArbitrary = order.derivationStrategy else {
+            Issue.record("expected Order to derive via nested resolution; got \(order.derivationStrategy)")
+            return
+        }
+        let expression = GeneratorExpressionEmitter.expression(
+            typeName: "Order",
+            strategy: order.derivationStrategy
+        )
+        #expect(expression.contains("Customer(name: $0)"))
+    }
+
     @Test func failableInitializerDeclinesToTodoInScan() throws {
         let dir = try makeFixtureDir([
             "Code.swift": """
