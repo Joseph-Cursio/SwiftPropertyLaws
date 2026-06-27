@@ -36,6 +36,15 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// argument's call label (or omitting it for an unlabeled `_` parameter).
     case initializerBased(arguments: [InitArgument])
 
+    /// Tier 4 — an enum whose every case's associated values all resolve to
+    /// generators (including payload-free cases). The emitter builds a
+    /// `Generator<T>` per case (`Gen.always(T.c)` for payload-free, else
+    /// `zip(...).map { T.c(...) }`) and combines them with
+    /// `Gen.oneOf(...eraseToAny())`. Slots in after `rawRepresentable`, so
+    /// `CaseIterable` and raw-value enums keep their simpler strategies; this
+    /// fills the "enum without CaseIterable/raw" gap.
+    case enumCases(cases: [EnumCaseGenerator])
+
     /// No strategy matched. The emitter produces a deliberate compile
     /// error pointing at where the user should provide `gen()` or annotate.
     /// `reason` carries a human-readable diagnostic surfaced as a macro
@@ -54,6 +63,10 @@ public enum DerivationStrategy: Sendable, Equatable {
             return members.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
         case .initializerBased(let arguments):
             return arguments.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
+        case .enumCases(let cases):
+            return cases.reduce(into: Set<String>()) { result, enumCase in
+                for argument in enumCase.arguments { result.formUnion(argument.requiredImports) }
+            }
         case .userGen, .caseIterable, .rawRepresentable, .todo:
             return []
         }
@@ -207,6 +220,10 @@ public struct TypeShape: Sendable, Equatable {
     /// init signatures (pre-Tier-6 callers, or a type with only the
     /// synthesized memberwise init).
     public let initializers: [InitializerSignature]
+    /// Enum cases (name + associated values) captured from the primary body,
+    /// in source order. Consumed by the Tier 4 `enumCases` strategy. Empty
+    /// for non-enums and pre-Tier-4 callers.
+    public let enumCases: [EnumCase]
 
     public init(
         name: String,
@@ -215,7 +232,8 @@ public struct TypeShape: Sendable, Equatable {
         hasUserGen: Bool,
         storedMembers: [StoredMember] = [],
         hasUserInit: Bool = false,
-        initializers: [InitializerSignature] = []
+        initializers: [InitializerSignature] = [],
+        enumCases: [EnumCase] = []
     ) {
         self.name = name
         self.kind = kind
@@ -224,6 +242,7 @@ public struct TypeShape: Sendable, Equatable {
         self.storedMembers = storedMembers
         self.hasUserInit = hasUserInit
         self.initializers = initializers
+        self.enumCases = enumCases
     }
 }
 
@@ -259,6 +278,9 @@ public enum DerivationStrategist {
         }
         if shape.kind == .enum, let rawType = rawType(in: shape.inheritedTypes) {
             return .rawRepresentable(rawType)
+        }
+        if let enumStrategy = enumCasesStrategy(for: shape, resolve: resolve) {
+            return enumStrategy
         }
         return .todo(reason: todoReason(for: shape))
     }
@@ -317,64 +339,4 @@ public enum DerivationStrategist {
         return nil
     }
 
-    /// Human-readable explanation for the macro's `.todo` warning so the
-    /// compile error doesn't surface in isolation.
-    private static func todoReason(for shape: TypeShape) -> String {
-        switch shape.kind {
-        case .enum:
-            return "Cannot derive a generator for `\(shape.name)`: not "
-                + "`CaseIterable` and no recognized stdlib raw type. Provide "
-                + "`static func gen() -> Generator<\(shape.name), some "
-                + "SendableSequenceType>` or add `: CaseIterable`."
-        case .struct:
-            return structTodoReason(for: shape)
-        case .class, .actor:
-            return "Cannot derive a generator for `\(shape.name)`: memberwise "
-                + "derivation supports structs only (class/actor reference "
-                + "semantics complicate the synthesized-init contract). "
-                + "Provide `static func gen() -> Generator<\(shape.name), "
-                + "some SendableSequenceType>`."
-        }
-    }
-
-    /// Diagnostic for struct cases that fell through memberwise derivation
-    /// — names the specific reason so the user knows whether to add a
-    /// `gen()` or restructure the type.
-    private static func structTodoReason(for shape: TypeShape) -> String {
-        let prefix = "Cannot derive a generator for `\(shape.name)`: "
-        let suffix = " Provide `static func gen() -> Generator<\(shape.name), "
-            + "some SendableSequenceType>`."
-        if shape.storedMembers.isEmpty {
-            return prefix + "the type's primary declaration has no stored "
-                + "properties visible to the macro." + suffix
-        }
-        if shape.hasUserInit {
-            if shape.initializers.isEmpty {
-                return prefix + "the type declares a user `init(...)` in its "
-                    + "primary body, which suppresses Swift's synthesized "
-                    + "memberwise initializer." + suffix
-            }
-            return prefix + "the type's user `init(...)` declarations don't "
-                + "support derivation — no non-failable, non-throwing "
-                + "initializer (with 1–\(memberwiseArityLimit) parameters) has "
-                + "all parameter types resolve to a recognized generator." + suffix
-        }
-        if shape.storedMembers.count > memberwiseArityLimit {
-            return prefix + "the type has \(shape.storedMembers.count) stored "
-                + "properties; memberwise derivation supports up to "
-                + "\(memberwiseArityLimit) (the upstream `zip` arity limit)."
-                + suffix
-        }
-        if let unknown = shape.storedMembers.first(where: {
-            RawType(typeName: $0.typeName) == nil
-                && memberGenerator(forTypeName: $0.typeName) == nil
-        }) {
-            return prefix + "stored property `\(unknown.name): "
-                + "\(unknown.typeName)` has no recognized stdlib raw type "
-                + "(memberwise derivation supports Int/String/Bool/Double/"
-                + "Float, the fixed-width integer family, Character, and Date, "
-                + "plus optionals, arrays, sets, and dictionaries of those)." + suffix
-        }
-        return prefix + "memberwise derivation didn't apply." + suffix
-    }
 }

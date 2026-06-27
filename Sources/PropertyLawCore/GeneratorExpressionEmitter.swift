@@ -48,6 +48,8 @@ public enum GeneratorExpressionEmitter {
                 typeName: typeName,
                 arguments: arguments.map { (label: $0.label, expression: $0.generatorExpression) }
             )
+        case .enumCases(let cases):
+            return EnumCaseEmitter.expression(typeName: typeName, cases: cases)
         case .rawRepresentable(let rawType):
             return """
                 \(rawType.generatorExpression)
