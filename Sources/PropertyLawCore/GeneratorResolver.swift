@@ -16,8 +16,15 @@
 ///
 /// The macro path doesn't use this — it only sees one type, so nested custom
 /// members stay `.todo` there (the `resolve` default).
-public struct GeneratorResolver {
+///
+/// A reference type so it can memoize across the whole scan: a type's
+/// resolution is path-independent (the visited set only breaks cycles, and a
+/// cyclic type is non-derivable from every entry point), so every type is
+/// computed at most once. Without the memo, deeply nested universes (e.g.
+/// swift-syntax) re-resolve shared subtrees exponentially.
+public final class GeneratorResolver {
     private let shapesByName: [String: TypeShape]
+    private var memo: [String: DerivationStrategist.ComposedGenerator?] = [:]
 
     public init(types: [TypeShape]) {
         self.shapesByName = Dictionary(
@@ -39,18 +46,29 @@ public struct GeneratorResolver {
         _ name: String,
         visiting: Set<String>
     ) -> DerivationStrategist.ComposedGenerator? {
-        guard !visiting.contains(name) else { return nil }   // recursive cycle
+        if let cached = memo[name] { return cached }         // already fully resolved
+        guard !visiting.contains(name) else { return nil }   // recursive cycle (don't memoize the sentinel)
         guard let shape = shapesByName[name] else { return nil }   // external / unknown
+
+        let result = derive(shape, visiting: visiting)
+        memo[name] = result
+        return result
+    }
+
+    private func derive(
+        _ shape: TypeShape,
+        visiting: Set<String>
+    ) -> DerivationStrategist.ComposedGenerator? {
         if shape.hasUserGen {
-            return DerivationStrategist.ComposedGenerator(expression: "\(name).gen()")
+            return DerivationStrategist.ComposedGenerator(expression: "\(shape.name).gen()")
         }
-        let nextVisiting = visiting.union([name])
+        let nextVisiting = visiting.union([shape.name])
         let strategy = DerivationStrategist.strategy(for: shape) { inner in
             self.resolve(inner, visiting: nextVisiting)
         }
         if case .todo = strategy { return nil }
         return DerivationStrategist.ComposedGenerator(
-            expression: GeneratorExpressionEmitter.expression(typeName: name, strategy: strategy),
+            expression: GeneratorExpressionEmitter.expression(typeName: shape.name, strategy: strategy),
             requiredImports: strategy.requiredImports
         )
     }

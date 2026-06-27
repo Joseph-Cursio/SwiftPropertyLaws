@@ -124,31 +124,49 @@ enum ModuleScanner {
     private static func makeEntries(
         from perType: [String: TypeAggregate]
     ) -> [ConformanceMap.Entry] {
-        perType.keys.sorted().map { typeName -> ConformanceMap.Entry in
+        // Build the whole-module type universe once so nested custom-type
+        // members/parameters resolve (Tier 3). Every scanned type is included
+        // — even non-conformance-bearing helper types — so a referenced type
+        // still resolves when it isn't itself a test target.
+        let shapesByName = makeShapes(from: perType)
+        let resolver = GeneratorResolver(types: Array(shapesByName.values))
+        return perType.keys.sorted().map { typeName -> ConformanceMap.Entry in
             let aggregate = perType[typeName]!
             let raw = KnownProtocol.set(from: aggregate.inheritedNames)
-            // Default to `.struct` if we only saw extensions and never a
-            // primary decl. The strategist falls through to `.todo`
-            // anyway in that case.
-            let kind = aggregate.typeKind ?? .struct
-            let shape = TypeShape(
-                name: typeName,
-                kind: kind,
-                inheritedTypes: aggregate.inheritedNames,
-                hasUserGen: aggregate.hasUserGen,
-                storedMembers: aggregate.storedMembers,
-                hasUserInit: aggregate.hasUserInit,
-                initializers: aggregate.initializers
-            )
+            let shape = shapesByName[typeName]!
             return ConformanceMap.Entry(
                 typeName: typeName,
                 conformances: KnownProtocol.mostSpecific(
                     in: raw.subtracting(KnownProtocol.unemittable)
                 ),
                 provenances: aggregate.provenances.sorted(),
-                derivationStrategy: DerivationStrategist.strategy(for: shape)
+                derivationStrategy: DerivationStrategist.strategy(
+                    for: shape,
+                    resolve: resolver.customTypeGenerator
+                )
             )
         }
+    }
+
+    /// One `TypeShape` per scanned type. `.struct` is the default kind when
+    /// only extensions were seen (the strategist falls through to `.todo`
+    /// anyway in that case).
+    private static func makeShapes(
+        from perType: [String: TypeAggregate]
+    ) -> [String: TypeShape] {
+        var shapes: [String: TypeShape] = [:]
+        for (typeName, aggregate) in perType {
+            shapes[typeName] = TypeShape(
+                name: typeName,
+                kind: aggregate.typeKind ?? .struct,
+                inheritedTypes: aggregate.inheritedNames,
+                hasUserGen: aggregate.hasUserGen,
+                storedMembers: aggregate.storedMembers,
+                hasUserInit: aggregate.hasUserInit,
+                initializers: aggregate.initializers
+            )
+        }
+        return shapes
     }
 
     private static func accumulate(
