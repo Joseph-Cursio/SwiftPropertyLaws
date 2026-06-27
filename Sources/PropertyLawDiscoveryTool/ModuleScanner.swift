@@ -82,8 +82,9 @@ enum ModuleScanner {
 
     /// Per-type aggregator — collects inheritance names + provenance
     /// records + decl-kind + gen() presence + witness signatures across
-    /// primary decl and any extensions seen in any file.
-    private struct TypeAggregate {
+    /// primary decl and any extensions seen in any file. Module-internal so
+    /// `makeShapes` (in `ModuleScanner+Shapes.swift`) can consume it.
+    struct TypeAggregate {
         var inheritedNames: [String] = []
         var provenances: [ConformanceMap.Provenance] = []
         /// First primary-decl kind we encountered for this type. Stays
@@ -103,6 +104,9 @@ enum ModuleScanner {
         /// `initializerBased` strategy. Empty unless a primary struct decl
         /// contributed them.
         var initializers: [InitializerSignature] = []
+        /// Enum cases from the primary decl, for the Tier 4 `enumCases`
+        /// strategy. Empty unless a primary enum decl contributed them.
+        var enumCases: [EnumCase] = []
         /// Element-wise OR of witnesses seen in primary decl + every
         /// extension. PRD §5.4 advisory suggestions read from here.
         var witnesses: WitnessSet = WitnessSet()
@@ -148,27 +152,6 @@ enum ModuleScanner {
         }
     }
 
-    /// One `TypeShape` per scanned type. `.struct` is the default kind when
-    /// only extensions were seen (the strategist falls through to `.todo`
-    /// anyway in that case).
-    private static func makeShapes(
-        from perType: [String: TypeAggregate]
-    ) -> [String: TypeShape] {
-        var shapes: [String: TypeShape] = [:]
-        for (typeName, aggregate) in perType {
-            shapes[typeName] = TypeShape(
-                name: typeName,
-                kind: aggregate.typeKind ?? .struct,
-                inheritedTypes: aggregate.inheritedNames,
-                hasUserGen: aggregate.hasUserGen,
-                storedMembers: aggregate.storedMembers,
-                hasUserInit: aggregate.hasUserInit,
-                initializers: aggregate.initializers
-            )
-        }
-        return shapes
-    }
-
     private static func accumulate(
         statement: CodeBlockItemSyntax.Item,
         context: RecordingContext,
@@ -186,6 +169,7 @@ enum ModuleScanner {
                     storedMembers: primary.storedMembers,
                     hasUserInit: primary.hasUserInit,
                     initializers: primary.initializers,
+                    enumCases: primary.enumCases,
                     witnesses: primary.witnesses,
                     memberFunctions: primary.memberFunctions
                 ),
@@ -214,6 +198,7 @@ enum ModuleScanner {
                 storedMembers: [],
                 hasUserInit: false,
                 initializers: [],
+                enumCases: [],
                 witnesses: WitnessFinder.find(in: extensionDecl.memberBlock),
                 memberFunctions: RoundTripFinder.findMembers(in: extensionDecl.memberBlock)
             ),
@@ -233,6 +218,7 @@ enum ModuleScanner {
         let storedMembers: [StoredMember]
         let hasUserInit: Bool
         let initializers: [InitializerSignature]
+        let enumCases: [EnumCase]
         let witnesses: WitnessSet
         let memberFunctions: [FunctionSignature]
     }
@@ -307,6 +293,9 @@ enum ModuleScanner {
             initializers: kind == .struct
                 ? MemberBlockInspector.initializers(in: memberBlock)
                 : [],
+            enumCases: kind == .enum
+                ? MemberBlockInspector.enumCases(in: memberBlock)
+                : [],
             witnesses: WitnessFinder.find(in: memberBlock),
             memberFunctions: RoundTripFinder.findMembers(in: memberBlock)
         )
@@ -339,6 +328,7 @@ enum ModuleScanner {
         let storedMembers: [StoredMember]
         let hasUserInit: Bool
         let initializers: [InitializerSignature]
+        let enumCases: [EnumCase]
         let witnesses: WitnessSet
         let memberFunctions: [FunctionSignature]
     }
@@ -375,6 +365,9 @@ enum ModuleScanner {
         // Initializers come from the primary decl only (extensions pass []).
         if !request.initializers.isEmpty {
             aggregate.initializers = request.initializers
+        }
+        if !request.enumCases.isEmpty {
+            aggregate.enumCases = request.enumCases
         }
         aggregate.witnesses.merge(request.witnesses)
         aggregate.memberFunctions.append(contentsOf: request.memberFunctions)

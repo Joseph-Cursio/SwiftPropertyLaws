@@ -47,7 +47,8 @@ public struct PropertyLawSuiteMacro: PeerMacro {
             hasUserGen: target.hasUserGen,
             storedMembers: target.storedMembers,
             hasUserInit: target.hasUserInit,
-            initializers: target.initializers
+            initializers: target.initializers,
+            enumCases: target.enumCases
         )
         let strategy = DerivationStrategist.strategy(for: shape)
         if case .todo(let reason) = strategy {
@@ -70,6 +71,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
         let storedMembers: [StoredMember]
         let hasUserInit: Bool
         let initializers: [InitializerSignature]
+        let enumCases: [EnumCase]
 
         init?(declaration: some DeclSyntaxProtocol) {
             if let decl = declaration.as(StructDeclSyntax.self) {
@@ -124,6 +126,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
             self.storedMembers = MemberBlockInspector.storedMembers(in: memberBlock)
             self.hasUserInit = MemberBlockInspector.hasUserInit(in: memberBlock)
             self.initializers = MemberBlockInspector.initializers(in: memberBlock)
+            self.enumCases = MemberBlockInspector.enumCases(in: memberBlock)
         }
 
         /// Scans the type's primary declaration body for a static `gen()`

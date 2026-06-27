@@ -86,6 +86,32 @@ public enum MemberBlockInspector {
         return result
     }
 
+    /// Enum cases declared in `memberBlock`, in source order, for the Tier 4
+    /// `enumCases` strategy. One `case a, b` declaration yields one entry per
+    /// element. Each associated value's label is its first name (the
+    /// construction label), or `nil` when unlabeled (`_` or absent).
+    public static func enumCases(in memberBlock: MemberBlockSyntax) -> [EnumCase] {
+        var result: [EnumCase] = []
+        for member in memberBlock.members {
+            guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else { continue }
+            for element in caseDecl.elements {
+                var associatedValues: [InitializerParameter] = []
+                if let parameters = element.parameterClause?.parameters {
+                    for parameter in parameters {
+                        let first = parameter.firstName?.text
+                        let label = (first == nil || first == "_") ? nil : first
+                        associatedValues.append(InitializerParameter(
+                            label: label,
+                            typeName: parameter.type.trimmedDescription
+                        ))
+                    }
+                }
+                result.append(EnumCase(name: element.name.text, associatedValues: associatedValues))
+            }
+        }
+        return result
+    }
+
     private static func isStaticOrClass(_ decl: VariableDeclSyntax) -> Bool {
         decl.modifiers.contains { mod in
             mod.name.tokenKind == .keyword(.static) || mod.name.tokenKind == .keyword(.class)
