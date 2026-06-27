@@ -51,12 +51,14 @@ enum ModuleScanner {
                 )
             }
         }
+        let shapes = makeShapes(from: perType)
         return ConformanceMap(
-            entries: makeEntries(from: perType),
+            entries: makeEntries(from: perType, shapes: shapes),
             parseFailures: failures,
             witnesses: makeWitnesses(from: perType),
             memberFunctions: makeMemberFunctions(from: perType),
-            topLevelFunctions: topLevelFunctions
+            topLevelFunctions: topLevelFunctions,
+            shapesByName: shapes
         )
     }
 
@@ -126,13 +128,13 @@ enum ModuleScanner {
     }
 
     private static func makeEntries(
-        from perType: [String: TypeAggregate]
+        from perType: [String: TypeAggregate],
+        shapes shapesByName: [String: TypeShape]
     ) -> [ConformanceMap.Entry] {
-        // Build the whole-module type universe once so nested custom-type
-        // members/parameters resolve (Tier 3). Every scanned type is included
-        // — even non-conformance-bearing helper types — so a referenced type
-        // still resolves when it isn't itself a test target.
-        let shapesByName = makeShapes(from: perType)
+        // The whole-module type universe (built once in `scan`) lets nested
+        // custom-type members/parameters resolve (Tier 3). Every scanned type
+        // is included — even non-conformance-bearing helper types — so a
+        // referenced type still resolves when it isn't itself a test target.
         let resolver = GeneratorResolver(types: Array(shapesByName.values))
         return perType.keys.sorted().map { typeName -> ConformanceMap.Entry in
             let aggregate = perType[typeName]!

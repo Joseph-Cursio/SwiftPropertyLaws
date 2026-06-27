@@ -62,6 +62,12 @@ struct ConformanceMap: Sendable, Equatable {
     /// (file-path ascending, then declaration order).
     let topLevelFunctions: [FunctionSignature]
 
+    /// The `TypeShape` per scanned type — the whole-module universe, retained
+    /// so the scaffold pass can re-derive `.todo` types with a hole-filling
+    /// resolver. Keyed by `typeName`. Defaults to empty for call sites that
+    /// don't scaffold.
+    let shapesByName: [String: TypeShape]
+
     struct ParseFailure: Sendable, Equatable {
         let filePath: String
         let message: String
@@ -72,13 +78,15 @@ struct ConformanceMap: Sendable, Equatable {
         parseFailures: [ParseFailure],
         witnesses: [String: WitnessSet] = [:],
         memberFunctions: [String: [FunctionSignature]] = [:],
-        topLevelFunctions: [FunctionSignature] = []
+        topLevelFunctions: [FunctionSignature] = [],
+        shapesByName: [String: TypeShape] = [:]
     ) {
         self.entries = entries
         self.parseFailures = parseFailures
         self.witnesses = witnesses
         self.memberFunctions = memberFunctions
         self.topLevelFunctions = topLevelFunctions
+        self.shapesByName = shapesByName
     }
 }
 

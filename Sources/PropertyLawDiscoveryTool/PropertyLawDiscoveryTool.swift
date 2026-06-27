@@ -29,6 +29,22 @@ struct PropertyLawDiscoveryTool {
         try writeOutput(output, to: invocation.outputPath)
         printSummary(invocation: invocation, map: map, suppressions: suppressions)
 
+        // Opt-in scaffold pass — best-effort `gen()` stubs for partially
+        // derivable `.todo` types, written to a separate file (placeholders
+        // don't compile, so they can't live in the generated test file).
+        if let scaffoldPath = invocation.scaffoldOutputPath {
+            if let scaffolds = ScaffoldFileEmitter.emit(map: map) {
+                try writeOutput(scaffolds, to: scaffoldPath)
+                FileHandle.standardOutput.write(Data(
+                    "  scaffolds written: \(scaffoldPath)\n".utf8
+                ))
+            } else {
+                FileHandle.standardOutput.write(Data(
+                    "  scaffolds: none (no partially-derivable types)\n".utf8
+                ))
+            }
+        }
+
         // PRD §5.4 + §5.5 advisory pass — opt-in, writes to stderr only
         // so the generated file stays byte-identical regardless of
         // `--advisory`. Both detectors share the flag and the confidence
@@ -66,6 +82,9 @@ struct PropertyLawDiscoveryTool {
             Options:
                 --target <name>           Required. The target whose conformances to scan.
                 --output <path>           Required. Path to the generated file.
+                --scaffold-out <path>     Optional. Write best-effort gen() stubs for
+                                          partially-derivable types (with <#...#>
+                                          placeholders) to a separate file for review.
                 --source-files <paths>... Required. Source paths the plugin discovers.
                 --advisory                Optional. Emit missing-conformance suggestions
                                           to stderr (PRD §5.4). Off by default. Output
@@ -216,6 +235,8 @@ struct ToolInvocation: Sendable {
     let sourceFiles: [String]
     let advisory: Bool
     let advisoryMinConfidence: SuggestionConfidence
+    /// Optional path for the opt-in scaffold file (`--scaffold-out`).
+    let scaffoldOutputPath: String?
 
     init(arguments: [String]) throws {
         var builder = Builder()
@@ -238,6 +259,7 @@ struct ToolInvocation: Sendable {
         self.sourceFiles = builder.sourceFiles
         self.advisory = builder.advisory
         self.advisoryMinConfidence = builder.advisoryMin
+        self.scaffoldOutputPath = builder.scaffoldOutputPath
     }
 
     /// Mutable accumulator for the argv loop — keeps `init(arguments:)`
@@ -248,6 +270,7 @@ struct ToolInvocation: Sendable {
         var sourceFiles: [String] = []
         var advisory = false
         var advisoryMin: SuggestionConfidence = .high
+        var scaffoldOutputPath: String?
     }
 
     /// Consumes one flag (and its value, if any) from `arguments` and
@@ -265,6 +288,9 @@ struct ToolInvocation: Sendable {
             return index + 2
         case "--output":
             builder.outputPath = try requireValue(after: arg, arguments: arguments, at: index)
+            return index + 2
+        case "--scaffold-out":
+            builder.scaffoldOutputPath = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
         case "--advisory":
             builder.advisory = true
