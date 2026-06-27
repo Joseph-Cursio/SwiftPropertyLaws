@@ -1,4 +1,5 @@
 import Foundation
+import PropertyLawCore
 
 /// Whole-module conformance-discovery tool (PRD §5.3 Discovery Mode).
 ///
@@ -112,11 +113,37 @@ struct PropertyLawDiscoveryTool {
         }
         if !todoEntries.isEmpty {
             lines.append("  types needing manual gen() (\(todoEntries.count)):")
+            // Bucket by reason so the dominant derivation gap is visible at a
+            // glance — this is the scoreboard for prioritizing which
+            // derivation tier to build next.
+            var buckets: [String: Int] = [:]
             for entry in todoEntries {
-                lines.append("    - \(entry.typeName)")
+                buckets[Self.todoCategory(for: entry.derivationStrategy), default: 0] += 1
+            }
+            for (category, count) in buckets.sorted(by: { $0.value > $1.value }) {
+                lines.append("    [\(count)] \(category)")
+            }
+            // List names only for small result sets to keep output scannable.
+            if todoEntries.count <= 25 {
+                for entry in todoEntries {
+                    lines.append("      - \(entry.typeName)")
+                }
             }
         }
         FileHandle.standardOutput.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+    }
+
+    /// Buckets a `.todo` strategy's reason into a coarse derivation-gap
+    /// category for the summary scoreboard.
+    private static func todoCategory(for strategy: DerivationStrategy) -> String {
+        guard case .todo(let reason) = strategy else { return "n/a" }
+        if reason.contains("structs only") { return "non-struct (class/actor/enum-payload)" }
+        if reason.contains("no stored properties") { return "no visible stored properties" }
+        if reason.contains("user `init") { return "user-defined init" }
+        if reason.contains("memberwise derivation supports up to") { return "arity > 10" }
+        if reason.contains("stored property") { return "unsupported member type (nested/custom)" }
+        if reason.contains("not `CaseIterable`") { return "enum without CaseIterable/raw" }
+        return "other"
     }
 
     /// Render advisory suggestions as Swift-compiler-style `note:` lines
