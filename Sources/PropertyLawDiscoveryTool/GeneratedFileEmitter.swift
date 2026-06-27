@@ -36,6 +36,15 @@ enum GeneratedFileEmitter {
         lines.append("")
         lines.append("import Testing")
         lines.append("import PropertyLawKit")
+        // Extra imports required by derived generators (e.g. `Foundation`
+        // for a `Date` member). Sorted for deterministic output; empty for
+        // stdlib-only targets, so existing generated files are unchanged.
+        let extraImports = map.entries.reduce(into: Set<String>()) {
+            $0.formUnion($1.derivationStrategy.requiredImports)
+        }
+        for module in extraImports.sorted() {
+            lines.append("import \(module)")
+        }
         for entry in map.entries {
             lines.append("")
             lines.append(contentsOf: suiteLines(for: entry, suppressions: suppressions))

@@ -33,6 +33,19 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// `reason` carries a human-readable diagnostic surfaced as a macro
     /// warning alongside the compile error (PRD §5.7 telemetry).
     case todo(reason: String)
+
+    /// Modules the emitted generator expression must be able to name. Only
+    /// `.memberwiseArbitrary` can require imports today (e.g. `["Foundation"]`
+    /// when a member is a `Date`); the other strategies emit stdlib-only or
+    /// `<Type>.gen()` references. The discovery plugin unions these across a
+    /// target so the generated file imports what it references; the macro
+    /// path ignores this (it expands where member types are already in scope).
+    public var requiredImports: Set<String> {
+        if case .memberwiseArbitrary(let members) = self {
+            return members.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
+        }
+        return []
+    }
 }
 
 /// Single member of a memberwise-derivation strategy: the stored property's
@@ -44,15 +57,20 @@ public enum DerivationStrategy: Sendable, Equatable {
 public struct MemberSpec: Sendable, Equatable {
     public let name: String
     /// The recognized stdlib raw type when the member *is* a raw type;
-    /// `nil` for composite members (optional/array/set/dictionary), whose
-    /// generator is composed in `generatorExpression`.
+    /// `nil` for composite members (optional/array/set/dictionary) and known
+    /// value types, whose generator is composed in `generatorExpression`.
     public let rawType: RawType?
     /// The generator expression emitted for this member — the canonical
     /// field for emission. For raw members this equals
-    /// `rawType.generatorExpression`; for composite members it composes
+    /// `rawType.generatorExpression`; for composite/known members it composes
     /// engine combinators (`.optional`, `.array(of:)`, `.set(ofAtMost:)`,
-    /// `zip(...).dictionary(ofAtMost:)`).
+    /// `zip(...).dictionary(ofAtMost:)`) and curated value-type generators.
     public let generatorExpression: String
+    /// Modules `generatorExpression` must be able to name — e.g.
+    /// `["Foundation"]` for a `Date` member. Empty for raw members and
+    /// stdlib-only composites. Aggregated up to the discovery plugin so the
+    /// generated file imports what it references.
+    public let requiredImports: Set<String>
 
     /// Raw-member init. Keeps `rawType` populated and derives the
     /// expression from it — preserves the pre-Tier-1 construction shape so
@@ -61,14 +79,16 @@ public struct MemberSpec: Sendable, Equatable {
         self.name = name
         self.rawType = rawType
         self.generatorExpression = rawType.generatorExpression
+        self.requiredImports = []
     }
 
-    /// Composite-member init. `rawType` is `nil`; the caller supplies the
-    /// already-composed generator expression.
-    public init(name: String, generatorExpression: String) {
+    /// Composite/known-member init. `rawType` is `nil`; the caller supplies
+    /// the already-composed generator expression and any modules it names.
+    public init(name: String, generatorExpression: String, requiredImports: Set<String> = []) {
         self.name = name
         self.rawType = nil
         self.generatorExpression = generatorExpression
+        self.requiredImports = requiredImports
     }
 }
 
@@ -240,9 +260,14 @@ public enum DerivationStrategist {
             if let rawType = RawType(typeName: member.typeName) {
                 // Raw member — keep `rawType` populated (back-compat).
                 specs.append(MemberSpec(name: member.name, rawType: rawType))
-            } else if let expression = memberGenerator(forTypeName: member.typeName) {
-                // Composite member (optional/array/set/dictionary).
-                specs.append(MemberSpec(name: member.name, generatorExpression: expression))
+            } else if let composed = composedGenerator(forTypeName: member.typeName) {
+                // Composite (optional/array/set/dictionary) or known value
+                // type (Character/Date) — carries any required imports.
+                specs.append(MemberSpec(
+                    name: member.name,
+                    generatorExpression: composed.expression,
+                    requiredImports: composed.requiredImports
+                ))
             } else {
                 return nil
             }
@@ -311,8 +336,8 @@ public enum DerivationStrategist {
             return prefix + "stored property `\(unknown.name): "
                 + "\(unknown.typeName)` has no recognized stdlib raw type "
                 + "(memberwise derivation supports Int/String/Bool/Double/"
-                + "Float and the fixed-width integer family, plus optionals, "
-                + "arrays, sets, and dictionaries of those)." + suffix
+                + "Float, the fixed-width integer family, Character, and Date, "
+                + "plus optionals, arrays, sets, and dictionaries of those)." + suffix
         }
         return prefix + "memberwise derivation didn't apply." + suffix
     }
