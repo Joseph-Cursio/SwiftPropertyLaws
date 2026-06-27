@@ -10,17 +10,23 @@
 /// public surface beyond `ComposedGenerator`.
 extension DerivationStrategist {
 
-    /// A generator expression paired with the modules its source must be
-    /// able to name. Threaded through composite parsing so the discovery
-    /// plugin can emit the right `import`s into the *separate* generated
-    /// file, and returned by the Tier 3 custom-type resolver.
+    /// A composed generator, backed by a structured `GeneratorPlan`.
+    /// `expression` / `requiredImports` are derived from the plan, so the
+    /// many call sites that read those keep working unchanged while the tree
+    /// becomes available for scaffolding (holes) and refinement.
     public struct ComposedGenerator: Sendable, Equatable {
-        public let expression: String
-        public let requiredImports: Set<String>
+        public let plan: GeneratorPlan
+        public var expression: String { plan.rendered }
+        public var requiredImports: Set<String> { plan.requiredImports }
 
+        public init(plan: GeneratorPlan) {
+            self.plan = plan
+        }
+
+        /// Convenience for leaf generators (raw / known value types, and the
+        /// resolver's inlined-or-`gen()` references).
         public init(expression: String, requiredImports: Set<String> = []) {
-            self.expression = expression
-            self.requiredImports = requiredImports
+            self.plan = .leaf(expression: expression, imports: requiredImports)
         }
     }
 
@@ -56,10 +62,10 @@ extension DerivationStrategist {
 
         // Optional: `T?` sugar or `Optional<T>`.
         if text.hasSuffix("?") {
-            return wrap(String(text.dropLast()), suffix: ".optional", resolve: resolve)
+            return wrap(String(text.dropLast()), resolve: resolve) { .optional($0) }
         }
         if let inner = genericArgument(of: text, named: "Optional") {
-            return wrap(inner, suffix: ".optional", resolve: resolve)
+            return wrap(inner, resolve: resolve) { .optional($0) }
         }
 
         // Array / Dictionary sugar: `[ ... ]`.
@@ -72,15 +78,15 @@ extension DerivationStrategist {
                     resolve: resolve
                 )
             }
-            return wrap(body, suffix: ".array(of: 0...8)", resolve: resolve)
+            return wrap(body, resolve: resolve) { .array($0) }
         }
 
         // Generic spellings: Array<T>, Set<T>, Dictionary<K, V>.
         if let inner = genericArgument(of: text, named: "Array") {
-            return wrap(inner, suffix: ".array(of: 0...8)", resolve: resolve)
+            return wrap(inner, resolve: resolve) { .array($0) }
         }
         if let inner = genericArgument(of: text, named: "Set") {
-            return wrap(inner, suffix: ".set(ofAtMost: 0...8)", resolve: resolve)
+            return wrap(inner, resolve: resolve) { .set($0) }
         }
         if let inner = genericArgument(of: text, named: "Dictionary"),
            let comma = topLevelSeparatorIndex(in: inner, separator: ",") {
@@ -96,23 +102,20 @@ extension DerivationStrategist {
         return leafGenerator(forTypeName: text, resolve: resolve)
     }
 
-    /// Recurse into `inner`, append `suffix` to its generator expression,
-    /// and carry the element's imports up unchanged.
+    /// Recurse into `inner`, then wrap its plan in the given collection node
+    /// (`.optional` / `.array` / `.set`).
     private static func wrap(
         _ inner: String,
-        suffix: String,
-        resolve: CustomTypeResolver
+        resolve: CustomTypeResolver,
+        _ node: (GeneratorPlan) -> GeneratorPlan
     ) -> ComposedGenerator? {
         composedGenerator(forTypeName: inner, resolve: resolve).map {
-            ComposedGenerator(
-                expression: "\($0.expression)\(suffix)",
-                requiredImports: $0.requiredImports
-            )
+            ComposedGenerator(plan: node($0.plan))
         }
     }
 
-    /// `zip(<keyGen>, <valGen>).dictionary(ofAtMost: 0...8)`, unioning both
-    /// sides' imports, or `nil` if either side doesn't resolve.
+    /// A `.dictionary` plan over the resolved key and value plans, or `nil`
+    /// if either side doesn't resolve.
     private static func dictionaryGenerator(
         key: String,
         value: String,
@@ -120,10 +123,7 @@ extension DerivationStrategist {
     ) -> ComposedGenerator? {
         guard let keyGen = composedGenerator(forTypeName: key, resolve: resolve),
               let valueGen = composedGenerator(forTypeName: value, resolve: resolve) else { return nil }
-        return ComposedGenerator(
-            expression: "zip(\(keyGen.expression), \(valueGen.expression)).dictionary(ofAtMost: 0...8)",
-            requiredImports: keyGen.requiredImports.union(valueGen.requiredImports)
-        )
+        return ComposedGenerator(plan: .dictionary(key: keyGen.plan, value: valueGen.plan))
     }
 
     /// A bare leaf type: a recognized stdlib raw type, a known value type
