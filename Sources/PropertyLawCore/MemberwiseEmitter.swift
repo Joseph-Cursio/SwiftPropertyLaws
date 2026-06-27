@@ -40,13 +40,13 @@ public enum MemberwiseEmitter {
     }
 
     private static func singleMemberExpression(typeName: String, member: MemberSpec) -> String {
-        "\(member.rawType.generatorExpression)"
+        "\(member.generatorExpression)"
             + ".map { \(typeName)(\(member.name): $0) }"
     }
 
     private static func zipExpression(typeName: String, members: [MemberSpec]) -> String {
         let generators = members
-            .map(\.rawType.generatorExpression)
+            .map(\.generatorExpression)
             .joined(separator: ", ")
         let arguments = members.enumerated()
             .map { index, member in "\(member.name): $0.\(index)" }

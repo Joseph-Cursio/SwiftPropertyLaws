@@ -12,13 +12,14 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// `enum T: CaseIterable` — emit `Gen<T>.element(of: T.allCases)`.
     case caseIterable
 
-    /// PRD §5.7 Strategy 3 — every stored property of a struct has a
-    /// recognized stdlib raw type. The emitter composes per-member
-    /// generators via `zip(...)` (or a single `.map(...)` for a 1-member
-    /// type) and lifts through the type's synthesized memberwise
-    /// initializer. v1 supports 1–10 members; arity 11+ falls through to
-    /// `.todo` because `swift-property-based` ships `zip` overloads up to
-    /// 10-arity.
+    /// PRD §5.7 Strategy 3 — every stored property of a struct resolves to
+    /// a generator: a recognized stdlib raw type, or a composite of
+    /// optional/array/set/dictionary around recognized raw types (Tier 1).
+    /// The emitter composes per-member generators via `zip(...)` (or a
+    /// single `.map(...)` for a 1-member type) and lifts through the type's
+    /// synthesized memberwise initializer. v1 supports 1–10 members; arity
+    /// 11+ falls through to `.todo` because `swift-property-based` ships
+    /// `zip` overloads up to 10-arity.
     case memberwiseArbitrary(members: [MemberSpec])
 
     /// `enum T: <RawType>` where `RawType` is a stdlib type with a known
@@ -35,17 +36,39 @@ public enum DerivationStrategy: Sendable, Equatable {
 }
 
 /// Single member of a memberwise-derivation strategy: the stored property's
-/// label paired with a recognized stdlib raw type. The strategist returns
-/// `MemberSpec`s only after every stored property of the source type has
-/// been resolved to a `RawType`; otherwise the strategy falls through to
-/// `.todo`.
+/// label paired with the `swift-property-based` generator expression that
+/// produces values for it. The strategist returns `MemberSpec`s only after
+/// every stored property has resolved to a generator (a recognized raw type,
+/// or a composite of optional/array/set/dictionary around recognized raw
+/// types); otherwise the strategy falls through to `.todo`.
 public struct MemberSpec: Sendable, Equatable {
     public let name: String
-    public let rawType: RawType
+    /// The recognized stdlib raw type when the member *is* a raw type;
+    /// `nil` for composite members (optional/array/set/dictionary), whose
+    /// generator is composed in `generatorExpression`.
+    public let rawType: RawType?
+    /// The generator expression emitted for this member — the canonical
+    /// field for emission. For raw members this equals
+    /// `rawType.generatorExpression`; for composite members it composes
+    /// engine combinators (`.optional`, `.array(of:)`, `.set(ofAtMost:)`,
+    /// `zip(...).dictionary(ofAtMost:)`).
+    public let generatorExpression: String
 
+    /// Raw-member init. Keeps `rawType` populated and derives the
+    /// expression from it — preserves the pre-Tier-1 construction shape so
+    /// existing callers and equality assertions are unaffected.
     public init(name: String, rawType: RawType) {
         self.name = name
         self.rawType = rawType
+        self.generatorExpression = rawType.generatorExpression
+    }
+
+    /// Composite-member init. `rawType` is `nil`; the caller supplies the
+    /// already-composed generator expression.
+    public init(name: String, generatorExpression: String) {
+        self.name = name
+        self.rawType = nil
+        self.generatorExpression = generatorExpression
     }
 }
 
@@ -214,10 +237,15 @@ public enum DerivationStrategist {
         guard shape.storedMembers.count <= memberwiseArityLimit else { return nil }
         var specs: [MemberSpec] = []
         for member in shape.storedMembers {
-            guard let rawType = RawType(typeName: member.typeName) else {
+            if let rawType = RawType(typeName: member.typeName) {
+                // Raw member — keep `rawType` populated (back-compat).
+                specs.append(MemberSpec(name: member.name, rawType: rawType))
+            } else if let expression = memberGenerator(forTypeName: member.typeName) {
+                // Composite member (optional/array/set/dictionary).
+                specs.append(MemberSpec(name: member.name, generatorExpression: expression))
+            } else {
                 return nil
             }
-            specs.append(MemberSpec(name: member.name, rawType: rawType))
         }
         return .memberwiseArbitrary(members: specs)
     }
@@ -276,11 +304,15 @@ public enum DerivationStrategist {
                 + "\(memberwiseArityLimit) (the upstream `zip` arity limit)."
                 + suffix
         }
-        if let unknown = shape.storedMembers.first(where: { RawType(typeName: $0.typeName) == nil }) {
+        if let unknown = shape.storedMembers.first(where: {
+            RawType(typeName: $0.typeName) == nil
+                && memberGenerator(forTypeName: $0.typeName) == nil
+        }) {
             return prefix + "stored property `\(unknown.name): "
                 + "\(unknown.typeName)` has no recognized stdlib raw type "
                 + "(memberwise derivation supports Int/String/Bool/Double/"
-                + "Float and the fixed-width integer family)." + suffix
+                + "Float and the fixed-width integer family, plus optionals, "
+                + "arrays, sets, and dictionaries of those)." + suffix
         }
         return prefix + "memberwise derivation didn't apply." + suffix
     }
