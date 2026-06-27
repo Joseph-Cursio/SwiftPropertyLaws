@@ -1,0 +1,61 @@
+import Testing
+import PropertyBased
+
+/// Validation that the generator expressions `DerivationStrategist`
+/// (PropertyLawCore, Tier 1) emits for composite members actually compile
+/// and run against the live `swift-property-based` engine. PropertyLawCore
+/// only produces *strings* and doesn't link `PropertyBased`, so its own
+/// tests can't catch a wrong combinator name or signature — this test, in a
+/// target that links the engine, is the backstop.
+///
+/// Each binding mirrors `memberGenerator(forTypeName:)` output verbatim; the
+/// explicit result-type annotation asserts the composed combinators produce
+/// exactly the type the parser claims (e.g. `.optional` → `Int?`,
+/// `.set(ofAtMost:)` → `Set<Int>`, `zip(...).dictionary(ofAtMost:)` →
+/// `[String: Int]`). If this compiles and runs, the emitted generators are
+/// valid downstream.
+struct CompositeGeneratorCompileTests {
+    private struct Bag: Equatable { let items: [Int] }
+    private struct Order: Equatable { let id: Int; let skus: [String] }
+
+    @Test func compositeGeneratorsCompileAndRunAgainstEngine() {
+        var rng = Xoshiro(seed: (1, 2, 3, 4))
+
+        // "Int?"
+        let optional: Int? = Gen<Int>.int().optional.run(using: &rng)
+        // "[Int]"
+        let array: [Int] = Gen<Int>.int().array(of: 0...8).run(using: &rng)
+        // "[String]"
+        let stringArray: [String] = Gen<Character>.letterOrNumber
+            .string(of: 0...8).array(of: 0...8).run(using: &rng)
+        // "Set<Int>"
+        let set: Set<Int> = Gen<Int>.int().set(ofAtMost: 0...8).run(using: &rng)
+        // "[String: Int]"
+        let dictionary: [String: Int] = zip(
+            Gen<Character>.letterOrNumber.string(of: 0...8),
+            Gen<Int>.int()
+        ).dictionary(ofAtMost: 0...8).run(using: &rng)
+        // "[Int?]"
+        let arrayOfOptional: [Int?] = Gen<Int>.int()
+            .optional.array(of: 0...8).run(using: &rng)
+
+        // Memberwise composition lifted through the synthesized init.
+        let bag: Bag = Gen<Int>.int()
+            .array(of: 0...8).map { Bag(items: $0) }.run(using: &rng)
+        let order: Order = zip(
+            Gen<Int>.int(),
+            Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8)
+        ).map { Order(id: $0.0, skus: $0.1) }.run(using: &rng)
+
+        // Reaching here means every expression type-checked and produced a
+        // value of the asserted type. Touch each so nothing is dead.
+        _ = optional
+        #expect(array.count <= 8)
+        #expect(stringArray.count <= 8)
+        #expect(set.count <= 8)
+        #expect(dictionary.count <= 8)
+        #expect(arrayOfOptional.count <= 8)
+        #expect(bag.items.count <= 8)
+        _ = order
+    }
+}
