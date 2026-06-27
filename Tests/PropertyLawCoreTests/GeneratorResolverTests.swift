@@ -136,6 +136,34 @@ struct GeneratorResolverTests {
         }
     }
 
+    // MARK: - User typealias resolution
+
+    @Test func userTypealiasResolvesToUnderlyingGenerator() {
+        let resolver = GeneratorResolver(types: [], aliases: ["UserID": "Int"])
+        #expect(resolver.customTypeGenerator(forTypeName: "UserID")?.expression == "Gen<Int>.int()")
+    }
+
+    @Test func userTypealiasToCompositeResolves() {
+        let resolver = GeneratorResolver(types: [], aliases: ["Coords": "[Double]"])
+        #expect(
+            resolver.customTypeGenerator(forTypeName: "Coords")?.expression
+                == "Gen<Double>.double(in: -1_000_000...1_000_000).array(of: 0...8)"
+        )
+    }
+
+    @Test func memberTypedAsUserAliasDerivesMemberwise() {
+        let account = structShape("Account", [("id", "UserID"), ("name", "String")])
+        let resolver = GeneratorResolver(types: [account], aliases: ["UserID": "Int"])
+        guard case .memberwiseArbitrary = strategyResolving(account, with: resolver) else {
+            Issue.record("expected memberwise derivation through the alias")
+            return
+        }
+    }
+
+    private func strategyResolving(_ shape: TypeShape, with resolver: GeneratorResolver) -> DerivationStrategy {
+        DerivationStrategist.strategy(for: shape, resolve: resolver.customTypeGenerator)
+    }
+
     // MARK: - Macro path (no resolver) is unchanged
 
     @Test func withoutResolverNestedCustomStaysTodo() {

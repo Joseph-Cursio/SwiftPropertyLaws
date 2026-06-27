@@ -45,6 +45,23 @@ struct KnownValueTypeDerivationTests {
         }
     }
 
+    // MARK: - Known stdlib/Foundation typealiases
+
+    @Test func timeIntervalResolvesToDouble() {
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: "TimeInterval")
+                == "Gen<Double>.double(in: -1_000_000...1_000_000)"
+        )
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: "[TimeInterval]")
+                == "Gen<Double>.double(in: -1_000_000...1_000_000).array(of: 0...8)"
+        )
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: "Float32")
+                == "Gen<Float>.float(in: -1_000_000...1_000_000)"
+        )
+    }
+
     // MARK: - Strategy-level import aggregation
 
     @Test func structWithDateMemberDerivesAndRequiresFoundation() {

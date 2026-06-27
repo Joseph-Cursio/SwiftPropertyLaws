@@ -109,6 +109,27 @@ struct ModuleScannerTests {
         #expect(expression.contains("Shape.circle(radius: $0)"))
     }
 
+    @Test func scanResolvesUserTypealias() throws {
+        let dir = try makeFixtureDir([
+            "Models.swift": """
+                typealias UserID = Int
+                struct Account: Equatable {
+                    let id: UserID
+                    let name: String
+                }
+                """
+        ])
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
+        #expect(map.aliases["UserID"] == "Int")
+        let account = try #require(map.entries.first { $0.typeName == "Account" })
+        guard case .memberwiseArbitrary = account.derivationStrategy else {
+            Issue.record("expected Account to derive via the UserID alias; got \(account.derivationStrategy)")
+            return
+        }
+    }
+
     @Test func failableInitializerDeclinesToTodoInScan() throws {
         let dir = try makeFixtureDir([
             "Code.swift": """
