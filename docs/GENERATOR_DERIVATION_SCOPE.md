@@ -293,7 +293,7 @@ Remaining `.todo` buckets on SLRS:
 
 | Reason | Count | Addressable? |
 |---|---|---|
-| no visible stored properties | 200 | mostly **no** (extensions on external types, protocols, namespace enums, SwiftUI views) |
+| no visible stored properties | 200 | mostly **no** — dominated by SwiftUI `View` structs (52+ files; computed `body` + type-inferred `@State`), plus extension-only external types (~6, e.g. `UserDefaults`) and empty/all-computed structs. (Not namespace enums — those land in the enum bucket.) |
 | enum without CaseIterable/raw | 61 | **yes — Tier 4 (enum payloads)** |
 | non-struct (class/actor) | 61 | mostly no (reference semantics, out of scope) |
 | unsupported member type | 57 | partly (gated on Tier 4 / class support) |
@@ -304,4 +304,34 @@ Remaining `.todo` buckets on SLRS:
 (61) — i.e. Tier 4 (enum payloads via `Gen.oneOf`).** That's the data-justified
 next tier if continuing. The 200 "no stored properties" should be excluded
 from the scoreboard denominator (non-addressable) for an honest rate.
+
+### Tier 4 shipped — enum payloads
+
+`enumCases` strategy: each case → `Gen.always(T.c)` (plain) or
+`zip(...).map { T.c(...) }` (payload), combined with `Gen.oneOf(...eraseToAny())`.
+Associated values resolve through the Tiers 1–3 machinery (composites, Date,
+nested customs), so it composes with everything prior. Slots in after
+CaseIterable/raw so those enums are untouched. Re-measured on SLRS:
+
+| | derivable | enum bucket |
+|---|---|---|
+| pre-Tier-4 | 42 | 61 |
+| post-Tier-4 | **64** | 41 |
+
+**+22 derivable (+52%).** 20 enums derived directly; the remaining 41 in the
+bucket have non-derivable associated values (custom non-derivable types,
+closures, external types). Across all tiers the corpus arc is now
+**19 → 64 derivable (3.4×)**.
+
+**State of the engine after four shipped tiers (1/2/3/4/6):** derivation now
+covers the plain value-type world end to end — raw, composite, known value
+types, user-init structs, nested value types, and enums (plain + payload).
+The remaining `.todo` on SLRS is dominated by genuinely out-of-scope or
+non-addressable shapes: classes (61, reference semantics), "no stored
+properties" (200, mostly SwiftUI views + external-type extensions), and
+members/associated-values that bottom out in those. The high-leverage
+derivation work is essentially done; further gains are narrow (qualified
+nested-type names, arity > 10) or out of scope (classes). The next
+*ecosystem* lever is no longer derivation — it's the scoreboard honesty fix
+(exclude non-addressable types) and moving up to Ideas #1/#2.
 ```
