@@ -164,4 +164,54 @@ deeper tiers.
 4. **Where shrinkable `Date`/`UUID`/`Data` gens live** — curated in PropertyLawCore vs.
    upstreamed to `swift-property-based`. Recommendation: upstream the genuinely reusable ones.
 5. **TypeShape model bump coordination** with SwiftInferProperties (additive; needs a release).
+
+---
+
+## Measured yield (2026-06-27) — reshapes the roadmap
+
+After shipping Tier 1 (composite members) + Tier 2 (Character/Date), I ran
+`PropertyLawDiscoveryTool` against three corpora and diffed HEAD vs the
+pre-Tier-1 commit. **Tiers 1–2 unlocked almost nothing on real code:**
+
+| Corpus | Types | manual `gen()` before | after | unlocked |
+|---|---|---|---|---|
+| Sitrep (real app) | 19 | 19 | 19 | 0 |
+| swift-property-based | 24 | 22 | 22 | 0 |
+| swift-syntax | 1009 | 998 | 997 | 1 |
+
+`.todo` reasons, aggregated (new tool scoreboard):
+
+| Reason | Count | Share |
+|---|---|---|
+| **user-defined init** | 669 | **64%** |
+| no visible stored properties | 183 | 18% |
+| enum without CaseIterable/raw | 77 | 7% |
+| unsupported member type (nested/custom) | 64 | 6% |
+| non-struct (class/actor/enum-payload) | 45 | 4% |
+
+**Findings that overturn the original phasing:**
+- Composite/value-type members (Tiers 1–2) were *not even a bucket* — that
+  gap barely exists in real code. The work is correct but low-yield.
+- **`user-defined init` (Tier 6) is the dominant addressable gap**, not
+  nested types. It was ranked *low* in the original phasing — it should be
+  **first**. Derivation must capture the init's parameter signature and
+  build through it (needs Step 0 TypeShape enrichment).
+- `no visible stored properties` (18%) is largely **non-addressable noise**:
+  extensions adding conformances to *external* types (`Array`, `String`,
+  `ClassDeclSyntax`, …) whose stored members the tool can't see, plus
+  namespace enums. The scoreboard should exclude these so future
+  measurement is honest.
+- **Nested custom types (Tier 3) is only ~6%** and is *gated on* user-init
+  support — most custom member types themselves have custom inits, so Tier 3
+  doesn't pay off until Tier 6 lands.
+
+**Revised priority:** (1) Tier 6 user-init derivation; (2) separate
+addressable vs non-addressable in the scoreboard; (3) Tier 4 enum payloads
+(~7%); (4) Tier 3 nested (~6%, gated on 1); (5) non-struct/classes (~4%).
+
+**Caveat:** three corpora, and swift-syntax (compiler-generated wrappers)
+dominates the user-init count; the real-app corpora are small. Broaden the
+corpus (a few real SwiftUI/server apps) to firm up the ranking. But the
+"composite-member gap is tiny / structural reasons dominate" signal is
+consistent across all three.
 ```
