@@ -28,23 +28,35 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// `nil`s for sparse raw spaces.
     case rawRepresentable(RawType)
 
+    /// Tier 6 — a struct with a user-defined initializer whose parameters
+    /// all resolve to generators. Memberwise derivation can't apply (the
+    /// user `init` suppresses Swift's synthesized memberwise init), so the
+    /// emitter instead composes per-argument generators and lifts through
+    /// that init: `zip(...).map { Type(label0: $0.0, ...) }`, honoring each
+    /// argument's call label (or omitting it for an unlabeled `_` parameter).
+    case initializerBased(arguments: [InitArgument])
+
     /// No strategy matched. The emitter produces a deliberate compile
     /// error pointing at where the user should provide `gen()` or annotate.
     /// `reason` carries a human-readable diagnostic surfaced as a macro
     /// warning alongside the compile error (PRD §5.7 telemetry).
     case todo(reason: String)
 
-    /// Modules the emitted generator expression must be able to name. Only
-    /// `.memberwiseArbitrary` can require imports today (e.g. `["Foundation"]`
-    /// when a member is a `Date`); the other strategies emit stdlib-only or
-    /// `<Type>.gen()` references. The discovery plugin unions these across a
-    /// target so the generated file imports what it references; the macro
-    /// path ignores this (it expands where member types are already in scope).
+    /// Modules the emitted generator expression must be able to name (e.g.
+    /// `["Foundation"]` when a member or init argument is a `Date`). The
+    /// stdlib-only and `<Type>.gen()` strategies require none. The discovery
+    /// plugin unions these across a target so the generated file imports what
+    /// it references; the macro path ignores this (it expands where member
+    /// types are already in scope).
     public var requiredImports: Set<String> {
-        if case .memberwiseArbitrary(let members) = self {
+        switch self {
+        case .memberwiseArbitrary(let members):
             return members.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
+        case .initializerBased(let arguments):
+            return arguments.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
+        case .userGen, .caseIterable, .rawRepresentable, .todo:
+            return []
         }
-        return []
     }
 }
 
@@ -189,6 +201,12 @@ public struct TypeShape: Sendable, Equatable {
     /// exists. Inits declared in extensions don't suppress synthesis and
     /// don't set this flag.
     public let hasUserInit: Bool
+    /// User-declared initializers captured from the type's primary body, in
+    /// source order. Consumed by the Tier 6 `initializerBased` strategy when
+    /// memberwise derivation can't apply. Empty when the scanner captured no
+    /// init signatures (pre-Tier-6 callers, or a type with only the
+    /// synthesized memberwise init).
+    public let initializers: [InitializerSignature]
 
     public init(
         name: String,
@@ -196,7 +214,8 @@ public struct TypeShape: Sendable, Equatable {
         inheritedTypes: [String],
         hasUserGen: Bool,
         storedMembers: [StoredMember] = [],
-        hasUserInit: Bool = false
+        hasUserInit: Bool = false,
+        initializers: [InitializerSignature] = []
     ) {
         self.name = name
         self.kind = kind
@@ -204,6 +223,7 @@ public struct TypeShape: Sendable, Equatable {
         self.hasUserGen = hasUserGen
         self.storedMembers = storedMembers
         self.hasUserInit = hasUserInit
+        self.initializers = initializers
     }
 }
 
@@ -230,6 +250,9 @@ public enum DerivationStrategist {
         }
         if let memberwise = memberwiseStrategy(for: shape) {
             return memberwise
+        }
+        if let initBased = initializerBasedStrategy(for: shape) {
+            return initBased
         }
         if shape.kind == .enum, let rawType = rawType(in: shape.inheritedTypes) {
             return .rawRepresentable(rawType)
@@ -319,9 +342,15 @@ public enum DerivationStrategist {
                 + "properties visible to the macro." + suffix
         }
         if shape.hasUserInit {
-            return prefix + "the type declares a user `init(...)` in its "
-                + "primary body, which suppresses Swift's synthesized "
-                + "memberwise initializer." + suffix
+            if shape.initializers.isEmpty {
+                return prefix + "the type declares a user `init(...)` in its "
+                    + "primary body, which suppresses Swift's synthesized "
+                    + "memberwise initializer." + suffix
+            }
+            return prefix + "the type's user `init(...)` declarations don't "
+                + "support derivation — no non-failable, non-throwing "
+                + "initializer (with 1–\(memberwiseArityLimit) parameters) has "
+                + "all parameter types resolve to a recognized generator." + suffix
         }
         if shape.storedMembers.count > memberwiseArityLimit {
             return prefix + "the type has \(shape.storedMembers.count) stored "

@@ -43,6 +43,11 @@ public enum GeneratorExpressionEmitter {
             return "Gen<\(typeName)>.element(of: \(typeName).allCases)"
         case .memberwiseArbitrary(let members):
             return MemberwiseEmitter.expression(typeName: typeName, members: members)
+        case .initializerBased(let arguments):
+            return MemberwiseEmitter.compose(
+                typeName: typeName,
+                arguments: arguments.map { (label: $0.label, expression: $0.generatorExpression) }
+            )
         case .rawRepresentable(let rawType):
             return """
                 \(rawType.generatorExpression)
