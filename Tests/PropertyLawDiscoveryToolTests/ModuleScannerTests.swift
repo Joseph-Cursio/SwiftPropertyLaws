@@ -81,6 +81,34 @@ struct ModuleScannerTests {
         #expect(expression.contains("Customer(name: $0)"))
     }
 
+    @Test func scanDerivesPayloadEnumWithOneOf() throws {
+        let dir = try makeFixtureDir([
+            "Shape.swift": """
+                enum Shape: Equatable {
+                    case empty
+                    case circle(radius: Int)
+                    case rect(width: Int, height: Int)
+                }
+                """
+        ])
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
+        let shape = try #require(map.entries.first { $0.typeName == "Shape" })
+        guard case .enumCases(let cases) = shape.derivationStrategy else {
+            Issue.record("expected enumCases; got \(shape.derivationStrategy)")
+            return
+        }
+        #expect(cases.count == 3)
+        let expression = GeneratorExpressionEmitter.expression(
+            typeName: "Shape",
+            strategy: shape.derivationStrategy
+        )
+        #expect(expression.contains("Gen.oneOf("))
+        #expect(expression.contains("Gen.always(Shape.empty)"))
+        #expect(expression.contains("Shape.circle(radius: $0)"))
+    }
+
     @Test func failableInitializerDeclinesToTodoInScan() throws {
         let dir = try makeFixtureDir([
             "Code.swift": """
