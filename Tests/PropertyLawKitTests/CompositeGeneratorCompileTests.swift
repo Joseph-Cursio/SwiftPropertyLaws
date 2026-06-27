@@ -1,5 +1,6 @@
 import Testing
 import PropertyBased
+import Foundation
 
 /// Validation that the generator expressions `DerivationStrategist`
 /// (PropertyLawCore, Tier 1) emits for composite members actually compile
@@ -39,6 +40,11 @@ struct CompositeGeneratorCompileTests {
         let arrayOfOptional: [Int?] = Gen<Int>.int()
             .optional.array(of: 0...8).run(using: &rng)
 
+        // Known value types (Tier 2): "Character", "Date", "[Date]".
+        let character: Character = Gen<Character>.letterOrNumber.run(using: &rng)
+        let date: Date = Gen<Date>.date.run(using: &rng)
+        let dates: [Date] = Gen<Date>.date.array(of: 0...8).run(using: &rng)
+
         // Memberwise composition lifted through the synthesized init.
         let bag: Bag = Gen<Int>.int()
             .array(of: 0...8).map { Bag(items: $0) }.run(using: &rng)
@@ -57,5 +63,8 @@ struct CompositeGeneratorCompileTests {
         #expect(arrayOfOptional.count <= 8)
         #expect(bag.items.count <= 8)
         _ = order
+        _ = character
+        _ = date
+        #expect(dates.count <= 8)
     }
 }
