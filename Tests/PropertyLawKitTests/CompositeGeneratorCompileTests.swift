@@ -18,6 +18,16 @@ import Foundation
 struct CompositeGeneratorCompileTests {
     private struct Bag: Equatable { let items: [Int] }
     private struct Order: Equatable { let id: Int; let skus: [String] }
+    /// A custom init (unlabeled + labeled) — mirrors the Tier 6
+    /// initializer-based emission shape.
+    private struct Tagged: Equatable {
+        let id: Int
+        let label: String
+        init(_ id: Int, label: String) {
+            self.id = id
+            self.label = label
+        }
+    }
 
     @Test func compositeGeneratorsCompileAndRunAgainstEngine() {
         var rng = Xoshiro(seed: (1, 2, 3, 4))
@@ -53,6 +63,12 @@ struct CompositeGeneratorCompileTests {
             Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8)
         ).map { Order(id: $0.0, skus: $0.1) }.run(using: &rng)
 
+        // Tier 6 — lift through a user init (unlabeled first arg, labeled second).
+        let tagged: Tagged = zip(
+            Gen<Int>.int(),
+            Gen<Character>.letterOrNumber.string(of: 0...8)
+        ).map { Tagged($0.0, label: $0.1) }.run(using: &rng)
+
         // Reaching here means every expression type-checked and produced a
         // value of the asserted type. Touch each so nothing is dead.
         _ = optional
@@ -66,5 +82,6 @@ struct CompositeGeneratorCompileTests {
         _ = character
         _ = date
         #expect(dates.count <= 8)
+        _ = tagged
     }
 }
