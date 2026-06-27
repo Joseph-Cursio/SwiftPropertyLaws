@@ -1,57 +1,65 @@
-/// Tier 1–2 of the generator-derivation strengthening (Idea #3): parse a
-/// stored-member type spelling and compose `swift-property-based`
-/// combinators around recognized raw types and known value types, instead
-/// of exact-matching the whole spelling against `RawType` (which sent every
-/// optional/array/set/dictionary member — and every `Date`/`Character`
-/// member — to `.todo`).
+/// Tier 1–3 of the generator-derivation strengthening (Idea #3): parse a
+/// stored-member / init-parameter type spelling and compose
+/// `swift-property-based` combinators around recognized raw types, known
+/// value types, and — when a `resolve` closure is supplied — nested custom
+/// types resolved through the whole-module type universe (Tier 3).
 ///
 /// Kept beside `DerivationStrategy` as an extension on `DerivationStrategist`
 /// so `memberGenerator` stays reachable from `memberwiseStrategy` and
 /// `structTodoReason` (same module, internal access) without widening the
-/// public surface.
+/// public surface beyond `ComposedGenerator`.
 extension DerivationStrategist {
 
     /// A generator expression paired with the modules its source must be
     /// able to name. Threaded through composite parsing so the discovery
     /// plugin can emit the right `import`s into the *separate* generated
-    /// file. The macro path needs no import handling — it expands in the
-    /// type's own file, where every member type is already in scope.
-    struct ComposedGenerator: Sendable, Equatable {
-        let expression: String
-        let requiredImports: Set<String>
+    /// file, and returned by the Tier 3 custom-type resolver.
+    public struct ComposedGenerator: Sendable, Equatable {
+        public let expression: String
+        public let requiredImports: Set<String>
+
+        public init(expression: String, requiredImports: Set<String> = []) {
+            self.expression = expression
+            self.requiredImports = requiredImports
+        }
     }
 
+    /// Resolves a bare custom-type spelling to a generator (Tier 3). The
+    /// default resolves nothing — used by the macro path and any caller that
+    /// only sees one type in isolation. The discovery plugin supplies a
+    /// `GeneratorResolver` backed by the whole-module type universe.
+    public typealias CustomTypeResolver = (String) -> ComposedGenerator?
+
     /// Generator expression for a stored-member type spelling. Convenience
-    /// over `composedGenerator` for callers that don't need import metadata
-    /// (the `.todo`-reason check, and the existing string-level tests).
+    /// over `composedGenerator` for callers that don't need imports or
+    /// custom-type resolution (the `.todo`-reason check, string-level tests).
     static func memberGenerator(forTypeName typeName: String) -> String? {
         composedGenerator(forTypeName: typeName)?.expression
     }
 
-    /// Generator + required imports for a stored-member type spelling,
-    /// composing `swift-property-based` combinators around recognized leaf
-    /// types: `T?` → `.optional`, `[T]` → `.array(of:)`, `[K: V]` →
-    /// `zip(...).dictionary(ofAtMost:)`, `Set<T>` → `.set(ofAtMost:)`. Both
-    /// the sugar (`[T]`, `T?`) and generic (`Array<T>`, `Optional<T>`,
-    /// `Dictionary<K, V>`) spellings are recognized. Recurses on element
-    /// types so nested shapes (`[Int?]`, `[String: [Int]]`, `Set<Date>?`)
-    /// compose and carry their imports up. Returns `nil` when the type
-    /// doesn't bottom out in a recognized leaf (e.g. a nested custom type —
-    /// Tier 3, not yet supported).
-    ///
-    /// Default collection sizes use `0...8` — small enough to keep trials
-    /// cheap and shrinking fast, large enough to exercise multi-element
-    /// behavior.
-    static func composedGenerator(forTypeName typeName: String) -> ComposedGenerator? {
+    /// Generator + required imports for a stored-member / init-parameter type
+    /// spelling, composing `swift-property-based` combinators around
+    /// recognized leaf types: `T?` → `.optional`, `[T]` → `.array(of:)`,
+    /// `[K: V]` → `zip(...).dictionary(ofAtMost:)`, `Set<T>` →
+    /// `.set(ofAtMost:)`. Recurses on element types so nested shapes
+    /// (`[Int?]`, `[String: [Customer]]`) compose and carry imports up. A
+    /// bare type that isn't a recognized raw/known value type is handed to
+    /// `resolve` — `nil` by default (composite parsing only), or the
+    /// whole-module resolver under the discovery plugin (Tier 3). Returns
+    /// `nil` when the type doesn't bottom out in something derivable.
+    static func composedGenerator(
+        forTypeName typeName: String,
+        resolve: CustomTypeResolver = { _ in nil }
+    ) -> ComposedGenerator? {
         let text = trimmed(typeName)
         guard !text.isEmpty else { return nil }
 
         // Optional: `T?` sugar or `Optional<T>`.
         if text.hasSuffix("?") {
-            return wrap(String(text.dropLast()), suffix: ".optional")
+            return wrap(String(text.dropLast()), suffix: ".optional", resolve: resolve)
         }
         if let inner = genericArgument(of: text, named: "Optional") {
-            return wrap(inner, suffix: ".optional")
+            return wrap(inner, suffix: ".optional", resolve: resolve)
         }
 
         // Array / Dictionary sugar: `[ ... ]`.
@@ -60,35 +68,42 @@ extension DerivationStrategist {
             if let colon = topLevelSeparatorIndex(in: body, separator: ":") {
                 return dictionaryGenerator(
                     key: String(body[..<colon]),
-                    value: String(body[body.index(after: colon)...])
+                    value: String(body[body.index(after: colon)...]),
+                    resolve: resolve
                 )
             }
-            return wrap(body, suffix: ".array(of: 0...8)")
+            return wrap(body, suffix: ".array(of: 0...8)", resolve: resolve)
         }
 
         // Generic spellings: Array<T>, Set<T>, Dictionary<K, V>.
         if let inner = genericArgument(of: text, named: "Array") {
-            return wrap(inner, suffix: ".array(of: 0...8)")
+            return wrap(inner, suffix: ".array(of: 0...8)", resolve: resolve)
         }
         if let inner = genericArgument(of: text, named: "Set") {
-            return wrap(inner, suffix: ".set(ofAtMost: 0...8)")
+            return wrap(inner, suffix: ".set(ofAtMost: 0...8)", resolve: resolve)
         }
         if let inner = genericArgument(of: text, named: "Dictionary"),
            let comma = topLevelSeparatorIndex(in: inner, separator: ",") {
             return dictionaryGenerator(
                 key: String(inner[..<comma]),
-                value: String(inner[inner.index(after: comma)...])
+                value: String(inner[inner.index(after: comma)...]),
+                resolve: resolve
             )
         }
 
-        // Bare leaf: recognized raw type or known value type.
-        return leafGenerator(forTypeName: text)
+        // Bare leaf: recognized raw / known value type, else custom-type
+        // resolution (Tier 3).
+        return leafGenerator(forTypeName: text, resolve: resolve)
     }
 
     /// Recurse into `inner`, append `suffix` to its generator expression,
     /// and carry the element's imports up unchanged.
-    private static func wrap(_ inner: String, suffix: String) -> ComposedGenerator? {
-        composedGenerator(forTypeName: inner).map {
+    private static func wrap(
+        _ inner: String,
+        suffix: String,
+        resolve: CustomTypeResolver
+    ) -> ComposedGenerator? {
+        composedGenerator(forTypeName: inner, resolve: resolve).map {
             ComposedGenerator(
                 expression: "\($0.expression)\(suffix)",
                 requiredImports: $0.requiredImports
@@ -98,39 +113,43 @@ extension DerivationStrategist {
 
     /// `zip(<keyGen>, <valGen>).dictionary(ofAtMost: 0...8)`, unioning both
     /// sides' imports, or `nil` if either side doesn't resolve.
-    private static func dictionaryGenerator(key: String, value: String) -> ComposedGenerator? {
-        guard let keyGen = composedGenerator(forTypeName: key),
-              let valueGen = composedGenerator(forTypeName: value) else { return nil }
+    private static func dictionaryGenerator(
+        key: String,
+        value: String,
+        resolve: CustomTypeResolver
+    ) -> ComposedGenerator? {
+        guard let keyGen = composedGenerator(forTypeName: key, resolve: resolve),
+              let valueGen = composedGenerator(forTypeName: value, resolve: resolve) else { return nil }
         return ComposedGenerator(
             expression: "zip(\(keyGen.expression), \(valueGen.expression)).dictionary(ofAtMost: 0...8)",
             requiredImports: keyGen.requiredImports.union(valueGen.requiredImports)
         )
     }
 
-    /// A bare leaf type: a recognized stdlib raw type, or a known value type
-    /// with a curated engine generator. `nil` for anything else.
-    private static func leafGenerator(forTypeName text: String) -> ComposedGenerator? {
+    /// A bare leaf type: a recognized stdlib raw type, a known value type
+    /// with a curated engine generator, or — via `resolve` — a nested custom
+    /// type (Tier 3). `nil` when none apply.
+    private static func leafGenerator(
+        forTypeName text: String,
+        resolve: CustomTypeResolver
+    ) -> ComposedGenerator? {
         if let raw = RawType(typeName: text) {
-            return ComposedGenerator(expression: raw.generatorExpression, requiredImports: [])
+            return ComposedGenerator(expression: raw.generatorExpression)
         }
-        return knownValueGenerator(forTypeName: text)
+        if let known = knownValueGenerator(forTypeName: text) {
+            return known
+        }
+        return resolve(text)
     }
 
     /// Stdlib/Foundation value types outside the `RawRepresentable` raw-type
     /// set, each mapped to a curated `swift-property-based` generator and the
     /// modules its expression must name. Kept separate from `RawType`
-    /// because `RawType` also drives `RawRepresentable` *enum* derivation,
-    /// where these don't belong.
-    ///
-    /// - `Character` → the engine's `letterOrNumber` character generator
-    ///   (stdlib, no import).
-    /// - `Date` → the engine's built-in `Gen<Date>.date` (shrinkable via
-    ///   `Shrink.Integer`); names `Date`, so the generated file needs
-    ///   `import Foundation`.
+    /// because `RawType` also drives `RawRepresentable` *enum* derivation.
     private static func knownValueGenerator(forTypeName text: String) -> ComposedGenerator? {
         switch text {
         case "Character":
-            return ComposedGenerator(expression: "Gen<Character>.letterOrNumber", requiredImports: [])
+            return ComposedGenerator(expression: "Gen<Character>.letterOrNumber")
         case "Date":
             return ComposedGenerator(expression: "Gen<Date>.date", requiredImports: ["Foundation"])
         default:

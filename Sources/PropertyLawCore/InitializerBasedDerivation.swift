@@ -61,7 +61,10 @@ extension DerivationStrategist {
     /// non-failable, non-throwing, has 1–`memberwiseArityLimit` parameters,
     /// and whose every parameter type resolves to a generator. Returns `nil`
     /// (not `.todo`) so `strategy(for:)` can fall through to later candidates.
-    static func initializerBasedStrategy(for shape: TypeShape) -> DerivationStrategy? {
+    static func initializerBasedStrategy(
+        for shape: TypeShape,
+        resolve: CustomTypeResolver = { _ in nil }
+    ) -> DerivationStrategy? {
         guard shape.kind == .struct else { return nil }
         for initializer in shape.initializers {
             guard !initializer.isFailable, !initializer.isThrowing else { continue }
@@ -70,7 +73,7 @@ extension DerivationStrategist {
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {
-                guard let composed = composedGenerator(forTypeName: parameter.typeName) else {
+                guard let composed = composedGenerator(forTypeName: parameter.typeName, resolve: resolve) else {
                     allResolved = false
                     break
                 }

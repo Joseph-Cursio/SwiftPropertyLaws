@@ -238,7 +238,10 @@ public enum DerivationStrategist {
     /// `zip` at all — they go through `Generator.map` directly.
     public static let memberwiseArityLimit = 10
 
-    public static func strategy(for shape: TypeShape) -> DerivationStrategy {
+    public static func strategy(
+        for shape: TypeShape,
+        resolve: CustomTypeResolver = { _ in nil }
+    ) -> DerivationStrategy {
         // Priority order from PRD §5.7. Strategy A — explicit user-provided
         // `gen()` — wins unconditionally. Users who want a derived
         // generator simply don't define `gen()`.
@@ -248,10 +251,10 @@ public enum DerivationStrategist {
         if shape.kind == .enum, shape.inheritedTypes.contains("CaseIterable") {
             return .caseIterable
         }
-        if let memberwise = memberwiseStrategy(for: shape) {
+        if let memberwise = memberwiseStrategy(for: shape, resolve: resolve) {
             return memberwise
         }
-        if let initBased = initializerBasedStrategy(for: shape) {
+        if let initBased = initializerBasedStrategy(for: shape, resolve: resolve) {
             return initBased
         }
         if shape.kind == .enum, let rawType = rawType(in: shape.inheritedTypes) {
@@ -273,7 +276,10 @@ public enum DerivationStrategist {
     ///   suppresses the synthesized memberwise init in that case).
     /// - Any member's type doesn't resolve to a recognized `RawType`.
     /// - Member count exceeds `memberwiseArityLimit` (10).
-    private static func memberwiseStrategy(for shape: TypeShape) -> DerivationStrategy? {
+    private static func memberwiseStrategy(
+        for shape: TypeShape,
+        resolve: CustomTypeResolver
+    ) -> DerivationStrategy? {
         guard shape.kind == .struct else { return nil }
         guard !shape.storedMembers.isEmpty else { return nil }
         guard !shape.hasUserInit else { return nil }
@@ -283,9 +289,10 @@ public enum DerivationStrategist {
             if let rawType = RawType(typeName: member.typeName) {
                 // Raw member — keep `rawType` populated (back-compat).
                 specs.append(MemberSpec(name: member.name, rawType: rawType))
-            } else if let composed = composedGenerator(forTypeName: member.typeName) {
-                // Composite (optional/array/set/dictionary) or known value
-                // type (Character/Date) — carries any required imports.
+            } else if let composed = composedGenerator(forTypeName: member.typeName, resolve: resolve) {
+                // Composite (optional/array/set/dictionary), known value type
+                // (Character/Date), or a nested custom type (Tier 3) — carries
+                // any required imports.
                 specs.append(MemberSpec(
                     name: member.name,
                     generatorExpression: composed.expression,
