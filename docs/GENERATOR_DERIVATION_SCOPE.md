@@ -241,4 +241,36 @@ resolver that recurses into member/parameter types using the same
 the Tier 6 work already in place. Also worth doing: exclude non-addressable
 types (extensions on external types, namespace enums) from the scoreboard so
 the addressable-yield denominator is honest.
+
+### Tier 3 shipped — diminishing returns, and the corpus is the limit
+
+`GeneratorResolver` (whole-module, memoized, cycle-guarded) now inlines
+nested struct / CaseIterable-enum generators and references `Type.gen()` for
+user-gen types. Re-measured vs. the Tier-6 HEAD:
+
+| Corpus | before | after | unlocked |
+|---|---|---|---|
+| Sitrep | 18 | 18 | 0 |
+| swift-property-based | 22 | 22 | 0 |
+| swift-syntax | 980 | 977 | +3 |
+
+Marginal — because the *nested* types in these corpora are themselves mostly
+non-derivable: classes, enums-with-payloads (Tier 4), external types, or
+**nested type *declarations*** (`Report.Scan`) whose qualified spelling the
+simple-name universe doesn't match. Tier 3 works (proven by tests + the clean
+`Order`→`Customer` scan case), but the corpora gate it.
+
+**The real conclusion from four tiers of measurement:** generator derivation
+is now solid for the *plain value-type* world (raw, composite, Character/Date,
+user-init, nested value types), but these three corpora aren't value-type
+heavy — Sitrep is a CLI tool (classes/visitors), swift-syntax is node wrappers,
+swift-property-based is closures/generators. **The bottleneck is no longer the
+derivation engine; it's corpus fit.** Before building more tiers (Tier 4 enum
+payloads, qualified nested-name resolution), measure on a *domain-model-heavy*
+target (a SwiftUI/Codable app) to see whether the engine already clears it —
+the yield question is now empirical about *which code*, not *which tier*.
+
+**Performance note:** swift-syntax scans in ~20s, dominated by SwiftParser on
+258 large files — unchanged by Tier 3 (memo on/off both ~20s). The resolver
+itself is negligible.
 ```
