@@ -28,6 +28,12 @@ struct CompositeGeneratorCompileTests {
             self.label = label
         }
     }
+    /// Plain + payload cases — mirrors the Tier 4 enum emission shape.
+    private enum Shape: Equatable {
+        case empty
+        case circle(radius: Int)
+        case rect(width: Int, height: Int)
+    }
 
     @Test func compositeGeneratorsCompileAndRunAgainstEngine() {
         var rng = Xoshiro(seed: (1, 2, 3, 4))
@@ -69,6 +75,13 @@ struct CompositeGeneratorCompileTests {
             Gen<Character>.letterOrNumber.string(of: 0...8)
         ).map { Tagged($0.0, label: $0.1) }.run(using: &rng)
 
+        // Tier 4 — oneOf over plain + payload enum cases.
+        let shape: Shape = Gen.oneOf(
+            Gen.always(Shape.empty).eraseToAny(),
+            Gen<Int>.int().map { Shape.circle(radius: $0) }.eraseToAny(),
+            zip(Gen<Int>.int(), Gen<Int>.int()).map { Shape.rect(width: $0.0, height: $0.1) }.eraseToAny()
+        ).run(using: &rng)
+
         // Reaching here means every expression type-checked and produced a
         // value of the asserted type. Touch each so nothing is dead.
         _ = optional
@@ -83,5 +96,6 @@ struct CompositeGeneratorCompileTests {
         _ = date
         #expect(dates.count <= 8)
         _ = tagged
+        _ = shape
     }
 }
