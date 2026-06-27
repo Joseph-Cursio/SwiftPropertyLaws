@@ -273,4 +273,35 @@ the yield question is now empirical about *which code*, not *which tier*.
 **Performance note:** swift-syntax scans in ~20s, dominated by SwiftParser on
 258 large files — unchanged by Tier 3 (memo on/off both ~20s). The resolver
 itself is negligible.
+
+### Corpus-fit confirmed: SwiftLintRuleStudio (478 types)
+
+Measured a value-type-heavier real app (SwiftLintRuleStudio, 368 files) — the
+"better corpus" the previous conclusion called for. Baseline (pre-Tier-1) vs.
+HEAD (Tiers 1/2/3/6):
+
+| | manual `gen()` | derivable | rate |
+|---|---|---|---|
+| baseline `298c5e3` | 459 | 19 | 4.0% |
+| HEAD (4 tiers) | 436 | **42** | 8.8% |
+
+**The four tiers more than doubled derivable types (19 → 42, +121%)** — vs.
+~+1 on the non-value-type corpora. This is the validating data point: the
+derivation work pays off in proportion to how value-type-heavy the target is.
+
+Remaining `.todo` buckets on SLRS:
+
+| Reason | Count | Addressable? |
+|---|---|---|
+| no visible stored properties | 200 | mostly **no** (extensions on external types, protocols, namespace enums, SwiftUI views) |
+| enum without CaseIterable/raw | 61 | **yes — Tier 4 (enum payloads)** |
+| non-struct (class/actor) | 61 | mostly no (reference semantics, out of scope) |
+| unsupported member type | 57 | partly (gated on Tier 4 / class support) |
+| user-defined init | 56 | partly (Tier 6 already takes the derivable ones) |
+| arity > 10 | 1 | yes (Tier 5, trivial) |
+
+**The largest addressable remaining bucket is `enum without CaseIterable/raw`
+(61) — i.e. Tier 4 (enum payloads via `Gen.oneOf`).** That's the data-justified
+next tier if continuing. The 200 "no stored properties" should be excluded
+from the scoreboard denominator (non-addressable) for an honest rate.
 ```
