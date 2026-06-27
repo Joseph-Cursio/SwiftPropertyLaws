@@ -32,6 +32,49 @@ struct ModuleScannerTests {
         #expect(entry.provenances[0].line == 1)
     }
 
+    // MARK: - Tier 6: initializer-based derivation (extraction end-to-end)
+
+    @Test func derivesStructThroughUserInitializer() throws {
+        let dir = try makeFixtureDir([
+            "Money.swift": """
+                struct Money: Equatable {
+                    let cents: Int
+                    init(cents: Int) { self.cents = cents }
+                }
+                """
+        ])
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
+        try #require(map.entries.count == 1)
+        guard case .initializerBased(let arguments) = map.entries[0].derivationStrategy else {
+            Issue.record("expected initializerBased; got \(map.entries[0].derivationStrategy)")
+            return
+        }
+        #expect(arguments.count == 1)
+        #expect(arguments[0].label == "cents")
+        #expect(arguments[0].generatorExpression == "Gen<Int>.int()")
+    }
+
+    @Test func failableInitializerDeclinesToTodoInScan() throws {
+        let dir = try makeFixtureDir([
+            "Code.swift": """
+                struct Code: Equatable {
+                    let raw: String
+                    init?(raw: String) { self.raw = raw }
+                }
+                """
+        ])
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
+        try #require(map.entries.count == 1)
+        guard case .todo = map.entries[0].derivationStrategy else {
+            Issue.record("expected .todo for a failable-only initializer")
+            return
+        }
+    }
+
     @Test func detectsEnumConformances() throws {
         let dir = try makeFixtureDir([
             "Direction.swift": """
