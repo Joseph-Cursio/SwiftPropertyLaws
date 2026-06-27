@@ -99,6 +99,10 @@ enum ModuleScanner {
         /// PRD §5.7 Strategy 3 falls through when this is set, since
         /// Swift suppresses the synthesized memberwise init.
         var hasUserInit: Bool = false
+        /// Initializer signatures from the primary decl, for the Tier 6
+        /// `initializerBased` strategy. Empty unless a primary struct decl
+        /// contributed them.
+        var initializers: [InitializerSignature] = []
         /// Element-wise OR of witnesses seen in primary decl + every
         /// extension. PRD §5.4 advisory suggestions read from here.
         var witnesses: WitnessSet = WitnessSet()
@@ -133,7 +137,8 @@ enum ModuleScanner {
                 inheritedTypes: aggregate.inheritedNames,
                 hasUserGen: aggregate.hasUserGen,
                 storedMembers: aggregate.storedMembers,
-                hasUserInit: aggregate.hasUserInit
+                hasUserInit: aggregate.hasUserInit,
+                initializers: aggregate.initializers
             )
             return ConformanceMap.Entry(
                 typeName: typeName,
@@ -162,6 +167,7 @@ enum ModuleScanner {
                     hasUserGen: primary.hasUserGen,
                     storedMembers: primary.storedMembers,
                     hasUserInit: primary.hasUserInit,
+                    initializers: primary.initializers,
                     witnesses: primary.witnesses,
                     memberFunctions: primary.memberFunctions
                 ),
@@ -189,6 +195,7 @@ enum ModuleScanner {
                 // synthesized memberwise init — both stay empty/false here.
                 storedMembers: [],
                 hasUserInit: false,
+                initializers: [],
                 witnesses: WitnessFinder.find(in: extensionDecl.memberBlock),
                 memberFunctions: RoundTripFinder.findMembers(in: extensionDecl.memberBlock)
             ),
@@ -207,6 +214,7 @@ enum ModuleScanner {
         let hasUserGen: Bool
         let storedMembers: [StoredMember]
         let hasUserInit: Bool
+        let initializers: [InitializerSignature]
         let witnesses: WitnessSet
         let memberFunctions: [FunctionSignature]
     }
@@ -278,6 +286,9 @@ enum ModuleScanner {
             hasUserInit: kind == .struct
                 ? MemberBlockInspector.hasUserInit(in: memberBlock)
                 : false,
+            initializers: kind == .struct
+                ? MemberBlockInspector.initializers(in: memberBlock)
+                : [],
             witnesses: WitnessFinder.find(in: memberBlock),
             memberFunctions: RoundTripFinder.findMembers(in: memberBlock)
         )
@@ -309,6 +320,7 @@ enum ModuleScanner {
         let hasUserGen: Bool
         let storedMembers: [StoredMember]
         let hasUserInit: Bool
+        let initializers: [InitializerSignature]
         let witnesses: WitnessSet
         let memberFunctions: [FunctionSignature]
     }
@@ -342,6 +354,10 @@ enum ModuleScanner {
             aggregate.storedMembers = request.storedMembers
         }
         if request.hasUserInit { aggregate.hasUserInit = true }
+        // Initializers come from the primary decl only (extensions pass []).
+        if !request.initializers.isEmpty {
+            aggregate.initializers = request.initializers
+        }
         aggregate.witnesses.merge(request.witnesses)
         aggregate.memberFunctions.append(contentsOf: request.memberFunctions)
         perType[request.name] = aggregate

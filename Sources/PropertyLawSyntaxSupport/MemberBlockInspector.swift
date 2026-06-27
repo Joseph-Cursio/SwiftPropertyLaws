@@ -50,6 +50,42 @@ public enum MemberBlockInspector {
         return false
     }
 
+    /// User-declared initializers in `memberBlock`, in source order, for the
+    /// Tier 6 `initializerBased` strategy. Async initializers are skipped
+    /// entirely (they can't be lifted through a synchronous generator `map`);
+    /// failable (`init?`) and throwing inits are captured with flags so the
+    /// strategist can decline them while still reporting an accurate `.todo`
+    /// reason. Initializers with a variadic parameter are skipped (their call
+    /// shape doesn't compose into a fixed-arity `zip`).
+    public static func initializers(in memberBlock: MemberBlockSyntax) -> [InitializerSignature] {
+        var result: [InitializerSignature] = []
+        for member in memberBlock.members {
+            guard let initDecl = member.decl.as(InitializerDeclSyntax.self) else { continue }
+            let effects = initDecl.signature.effectSpecifiers
+            if effects?.asyncSpecifier != nil { continue }
+
+            var parameters: [InitializerParameter] = []
+            var hasVariadic = false
+            for param in initDecl.signature.parameterClause.parameters {
+                if param.ellipsis != nil { hasVariadic = true; break }
+                let firstName = param.firstName.text
+                let label = firstName == "_" ? nil : firstName
+                parameters.append(InitializerParameter(
+                    label: label,
+                    typeName: param.type.trimmedDescription
+                ))
+            }
+            if hasVariadic { continue }
+
+            result.append(InitializerSignature(
+                parameters: parameters,
+                isFailable: initDecl.optionalMark != nil,
+                isThrowing: effects?.throwsClause != nil
+            ))
+        }
+        return result
+    }
+
     private static func isStaticOrClass(_ decl: VariableDeclSyntax) -> Bool {
         decl.modifiers.contains { mod in
             mod.name.tokenKind == .keyword(.static) || mod.name.tokenKind == .keyword(.class)
