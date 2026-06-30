@@ -52,9 +52,17 @@ private func checkNonNegative<
         "UnsignedInteger.nonNegative",
         generator: generator,
         options: options,
-        property: { sample in sample >= 0 },
+        // Compare against `Self.zero` (homogeneous) rather than the literal
+        // `0`. `x >= 0` types the literal as `Int` and routes through the
+        // sign-aware *heterogeneous* comparison, which is correct for any
+        // honest unsigned type and so makes the law unfalsifiable. `x >= .zero`
+        // exercises the type's own `Comparable` ordering — the ordering callers
+        // actually rely on — so a type whose `<` misorders relative to zero is
+        // caught.
+        property: { sample in sample >= .zero },
         formatCounterexample: { sample, _ in
-            "x = \(sample); expected x >= 0"
+            "x = \(sample); x >= .zero returned false "
+                + "(unsigned values must order at or above zero)"
         }
     )
 }

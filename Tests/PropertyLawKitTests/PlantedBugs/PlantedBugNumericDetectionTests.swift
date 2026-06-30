@@ -91,4 +91,40 @@ struct PlantedBugNumericDetectionTests {
             "expected a SignedNumeric involution / inverse violation; got: \(laws)"
         )
     }
+
+    /// Affine negation survives involution but breaks distribution — drives
+    /// the `negationDistributesOverAddition` counterexample path.
+    @Test func detectsAffineNegationDistributionBreak() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkSignedNumericPropertyLaws(
+                for: AffineNegation.self,
+                using: Gen<AffineNegation>.affineNegation(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(
+            laws.contains("SignedNumeric.negationDistributesOverAddition"),
+            "expected negationDistributesOverAddition in violation set; got: \(laws)"
+        )
+    }
+
+    /// A no-op `negate()` diverges from `prefix -` — drives the
+    /// `negateMutationConsistency` counterexample path.
+    @Test func detectsNoOpNegateMutationBreak() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkSignedNumericPropertyLaws(
+                for: NoOpNegate.self,
+                using: Gen<NoOpNegate>.noOpNegate(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(
+            laws.contains("SignedNumeric.negateMutationConsistency"),
+            "expected negateMutationConsistency in violation set; got: \(laws)"
+        )
+    }
 }

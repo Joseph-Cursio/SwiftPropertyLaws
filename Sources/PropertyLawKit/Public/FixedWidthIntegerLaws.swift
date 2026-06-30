@@ -92,15 +92,26 @@ private func checkAddingReportingOverflowConsistency<
         "FixedWidthInteger.addingReportingOverflowConsistency",
         generator: generator,
         options: options,
+        // Comparing `partialValue` against `lhs &+ rhs` is tautological — the
+        // masking `&+` is *defined* generically as `addingReportingOverflow`'s
+        // partial value. These checks are independent of `&+`: adding zero is
+        // exact and never overflows, and a wrapping add followed by a wrapping
+        // subtract of the same operand round-trips in two's complement.
         property: { lhs, rhs in
-            let pair = lhs.addingReportingOverflow(rhs)
-            return pair.partialValue == lhs &+ rhs
+            let identity = lhs.addingReportingOverflow(0)
+            let (sum, _) = lhs.addingReportingOverflow(rhs)
+            let recovered = sum.subtractingReportingOverflow(rhs).partialValue
+            return identity.partialValue == lhs
+                && identity.overflow == false
+                && recovered == lhs
         },
         formatCounterexample: { lhs, rhs, _ in
-            let pair = lhs.addingReportingOverflow(rhs)
+            let identity = lhs.addingReportingOverflow(0)
+            let (sum, _) = lhs.addingReportingOverflow(rhs)
+            let recovered = sum.subtractingReportingOverflow(rhs).partialValue
             return "x = \(lhs), y = \(rhs); "
-                + "addingReportingOverflow.partialValue = \(pair.partialValue), "
-                + "x &+ y = \(lhs &+ rhs)"
+                + "x.addingReportingOverflow(0) = \(identity), expected (\(lhs), false); "
+                + "(x &+ y) &- y = \(recovered), expected x"
         }
     )
 }
@@ -116,15 +127,27 @@ private func checkSubtractingReportingOverflowConsistency<
         "FixedWidthInteger.subtractingReportingOverflowConsistency",
         generator: generator,
         options: options,
+        // Independent of the masking `&-` (which is defined via this method):
+        // subtracting zero is the identity, subtracting self yields zero, and
+        // a wrapping subtract followed by a wrapping add round-trips.
         property: { lhs, rhs in
-            let pair = lhs.subtractingReportingOverflow(rhs)
-            return pair.partialValue == lhs &- rhs
+            let identity = lhs.subtractingReportingOverflow(0)
+            let selfDiff = lhs.subtractingReportingOverflow(lhs)
+            let (diff, _) = lhs.subtractingReportingOverflow(rhs)
+            let recovered = diff.addingReportingOverflow(rhs).partialValue
+            return identity.partialValue == lhs && identity.overflow == false
+                && selfDiff.partialValue == 0 && selfDiff.overflow == false
+                && recovered == lhs
         },
         formatCounterexample: { lhs, rhs, _ in
-            let pair = lhs.subtractingReportingOverflow(rhs)
+            let identity = lhs.subtractingReportingOverflow(0)
+            let selfDiff = lhs.subtractingReportingOverflow(lhs)
+            let recovered = lhs.subtractingReportingOverflow(rhs)
+                .partialValue.addingReportingOverflow(rhs).partialValue
             return "x = \(lhs), y = \(rhs); "
-                + "subtractingReportingOverflow.partialValue = \(pair.partialValue), "
-                + "x &- y = \(lhs &- rhs)"
+                + "x.subtractingReportingOverflow(0) = \(identity), expected (\(lhs), false); "
+                + "x.subtractingReportingOverflow(x) = \(selfDiff), expected (0, false); "
+                + "(x &- y) &+ y = \(recovered), expected x"
         }
     )
 }
@@ -140,15 +163,27 @@ private func checkMultipliedReportingOverflowConsistency<
         "FixedWidthInteger.multipliedReportingOverflowConsistency",
         generator: generator,
         options: options,
+        // Independent of the masking `&*` (which is defined via this method):
+        // multiplying by one is the identity (no overflow), multiplying by
+        // zero is zero (no overflow), and the wrapping product commutes.
         property: { lhs, rhs in
-            let pair = lhs.multipliedReportingOverflow(by: rhs)
-            return pair.partialValue == lhs &* rhs
+            let byOne = lhs.multipliedReportingOverflow(by: 1)
+            let byZero = lhs.multipliedReportingOverflow(by: 0)
+            let (product, _) = lhs.multipliedReportingOverflow(by: rhs)
+            let commuted = rhs.multipliedReportingOverflow(by: lhs).partialValue
+            return byOne.partialValue == lhs && byOne.overflow == false
+                && byZero.partialValue == 0 && byZero.overflow == false
+                && product == commuted
         },
         formatCounterexample: { lhs, rhs, _ in
-            let pair = lhs.multipliedReportingOverflow(by: rhs)
+            let byOne = lhs.multipliedReportingOverflow(by: 1)
+            let byZero = lhs.multipliedReportingOverflow(by: 0)
+            let product = lhs.multipliedReportingOverflow(by: rhs).partialValue
+            let commuted = rhs.multipliedReportingOverflow(by: lhs).partialValue
             return "x = \(lhs), y = \(rhs); "
-                + "multipliedReportingOverflow.partialValue = \(pair.partialValue), "
-                + "x &* y = \(lhs &* rhs)"
+                + "x.multipliedReportingOverflow(by: 1) = \(byOne), expected (\(lhs), false); "
+                + "x.multipliedReportingOverflow(by: 0) = \(byZero), expected (0, false); "
+                + "x &* y = \(product), y &* x = \(commuted)"
         }
     )
 }
@@ -189,14 +224,23 @@ private func checkWrappingArithmeticDoesNotTrap<
         "FixedWidthInteger.wrappingArithmeticDoesNotTrap",
         generator: generator,
         options: options,
+        // Executing `&+ &- &*` proves they do not trap; additionally the
+        // wrap-around must land on the opposite boundary (`max &+ 1 == min`,
+        // `min &- 1 == max` — true for both signed and unsigned two's
+        // complement) and `&+` / `&-` must round-trip. An unconditional
+        // `return true` here would be unfalsifiable.
         property: { lhs, rhs in
-            _ = lhs &+ rhs
-            _ = lhs &- rhs
             _ = lhs &* rhs
-            return true
+            let roundTrip = (lhs &+ rhs) &- rhs
+            return Value.max &+ 1 == Value.min
+                && Value.min &- 1 == Value.max
+                && roundTrip == lhs
         },
         formatCounterexample: { lhs, rhs, _ in
-            "x = \(lhs), y = \(rhs); &+ &- &* should not trap"
+            "x = \(lhs), y = \(rhs); "
+                + "Value.max &+ 1 = \(Value.max &+ 1), expected \(Value.min); "
+                + "Value.min &- 1 = \(Value.min &- 1), expected \(Value.max); "
+                + "(x &+ y) &- y = \((lhs &+ rhs) &- rhs), expected x"
         }
     )
 }
