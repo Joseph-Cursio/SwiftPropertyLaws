@@ -53,7 +53,14 @@ extension DerivationStrategist {
     /// `resolve` — `nil` by default (composite parsing only), or the
     /// whole-module resolver under the discovery plugin (Tier 3). Returns
     /// `nil` when the type doesn't bottom out in something derivable.
-    static func composedGenerator(
+    ///
+    /// **v3.3.0 — now `public`.** Consumers with a top-level *composite* carrier
+    /// spelling (`[Rule]`, `Rule?`, `[K: V]`) whose element/leaf types live in a
+    /// resolvable universe can call this directly with a whole-module resolver,
+    /// rather than only reaching composite parsing indirectly via
+    /// `strategy(for:resolve:)` on a struct's members. Additive: the internal
+    /// call sites and default `resolve` are unchanged.
+    public static func composedGenerator(
         forTypeName typeName: String,
         resolve: CustomTypeResolver = { _ in nil }
     ) -> ComposedGenerator? {

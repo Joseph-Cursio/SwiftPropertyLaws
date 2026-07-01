@@ -126,6 +126,31 @@ struct CompositeMemberDerivationTests {
         #expect(DerivationStrategist.memberGenerator(forTypeName: "Setting") == nil)
     }
 
+    // MARK: - v3.3.0 — public composedGenerator over a whole-module resolver
+
+    @Test func publicComposedGeneratorResolvesCompositeOverUniverseType() {
+        // v3.3.0 makes `composedGenerator` public so a consumer with a top-level
+        // composite carrier (`[Money]`) can resolve it against a whole-module
+        // resolver whose universe contains the element type.
+        let money = TypeShape(
+            name: "Money", kind: .struct, inheritedTypes: [], hasUserGen: false,
+            storedMembers: [StoredMember(name: "amount", typeName: "Int")]
+        )
+        let resolver = GeneratorResolver(types: [money])
+        let composed = DerivationStrategist.composedGenerator(
+            forTypeName: "[Money]", resolve: resolver.customTypeGenerator
+        )
+        let expr = composed?.expression
+        #expect(expr?.contains("Money(amount: $0)") == true)
+        #expect(expr?.contains(".array(of:") == true)
+    }
+
+    @Test func publicComposedGeneratorIsNilWhenLeafIsOutsideUniverse() {
+        // Default resolve (`{ _ in nil }`) — the custom leaf isn't derivable, so
+        // the composite bottoms out at nil rather than fabricating a generator.
+        #expect(DerivationStrategist.composedGenerator(forTypeName: "[Money]") == nil)
+    }
+
     // MARK: - Strategy-level end-to-end
 
     @Test func structWithCompositeMembersDerivesMemberwise() {
