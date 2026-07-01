@@ -164,6 +164,57 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         case .uint64: return "Gen<UInt64>.uint64()"
         }
     }
+
+    /// v3.2 — an *edge-biased* generator expression for the `String` raw
+    /// type, or `nil` for every other case. `generatorExpression`'s String
+    /// arm (`Gen<Character>.letterOrNumber.string`) is alphanumeric-only, so
+    /// a property check over a string-processing function never sees the
+    /// whitespace / newline / punctuation inputs that falsify structural
+    /// string logic (YAML `- ` markers, indentation, trimming) — the check
+    /// then false-passes. This mixes the alphanumeric baseline (weight 3)
+    /// with curated structural edge strings (weight 2) via `Gen.frequency`,
+    /// so those counterexamples become reachable.
+    ///
+    /// Intended for the *top-level* carrier of a String property. Struct
+    /// members keep `generatorExpression` (the plain form), so memberwise
+    /// derivation and its goldens are unaffected. The expression targets
+    /// `swift-property-based` 1.2.x (`Gen.frequency` / `Gen.element`); the
+    /// consumer inlines it into a stub that imports `PropertyBased`.
+    public var edgeBiasedGeneratorExpression: String? {
+        guard self == .string else { return nil }
+        let edges = RawType.stringEdgeCases
+            .map(RawType.swiftStringLiteral)
+            .joined(separator: ", ")
+        return "Gen.frequency("
+            + "(3.0, Gen<Character>.letterOrNumber.string(of: 0...8)), "
+            + "(2.0, Gen<String?>.element(of: [\(edges)] as [String]).map { $0! })"
+            + ")"
+    }
+
+    /// Curated whole-string edge values injected alongside random strings:
+    /// empty / whitespace / newline boundaries plus the YAML/markup tokens
+    /// (`-`, `- `, leading-space `-`, multi-line) that dominate real
+    /// string-structural bugs.
+    static let stringEdgeCases: [String] = [
+        "", " ", "  ", "\n", "\t", "-", "- ", "  -", "- x", "a\n- b", ":", "#", "/"
+    ]
+
+    /// Render `value` as a Swift double-quoted string literal, escaping the
+    /// characters that would otherwise break the emitted source.
+    static func swiftStringLiteral(_ value: String) -> String {
+        var out = "\""
+        for character in value {
+            switch character {
+            case "\\": out += "\\\\"
+            case "\"": out += "\\\""
+            case "\n": out += "\\n"
+            case "\t": out += "\\t"
+            default: out.append(character)
+            }
+        }
+        out += "\""
+        return out
+    }
 }
 
 /// Stored property declared on a struct/class type — name + source-declared
