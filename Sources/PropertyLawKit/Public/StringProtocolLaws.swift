@@ -71,13 +71,28 @@ private func checkStringInitRoundTrip<
             let twiceConverted = String(String(sample))
             return onceConverted == twiceConverted
         },
-        formatCounterexample: { sample, _ in
-            let once = String(sample)
-            let twice = String(String(sample))
-            return "x = \(sample); String(x) = \"\(once)\"; "
-                + "String(String(x)) = \"\(twice)\""
-        }
+        formatCounterexample: stringInitRoundTripCounterexample
     )
+}
+
+// MARK: - Counterexample formatters
+//
+// Each law's counterexample text is extracted into a named internal function
+// (passed to `runUnaryLaw` by reference rather than inlined as a closure) so
+// the diagnostic strings are directly unit-testable. These paths are otherwise
+// unreachable through a real check run: `String`/`Substring` are the only
+// stdlib `StringProtocol` conformers and both satisfy every law, and several
+// laws (e.g. `stringInitRoundTrip`) cannot be violated by *any* conformer
+// because they reduce to `String(x) == String(x)`.
+
+func stringInitRoundTripCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    let once = String(sample)
+    let twice = String(String(sample))
+    return "x = \(sample); String(x) = \"\(once)\"; "
+        + "String(String(x)) = \"\(twice)\""
 }
 
 private func checkCountMatchesStringInit<
@@ -92,11 +107,16 @@ private func checkCountMatchesStringInit<
         generator: generator,
         options: options,
         property: { sample in sample.count == String(sample).count },
-        formatCounterexample: { sample, _ in
-            "x = \(sample); x.count = \(sample.count), "
-                + "String(x).count = \(String(sample).count)"
-        }
+        formatCounterexample: countMatchesStringInitCounterexample
     )
+}
+
+func countMatchesStringInitCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    "x = \(sample); x.count = \(sample.count), "
+        + "String(x).count = \(String(sample).count)"
 }
 
 private func checkIsEmptyMatchesCountZero<
@@ -111,10 +131,15 @@ private func checkIsEmptyMatchesCountZero<
         generator: generator,
         options: options,
         property: { sample in sample.isEmpty == (sample.count == 0) },
-        formatCounterexample: { sample, _ in
-            "x = \(sample); x.isEmpty = \(sample.isEmpty), x.count == 0 = \(sample.count == 0)"
-        }
+        formatCounterexample: isEmptyMatchesCountZeroCounterexample
     )
+}
+
+func isEmptyMatchesCountZeroCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    "x = \(sample); x.isEmpty = \(sample.isEmpty), x.count == 0 = \(sample.count == 0)"
 }
 
 // MARK: - Prefix / suffix invariants
@@ -131,11 +156,16 @@ private func checkHasPrefixEmpty<
         generator: generator,
         options: options,
         property: { sample in sample.hasPrefix("") },
-        formatCounterexample: { sample, _ in
-            let result = sample.hasPrefix("")
-            return "x = \(sample); x.hasPrefix(empty) = \(result)"
-        }
+        formatCounterexample: hasPrefixEmptyCounterexample
     )
+}
+
+func hasPrefixEmptyCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    let result = sample.hasPrefix("")
+    return "x = \(sample); x.hasPrefix(empty) = \(result)"
 }
 
 private func checkHasSuffixEmpty<
@@ -150,11 +180,16 @@ private func checkHasSuffixEmpty<
         generator: generator,
         options: options,
         property: { sample in sample.hasSuffix("") },
-        formatCounterexample: { sample, _ in
-            let result = sample.hasSuffix("")
-            return "x = \(sample); x.hasSuffix(empty) = \(result)"
-        }
+        formatCounterexample: hasSuffixEmptyCounterexample
     )
+}
+
+func hasSuffixEmptyCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    let result = sample.hasSuffix("")
+    return "x = \(sample); x.hasSuffix(empty) = \(result)"
 }
 
 // MARK: - Case folding
@@ -175,13 +210,18 @@ private func checkLowercasedIdempotent<
             let twice = once.lowercased()
             return once == twice
         },
-        formatCounterexample: { sample, _ in
-            let once = sample.lowercased()
-            let twice = once.lowercased()
-            return "x = \(sample); x.lowercased() = \"\(once)\"; "
-                + ".lowercased().lowercased() = \"\(twice)\""
-        }
+        formatCounterexample: lowercasedIdempotentCounterexample
     )
+}
+
+func lowercasedIdempotentCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    let once = sample.lowercased()
+    let twice = once.lowercased()
+    return "x = \(sample); x.lowercased() = \"\(once)\"; "
+        + ".lowercased().lowercased() = \"\(twice)\""
 }
 
 private func checkUppercasedIdempotent<
@@ -200,13 +240,18 @@ private func checkUppercasedIdempotent<
             let twice = once.uppercased()
             return once == twice
         },
-        formatCounterexample: { sample, _ in
-            let once = sample.uppercased()
-            let twice = once.uppercased()
-            return "x = \(sample); x.uppercased() = \"\(once)\"; "
-                + ".uppercased().uppercased() = \"\(twice)\""
-        }
+        formatCounterexample: uppercasedIdempotentCounterexample
     )
+}
+
+func uppercasedIdempotentCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    let once = sample.uppercased()
+    let twice = once.uppercased()
+    return "x = \(sample); x.uppercased() = \"\(once)\"; "
+        + ".uppercased().uppercased() = \"\(twice)\""
 }
 
 // MARK: - UTF-8 view invariance
@@ -229,11 +274,16 @@ private func checkUtf8ViewInvariance<
             // change byte-level representation).
             Array(sample.utf8) == Array(String(sample).utf8)
         },
-        formatCounterexample: { sample, _ in
-            let viaSelf = Array(sample.utf8)
-            let viaString = Array(String(sample).utf8)
-            return "x = \(sample); x.utf8 = \(viaSelf); "
-                + "String(x).utf8 = \(viaString)"
-        }
+        formatCounterexample: utf8ViewInvarianceCounterexample
     )
+}
+
+func utf8ViewInvarianceCounterexample<Value: StringProtocol & Sendable>(
+    _ sample: Value,
+    _ error: ErrorBox?
+) -> String {
+    let viaSelf = Array(sample.utf8)
+    let viaString = Array(String(sample).utf8)
+    return "x = \(sample); x.utf8 = \(viaSelf); "
+        + "String(x).utf8 = \(viaString)"
 }
