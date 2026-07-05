@@ -25,6 +25,16 @@ import PropertyBased
 /// floating-point inputs that are mathematically — but not bitwise — equal.
 /// Use `checkFloatingPointPropertyLaws` (v1.4 M4) for IEEE-754 types; their
 /// laws account for rounding via approximate-equality semantics.
+///
+/// **Oracle injection.** `sameResult` is the equivalence used to compare the two
+/// sides of `additionCommutativity` only (the one law here that holds *exactly*
+/// over floats). It defaults to `==`; pass `floatSameResult` to make it
+/// `NaN`-reflexive when running commutativity over a `NaN`-inclusive
+/// floating-point generator. The remaining laws (associativity, identity,
+/// subtraction inverse, self-subtraction) still use exact `==` and remain unfit
+/// for floats regardless of `sameResult` — associativity and the subtraction
+/// inverse fail by unbounded amounts under cancellation, so no oracle rescues
+/// them.
 @discardableResult
 public func checkAdditiveArithmeticPropertyLaws<
     Value: AdditiveArithmetic & Equatable & Sendable,
@@ -32,12 +42,17 @@ public func checkAdditiveArithmeticPropertyLaws<
 >(
     for type: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions = LawCheckOptions()
+    options: LawCheckOptions = LawCheckOptions(),
+    sameResult: @escaping SameResult<Value> = { $0 == $1 }
 ) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         [
             await checkAdditionAssociativity(generator: generator, options: options),
-            await checkAdditionCommutativity(generator: generator, options: options),
+            await checkAdditionCommutativity(
+                generator: generator,
+                options: options,
+                sameResult: sameResult
+            ),
             await checkZeroAdditiveIdentity(generator: generator, options: options),
             await checkSubtractionInverse(generator: generator, options: options),
             await checkSelfSubtractionIsZero(generator: generator, options: options)
@@ -73,14 +88,15 @@ private func checkAdditionCommutativity<
     Shrinker: SendableSequenceType
 >(
     generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
+    options: LawCheckOptions,
+    sameResult: @escaping SameResult<Value> = { $0 == $1 }
 ) async -> CheckResult {
     await runBinaryLaw(
         "AdditiveArithmetic.additionCommutativity",
         generator: generator,
         options: options,
         property: { first, second in
-            first + second == second + first
+            sameResult(first + second, second + first)
         },
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); "

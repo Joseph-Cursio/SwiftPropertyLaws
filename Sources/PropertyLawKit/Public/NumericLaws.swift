@@ -22,6 +22,14 @@ import PropertyBased
 /// addition round. The laws above use exact `==` and will fire spurious
 /// violations on floating-point inputs. Use `checkFloatingPointPropertyLaws`
 /// (v1.4 M4) for IEEE-754 types instead.
+///
+/// **Oracle injection.** `sameResult` is the equivalence used to compare the two
+/// sides of `multiplicationCommutativity` only (the one Numeric law that holds
+/// *exactly* over floats), and it is forwarded to the inherited
+/// `AdditiveArithmetic` suite for `additionCommutativity`. It defaults to `==`;
+/// pass `floatSameResult` for a `NaN`-reflexive oracle. Associativity and
+/// distributivity keep exact `==` and stay unfit for floats regardless — they
+/// fail by unbounded amounts under cancellation, so no oracle rescues them.
 @discardableResult
 public func checkNumericPropertyLaws<
     Value: Numeric & Equatable & Sendable,
@@ -30,7 +38,8 @@ public func checkNumericPropertyLaws<
     for type: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
-    laws: LawSelection = .all
+    laws: LawSelection = .all,
+    sameResult: @escaping SameResult<Value> = { $0 == $1 }
 ) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
@@ -39,13 +48,18 @@ public func checkNumericPropertyLaws<
                 try await checkAdditiveArithmeticPropertyLaws(
                     for: type,
                     using: generator,
-                    options: $0
+                    options: $0,
+                    sameResult: sameResult
                 )
             })
         }
         results.append(contentsOf: [
             await checkMultiplicationAssociativity(generator: generator, options: options),
-            await checkMultiplicationCommutativity(generator: generator, options: options),
+            await checkMultiplicationCommutativity(
+                generator: generator,
+                options: options,
+                sameResult: sameResult
+            ),
             await checkOneMultiplicativeIdentity(generator: generator, options: options),
             await checkZeroAnnihilation(generator: generator, options: options),
             await checkLeftDistributivity(generator: generator, options: options),
@@ -83,14 +97,15 @@ private func checkMultiplicationCommutativity<
     Shrinker: SendableSequenceType
 >(
     generator: Generator<Value, Shrinker>,
-    options: LawCheckOptions
+    options: LawCheckOptions,
+    sameResult: @escaping SameResult<Value> = { $0 == $1 }
 ) async -> CheckResult {
     await runBinaryLaw(
         "Numeric.multiplicationCommutativity",
         generator: generator,
         options: options,
         property: { first, second in
-            first * second == second * first
+            sameResult(first * second, second * first)
         },
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); "
