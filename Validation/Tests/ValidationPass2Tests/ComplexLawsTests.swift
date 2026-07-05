@@ -61,6 +61,7 @@ struct ComplexLawsTests {
         }
     }
 
+
     @Test func complexDoublePassesNumericLawsWithFPSuppressions() async throws {
         try await checkNumericPropertyLaws(
             for: Complex<Double>.self,
@@ -71,6 +72,35 @@ struct ComplexLawsTests {
             ),
             laws: .ownOnly
         )
+    }
+
+    /// Commutativity of `+` / `*` is exact even on non-finite `Complex<Double>`
+    /// inputs — and `Complex` needs no injected `sameResult` oracle to see it.
+    /// swift-numerics' `Complex.==` returns `true` whenever both operands are
+    /// non-finite (it collapses every non-finite value — `inf` and `nan` alike —
+    /// into a single "point at infinity"), so `Complex`'s own `==` is *already*
+    /// `NaN`-reflexive. That reflexivity is a *loss of information*
+    /// (`Complex(.nan, 0) == Complex(.infinity, 0)` is `true`), which is exactly
+    /// why `Complex` is the lossier carrier, not a more authoritative one
+    /// (book §8.1.6). So `multiplicationCommutativity` / `additionCommutativity`
+    /// pass over `NaN` under the default `==` and stay *out* of
+    /// `floatingPointArithmeticSuppressions` — unlike associativity and
+    /// distributivity, which round and are suppressed. This asserts the
+    /// operation-level fact the kit's commutativity laws rely on.
+    @Test func complexCommutativityIsExactOnNonFiniteInputs() {
+        let nonFinite: [Complex<Double>] = [
+            Complex(.nan, 0),
+            Complex(0, .nan),
+            Complex(.infinity, 0),
+            Complex(.nan, .infinity),
+            Complex(3.5, -2.0)
+        ]
+        for left in nonFinite {
+            for right in nonFinite {
+                #expect(left + right == right + left)
+                #expect(left * right == right * left)
+            }
+        }
     }
 
     @Test func complexDoublePassesSignedNumericOwnLaws() async throws {
