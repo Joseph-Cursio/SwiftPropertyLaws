@@ -1,29 +1,41 @@
 import PropertyBased
 
-// FloatingPoint carries 9 always-on Strict laws + 5 NaN-domain laws gated
-// on `LawCheckOptions.allowNaN`. The kit deliberately does NOT auto-run the
-// inherited SignedNumeric / Numeric / AdditiveArithmetic chain — those are
-// exact-equality algebraic laws that hold only approximately on IEEE-754
-// floating-point types because of rounding. A type spelled `: FloatingPoint`
-// emits only `checkFloatingPointPropertyLaws`; users wanting algebraic
-// coverage on a finite-only generator opt in by calling the inherited check
-// directly.
+// FloatingPoint carries 11 always-on Strict laws + 5 NaN-domain laws gated
+// on `LawCheckOptions.allowNaN`. It does NOT auto-run the full inherited
+// SignedNumeric / Numeric / AdditiveArithmetic chain — most of it is
+// exact-equality algebra that fails on IEEE-754 types: associativity and
+// distributivity differ by *unbounded* amounts under catastrophic cancellation
+// (e.g. `(1e20 + -1e20) + 1 = 1` but `1e20 + (-1e20 + 1) = 0`), so no oracle
+// rescues them and they are excluded by design. The *runnable subset* is run:
+// the addition/multiplication identities and self-subtraction stay
+// finite-guarded, and — new in this slice — additive and multiplicative
+// **commutativity**, the only algebraic laws that hold *exactly* over floats
+// (bit-for-bit, modulo NaN), run via the `NaN`-reflexive `floatSameResult`
+// oracle so a `NaN` on both sides is not misread as a counterexample.
+// A type spelled `: FloatingPoint` still emits only
+// `checkFloatingPointPropertyLaws`; users wanting the excluded algebraic laws
+// on a finite-only generator opt in by calling the inherited check directly.
 
 /// Run `FloatingPoint` protocol laws over `Value` (PRD §4.3).
 ///
-/// FloatingPoint is the first kit protocol where the inherited chain is
-/// deliberately not auto-run. AdditiveArithmetic / Numeric / SignedNumeric
-/// laws use exact `==` and fire spurious violations on `Float` / `Double`
-/// because IEEE-754 multiplication and addition round. The own-only
+/// FloatingPoint is the kit protocol where most of the inherited algebraic
+/// chain is deliberately not auto-run: AdditiveArithmetic / Numeric /
+/// SignedNumeric associativity and distributivity use exact `==` and fail by
+/// *unbounded* amounts on `Float` / `Double` under catastrophic cancellation,
+/// so no oracle rescues them. The runnable subset *is* run. The own-only
 /// FloatingPoint laws below either avoid arithmetic comparison entirely
 /// (`isFinite`, `isNaN`, `isInfinite`) or guard arithmetic chains behind
-/// `isFinite` so rounding noise can't trigger a false positive.
+/// `isFinite` so rounding noise can't trigger a false positive; the two
+/// commutativity laws hold exactly (modulo NaN) and use the `NaN`-reflexive
+/// `floatSameResult` oracle.
 ///
-/// **Always-on laws (9):** `infinityIsInfinite`, `negativeInfinityComparison`,
+/// **Always-on laws (11):** `infinityIsInfinite`, `negativeInfinityComparison`,
 /// `zeroIsZero`, `signedZeroEquality`, `roundedZeroIdentity`,
 /// `additiveInverseFinite`, `nextUpDownRoundTrip`, `signMatchesIsLessThanZero`,
-/// `absoluteValueNonNegative`. NaN samples are skipped where they'd cause
-/// IEEE-754-mandated false-arithmetic results.
+/// `absoluteValueNonNegative`, `additionCommutativity`,
+/// `multiplicationCommutativity`. NaN samples are skipped where they'd cause
+/// IEEE-754-mandated false-arithmetic results; the two commutativity laws admit
+/// NaN via the `NaN`-reflexive oracle rather than skipping it.
 ///
 /// **NaN-domain laws (5, gated by `options.allowNaN`):** `nanIsNaN`,
 /// `nanInequality`, `nanPropagatesAddition`, `nanPropagatesMultiplication`,
@@ -54,7 +66,9 @@ public func checkFloatingPointPropertyLaws<
             await checkAdditiveInverseFinite(generator: generator, options: options),
             await checkNextUpDownRoundTrip(generator: generator, options: options),
             await checkSignMatchesIsLessThanZero(generator: generator, options: options),
-            await checkAbsoluteValueNonNegative(generator: generator, options: options)
+            await checkAbsoluteValueNonNegative(generator: generator, options: options),
+            await checkAdditionCommutativityExact(generator: generator, options: options),
+            await checkMultiplicationCommutativityExact(generator: generator, options: options)
         ]
         if options.allowNaN {
             results.append(contentsOf: [

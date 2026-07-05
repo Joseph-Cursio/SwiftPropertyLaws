@@ -13,8 +13,9 @@ struct FloatingPointLawsTests {
         for result in results {
             #expect(result.isViolation == false, "\(result.protocolLaw) should pass for Double")
         }
-        // 9 always-on laws; allowNaN is false by default.
-        #expect(results.count == 9)
+        // 11 always-on laws (9 + additive/multiplicative commutativity);
+        // allowNaN is false by default.
+        #expect(results.count == 11)
     }
 
     @Test func floatsPassAlwaysOnLawsByDefault() async throws {
@@ -37,7 +38,8 @@ struct FloatingPointLawsTests {
         for result in results {
             #expect(result.isViolation == false, "\(result.protocolLaw) should pass for Double")
         }
-        #expect(results.count == 14)
+        // 11 always-on + 5 NaN-domain laws.
+        #expect(results.count == 16)
         let names = results.map(\.protocolLaw)
         #expect(names.contains("FloatingPoint.nanIsNaN"))
         #expect(names.contains("FloatingPoint.nanInequality"))
@@ -83,6 +85,8 @@ struct FloatingPointLawsTests {
             "FloatingPoint.nextUpDownRoundTrip",
             "FloatingPoint.signMatchesIsLessThanZero",
             "FloatingPoint.absoluteValueNonNegative",
+            "FloatingPoint.additionCommutativity",
+            "FloatingPoint.multiplicationCommutativity",
             "FloatingPoint.nanIsNaN",
             "FloatingPoint.nanInequality",
             "FloatingPoint.nanPropagatesAddition",

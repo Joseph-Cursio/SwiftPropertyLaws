@@ -39,8 +39,8 @@ struct BinaryFloatingPointLawsTests {
         #expect(firstBinaryFPIndex != nil)
         let inheritedLaws = laws[..<firstBinaryFPIndex!]
         #expect(inheritedLaws.allSatisfy { $0.hasPrefix("FloatingPoint.") })
-        // 9 always-on FloatingPoint laws (allowNaN: false by default)
-        #expect(inheritedLaws.count == 9)
+        // 11 always-on FloatingPoint laws (allowNaN: false by default)
+        #expect(inheritedLaws.count == 11)
     }
 
     @Test func allowNaNPropagatesToInheritedFloatingPointSuite() async throws {
