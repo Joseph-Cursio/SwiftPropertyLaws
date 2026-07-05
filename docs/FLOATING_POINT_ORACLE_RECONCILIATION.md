@@ -1,6 +1,8 @@
 # Floating-Point Law Oracle — Reconciliation of Book §8.1.4–8.1.7 and the Kit
 
-**Status:** draft / proposal. Not yet applied to code or to the book manuscript.
+**Status:** **Applied.** Work A (book prose §8.1.6/§8.1.7) and Work B (kit code)
+are both landed. See "Applied — what shipped" below for the as-built record and
+the two deviations from the draft design.
 **Scope:** the `sameResult` (NaN-reflexive, approximate) oracle for equational
 laws over floating-point-backed `Numeric` types (`Double`, `Float`,
 `Complex<Double>`), and the corresponding corrections to Chapter 8
@@ -218,3 +220,62 @@ Apply Work item A (prose) and Work item B (code) together so the chapter and the
 kit tell the same, correct story: **commutativity over floats is exact and only
 needs NaN-reflexivity; associativity/distributivity are legitimately excluded, not
 toleranced; and `Complex` is a lossier carrier, not the authority.**
+
+## 7. Applied — what shipped
+
+Both work items landed together. The as-built matches §4–§5 with two deviations,
+both noted below.
+
+**Work A (book manuscript, `08 Conformance laws as properties.md`).**
+- §8.1.6 rewritten: `Complex` reframed as the *lossier* carrier (swift-numerics
+  collapses `inf` *and* `nan` into one "point at infinity" —
+  `Complex(nan,0) == Complex(inf,0)` is `true`), NaN-reflexivity justified by
+  §8.1.5 alone, cross-carrier consistency demoted to a *partial* by-product
+  (agree on `nan`-vs-`nan`, still disagree on `inf`-vs-`nan`). The false "diverge
+  only at NaN" claim is removed.
+- §8.1.7 rewritten: taxonomy is now **four** modes (added **Cancellation
+  (inherent)**), the old "rounding = `+` not associative → a few ULPs" row is
+  corrected to "well-conditioned rounding → same-sign reassociation", and the
+  prose states plainly that commutativity is exact (no tolerance) while
+  associativity/distributivity are *excluded over floats*, not toleranced.
+- The two matching learning-objective bullets at the top of the chapter were
+  updated to stay consistent (four modes; `Complex` lossier).
+
+**Work B (kit).**
+- `Sources/PropertyLawKit/Public/SameResult.swift` — `public typealias
+  SameResult<Value>` + `public func floatSameResult<V: FloatingPoint>` (NaN-
+  reflexive, **no tolerance term**, stdlib-only, no swift-numerics).
+- `NumericLaws.swift` / `AdditiveArithmeticLaws.swift` — additive `sameResult:`
+  parameter (default `==`), threaded into `multiplicationCommutativity` /
+  `additionCommutativity` only. Non-breaking (defaulted).
+- `FloatingPointLaws.swift` + new `FloatingPointCommutativityLaws.swift` — the
+  FloatingPoint suite now runs two always-on commutativity laws
+  (`FloatingPoint.additionCommutativity`, `FloatingPoint.multiplicationCommutativity`)
+  via `floatSameResult`. Always-on count 9 → 11; associativity / distributivity /
+  subtraction-inverse remain excluded.
+- Tests: `Tests/PropertyLawKitTests/SameResultTests.swift` (reflexivity, no-mask-of-
+  asymmetry via C-style `min`, commutativity over a NaN generator), plus updated
+  counts/names in `FloatingPointLawsTests` / `BinaryFloatingPointLawsTests`.
+- `Validation/.../ComplexLawsTests.swift` — suppressions unchanged; added
+  `complexCommutativityIsExactOnNonFiniteInputs` documenting that `Complex` needs
+  no injected oracle (its `==` is already reflexive).
+
+**Deviation 1 — FloatingPoint laws are FP-namespaced, not reused from the
+inherited chain.** §5 item 3 says "run only commutativity from the inherited
+chain." As built, the FloatingPoint suite has its *own* two commutativity checks
+named `FloatingPoint.additionCommutativity` / `FloatingPoint.multiplicationCommutativity`
+(in `FloatingPointCommutativityLaws.swift`), rather than emitting the inherited
+`Numeric.` / `AdditiveArithmetic.` names. Reason: every other FloatingPoint law is
+`FloatingPoint.*`-namespaced and the suite's tests assert that prefix; reusing the
+inherited checks would have mixed namespaces and broken
+`defaultRunsInheritedFloatingPointFirst`. The public `sameResult:` params on
+`checkNumericPropertyLaws` / `checkAdditiveArithmeticPropertyLaws` (§5 items 1–2)
+still shipped for callers running those suites directly.
+
+**Deviation 2 — no `Complex` `sameResult`; a value-level test instead.** §5 item 4
+proposed a `Complex<Double>` `sameResult` in `PropertyLawComplex`. As built, none
+was added: `Complex`'s own `==` is *already* NaN-reflexive, so `sameResult` would
+be a redundant `{ $0 == $1 }`. Item 4's intent is instead captured by
+`complexCommutativityIsExactOnNonFiniteInputs` (Validation Pass 2), which asserts
+`+`/`*` commute bit-for-bit on non-finite `Complex` inputs. `PropertyLawComplex`
+source is untouched (its zero-arithmetic-law surface is preserved).
