@@ -9,6 +9,8 @@ struct PropertyLawMacroPlugin: CompilerPlugin {
         PropertyLawSuiteMacro.self,
         DiscoverableMacro.self,
         InteractionInvariantTestsMacro.self,
-        ValueSemanticTestsMacro.self
+        ValueSemanticTestsMacro.self,
+        DefensiveCopyTestsMacro.self,
+        StableIdentityTestsMacro.self
     ]
 }

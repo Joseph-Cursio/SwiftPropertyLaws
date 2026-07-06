@@ -44,6 +44,14 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
     /// declared in an extension the macro can't see). No peer is emitted.
     case noValueSemanticConformance
 
+    /// v3.9.0 — `@DefensiveCopyTests` on a type whose primary declaration
+    /// doesn't list `DefensiveCopy`.
+    case noDefensiveCopyConformance
+
+    /// v3.9.0 — `@StableIdentityTests` on a type whose primary declaration
+    /// doesn't list `StableIdentity`.
+    case noStableIdentityConformance
+
     var message: String {
         switch self {
         case .nonTypeDecl:
@@ -83,6 +91,16 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
                 + "ValueSemantic in its primary declaration's inheritance clause. "
                 + "Conformances declared via extensions outside the type's "
                 + "primary declaration aren't visible to the macro."
+        case .noDefensiveCopyConformance:
+            return "@DefensiveCopyTests requires the decoratee to conform to "
+                + "DefensiveCopy in its primary declaration's inheritance clause. "
+                + "Conformances declared via extensions outside the type's "
+                + "primary declaration aren't visible to the macro."
+        case .noStableIdentityConformance:
+            return "@StableIdentityTests requires the decoratee to conform to "
+                + "StableIdentity in its primary declaration's inheritance clause. "
+                + "Conformances declared via extensions outside the type's "
+                + "primary declaration aren't visible to the macro."
         }
     }
 
@@ -95,6 +113,8 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
         case .discoverableGroupNotLiteral: id = "discoverableGroupNotLiteral"
         case .noInteractionInvariantConformance: id = "noInteractionInvariantConformance"
         case .noValueSemanticConformance: id = "noValueSemanticConformance"
+        case .noDefensiveCopyConformance: id = "noDefensiveCopyConformance"
+        case .noStableIdentityConformance: id = "noStableIdentityConformance"
         }
         return MessageID(domain: "PropertyLawMacro", id: id)
     }
@@ -105,7 +125,9 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
         case .noKnownConformance, .cannotDeriveGenerator,
              .discoverableGroupNotLiteral,
              .noInteractionInvariantConformance,
-             .noValueSemanticConformance:
+             .noValueSemanticConformance,
+             .noDefensiveCopyConformance,
+             .noStableIdentityConformance:
             return .warning
         }
     }
