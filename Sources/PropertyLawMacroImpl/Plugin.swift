@@ -8,6 +8,7 @@ struct PropertyLawMacroPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         PropertyLawSuiteMacro.self,
         DiscoverableMacro.self,
-        InteractionInvariantTestsMacro.self
+        InteractionInvariantTestsMacro.self,
+        ValueSemanticTestsMacro.self
     ]
 }

@@ -39,6 +39,11 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
     /// macro can't see siblings). No peer is emitted.
     case noInteractionInvariantConformance
 
+    /// v3.6.0 — `@ValueSemanticTests` on a type whose primary declaration's
+    /// inheritance clause doesn't list `ValueSemantic` (or the conformance is
+    /// declared in an extension the macro can't see). No peer is emitted.
+    case noValueSemanticConformance
+
     var message: String {
         switch self {
         case .nonTypeDecl:
@@ -73,6 +78,11 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
                 + "ActionIdempotenceInvariant (or the root InteractionInvariant). "
                 + "Conformances declared via extensions outside the type's "
                 + "primary declaration aren't visible to the macro."
+        case .noValueSemanticConformance:
+            return "@ValueSemanticTests requires the decoratee to conform to "
+                + "ValueSemantic in its primary declaration's inheritance clause. "
+                + "Conformances declared via extensions outside the type's "
+                + "primary declaration aren't visible to the macro."
         }
     }
 
@@ -84,6 +94,7 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
         case .cannotDeriveGenerator: id = "cannotDeriveGenerator"
         case .discoverableGroupNotLiteral: id = "discoverableGroupNotLiteral"
         case .noInteractionInvariantConformance: id = "noInteractionInvariantConformance"
+        case .noValueSemanticConformance: id = "noValueSemanticConformance"
         }
         return MessageID(domain: "PropertyLawMacro", id: id)
     }
@@ -93,7 +104,8 @@ internal enum PropertyLawDiagnostic: DiagnosticMessage {
         case .nonTypeDecl: return .error
         case .noKnownConformance, .cannotDeriveGenerator,
              .discoverableGroupNotLiteral,
-             .noInteractionInvariantConformance:
+             .noInteractionInvariantConformance,
+             .noValueSemanticConformance:
             return .warning
         }
     }
