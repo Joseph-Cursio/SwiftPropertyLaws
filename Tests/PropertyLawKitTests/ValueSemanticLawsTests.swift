@@ -17,10 +17,14 @@ struct ValueSemanticLawsTests {
             for: SafeBadge.self,
             options: LawCheckOptions(budget: .sanity)
         )
-        #expect(results.count == 1)
+        // Two laws: single-step + multi-step interleaving.
+        #expect(results.count == 2)
         #expect(results.allSatisfy { $0.isViolation == false })
-        #expect(results[0].tier == .strict)
-        #expect(results[0].protocolLaw == "ValueSemantic.copyMutationDoesNotLeak")
+        #expect(results.allSatisfy { $0.tier == .strict })
+        #expect(results.map(\.protocolLaw) == [
+            "ValueSemantic.copyMutationDoesNotLeak",
+            "ValueSemantic.copyMutationDoesNotLeakUnderInterleaving"
+        ])
     }
 
     // MARK: - Positive control — correct copy-on-write
@@ -33,8 +37,23 @@ struct ValueSemanticLawsTests {
             for: SafeBuffer.self,
             options: LawCheckOptions(budget: .sanity)
         )
-        #expect(results.count == 1)
+        #expect(results.count == 2)
         #expect(results.allSatisfy { $0.isViolation == false })
+    }
+
+    // MARK: - Negative control — closure capturing shared mutable state (§9.1.3)
+
+    @Test func closureCaptureLeakDetectedByInterleaving() async throws {
+        // A stored closure captures a heap `var` shared across copies. The
+        // single-step law PASSES (the original is never mutated), but the
+        // multi-step interleaving law catches the contamination that surfaces
+        // on the original's next mutation.
+        await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkValueSemanticPropertyLaws(
+                for: ClosureLeak.self,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
     }
 
     // MARK: - Negative control — reference-container leak (Chapter 9 §9.1.3)
@@ -170,4 +189,38 @@ struct SafeBuffer: ValueSemantic, Sendable {
             target.storage.bytes.append(1)
         }
     }
+}
+
+// MARK: - Fixtures: closure capturing shared mutable state (negative control)
+
+struct ClosureLeak: ValueSemantic, @unchecked Sendable {
+
+    // Captures a heap `var box` — every value copy shares the same closure and
+    // thus the same box. `@unchecked Sendable` because that shared capture is
+    // deliberately unsafe (the bug under test).
+    private let increment: () -> Int
+    private(set) var lastValue: Int = 0
+
+    init() {
+        var box = 0
+        increment = { box += 1; return box }
+    }
+
+    static func == (lhs: ClosureLeak, rhs: ClosureLeak) -> Bool {
+        lhs.lastValue == rhs.lastValue
+    }
+
+    static func makeProbe() -> ClosureLeak { ClosureLeak() }
+
+    enum Mutation: CaseIterable, Sendable { case tick }
+
+    static func apply(_ mutation: Mutation, to target: inout ClosureLeak) {
+        switch mutation {
+        case .tick: target.tick()
+        }
+    }
+
+    // The leak surfaces here: `increment()` advances the shared box, so a copy's
+    // earlier tick contaminates the value this original observes.
+    mutating func tick() { lastValue = increment() }
 }
