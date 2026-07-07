@@ -1,6 +1,6 @@
 # Foundation Generators (kit roadmap)
 
-**Status:** Proposed, unbuilt — **low priority.** Non-breaking (a `PropertyLawKit` minor, e.g. v3.10.0).
+**Status:** ✅ **Shipped** (v3.10.0). All four generators built in `Sources/PropertyLawKit/Public/FoundationGenerators.swift`, 10 tests in `Tests/PropertyLawKitTests/FoundationGeneratorsTests.swift`. Non-breaking additive minor. Implementation notes below record what shipped; the "why low priority" rationale is retained as history.
 **Origin:** Extracted from SwiftInferProperties' `docs/ideas/ValueSemantic Kit Proposal.md` §5 (workstream 3), which correctly identified these as a *kit* concern, not an engine one. This is their natural home; the downstream proposal now carries only a one-line pointer here.
 
 ## What
@@ -29,6 +29,14 @@ The primary downstream consumer, **SwiftInferProperties, does not consume kit ge
 - `data(of:)` takes a count range for size control (mirrors the proposal's `Gen.data(of: countRange)`).
 - Determinism: prefer a fully seeded form over the finite-path non-seeded convention `doubleWithNaN` uses, so failures shrink reproducibly.
 - These are independent — ship any subset; no ordering dependency.
+
+## As shipped (v3.10.0)
+
+- **All four fully seeded**, per the determinism design note — every sampled value is a deterministic function of the backend RNG, so failures shrink reproducibly.
+- `date()` wraps `swift-property-based`'s seeded `Gen<Date>.date(inYear: 1970 ... 2100)`. The year window is fixed rather than wall-clock-relative, so the sampled stream is stable across runs/machines (only the backend's shrink *direction* is clock-relative, which doesn't change which values are produced).
+- `uuid()` draws 16 seeded bytes and stamps the RFC 4122 **version-4** nibble + variant bits, so every value is a well-formed v4 UUID.
+- `data(of: ClosedRange<Int> = 0 ... 256)` — seeded byte count in the range, each byte seeded over `0 ... 255`.
+- `url()` composes curated scheme / host / path components indexed by three seeded `Gen<Int>.int(in:)` draws (never fuzzes arbitrary strings through `URL(string:)`), guaranteeing valid URLs. A single provably-safe constant fallback covers the (unreachable) parse-failure branch.
 
 ## Not in scope here
 
