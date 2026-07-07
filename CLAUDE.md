@@ -52,7 +52,7 @@ The intended dependency direction is one-way: `SwiftInferProperties → SwiftPro
 |---|---|
 | Product scope, milestones, success criteria | `docs/SwiftPropertyLaws PRD.md` (v0.3, current), `docs/SwiftInferProperties PRD.md` |
 | What v0.3 changed vs v0.2 | Appendix A of the current PRD (§8 calibration + SetAlgebra symmetric-difference expansion) |
-| What v0.2 changed vs the original proposal | Appendix B of the current PRD; `docs/SwiftPropertyLaws PRD v0.1.md` is the preserved original |
+| What v0.2 changed vs the original proposal | Appendix B of the current PRD (the original v0.1 PRD lives in git history) |
 | Which protocols and what protocol laws each one carries (with strictness tiers) | `docs/Swift Standard Library Protocols.md` (reference) and §4.3 of the SwiftPropertyLaws PRD |
 | External pushback that drove v0.2 | `docs/ChatGPT critique.md`, `docs/Copilot critique.md`, `docs/Gemini critique.md` |
 
