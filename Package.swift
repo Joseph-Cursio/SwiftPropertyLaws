@@ -224,6 +224,7 @@ let package = Package(
         .target(
             name: "PropertyLawCollections",
             dependencies: [
+                "PropertyLawKit",
                 .product(name: "PropertyBased", package: "swift-property-based"),
                 .product(name: "DequeModule", package: "swift-collections"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
