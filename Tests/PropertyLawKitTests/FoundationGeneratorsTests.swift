@@ -5,8 +5,8 @@ import Testing
 @testable import PropertyLawKit
 
 /// Verifies the kit-side contract for the Foundation-typed convenience
-/// generators (`Gen.date()` / `Gen.uuid()` / `Gen.data(of:)` / `Gen.url()`)
-/// per `docs/ideas/Foundation Generators.md`.
+/// generators (`Gen.date()` / `Gen.uuid()` / `Gen.data(of:)` / `Gen.url()` /
+/// `Gen.decimal()`) per `docs/ideas/Foundation Generators.md`.
 ///
 /// Each generator is checked for the two behaviors it promises: it produces
 /// **valid** values of its type, and — because every one is fully seeded — the
@@ -124,5 +124,28 @@ struct FoundationGeneratorsTests {
         let runA = Self.sample(Gen<URL>.url(), seedTag: 77)
         let runB = Self.sample(Gen<URL>.url(), seedTag: 77)
         #expect(runA == runB, "same seed produced divergent URL streams")
+    }
+
+    // MARK: - Decimal
+
+    @Test
+    func decimalStaysInBoundsWithExactTwoFractionalDigits() async throws {
+        let samples = Self.sample(Gen<Decimal>.decimal(), seedTag: 4)
+        let upper = Decimal(10_000_000)
+        for value in samples {
+            #expect(value >= -upper && value <= upper, "decimal \(value) outside ±10_000_000")
+            // hundredths / 100 is exact — scaling by 100 lands on a whole number.
+            var scaled = value * 100
+            var whole = Decimal()
+            NSDecimalRound(&whole, &scaled, 0, .plain)
+            #expect(scaled == whole, "decimal \(value) is not an exact hundredth")
+        }
+    }
+
+    @Test
+    func decimalIsDeterministicUnderTheSameSeed() async throws {
+        let runA = Self.sample(Gen<Decimal>.decimal(), seedTag: 55)
+        let runB = Self.sample(Gen<Decimal>.decimal(), seedTag: 55)
+        #expect(runA == runB, "same seed produced divergent Decimal streams")
     }
 }

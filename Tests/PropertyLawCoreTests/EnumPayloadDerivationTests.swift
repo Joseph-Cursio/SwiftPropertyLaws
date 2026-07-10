@@ -117,7 +117,7 @@ struct EnumPayloadDerivationTests {
 
     @Test func nonDerivableAssociatedValueFallsThrough() {
         let shape = enumShape("Doc", cases: [
-            EnumCase(name: "at", associatedValues: [value(nil, "URL")])
+            EnumCase(name: "at", associatedValues: [value(nil, "Widget")])
         ])
         guard case .todo = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected .todo for non-derivable associated value")

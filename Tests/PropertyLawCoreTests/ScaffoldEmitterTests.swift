@@ -20,14 +20,14 @@ struct ScaffoldEmitterTests {
     // MARK: - Scaffolds produced
 
     @Test func partialStructFillsKnownSlotsAndHolesTheRest() {
-        let doc = structShape("Doc", [("id", "Int"), ("url", "URL")])
+        let doc = structShape("Doc", [("id", "Int"), ("widget", "Widget")])
         let stub = try? #require(ScaffoldEmitter.stub(for: doc))
         let text = stub ?? ""
         #expect(text.contains("extension Doc {"))
         #expect(text.contains("static func gen() -> Generator<Doc, some SendableSequenceType>"))
-        #expect(text.contains("Gen<Int>.int()"))          // id resolved
-        #expect(text.contains("<#Generator<URL>#>"))       // url placeholder
-        #expect(text.contains("Doc(id: $0.0, url: $0.1)")) // lifted through the init
+        #expect(text.contains("Gen<Int>.int()"))               // id resolved
+        #expect(text.contains("<#Generator<Widget>#>"))        // widget placeholder
+        #expect(text.contains("Doc(id: $0.0, widget: $0.1)"))  // lifted through the init
     }
 
     @Test func holeInsideCollectionKeepsStructure() {
@@ -56,11 +56,11 @@ struct ScaffoldEmitterTests {
         let shape = TypeShape(
             name: "Node", kind: .enum, inheritedTypes: ["Equatable"], hasUserGen: false,
             enumCases: [EnumCase(name: "leaf", associatedValues: [
-                InitializerParameter(label: nil, typeName: "URL")
+                InitializerParameter(label: nil, typeName: "Widget")
             ])]
         )
         let text = ScaffoldEmitter.stub(for: shape) ?? ""
-        #expect(text.contains("<#Generator<URL>#>.map { Node.leaf($0) }"))
+        #expect(text.contains("<#Generator<Widget>#>.map { Node.leaf($0) }"))
     }
 
     // MARK: - No scaffold (nil)

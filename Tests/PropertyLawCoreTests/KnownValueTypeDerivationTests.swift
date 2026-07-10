@@ -45,6 +45,61 @@ struct KnownValueTypeDerivationTests {
         }
     }
 
+    // MARK: - Common Foundation value types → curated kit generators
+
+    @Test func uuidUsesCuratedKitGeneratorAndRequiresFoundation() {
+        let composed = DerivationStrategist.composedGenerator(forTypeName: "UUID")
+        #expect(composed?.expression == "Gen<UUID>.uuid()")
+        #expect(composed?.requiredImports == ["Foundation"])
+    }
+
+    @Test func dataUsesCuratedKitGeneratorAndRequiresFoundation() {
+        let composed = DerivationStrategist.composedGenerator(forTypeName: "Data")
+        #expect(composed?.expression == "Gen<Data>.data()")
+        #expect(composed?.requiredImports == ["Foundation"])
+    }
+
+    @Test func urlUsesCuratedKitGeneratorAndRequiresFoundation() {
+        let composed = DerivationStrategist.composedGenerator(forTypeName: "URL")
+        #expect(composed?.expression == "Gen<URL>.url()")
+        #expect(composed?.requiredImports == ["Foundation"])
+    }
+
+    @Test func decimalUsesCuratedKitGeneratorAndRequiresFoundation() {
+        let composed = DerivationStrategist.composedGenerator(forTypeName: "Decimal")
+        #expect(composed?.expression == "Gen<Decimal>.decimal()")
+        #expect(composed?.requiredImports == ["Foundation"])
+    }
+
+    @Test func foundationValueTypesPropagateImportThroughComposites() {
+        for spelling in ["[UUID]", "Data?", "Set<URL>", "[String: Decimal]"] {
+            #expect(
+                DerivationStrategist.composedGenerator(forTypeName: spelling)?
+                    .requiredImports == ["Foundation"],
+                "expected Foundation import for \(spelling)"
+            )
+        }
+    }
+
+    @Test func structWithUUIDMemberDerivesAndRequiresFoundation() {
+        let shape = TypeShape(
+            name: "Token",
+            kind: .struct,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            storedMembers: [
+                StoredMember(name: "identifier", typeName: "UUID"),
+                StoredMember(name: "payload", typeName: "Data")
+            ]
+        )
+        let strategy = DerivationStrategist.strategy(for: shape)
+        guard case .memberwiseArbitrary = strategy else {
+            Issue.record("expected memberwise derivation for struct with UUID + Data members")
+            return
+        }
+        #expect(strategy.requiredImports == ["Foundation"])
+    }
+
     // MARK: - Known stdlib/Foundation typealiases
 
     @Test func timeIntervalResolvesToDouble() {

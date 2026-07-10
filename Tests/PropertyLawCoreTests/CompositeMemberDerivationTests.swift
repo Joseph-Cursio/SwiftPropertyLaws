@@ -116,7 +116,7 @@ struct CompositeMemberDerivationTests {
     // MARK: - Unsupported (still nil → .todo at the strategy level)
 
     @Test func customElementTypeIsUnresolved() {
-        #expect(DerivationStrategist.memberGenerator(forTypeName: "URL") == nil)
+        #expect(DerivationStrategist.memberGenerator(forTypeName: "Widget") == nil)
         #expect(DerivationStrategist.memberGenerator(forTypeName: "[CustomType]") == nil)
         #expect(DerivationStrategist.memberGenerator(forTypeName: "[String: CustomType]") == nil)
     }
@@ -180,13 +180,13 @@ struct CompositeMemberDerivationTests {
             kind: .struct,
             inheritedTypes: ["Equatable"],
             hasUserGen: false,
-            storedMembers: [StoredMember(name: "links", typeName: "[URL]")]
+            storedMembers: [StoredMember(name: "links", typeName: "[Widget]")]
         )
         guard case .todo(let reason) = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected .todo for unresolved composite member")
             return
         }
-        #expect(reason.contains("[URL]"))
+        #expect(reason.contains("[Widget]"))
         #expect(reason.contains("no recognized stdlib raw type"))
     }
 

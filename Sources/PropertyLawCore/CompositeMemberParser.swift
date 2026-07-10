@@ -179,6 +179,21 @@ extension DerivationStrategist {
             return ComposedGenerator(expression: "Gen<Character>.letterOrNumber")
         case "Date":
             return ComposedGenerator(expression: "Gen<Date>.date", requiredImports: ["Foundation"])
+        // v3.11.0 — common Foundation value types outside the raw-type set.
+        // Each maps to the kit's curated, fully-seeded `Gen<T>` convenience
+        // (PropertyLawKit `FoundationGenerators`) rather than an ad-hoc inline
+        // recipe — the generators every derivation consumer already imports
+        // (`GeneratedFileEmitter`/`ScaffoldFileEmitter` emit `import
+        // PropertyLawKit`; the macro `@_exported`s it). `Foundation` is carried
+        // for the type spelling, exactly like `Date`.
+        case "UUID":
+            return ComposedGenerator(expression: "Gen<UUID>.uuid()", requiredImports: ["Foundation"])
+        case "Data":
+            return ComposedGenerator(expression: "Gen<Data>.data()", requiredImports: ["Foundation"])
+        case "URL":
+            return ComposedGenerator(expression: "Gen<URL>.url()", requiredImports: ["Foundation"])
+        case "Decimal":
+            return ComposedGenerator(expression: "Gen<Decimal>.decimal()", requiredImports: ["Foundation"])
         default:
             return nil
         }

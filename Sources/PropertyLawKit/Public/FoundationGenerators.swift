@@ -10,7 +10,7 @@ import PropertyBased
 // deliberately do NOT live in `PropertyLawComplex` (the opt-in swift-numerics
 // line).
 //
-// All four are **fully seeded** (per the design note preferring a seeded form
+// All five are **fully seeded** (per the design note preferring a seeded form
 // over the finite-path `doubleWithNaN` convention) so failures shrink
 // reproducibly: every sampled value is a deterministic function of the
 // backend's `SeededRandomNumberGenerator`.
@@ -98,6 +98,22 @@ extension Gen where Value == URL {
             let base = "\(scheme)://\(host)"
             let composed = segment.isEmpty ? base : "\(base)/\(segment)"
             return URL(string: composed) ?? fallbackURL
+        }
+    }
+}
+
+extension Gen where Value == Decimal {
+    /// A `Decimal` generator yielding exact two-fractional-digit values in
+    /// `-10_000_000.00 ... 10_000_000.00`, drawn from a single seeded integer
+    /// of hundredths.
+    ///
+    /// Building the value as `Decimal(hundredths) / 100` keeps it exact — no
+    /// binary-floating-point round-off, unlike `Decimal(someDouble)` — and
+    /// fully seeded: the one integer draw is the only entropy, so the stream
+    /// is deterministic and shrinks through the underlying integer generator.
+    public static func decimal() -> Generator<Decimal, some SendableSequenceType> {
+        Gen<Int>.int(in: -1_000_000_000 ... 1_000_000_000).map { hundredths in
+            Decimal(hundredths) / 100
         }
     }
 }

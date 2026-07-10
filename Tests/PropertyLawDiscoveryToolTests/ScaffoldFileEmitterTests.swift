@@ -13,7 +13,7 @@ struct ScaffoldFileEmitterTests {
             "Models.swift": """
                 struct Doc: Equatable {        // partial: url has no generator
                     let id: Int
-                    let url: URL
+                    let widget: Widget
                 }
                 struct Point: Equatable {       // fully derivable → no scaffold
                     let x: Int
@@ -32,8 +32,8 @@ struct ScaffoldFileEmitterTests {
         let scaffold = try #require(ScaffoldFileEmitter.emit(map: map))
 
         #expect(scaffold.contains("extension Doc {"))
-        #expect(scaffold.contains("<#Generator<URL>#>"))
-        #expect(scaffold.contains("Doc(id: $0.0, url: $0.1)"))
+        #expect(scaffold.contains("<#Generator<Widget>#>"))
+        #expect(scaffold.contains("Doc(id: $0.0, widget: $0.1)"))
         #expect(scaffold.contains("import PropertyLawKit"))
         // Fully-derivable and class types are not scaffolded.
         #expect(scaffold.contains("extension Point") == false)

@@ -181,18 +181,20 @@ struct DerivationStrategistTests {
     }
 
     @Test func structWithUnknownTypeFallsThrough() {
+        // `Widget` is a bespoke domain type with no recognized raw / known
+        // value generator, so memberwise derivation falls through to .todo.
         let shape = TypeShape(
             name: "Doc",
             kind: .struct,
             inheritedTypes: ["Equatable"],
             hasUserGen: false,
-            storedMembers: [StoredMember(name: "url", typeName: "URL")]
+            storedMembers: [StoredMember(name: "widget", typeName: "Widget")]
         )
         guard case .todo(let reason) = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected .todo")
             return
         }
-        #expect(reason.contains("URL"))
+        #expect(reason.contains("Widget"))
         #expect(reason.contains("no recognized stdlib raw type"))
     }
 

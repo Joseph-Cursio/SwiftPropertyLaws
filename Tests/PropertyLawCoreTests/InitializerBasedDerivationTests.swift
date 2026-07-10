@@ -129,9 +129,9 @@ struct InitializerBasedDerivationTests {
         let shape = structShape(
             "Doc",
             initializers: [
-                InitializerSignature(parameters: [InitializerParameter(label: "url", typeName: "URL")])
+                InitializerSignature(parameters: [InitializerParameter(label: "widget", typeName: "Widget")])
             ],
-            storedMembers: [StoredMember(name: "url", typeName: "URL")]
+            storedMembers: [StoredMember(name: "widget", typeName: "Widget")]
         )
         guard case .todo(let reason) = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected .todo for non-derivable init parameter")

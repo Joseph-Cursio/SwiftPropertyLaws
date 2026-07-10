@@ -133,18 +133,19 @@ struct DiagnosticsTests {
     }
 
     @Test func structWithUnknownTypeFiresCannotDeriveWarning() {
-        // `URL` isn't in the recognized RawType set, so memberwise
-        // derivation falls through to .todo and the macro warns.
+        // `Widget` is a bespoke type with no recognized raw / known value
+        // generator, so memberwise derivation falls through to .todo and
+        // the macro warns.
         assertMacroExpansion(
             """
             @PropertyLawSuite
             struct Doc: Equatable {
-                let url: URL
+                let widget: Widget
             }
             """,
             expandedSource: """
             struct Doc: Equatable {
-                let url: URL
+                let widget: Widget
             }
 
             struct DocPropertyLawTests {
@@ -160,7 +161,7 @@ struct DiagnosticsTests {
                 DiagnosticSpec(
                     message: """
                         Cannot derive a generator for `Doc`: stored property \
-                        `url: URL` has no recognized stdlib raw type \
+                        `widget: Widget` has no recognized stdlib raw type \
                         (memberwise derivation supports Int/String/Bool/Double/Float \
                         and the fixed-width integer family). Provide `static func \
                         gen() -> Generator<Doc, some SendableSequenceType>`.
