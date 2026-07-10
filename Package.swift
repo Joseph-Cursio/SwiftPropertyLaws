@@ -49,6 +49,15 @@ let package = Package(
         .library(
             name: "PropertyLawCollections",
             targets: ["PropertyLawCollections"]
+        ),
+        // Phase 3 M1 of the collections/async workplan — async-tier-1 law
+        // coverage for swift-async-algorithms, opt-in like the two above so
+        // the main `PropertyLawKit` line keeps a zero async-algorithms
+        // footprint. Tier 1 is clock-free (sync-model equivalence +
+        // order-insensitive laws); Clock-parameterized laws are Phase 4.
+        .library(
+            name: "PropertyLawAsync",
+            targets: ["PropertyLawAsync"]
         )
     ],
     dependencies: [
@@ -59,7 +68,10 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-numerics.git", from: "1.0.0"),
         // Optional kit-side dep — used only by the `PropertyLawCollections`
         // target. The main `PropertyLawKit` line does not depend on it.
-        .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0")
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0"),
+        // Optional kit-side dep — used only by the `PropertyLawAsync`
+        // target. The main `PropertyLawKit` line does not depend on it.
+        .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0")
         // `swift-property-based` is the single property-based backend.
         // The PRD §4.5 `PropertyBackend` abstraction stays public — its
         // closure-level seam is non-leaky, and a future second backend can
@@ -244,6 +256,28 @@ let package = Package(
                 .product(name: "HeapModule", package: "swift-collections"),
                 .product(name: "BitCollections", package: "swift-collections"),
                 .product(name: "HashTreeCollections", package: "swift-collections")
+            ]
+        ),
+
+        // Collections/async workplan Phase 3 — async-tier-1 law coverage
+        // (sync-model equivalence + clock-free order-insensitive laws) for
+        // swift-async-algorithms. Same opt-in posture as
+        // `PropertyLawCollections`; rides the package-scoped law builders.
+        .target(
+            name: "PropertyLawAsync",
+            dependencies: [
+                "PropertyLawKit",
+                .product(name: "PropertyBased", package: "swift-property-based"),
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+            ]
+        ),
+        .testTarget(
+            name: "PropertyLawAsyncTests",
+            dependencies: [
+                "PropertyLawAsync",
+                "PropertyLawKit",
+                .product(name: "PropertyBased", package: "swift-property-based"),
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
             ]
         )
     ]
