@@ -69,9 +69,16 @@ let package = Package(
         // Optional kit-side dep — used only by the `PropertyLawCollections`
         // target. The main `PropertyLawKit` line does not depend on it.
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0"),
-        // Optional kit-side dep — used only by the `PropertyLawAsync`
-        // target. The main `PropertyLawKit` line does not depend on it.
-        .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0")
+        // Optional kit-side deps — used only by the `PropertyLawAsync`
+        // target. The main `PropertyLawKit` line does not depend on them.
+        // swift-clocks provides `TestClock` for the Phase 4 virtual-time
+        // laws — chosen over a hand-rolled clock deliberately: a correct
+        // manual-advance Clock (pending-sleep bookkeeping, deadline-ordered
+        // wakeups, yield discipline) is a project of its own and the classic
+        // source of hanging CI; TestClock is battle-tested against exactly
+        // the debounce/throttle use case.
+        .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0"),
+        .package(url: "https://github.com/pointfreeco/swift-clocks.git", from: "1.0.0")
         // `swift-property-based` is the single property-based backend.
         // The PRD §4.5 `PropertyBackend` abstraction stays public — its
         // closure-level seam is non-leaky, and a future second backend can
@@ -268,7 +275,8 @@ let package = Package(
             dependencies: [
                 "PropertyLawKit",
                 .product(name: "PropertyBased", package: "swift-property-based"),
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(name: "Clocks", package: "swift-clocks")
             ]
         ),
         .testTarget(
@@ -277,7 +285,8 @@ let package = Package(
                 "PropertyLawAsync",
                 "PropertyLawKit",
                 .product(name: "PropertyBased", package: "swift-property-based"),
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(name: "Clocks", package: "swift-clocks")
             ]
         )
     ]
