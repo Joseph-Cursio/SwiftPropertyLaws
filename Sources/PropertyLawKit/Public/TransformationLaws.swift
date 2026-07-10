@@ -36,6 +36,11 @@ public enum TransformationLaw: String, Sendable, Hashable, CaseIterable {
     case sortedIsNonDecreasing
     case sortedPreservesCount
     case reversedInvolution
+    // Parameterized half — see TransformationFunctionLaws.swift.
+    case mapFusion
+    case mapFilterCommutation
+    case lazyMapEquivalence
+    case lazyFilterEquivalence
 }
 
 extension LawIdentifier {

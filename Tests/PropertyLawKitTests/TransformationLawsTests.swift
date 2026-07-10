@@ -11,7 +11,14 @@ struct TransformationLawsTests {
             options: LawCheckOptions(budget: .standard)
         )
         let names = results.map(\.protocolLaw)
-        for law in TransformationLaw.allCases {
+        // The closure-free half only — the parameterized four (mapFusion
+        // etc.) require a `functions:` argument and are covered in
+        // TransformationFunctionLawsTests.
+        let closureFree: [TransformationLaw] = [
+            .sortedIdempotence, .sortedIsNonDecreasing,
+            .sortedPreservesCount, .reversedInvolution
+        ]
+        for law in closureFree {
             #expect(
                 names.contains("Transformation.\(law.rawValue)"),
                 "missing law \(law.rawValue)"
