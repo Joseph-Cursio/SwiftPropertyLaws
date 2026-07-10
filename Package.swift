@@ -40,6 +40,15 @@ let package = Package(
         .library(
             name: "PropertyLawComplex",
             targets: ["PropertyLawComplex"]
+        ),
+        // Phase 1 M0 of the collections/async workplan — swift-collections
+        // law coverage carved out as an opt-in product (same posture as
+        // `PropertyLawComplex`) so the main `PropertyLawKit` line keeps a
+        // zero `swift-collections` footprint. M0 ships scaffolding + the
+        // conformance audit; generators and law wiring land in M1+.
+        .library(
+            name: "PropertyLawCollections",
+            targets: ["PropertyLawCollections"]
         )
     ],
     dependencies: [
@@ -47,7 +56,10 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0"),
         // Optional kit-side dep — used only by the `PropertyLawComplex`
         // target. The main `PropertyLawKit` line does not depend on it.
-        .package(url: "https://github.com/apple/swift-numerics.git", from: "1.0.0")
+        .package(url: "https://github.com/apple/swift-numerics.git", from: "1.0.0"),
+        // Optional kit-side dep — used only by the `PropertyLawCollections`
+        // target. The main `PropertyLawKit` line does not depend on it.
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0")
         // `swift-property-based` is the single property-based backend.
         // The PRD §4.5 `PropertyBackend` abstraction stays public — its
         // closure-level seam is non-leaky, and a future second backend can
@@ -200,6 +212,37 @@ let package = Package(
                 .product(name: "PropertyBased", package: "swift-property-based"),
                 .product(name: "ComplexModule", package: "swift-numerics"),
                 .product(name: "RealModule", package: "swift-numerics")
+            ]
+        ),
+
+        // Collections/async workplan Phase 1 — opt-in swift-collections law
+        // coverage. Lives in its own product so `swift-collections` stays out
+        // of the main `PropertyLawKit` transitive dependency set (the
+        // `PropertyLawComplex` precedent). Depends on the five per-module
+        // products rather than the `Collections` umbrella so each type's
+        // module lineage stays explicit.
+        .target(
+            name: "PropertyLawCollections",
+            dependencies: [
+                .product(name: "PropertyBased", package: "swift-property-based"),
+                .product(name: "DequeModule", package: "swift-collections"),
+                .product(name: "OrderedCollections", package: "swift-collections"),
+                .product(name: "HeapModule", package: "swift-collections"),
+                .product(name: "BitCollections", package: "swift-collections"),
+                .product(name: "HashTreeCollections", package: "swift-collections")
+            ]
+        ),
+        .testTarget(
+            name: "PropertyLawCollectionsTests",
+            dependencies: [
+                "PropertyLawCollections",
+                "PropertyLawKit",
+                .product(name: "PropertyBased", package: "swift-property-based"),
+                .product(name: "DequeModule", package: "swift-collections"),
+                .product(name: "OrderedCollections", package: "swift-collections"),
+                .product(name: "HeapModule", package: "swift-collections"),
+                .product(name: "BitCollections", package: "swift-collections"),
+                .product(name: "HashTreeCollections", package: "swift-collections")
             ]
         )
     ]
