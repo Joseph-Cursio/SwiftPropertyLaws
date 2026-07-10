@@ -162,4 +162,33 @@ struct PlantedBugCollectionsDetectionTests {
             "expected at least one symmetricDifference* law to fire; got: \(laws)"
         )
     }
+
+    @Test func detectsSetAlgebraSubtractingViolationOnlyViaDeMorgan() async throws {
+        // BuggySubtracting implements `subtracting` as `symmetricDifference` —
+        // they agree exactly when the subtrahend is a subset of the minuend,
+        // which is the only regime the nine pre-M2 laws ever exercise
+        // (symmetricDifferenceDefinition subtracts the intersection from the
+        // union). The two De Morgan laws are the new coverage: they subtract
+        // operands that stick out of the minuend.
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkSetAlgebraPropertyLaws(
+                for: BuggySubtracting.self,
+                using: Gen<BuggySubtracting>.buggySubtracting(),
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+        let laws = Set(violation?.results.map(\.protocolLaw) ?? [])
+        let deMorganLaws: Set<String> = [
+            "SetAlgebra.deMorganForUnion",
+            "SetAlgebra.deMorganForIntersection"
+        ]
+        #expect(
+            laws.isDisjoint(with: deMorganLaws) == false,
+            "expected a De Morgan law to fire; got: \(laws)"
+        )
+        #expect(
+            laws.subtracting(deMorganLaws).isEmpty,
+            "expected ONLY De Morgan laws to fire (the other 13 must pass); got: \(laws)"
+        )
+    }
 }

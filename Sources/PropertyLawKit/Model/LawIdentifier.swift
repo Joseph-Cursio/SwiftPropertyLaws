@@ -123,4 +123,7 @@ public enum SetAlgebraLaw: String, Sendable, Hashable, CaseIterable {
     case symmetricDifferenceEmptyIdentity
     case symmetricDifferenceCommutativity
     case symmetricDifferenceDefinition
+    case unionDistributivity, intersectionDistributivity
+    case unionAbsorption, intersectionAbsorption
+    case deMorganForUnion, deMorganForIntersection
 }
