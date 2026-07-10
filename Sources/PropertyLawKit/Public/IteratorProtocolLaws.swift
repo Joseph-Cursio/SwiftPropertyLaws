@@ -14,13 +14,18 @@ import PropertyBased
 /// - **Single-pass yield**: an iterator over a finite sequence terminates
 ///   within a generous cap of its source's `underestimatedCount`. An iterator
 ///   that loops forever or resets after `nil` triggers this check.
+///
+/// No `Element: Equatable` constraint — both laws observe only nil/non-nil
+/// termination behavior, never element values, so tuple-element carriers
+/// (Dictionary-shaped Sequences) run them too (Phase 2 M3 of the
+/// collections/async workplan).
 @discardableResult
 public func checkIteratorProtocolPropertyLaws<S: Sequence & Sendable, Sh: SendableSequenceType>(
     for type: S.Type = S.self,
     using generator: Generator<S, Sh>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult]
-where S.Element: Equatable & Sendable {
+where S.Element: Sendable {
     try await runPropertyLawSuite(options: options) {
         [
             await runUnaryLaw(

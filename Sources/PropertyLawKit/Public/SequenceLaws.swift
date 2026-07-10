@@ -33,12 +33,63 @@ public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: Send
     laws: LawSelection = .all
 ) async throws -> [CheckResult]
 where Value.Element: Equatable & Sendable {
+    try await sequenceLawSuite(
+        using: generator,
+        same: { $0 == $1 },
+        options: options,
+        sequenceOptions: sequenceOptions,
+        laws: laws
+    )
+}
+
+/// Element-equivalence overload (Phase 2 M3 of the collections/async
+/// workplan): the same Sequence laws for carriers whose `Element` *cannot*
+/// conform to `Equatable` — dictionary-shaped Sequences yield the tuple
+/// `(key:, value:)`, which rules the Equatable overload out for
+/// `Dictionary`, `OrderedDictionary`, and `TreeDictionary` alike. The
+/// caller names the element equivalence explicitly (`SameResult`'s
+/// injected-oracle posture, see `Public/SameResult.swift`):
+///
+/// ```swift
+/// try await checkSequencePropertyLaws(
+///     for: [Int: Int].self,
+///     using: dictGen,
+///     elementSameResult: { $0.key == $1.key && $0.value == $1.value }
+/// )
+/// ```
+@discardableResult
+public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: SendableSequenceType>(
+    for type: Value.Type = Value.self,
+    using generator: Generator<Value, Shrinker>,
+    elementSameResult: @escaping SameResult<Value.Element>,
+    options: LawCheckOptions = LawCheckOptions(),
+    sequenceOptions: SequenceLawOptions = SequenceLawOptions(),
+    laws: LawSelection = .all
+) async throws -> [CheckResult]
+where Value.Element: Sendable {
+    try await sequenceLawSuite(
+        using: generator,
+        same: elementSameResult,
+        options: options,
+        sequenceOptions: sequenceOptions,
+        laws: laws
+    )
+}
+
+private func sequenceLawSuite<Value: Sequence & Sendable, Shrinker: SendableSequenceType>(
+    using generator: Generator<Value, Shrinker>,
+    same: @escaping SameResult<Value.Element>,
+    options: LawCheckOptions,
+    sequenceOptions: SequenceLawOptions,
+    laws: LawSelection
+) async throws -> [CheckResult]
+where Value.Element: Sendable {
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
             results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
                 try await checkIteratorProtocolPropertyLaws(
-                    for: type,
+                    for: Value.self,
                     using: generator,
                     options: $0
                 )
@@ -46,8 +97,12 @@ where Value.Element: Equatable & Sendable {
         }
         results.append(await checkUnderestimated(generator: generator, options: options))
         if sequenceOptions.passing == .multiPass {
-            results.append(await checkMultiPass(generator: generator, options: options))
-            results.append(await checkIndependence(generator: generator, options: options))
+            results.append(
+                await checkMultiPass(generator: generator, same: same, options: options)
+            )
+            results.append(
+                await checkIndependence(generator: generator, same: same, options: options)
+            )
         }
         return results
     }
@@ -57,7 +112,7 @@ private func checkUnderestimated<S: Sequence & Sendable, Sh: SendableSequenceTyp
     generator: Generator<S, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult
-where S.Element: Equatable & Sendable {
+where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.underestimatedCountLowerBound",
         generator: generator,
@@ -71,34 +126,36 @@ where S.Element: Equatable & Sendable {
 
 private func checkMultiPass<S: Sequence & Sendable, Sh: SendableSequenceType>(
     generator: Generator<S, Sh>,
+    same: @escaping SameResult<S.Element>,
     options: LawCheckOptions
 ) async -> CheckResult
-where S.Element: Equatable & Sendable {
+where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.multiPassConsistency",
         tier: .conventional,
         generator: generator,
         options: options,
-        property: { sample in multiPassCounterexample(for: sample) == nil },
+        property: { sample in multiPassCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
-            multiPassCounterexample(for: sample) ?? "<no counterexample>"
+            multiPassCounterexample(for: sample, same: same) ?? "<no counterexample>"
         }
     )
 }
 
 private func checkIndependence<S: Sequence & Sendable, Sh: SendableSequenceType>(
     generator: Generator<S, Sh>,
+    same: @escaping SameResult<S.Element>,
     options: LawCheckOptions
 ) async -> CheckResult
-where S.Element: Equatable & Sendable {
+where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.makeIteratorIndependence",
         tier: .conventional,
         generator: generator,
         options: options,
-        property: { sample in independenceCounterexample(for: sample) == nil },
+        property: { sample in independenceCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
-            independenceCounterexample(for: sample) ?? "<no counterexample>"
+            independenceCounterexample(for: sample, same: same) ?? "<no counterexample>"
         }
     )
 }
@@ -116,20 +173,24 @@ private func underestimatedCounterexample<S: Sequence>(for sample: S) -> String?
     return nil
 }
 
-private func multiPassCounterexample<S: Sequence>(for sample: S) -> String?
-where S.Element: Equatable {
+private func multiPassCounterexample<S: Sequence>(
+    for sample: S,
+    same: SameResult<S.Element>
+) -> String? {
     let cap = iterationCap(for: sample, floor: sample.underestimatedCount)
     let pass1 = collect(sample, cap: cap)
     let pass2 = collect(sample, cap: cap)
-    if pass1 != pass2 {
+    if elementwiseMatch(pass1, pass2, same: same) == false {
         return "sequence \(sample) yielded different elements on two fresh iterators "
             + "(pass1 = \(pass1.prefix(8))…, pass2 = \(pass2.prefix(8))…)"
     }
     return nil
 }
 
-private func independenceCounterexample<S: Sequence>(for sample: S) -> String?
-where S.Element: Equatable {
+private func independenceCounterexample<S: Sequence>(
+    for sample: S,
+    same: SameResult<S.Element>
+) -> String? {
     let cap = iterationCap(for: sample, floor: sample.underestimatedCount)
 
     let baseline = collect(sample, cap: cap)
@@ -155,15 +216,25 @@ where S.Element: Equatable {
         pulledA += 1
     }
     let interleavedA = prefixA + suffixA
-    if interleavedA != baseline {
+    if elementwiseMatch(interleavedA, baseline, same: same) == false {
         return "interleaving makeIterator() perturbed iterator A on \(sample): "
             + "baseline = \(baseline.prefix(8))…, interleavedA = \(interleavedA.prefix(8))…"
     }
-    if fullB != baseline {
+    if elementwiseMatch(fullB, baseline, same: same) == false {
         return "second iterator on \(sample) yielded different elements from baseline: "
             + "baseline = \(baseline.prefix(8))…, fullB = \(fullB.prefix(8))…"
     }
     return nil
+}
+
+/// Pairwise array comparison under an injected element equivalence — the
+/// element-agnostic replacement for `==` on `[Element]`.
+private func elementwiseMatch<Element>(
+    _ lhs: [Element],
+    _ rhs: [Element],
+    same: SameResult<Element>
+) -> Bool {
+    lhs.count == rhs.count && zip(lhs, rhs).allSatisfy(same)
 }
 
 private func collect<S: Sequence>(_ sample: S, cap: Int) -> [S.Element] {
