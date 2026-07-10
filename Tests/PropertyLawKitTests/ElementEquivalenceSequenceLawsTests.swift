@@ -30,6 +30,22 @@ struct ElementEquivalenceSequenceLawsTests {
         #expect(results.allSatisfy { $0.outcome == .passed })
     }
 
+    @Test func dictionaryPassesCollectionLawsViaElementEquivalence() async throws {
+        // Dictionary IS a Collection — but its tuple Element kept it out of
+        // checkCollectionPropertyLaws until the Phase 2 M4 overload.
+        let results = try await checkCollectionPropertyLaws(
+            for: [Int: Int].self,
+            using: Self.dictionaryGen(),
+            elementSameResult: { $0.key == $1.key && $0.value == $1.value },
+            options: LawCheckOptions(budget: .standard)
+        )
+        let names = results.map(\.protocolLaw)
+        #expect(names.contains("Collection.countConsistency"))
+        #expect(names.contains("Collection.indexValidity"))
+        #expect(names.contains("Sequence.multiPassConsistency"))
+        #expect(results.allSatisfy { $0.outcome == .passed })
+    }
+
     @Test func equatableOverloadStillResolvesForArrays() async throws {
         // Guard against overload-resolution regressions: the original
         // Equatable entrypoint must keep winning for Equatable elements

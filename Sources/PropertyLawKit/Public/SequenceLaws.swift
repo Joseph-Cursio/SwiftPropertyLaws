@@ -228,8 +228,9 @@ private func independenceCounterexample<S: Sequence>(
 }
 
 /// Pairwise array comparison under an injected element equivalence — the
-/// element-agnostic replacement for `==` on `[Element]`.
-private func elementwiseMatch<Element>(
+/// element-agnostic replacement for `==` on `[Element]`. Internal: shared
+/// with the CollectionLaws equivalence overloads.
+func elementwiseMatch<Element>(
     _ lhs: [Element],
     _ rhs: [Element],
     same: SameResult<Element>

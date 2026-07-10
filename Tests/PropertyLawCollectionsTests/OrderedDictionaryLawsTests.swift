@@ -8,13 +8,26 @@ import Testing
 /// Sequence-only (audit-confirmed not `Collection`), so collection-law
 /// chains run against its views.
 ///
-/// **Kit limitation (partially closed in Phase 2 M3):** dictionary-like
+/// **Kit limitation (closed across Phase 2 M3–M4):** dictionary-like
 /// carriers have tuple elements (`(key:, value:)`), which cannot conform to
-/// `Equatable`. The Sequence laws now run through the kit's
-/// `elementSameResult:` overload (see the test below); the *collection
-/// chains* (`.elements` view) still require `Element: Equatable` and remain
-/// a workplan follow-up. `.values` (Element = Int) carries those chains.
+/// `Equatable`. The Sequence and Collection laws now run through the kit's
+/// `elementSameResult:` overloads — including the `.elements` view that M1
+/// had to skip. (`Bidirectional`/`RandomAccess` index laws still require
+/// the Equatable entrypoints; `.values` with Element = Int carries those.)
 struct OrderedDictionaryLawsTests {
+
+    @Test func elementsViewPassesCollectionLawsViaElementEquivalence() async throws {
+        let results = try await checkCollectionPropertyLaws(
+            for: OrderedDictionary<Int, Int>.Elements.self,
+            using: Gen<OrderedDictionary<Int, Int>>.smallIntOrderedDictionary()
+                .map { dictionary in dictionary.elements },
+            elementSameResult: { $0.key == $1.key && $0.value == $1.value },
+            options: LawCheckOptions(budget: .standard)
+        )
+        let names = results.map(\.protocolLaw)
+        #expect(names.contains("Collection.indexValidity"))
+        #expect(results.allSatisfy { $0.outcome == .passed })
+    }
 
     @Test func orderedDictionaryPassesSequenceLawsViaElementEquivalence() async throws {
         let results = try await checkSequencePropertyLaws(

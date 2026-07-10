@@ -29,13 +29,56 @@ public func checkCollectionPropertyLaws<Value: Collection & Sendable, Shrinker: 
     laws: LawSelection = .all
 ) async throws -> [CheckResult]
 where Value.Element: Equatable & Sendable {
+    try await collectionLawSuite(
+        using: generator,
+        same: { $0 == $1 },
+        options: options,
+        sequenceOptions: sequenceOptions,
+        laws: laws
+    )
+}
+
+/// Element-equivalence overload (Phase 2 M4 of the collections/async
+/// workplan) — the Collection counterpart of the Sequence overload, for
+/// carriers whose `Element` cannot conform to `Equatable`. Unlocks
+/// dictionary *views* with tuple elements (`OrderedDictionary.Elements`,
+/// `TreeDictionary` as a Collection) and stdlib `Dictionary` as a
+/// Collection. Chains the Sequence suite through the same equivalence.
+@discardableResult
+public func checkCollectionPropertyLaws<Value: Collection & Sendable, Shrinker: SendableSequenceType>(
+    for type: Value.Type = Value.self,
+    using generator: Generator<Value, Shrinker>,
+    elementSameResult: @escaping SameResult<Value.Element>,
+    options: LawCheckOptions = LawCheckOptions(),
+    sequenceOptions: SequenceLawOptions = SequenceLawOptions(),
+    laws: LawSelection = .all
+) async throws -> [CheckResult]
+where Value.Element: Sendable {
+    try await collectionLawSuite(
+        using: generator,
+        same: elementSameResult,
+        options: options,
+        sequenceOptions: sequenceOptions,
+        laws: laws
+    )
+}
+
+private func collectionLawSuite<Value: Collection & Sendable, Shrinker: SendableSequenceType>(
+    using generator: Generator<Value, Shrinker>,
+    same: @escaping SameResult<Value.Element>,
+    options: LawCheckOptions,
+    sequenceOptions: SequenceLawOptions,
+    laws: LawSelection
+) async throws -> [CheckResult]
+where Value.Element: Sendable {
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
             results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
                 try await checkSequencePropertyLaws(
-                    for: type,
+                    for: Value.self,
                     using: generator,
+                    elementSameResult: same,
                     options: $0,
                     sequenceOptions: sequenceOptions
                 )
@@ -43,8 +86,8 @@ where Value.Element: Equatable & Sendable {
         }
         results.append(contentsOf: [
             await checkCount(generator: generator, options: options),
-            await checkIndexValidity(generator: generator, options: options),
-            await checkNonMutation(generator: generator, options: options)
+            await checkIndexValidity(generator: generator, same: same, options: options),
+            await checkNonMutation(generator: generator, same: same, options: options)
         ])
         return results
     }
@@ -54,7 +97,7 @@ private func checkCount<C: Collection & Sendable, Sh: SendableSequenceType>(
     generator: Generator<C, Sh>,
     options: LawCheckOptions
 ) async -> CheckResult
-where C.Element: Equatable & Sendable {
+where C.Element: Sendable {
     let collector = NearMissCollector()
     return await runUnaryLaw(
         "Collection.countConsistency",
@@ -79,33 +122,35 @@ where C.Element: Equatable & Sendable {
 
 private func checkIndexValidity<C: Collection & Sendable, Sh: SendableSequenceType>(
     generator: Generator<C, Sh>,
+    same: @escaping SameResult<C.Element>,
     options: LawCheckOptions
 ) async -> CheckResult
-where C.Element: Equatable & Sendable {
+where C.Element: Sendable {
     await runUnaryLaw(
         "Collection.indexValidity",
         generator: generator,
         options: options,
-        property: { sample in indexValidityCounterexample(for: sample) == nil },
+        property: { sample in indexValidityCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
-            indexValidityCounterexample(for: sample) ?? "<no counterexample>"
+            indexValidityCounterexample(for: sample, same: same) ?? "<no counterexample>"
         }
     )
 }
 
 private func checkNonMutation<C: Collection & Sendable, Sh: SendableSequenceType>(
     generator: Generator<C, Sh>,
+    same: @escaping SameResult<C.Element>,
     options: LawCheckOptions
 ) async -> CheckResult
-where C.Element: Equatable & Sendable {
+where C.Element: Sendable {
     await runUnaryLaw(
         "Collection.nonMutation",
         tier: .conventional,
         generator: generator,
         options: options,
-        property: { sample in nonMutationCounterexample(for: sample) == nil },
+        property: { sample in nonMutationCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
-            nonMutationCounterexample(for: sample) ?? "<no counterexample>"
+            nonMutationCounterexample(for: sample, same: same) ?? "<no counterexample>"
         }
     )
 }
@@ -138,8 +183,10 @@ private func countDetail<C: Collection>(for sample: C) -> CountMismatchDetail? {
     )
 }
 
-private func indexValidityCounterexample<C: Collection>(for sample: C) -> String?
-where C.Element: Equatable {
+private func indexValidityCounterexample<C: Collection>(
+    for sample: C,
+    same: SameResult<C.Element>
+) -> String? {
     let iterated = manualCollect(from: sample)
     var index = sample.startIndex
     var subscripted: [C.Element] = []
@@ -154,7 +201,7 @@ where C.Element: Equatable {
         index = sample.index(after: index)
         steps += 1
     }
-    if subscripted != iterated {
+    if elementwiseMatch(subscripted, iterated, same: same) == false {
         return "collection \(sample) sequence iteration yielded \(iterated.prefix(8))… "
             + "but index walk yielded \(subscripted.prefix(8))…"
     }
@@ -167,11 +214,13 @@ where C.Element: Equatable {
 // collections that hold shared state. Comparable to Equatable.negationConsistency:
 // kept as defensive coverage, conventional tier so it doesn't fail-CI on the
 // common no-op case.
-private func nonMutationCounterexample<C: Collection>(for sample: C) -> String?
-where C.Element: Equatable {
+private func nonMutationCounterexample<C: Collection>(
+    for sample: C,
+    same: SameResult<C.Element>
+) -> String? {
     let pass1 = manualCollect(from: sample)
     let pass2 = manualCollect(from: sample)
-    if pass1 != pass2 {
+    if elementwiseMatch(pass1, pass2, same: same) == false {
         return "iterating collection \(sample) appears to perturb its observable state: "
             + "pass1 = \(pass1.prefix(8))…, pass2 = \(pass2.prefix(8))…"
     }
