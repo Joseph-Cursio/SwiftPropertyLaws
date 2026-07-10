@@ -9,7 +9,7 @@ import PropertyBased
 /// between and returns their `CheckResult`s; the runner verifies first, then
 /// applies `PropertyLawViolation.throwIfViolations` with the caller's
 /// enforcement mode.
-func runPropertyLawSuite(
+package func runPropertyLawSuite(
     options: LawCheckOptions,
     assemble: () async throws -> [CheckResult]
 ) async throws -> [CheckResult] {

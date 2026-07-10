@@ -3,7 +3,7 @@ import PropertyBased
 /// Bundles the three closures every per-law check needs — keeps
 /// `PerLawDriver.run` under the function-parameter-count lint without
 /// inflating individual call sites.
-internal struct LawCheck<Input: Sendable>: Sendable {
+package struct LawCheck<Input: Sendable>: Sendable {
     let sample: @Sendable (inout Xoshiro) -> Input
     let property: @Sendable (Input) async throws -> Bool
     let formatCounterexample: @Sendable (Input, ErrorBox?) -> String
@@ -33,14 +33,24 @@ internal struct LawCheck<Input: Sendable>: Sendable {
 /// owning the policy bits the backend itself doesn't (suppression rewriting,
 /// `CheckResult` assembly, environment fingerprinting, near-miss snapshot,
 /// coverage accumulation).
-internal enum PerLawDriver {
+package enum PerLawDriver {
 
     /// Per-law observation hooks (PRD §4.6 confidence reporting). Kept in a
     /// single struct so the `run` signature stays under the
     /// function-parameter-count lint.
-    struct Observation<Input: Sendable>: Sendable {
+    package struct Observation<Input: Sendable>: Sendable {
         let nearMissCollector: NearMissCollector?
         let classify: (@Sendable (Input) -> (classes: Set<String>, boundaries: Set<String>))?
+
+        /// Package-visible no-observation form: sibling products defining
+        /// law families (PropertyLawCollections) evaluate the builders'
+        /// `observation:` default at their call site, and the memberwise
+        /// form below can't be package because `NearMissCollector` is
+        /// internal.
+        package init() {
+            self.nearMissCollector = nil
+            self.classify = nil
+        }
 
         init(
             nearMissCollector: NearMissCollector? = nil,
@@ -57,7 +67,7 @@ internal enum PerLawDriver {
     /// their snapshots are packaged into `CheckResult.nearMisses` /
     /// `coverageHints`; otherwise those fields stay `nil` to preserve the
     /// PRD §4.6 "this law doesn't track" contract.
-    static func run<Input: Sendable>(
+    package static func run<Input: Sendable>(
         protocolLaw: String,
         tier: StrictnessTier,
         options: LawCheckOptions,

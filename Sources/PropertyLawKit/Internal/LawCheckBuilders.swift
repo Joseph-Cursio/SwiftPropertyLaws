@@ -23,7 +23,7 @@ import PropertyBased
 // component independently" strategy.
 
 /// One-value law: `property(x)` must hold for every sampled `x`.
-func runUnaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
+package func runUnaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
     generator: Generator<Value, Shrinker>,
@@ -48,7 +48,7 @@ func runUnaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
 }
 
 /// Two-value law: `property(x, y)` must hold for every sampled pair.
-func runBinaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
+package func runBinaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
     generator: Generator<Value, Shrinker>,
@@ -101,7 +101,7 @@ private func liftToTripleShrinker<Value>(
 // swiftlint:enable large_tuple
 
 /// Three-value law: `property(x, y, z)` must hold for every sampled triple.
-func runTernaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
+package func runTernaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
     generator: Generator<Value, Shrinker>,
