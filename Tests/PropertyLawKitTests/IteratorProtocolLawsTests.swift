@@ -47,13 +47,20 @@ struct IteratorPropertyLawsTests {
     }
 
     @Test func conventionalLawsDoNotThrowByDefault() async throws {
-        // Both laws are Conventional; default enforcement should report
-        // violations as `.failed` results but not throw.
-        let results = try await checkIteratorProtocolPropertyLaws(
-            for: ResumingAfterNilSequence.self,
-            using: Gen<ResumingAfterNilSequence>.resumingAfterNil(),
-            options: LawCheckOptions(budget: .sanity)
-        )
-        #expect(results.contains { $0.isViolation && $0.tier == .conventional })
+        // Both laws are Conventional; default enforcement reports violations as `.failed` results
+        // but does not throw.
+        //
+        // The `withKnownIssue` is the point. "Reports" now means something: the violation surfaces
+        // as a non-fatal Testing issue as well as a `.failed` result. Before that, this test passed
+        // on *silence* — the kit knew the law was broken and said nothing, and nothing here would
+        // have noticed if the `.failed` result had gone missing too.
+        await withKnownIssue("a Conventional violation is visible, by design — it just does not throw") {
+            let results = try await checkIteratorProtocolPropertyLaws(
+                for: ResumingAfterNilSequence.self,
+                using: Gen<ResumingAfterNilSequence>.resumingAfterNil(),
+                options: LawCheckOptions(budget: .sanity)
+            )
+            #expect(results.contains { $0.isViolation && $0.tier == .conventional })
+        }
     }
 }

@@ -16,6 +16,97 @@ struct EnforcementTests {
         #expect(EnforcementMode.strict.shouldThrow(for: .heuristic))
     }
 
+    // MARK: - A Conventional violation must be visible, even though it does not throw
+
+    private func failure(tier: StrictnessTier) -> CheckResult {
+        CheckResult(
+            protocolLaw: "Codable.roundTripFidelity[JSON]",
+            tier: tier,
+            trials: 100,
+            seed: Seed(stateA: 1, stateB: 2, stateC: 3, stateD: 4),
+            environment: .current,
+            outcome: .failed(counterexample: "FileResponse(modifiedAt: 2026-07-13T08:00:00Z)")
+        )
+    }
+
+    @Test func conventionalViolationUnderDefaultIsRecordedRatherThanSwallowed() throws {
+        // The A5 bug. `.default` does not *throw* on a Conventional violation — correct, that is the
+        // tier's whole purpose. But not-throwing had been implemented as not-saying-anything, and
+        // every `checkXxx…` entry point is `@discardableResult`, so a lossy codec that cannot
+        // round-trip its own dates was reported as a pass. Silence was never the tier's meaning;
+        // not failing the build was.
+        //
+        // `withKnownIssue` is the assertion: it *fails* if no issue is recorded inside it, so this
+        // passing is proof the violation now speaks.
+        withKnownIssue("the Conventional violation must surface as a non-fatal issue") {
+            try PropertyLawViolation.throwIfViolations(
+                in: [failure(tier: .conventional)],
+                enforcement: .default
+            )
+        }
+    }
+
+    @Test func strictViolationUnderDefaultStillThrows() {
+        // The tier semantics are untouched: escalation is unchanged, only silence is fixed.
+        #expect(throws: PropertyLawViolation.self) {
+            try PropertyLawViolation.throwIfViolations(
+                in: [failure(tier: .strict)],
+                enforcement: .default
+            )
+        }
+    }
+
+    @Test func aStrictViolationIsThrownRatherThanMerelyRecorded() throws {
+        // Guards the obvious over-correction: a Strict violation must not be *downgraded* into a
+        // non-fatal issue. If it were recorded instead of thrown, this test would fail on the
+        // unexpected issue rather than on the missing throw — so it pins both halves.
+        do {
+            try PropertyLawViolation.throwIfViolations(
+                in: [failure(tier: .strict)],
+                enforcement: .default
+            )
+            Issue.record("expected a Strict violation to throw")
+        } catch is PropertyLawViolation {
+            // Expected, and no non-fatal issue was recorded on the way out.
+        }
+    }
+
+    @Test func suppressedAndExpectedViolationsStayQuiet() throws {
+        // Explicit policy — someone wrote down that this law does not hold, and why. Re-surfacing
+        // them would make the suppression mechanism useless (PRD §4.7). No issue may be recorded.
+        let suppressed = CheckResult(
+            protocolLaw: "Codable.roundTripFidelity[JSON]",
+            tier: .conventional,
+            trials: 100,
+            seed: Seed(stateA: 0, stateB: 0, stateC: 0, stateD: 0),
+            environment: .current,
+            outcome: .suppressed(reason: "lossy by design")
+        )
+        let expected = CheckResult(
+            protocolLaw: "Codable.roundTripFidelity[JSON]",
+            tier: .conventional,
+            trials: 100,
+            seed: Seed(stateA: 0, stateB: 0, stateC: 0, stateD: 0),
+            environment: .current,
+            outcome: .expectedViolation(reason: "documented", counterexample: "x")
+        )
+
+        try PropertyLawViolation.throwIfViolations(in: [suppressed, expected], enforcement: .default)
+    }
+
+    @Test func aPassingResultRecordsNothing() throws {
+        let passed = CheckResult(
+            protocolLaw: "Equatable.reflexivity",
+            tier: .conventional,
+            trials: 100,
+            seed: Seed(stateA: 0, stateB: 0, stateC: 0, stateD: 0),
+            environment: .current,
+            outcome: .passed
+        )
+
+        try PropertyLawViolation.throwIfViolations(in: [passed], enforcement: .default)
+    }
+
     @Test func violationFormatterIncludesPRDDisclaimer() {
         let result = CheckResult(
             protocolLaw: "Equatable.symmetry",

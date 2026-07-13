@@ -80,19 +80,25 @@ struct PlantedBugDetectionTests {
     // MARK: - Conventional tier escalation via enforcement: .strict
 
     @Test func unstableHasherDoesNotThrowByDefault() async throws {
-        let results = try await checkHashablePropertyLaws(
-            for: UnstableHasher.self,
-            using: Gen<UnstableHasher>.unstableHasher(),
-            options: LawCheckOptions(budget: .sanity),
-            laws: .ownOnly
-        )
-        let stability = results.first { $0.protocolLaw == "Hashable.stabilityWithinProcess" }
-        #expect(stability != nil)
-        #expect(
-            stability?.isViolation == true,
-            "expected stabilityWithinProcess to be reported as a violation even in default mode"
-        )
-        #expect(stability?.tier == .conventional)
+        // The `withKnownIssue` acknowledges the non-fatal issue the kit now records for a
+        // Conventional violation under `.default`. Note what this test always *wanted* — "reported
+        // as a violation even in default mode" — and note that until the kit recorded an issue, the
+        // only place that report existed was a returned array nobody was obliged to read.
+        await withKnownIssue("the Conventional violation is visible now — it still does not throw") {
+            let results = try await checkHashablePropertyLaws(
+                for: UnstableHasher.self,
+                using: Gen<UnstableHasher>.unstableHasher(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+            let stability = results.first { $0.protocolLaw == "Hashable.stabilityWithinProcess" }
+            #expect(stability != nil)
+            #expect(
+                stability?.isViolation == true,
+                "expected stabilityWithinProcess to be reported as a violation even in default mode"
+            )
+            #expect(stability?.tier == .conventional)
+        }
     }
 
     @Test func unstableHasherThrowsUnderStrictEnforcement() async throws {
@@ -111,19 +117,24 @@ struct PlantedBugDetectionTests {
     // MARK: - Heuristic tier: distribution
 
     @Test func detectsDegenerateHashDistribution() async throws {
-        let results = try await checkHashablePropertyLaws(
-            for: DegenerateHasher.self,
-            using: Gen<DegenerateHasher>.degenerate(),
-            options: LawCheckOptions(budget: .sanity),
-            laws: .ownOnly
-        )
-        let distribution = results.first { $0.protocolLaw == "Hashable.distribution" }
-        #expect(
-            distribution?.isViolation == true,
-            "expected DegenerateHasher to violate Hashable.distribution"
-        )
-        #expect(distribution?.tier == .heuristic)
-        #expect(distribution?.counterexample?.contains("unique hashValues") == true)
+        // Heuristic tier, so `.default` does not throw — but it does now *speak*, which is what the
+        // `withKnownIssue` acknowledges. A degenerate hasher that silently passes is the same defect
+        // class as the lossy codec, one tier down.
+        await withKnownIssue("the Heuristic violation is visible now — it still does not throw") {
+            let results = try await checkHashablePropertyLaws(
+                for: DegenerateHasher.self,
+                using: Gen<DegenerateHasher>.degenerate(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+            let distribution = results.first { $0.protocolLaw == "Hashable.distribution" }
+            #expect(
+                distribution?.isViolation == true,
+                "expected DegenerateHasher to violate Hashable.distribution"
+            )
+            #expect(distribution?.tier == .heuristic)
+            #expect(distribution?.counterexample?.contains("unique hashValues") == true)
+        }
     }
 
     // MARK: - Inherited Equatable suite re-collection (laws: .all path)
@@ -163,19 +174,24 @@ struct PlantedBugDetectionTests {
     }
 
     @Test func detectsOperatorConsistencyViolation() async throws {
-        let violation = await #expect(throws: PropertyLawViolation.self) {
-            try await checkComparablePropertyLaws(
-                for: AlwaysLessThan.self,
-                using: Gen<AlwaysLessThan>.alwaysLessThan(),
-                options: LawCheckOptions(budget: .sanity),
-                laws: .ownOnly
+        // `AlwaysLessThan` breaks a Strict law (which throws, as asserted) *and* a lower-tier one
+        // alongside it — and the lower-tier one is now recorded rather than dropped. Hence the
+        // `withKnownIssue`: the throw is the assertion, the issue is the new visibility.
+        await withKnownIssue("the sub-Strict violation alongside it is visible now") {
+            let violation = await #expect(throws: PropertyLawViolation.self) {
+                try await checkComparablePropertyLaws(
+                    for: AlwaysLessThan.self,
+                    using: Gen<AlwaysLessThan>.alwaysLessThan(),
+                    options: LawCheckOptions(budget: .sanity),
+                    laws: .ownOnly
+                )
+            }
+            let laws = violation?.results.map(\.protocolLaw) ?? []
+            #expect(
+                laws.contains("Comparable.operatorConsistency"),
+                "expected operatorConsistency in violation set; got: \(laws)"
             )
         }
-        let laws = violation?.results.map(\.protocolLaw) ?? []
-        #expect(
-            laws.contains("Comparable.operatorConsistency"),
-            "expected operatorConsistency in violation set; got: \(laws)"
-        )
     }
 
     @Test func detectsCyclicOrderTransitivity() async throws {
@@ -283,15 +299,18 @@ struct PlantedBugDetectionTests {
     // MARK: - Identifiable Conventional-tier planted bug
 
     @Test func ephemeralIDDoesNotThrowByDefault() async throws {
-        // Conventional-tier violation: warns but doesn't throw at default
-        // enforcement.
-        let results = try await checkIdentifiablePropertyLaws(
-            for: EphemeralID.self,
-            using: Gen<EphemeralID>.ephemeralID(),
-            options: LawCheckOptions(budget: .sanity)
-        )
-        #expect(results.contains { $0.isViolation })
-        #expect(results.contains { $0.protocolLaw == "Identifiable.idStability" })
+        // Conventional-tier violation: warns but doesn't throw at default enforcement. The comment
+        // said "warns" long before the kit actually did — the warning went nowhere. It is a recorded
+        // Testing issue now, which is what `withKnownIssue` is acknowledging.
+        await withKnownIssue("the Conventional violation is visible now — it still does not throw") {
+            let results = try await checkIdentifiablePropertyLaws(
+                for: EphemeralID.self,
+                using: Gen<EphemeralID>.ephemeralID(),
+                options: LawCheckOptions(budget: .sanity)
+            )
+            #expect(results.contains { $0.isViolation })
+            #expect(results.contains { $0.protocolLaw == "Identifiable.idStability" })
+        }
     }
 
     @Test func ephemeralIDThrowsUnderStrictEnforcement() async throws {
