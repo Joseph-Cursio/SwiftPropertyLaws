@@ -43,15 +43,18 @@ internal enum LawSuppressionPolicy {
             kind: .intentionalViolation,
             in: suppressions
         ) else { return raw }
-        return CheckResult(
-            protocolLaw: raw.protocolLaw,
-            tier: raw.tier,
-            trials: raw.trials,
-            seed: raw.seed,
-            environment: raw.environment,
-            outcome: .expectedViolation(reason: intent.reason, counterexample: counterexample),
-            nearMisses: raw.nearMisses,
-            coverageHints: raw.coverageHints
+        // **Mutate a copy.** The rebuild this replaces named eight of `CheckResult`'s TWELVE fields,
+        // so `shrunkFrom`, `shrinkSteps`, `inputClasses` and `boundaryHits` were silently discarded
+        // whenever a failure was reclassified as an intentional violation — the shrunk
+        // counterexample and every coverage statistic, gone, with nothing to show it. The
+        // initialiser's parameters have defaults, so the omission compiled.
+        //
+        // Only the outcome is meant to change here.
+        var reclassified = raw
+        reclassified.outcome = .expectedViolation(
+            reason: intent.reason,
+            counterexample: counterexample
         )
+        return reclassified
     }
 }

@@ -21,13 +21,15 @@ func collectingInheritedLaws(
     rebasing options: LawCheckOptions,
     _ check: (LawCheckOptions) async throws -> [CheckResult]
 ) async -> [CheckResult] {
-    let inheritedOptions = LawCheckOptions(
-        budget: options.budget,
-        enforcement: .default,
-        seed: options.seed,
-        suppressions: options.suppressions,
-        backend: options.backend
-    )
+    // **Mutate a copy.** The rebuild this replaces named five of `LawCheckOptions`' EIGHT fields,
+    // so `expectedReplayEnvironment`, `replayRelaxation` and `allowNaN` were silently reset to
+    // their defaults for every inherited law — a caller who set `allowNaN: true` had it quietly
+    // ignored on the parent protocol's laws. The initialiser's parameters have defaults, so the
+    // omission compiled and nothing went red.
+    //
+    // Only `enforcement` is meant to change here; that is what "rebasing" means.
+    var inheritedOptions = options
+    inheritedOptions.enforcement = .default
     do {
         return try await check(inheritedOptions)
     } catch let violation as PropertyLawViolation {

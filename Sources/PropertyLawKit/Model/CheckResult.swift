@@ -11,31 +11,31 @@ public struct CheckResult: Sendable, Hashable {
         case expectedViolation(reason: String, counterexample: String)
     }
 
-    public let protocolLaw: String
-    public let tier: StrictnessTier
-    public let trials: Int
-    public let seed: Seed
-    public let environment: Environment
-    public let outcome: Outcome
+    public internal(set) var protocolLaw: String
+    public internal(set) var tier: StrictnessTier
+    public internal(set) var trials: Int
+    public internal(set) var seed: Seed
+    public internal(set) var environment: Environment
+    public internal(set) var outcome: Outcome
 
     /// Inputs that came close to violating the law.
     /// Per PRD §4.6: `nil` means the backend doesn't track near-misses (distinct from `[]`).
     /// M1's loop doesn't track near-misses; field is always `nil` until M5.
-    public let nearMisses: [String]?
+    public internal(set) var nearMisses: [String]?
 
     /// Distribution / boundary metadata. Reserved; see PRD §4.6. M1 always reports `nil`.
-    public let coverageHints: CoverageHints?
+    public internal(set) var coverageHints: CoverageHints?
 
     /// The pre-shrink counterexample, when shrinking reduced a `.failed` to a
     /// smaller still-failing input (v2.4). `outcome`'s `counterexample` always
     /// holds the *minimal* form; `shrunkFrom` holds the original first-failing
     /// form. `nil` when no shrinking happened (`shrinkSteps == 0`).
-    public let shrunkFrom: String?
+    public internal(set) var shrunkFrom: String?
 
     /// Number of shrink steps applied to reach the minimal counterexample
     /// (v2.4). `0` when the law supplied no shrinker, the carrier isn't
     /// shrinkable, or the first failing input was already minimal.
-    public let shrinkSteps: Int
+    public internal(set) var shrinkSteps: Int
 
     public init(
         protocolLaw: String,
