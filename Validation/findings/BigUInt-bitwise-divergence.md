@@ -56,7 +56,9 @@ Position 2 is what `BigUInt` documents implicitly through its README's silence o
 
 ## What this means for callers
 
-**If you use `BigUInt` for arithmetic only** (`+`, `-`, `*`, `/`, `%`, comparison): unaffected. All the algebraic / division / shift / commutativity laws hold cleanly. Only the four laws that involve unary `~` are sensitive.
+**If you use `BigUInt` for arithmetic only** (`+`, `-`, `*`, `/`, `%`, comparison): unaffected. All the algebraic / division / shift / commutativity laws hold cleanly. Only the two kit laws that involve unary `~` are sensitive — `bitwiseDeMorgan` and `bitwiseDoubleNegation`, the two suppressed above. The kit's other seven `BinaryInteger` bitwise laws (`bitwiseAndCommutativity`, `bitwiseOrCommutativity`, `bitwiseXorSelfIsZero`, `bitwiseXorZeroIdentity`, `bitwiseAndIdempotence`, `bitwiseOrIdempotence`, `bitwiseAndDistributesOverOr`) never apply `~` and hold.
+
+**The sensitivity is wider than the kit checks, though**, and that is worth knowing if you write your own bitwise laws: *any* law that applies unary `~` to a `BigUInt` inherits the same missing bit-width. The kit happens to encode only two of them. A third familiar identity — `a & ~0 == a`, the AND identity — is not a kit law but breaks just as hard, because `~0` needs an all-ones value and `BigUInt` has none: `~BigUInt(0) == 0`, so the law reads `a & 0 == a` and fails for every non-zero `a`. The rule of thumb is the `~`, not the law name.
 
 **If you use `BigUInt` for bitwise operations across mixed magnitudes**: do not rely on De Morgan's law to refactor `~(a & b) ↔ ~a | ~b`. The storage-width difference between operands and intermediates can produce algebraically inconsistent results. Either keep the operation in a stdlib fixed-width type, or do the bitwise work explicitly word-by-word.
 

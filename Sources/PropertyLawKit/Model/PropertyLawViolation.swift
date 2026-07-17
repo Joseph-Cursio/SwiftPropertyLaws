@@ -19,7 +19,7 @@ public struct PropertyLawViolation: Error, Sendable, CustomStringConvertible {
     /// as *not saying anything*, and combined with `@discardableResult` on every `checkXxx…` entry
     /// point, the idiomatic spelling
     ///
-    ///     checkCodablePropertyLaws(for: FileResponse.self, codec: .iso8601)
+    ///     checkCodablePropertyLaws(for: FileResponse.self, using: …, config: .init(codec: .iso8601))
     ///
     /// swallowed a genuine violation in total silence. A lossy codec — one that cannot round-trip its
     /// own dates — reported as a pass. That is the worst thing a law kit can do, because the *entire*
