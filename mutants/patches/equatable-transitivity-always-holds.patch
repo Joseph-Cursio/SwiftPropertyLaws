@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/EquatableLaws.swift b/Sources/PropertyLawKit/Public/EquatableLaws.swift
+index b2ea82d..d99db99 100644
+--- a/Sources/PropertyLawKit/Public/EquatableLaws.swift
++++ b/Sources/PropertyLawKit/Public/EquatableLaws.swift
+@@ -82,7 +82,7 @@ private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSe
+         generator: generator,
+         options: options,
+         property: { first, second, third in
+-            !(first == second && second == third) || (first == third)
++            true
+         },
+         formatCounterexample: { first, second, third, _ in
+             "x = \(first), y = \(second), z = \(third); "

@@ -1,0 +1,30 @@
+{
+  "kind": "spm",
+  "note": "Private mutation/regression corpus for SwiftPropertyLaws — the law kit dogfooding on itself (Chapter 30 §30.4.4). Each mutant forces a law's property to always-true, so the law stops detecting its planted violator; the corresponding PlantedBugs detection test (which expects the violation) then fails. Run via `swift test --filter`. Not a scored benchmark.",
+  "mutants": [
+    {
+      "id": "semigroup-associativity-always-holds",
+      "patch": "patches/semigroup-associativity-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsNonAssociativeCombine",
+      "label": "Semigroup.combineAssociativity always returns true — a non-associative combine is no longer caught"
+    },
+    {
+      "id": "monoid-left-identity-always-holds",
+      "patch": "patches/monoid-left-identity-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsBadLeftIdentity",
+      "label": "Monoid.combineLeftIdentity always returns true — a broken left identity is no longer caught (detectsBadLeftIdentity asserts the specific law name)"
+    },
+    {
+      "id": "equatable-transitivity-always-holds",
+      "patch": "patches/equatable-transitivity-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsNonTransitiveEquality",
+      "label": "Equatable.transitivity always returns true — a non-transitive == is no longer caught"
+    }
+  ]
+}
