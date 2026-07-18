@@ -21,6 +21,28 @@ extension Gen where Value == PriorityCompareEquatable {
     }
 }
 
+/// Violates *only* symmetry: `==` reports `lhs.rank >= rhs.rank`. Unlike
+/// `PriorityCompareEquatable` (whose `>` also breaks reflexivity), `>=` is
+/// reflexive (`a >= a`), transitive (so `a == b && b == c ⇒ a == c` holds), and
+/// negation-consistent — leaving symmetry as the single broken law. This is the
+/// violator that *isolates* the symmetry arm, so a symmetry regression can be
+/// pinned to symmetry rather than caught incidentally by another law.
+struct SymmetryOnlyEquatable: Equatable, Sendable, CustomStringConvertible {
+    let rank: Int
+
+    static func == (lhs: SymmetryOnlyEquatable, rhs: SymmetryOnlyEquatable) -> Bool {
+        lhs.rank >= rhs.rank
+    }
+
+    var description: String { "S(\(rank))" }
+}
+
+extension Gen where Value == SymmetryOnlyEquatable {
+    static func symmetryOnly() -> Generator<SymmetryOnlyEquatable, some SendableSequenceType> {
+        Gen<Int>.int(in: 0...20).map { SymmetryOnlyEquatable(rank: $0) }
+    }
+}
+
 /// Violates transitivity via rounding: equality holds within ±1, but two values
 /// that are each within 1 of each other can be more than 1 apart from each other.
 struct RoundingEquatable: Equatable, Sendable, CustomStringConvertible {

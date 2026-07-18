@@ -40,6 +40,26 @@ struct PlantedBugDetectionTests {
         )
     }
 
+    @Test func detectsSymmetryOnlyEquality() async throws {
+        // Isolates the symmetry arm. SymmetryOnlyEquatable (`>=`) breaks symmetry
+        // and nothing else — reflexive, transitive, negation-consistent — so this
+        // is the one Equatable detection test that would go green-on-buggy if the
+        // symmetry law were ever blinded. Asserts the *specific* law, not merely
+        // "some Equatable law."
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkEquatablePropertyLaws(
+                for: SymmetryOnlyEquatable.self,
+                using: Gen<SymmetryOnlyEquatable>.symmetryOnly(),
+                options: LawCheckOptions(budget: .standard)
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(
+            laws.contains("Equatable.symmetry"),
+            "expected symmetry to be the isolated violation; got: \(laws)"
+        )
+    }
+
     @Test func detectsNonTransitiveEquality() async throws {
         let violation = await #expect(throws: PropertyLawViolation.self) {
             try await checkEquatablePropertyLaws(

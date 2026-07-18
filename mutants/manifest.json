@@ -25,6 +25,14 @@
       "expected": "killed",
       "test": "detectsNonTransitiveEquality",
       "label": "Equatable.transitivity always returns true — a non-transitive == is no longer caught"
+    },
+    {
+      "id": "equatable-symmetry-always-holds",
+      "patch": "patches/equatable-symmetry-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsSymmetryOnlyEquality",
+      "label": "Equatable.symmetry always returns true — an asymmetric == is no longer caught. Killable only after adding SymmetryOnlyEquatable (a `>=` violator that breaks symmetry alone) + detectsSymmetryOnlyEquality, which pins the symmetry law specifically."
     }
   ]
 }

@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/EquatableLaws.swift b/Sources/PropertyLawKit/Public/EquatableLaws.swift
+index b2ea82d..22ae80a 100644
+--- a/Sources/PropertyLawKit/Public/EquatableLaws.swift
++++ b/Sources/PropertyLawKit/Public/EquatableLaws.swift
+@@ -62,7 +62,7 @@ private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequen
+         generator: generator,
+         options: options,
+         property: { first, second in
+-            (first == second) == (second == first)
++            true
+         },
+         formatCounterexample: { first, second, _ in
+             "x = \(first), y = \(second); "

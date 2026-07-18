@@ -27,18 +27,22 @@ Requires a clean working tree.
 | `semigroup-associativity-always-holds` | law-detection | killed | `detectsNonAssociativeCombine` |
 | `equatable-transitivity-always-holds` | law-detection | killed | `detectsNonTransitiveEquality` |
 | `monoid-left-identity-always-holds` | law-detection | killed | `detectsBadLeftIdentity` |
+| `equatable-symmetry-always-holds` | law-detection | killed | `detectsSymmetryOnlyEquality` |
 
 Each blinds a Strict-tier law by making its `property:` closure return `true`
 unconditionally; the planted violator sails through, and the detection test that
-demanded it be caught goes red. All three verified killed.
+demanded it be caught goes red. All four verified killed.
 
-**A gap this corpus found (not shipped as a mutant):** blinding `Equatable.symmetry`
-*survives* — the only asymmetric planted violator (`PriorityCompareEquatable`, whose
-`==` is `>`) also breaks reflexivity, and `detectsAsymmetricEquality` asserts merely
-"some `Equatable.` law," so reflexivity keeps catching it. There is no
-symmetry-*only* violator (a `>=`-based type would be one), so the symmetry arm isn't
-independently pinned. Worth closing by adding such a violator + a symmetry-specific
-assertion; until then a symmetry regression would slip through.
+**A gap this corpus found — and we then closed.** Blinding `Equatable.symmetry`
+originally *survived*: the only asymmetric planted violator
+(`PriorityCompareEquatable`, whose `==` is `>`) also breaks reflexivity, and
+`detectsAsymmetricEquality` asserts merely "some `Equatable.` law," so reflexivity
+kept catching it — the symmetry arm was never independently pinned. The fix added
+`SymmetryOnlyEquatable` (a `>=` type that is reflexive, transitive, and
+negation-consistent, so symmetry is its *only* broken law) and
+`detectsSymmetryOnlyEquality`, which asserts the specific `Equatable.symmetry`
+violation. With those in place the symmetry mutant is caught — the mutation suite
+exposing a law arm that no test pinned, and driving the fix.
 
 ## Adding a mutant
 
