@@ -41,13 +41,14 @@ extension DerivationStrategist {
             }
             return prefix + "the type's user `init(...)` declarations don't "
                 + "support derivation — no non-failable, non-throwing "
-                + "initializer (with 1–\(memberwiseArityLimit) parameters) has "
+                + "initializer (with 1–\(memberwiseMemberLimit) parameters) has "
                 + "all parameter types resolve to a recognized generator." + suffix
         }
-        if shape.storedMembers.count > memberwiseArityLimit {
+        if shape.storedMembers.count > memberwiseMemberLimit {
             return prefix + "the type has \(shape.storedMembers.count) stored "
                 + "properties; memberwise derivation supports up to "
-                + "\(memberwiseArityLimit) (the upstream `zip` arity limit)."
+                + "\(memberwiseMemberLimit) (nested `zip` composition, "
+                + "\(memberwiseArityLimit) groups of \(memberwiseArityLimit))."
                 + suffix
         }
         if let unknown = shape.storedMembers.first(where: {

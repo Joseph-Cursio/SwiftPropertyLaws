@@ -35,6 +35,37 @@ struct CompositeGeneratorCompileTests {
         case rect(width: Int, height: Int)
     }
 
+    /// 11 stored properties — over the flat zip-10 limit, so the emitter nests.
+    private struct Wide11: Equatable {
+        let m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10: Int
+    }
+
+    /// The nested `zip` shape `MemberwiseEmitter.nestedZip` emits for an
+    /// 11-member type: an outer `zip` of a 10-group `zip` and the lone 11th
+    /// generator, read as `$0.0.N` / `$0.1`. If this compiles and runs, the
+    /// emitted nested generators are valid downstream (PropertyLawCore only
+    /// produces strings and can't catch a wrong tuple-access shape itself).
+    @Test func nestedMemberwiseGeneratorCompilesAndRuns() {
+        var rng = Xoshiro(seed: (5, 6, 7, 8))
+        let wide: Wide11 = zip(
+            zip(
+                Gen<Int>.int(), Gen<Int>.int(), Gen<Int>.int(), Gen<Int>.int(), Gen<Int>.int(),
+                Gen<Int>.int(), Gen<Int>.int(), Gen<Int>.int(), Gen<Int>.int(), Gen<Int>.int()
+            ),
+            Gen<Int>.int()
+        )
+        .map {
+            Wide11(
+                m0: $0.0.0, m1: $0.0.1, m2: $0.0.2, m3: $0.0.3, m4: $0.0.4,
+                m5: $0.0.5, m6: $0.0.6, m7: $0.0.7, m8: $0.0.8, m9: $0.0.9, m10: $0.1
+            )
+        }
+        .run(using: &rng)
+        // The point is that it compiled and ran; equality with itself is a
+        // no-op use that keeps the binding from being optimized to a warning.
+        #expect(wide == wide)
+    }
+
     @Test func compositeGeneratorsCompileAndRunAgainstEngine() {
         var rng = Xoshiro(seed: (1, 2, 3, 4))
 

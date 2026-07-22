@@ -160,6 +160,23 @@ struct DerivationStrategistTests {
         #expect(DerivationStrategist.strategy(for: shape) == expected)
     }
 
+    @Test func structBeyondTenMembersStillDerivesMemberwise() {
+        // 11 members — over the flat zip-10 limit. Nested composition means the
+        // strategist derives it instead of falling to .todo (the confident zero
+        // the app road-test hit on ordinary 11–14-member value types).
+        let shape = TypeShape(
+            name: "Wide",
+            kind: .struct,
+            inheritedTypes: [],
+            hasUserGen: false,
+            storedMembers: (0..<11).map { StoredMember(name: "m\($0)", typeName: "Int") }
+        )
+        let expected: DerivationStrategy = .memberwiseArbitrary(
+            members: (0..<11).map { MemberSpec(name: "m\($0)", rawType: .int) }
+        )
+        #expect(DerivationStrategist.strategy(for: shape) == expected)
+    }
+
     @Test func mixedRawTypeStructDerivesMemberwise() {
         let shape = TypeShape(
             name: "Record",
@@ -216,24 +233,26 @@ struct DerivationStrategistTests {
         #expect(reason.contains("user `init"))
     }
 
-    @Test func structWithTooManyMembersFallsThrough() {
-        // The arity limit is `swift-property-based`'s zip overload cap.
-        let members = (0..<11).map { idx in
+    @Test func structBeyondTheNestedCeilingFallsThrough() {
+        // 101 members exceeds memberwiseMemberLimit (100) — the outer zip of
+        // groups would itself bust the 10-arity cap. Nested composition raised
+        // the wall from 10 to 100; past that it still declines, with a reason.
+        let members = (0..<101).map { idx in
             StoredMember(name: "m\(idx)", typeName: "Int")
         }
         let shape = TypeShape(
-            name: "Wide",
+            name: "Absurd",
             kind: .struct,
             inheritedTypes: [],
             hasUserGen: false,
             storedMembers: members
         )
         guard case .todo(let reason) = DerivationStrategist.strategy(for: shape) else {
-            Issue.record("expected .todo at arity 11")
+            Issue.record("expected .todo at 101 members")
             return
         }
-        #expect(reason.contains("11"))
-        #expect(reason.contains("zip"))
+        #expect(reason.contains("101"))
+        #expect(reason.contains("nested"))
     }
 
     @Test func classWithRawMembersFallsThroughMemberwise() {

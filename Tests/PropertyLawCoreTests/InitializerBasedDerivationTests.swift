@@ -142,14 +142,16 @@ struct InitializerBasedDerivationTests {
     }
 
     @Test func arityOverLimitIsSkipped() {
-        let params = (0..<11).map { InitializerParameter(label: "p\($0)", typeName: "Int") }
+        // Nested composition raised the init-parameter ceiling from 10 to 100;
+        // 101 still exceeds it.
+        let params = (0..<101).map { InitializerParameter(label: "p\($0)", typeName: "Int") }
         let shape = structShape(
-            "Wide",
+            "Absurd",
             initializers: [InitializerSignature(parameters: params)],
             storedMembers: [StoredMember(name: "p0", typeName: "Int")]
         )
         guard case .todo = DerivationStrategist.strategy(for: shape) else {
-            Issue.record("expected .todo at init arity 11")
+            Issue.record("expected .todo at init arity 101")
             return
         }
     }

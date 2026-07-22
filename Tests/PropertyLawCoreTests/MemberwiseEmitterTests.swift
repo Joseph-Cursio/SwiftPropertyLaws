@@ -78,4 +78,38 @@ struct MemberwiseEmitterTests {
         // 11-arity zip overload (or removes one) without us updating.
         #expect(DerivationStrategist.memberwiseArityLimit == 10)
     }
+
+    // MARK: - Beyond 10: nested `zip` composition
+
+    @Test func elevenMembersNestIntoAnOuterZipOfGroups() {
+        let members = (0..<11).map { MemberSpec(name: "m\($0)", rawType: .int) }
+        let expr = MemberwiseEmitter.expression(typeName: "Wide", members: members)
+        // Outer zip of an inner 10-group zip and the lone 11th generator.
+        #expect(expr.hasPrefix("zip(zip("))
+        // First group's members read from the inner tuple: $0.0.N for N in 0…9.
+        for index in 0...9 {
+            #expect(expr.contains("m\(index): $0.0.\(index)"))
+        }
+        // The 11th is a single-member group — its generator isn't a tuple, so $0.1.
+        #expect(expr.contains("m10: $0.1"))
+        #expect(!expr.contains("m10: $0.1.0"))
+        #expect(expr.contains(".map { Wide("))
+    }
+
+    @Test func twentyMembersNestIntoTwoFullGroups() {
+        let members = (0..<20).map { MemberSpec(name: "m\($0)", rawType: .int) }
+        let expr = MemberwiseEmitter.expression(typeName: "VeryWide", members: members)
+        for index in 0...9 {
+            #expect(expr.contains("m\(index): $0.0.\(index)"))
+        }
+        for index in 10...19 {
+            #expect(expr.contains("m\(index): $0.1.\(index - 10)"))
+        }
+    }
+
+    @Test func nestedCompositionCeilingIsArityLimitSquared() {
+        #expect(DerivationStrategist.memberwiseMemberLimit == 100)
+        // The group size (flat zip arity) is unchanged.
+        #expect(DerivationStrategist.memberwiseArityLimit == 10)
+    }
 }

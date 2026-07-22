@@ -69,7 +69,7 @@ extension DerivationStrategist {
         for initializer in shape.initializers {
             guard !initializer.isFailable, !initializer.isThrowing else { continue }
             guard !initializer.parameters.isEmpty else { continue }
-            guard initializer.parameters.count <= memberwiseArityLimit else { continue }
+            guard initializer.parameters.count <= memberwiseMemberLimit else { continue }
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {

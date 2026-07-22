@@ -302,11 +302,20 @@ public struct TypeShape: Sendable, Equatable {
 /// conversion lives in each consumer (macro impl, discovery tool).
 public enum DerivationStrategist {
 
-    /// Maximum number of stored properties supported by memberwise
-    /// derivation. Bound by `swift-property-based`'s `zip` overloads,
-    /// which ship for arities 2–10. Single-member types don't need
+    /// Size of a single `zip` group. Bound by `swift-property-based`'s `zip`
+    /// overloads, which ship for arities 2–10. Single-member types don't need
     /// `zip` at all — they go through `Generator.map` directly.
     public static let memberwiseArityLimit = 10
+
+    /// Maximum number of stored properties (or init parameters) memberwise
+    /// derivation supports. Members beyond `memberwiseArityLimit` are composed
+    /// by **nesting**: chunk into groups of ≤`memberwiseArityLimit`, `zip` each
+    /// group, `zip` the groups, then `.map` with nested tuple access
+    /// (`$0.group.position`). The ceiling is `memberwiseArityLimit²` = 100
+    /// (ten groups of ten) — the point at which the outer `zip` itself would
+    /// exceed the 10-arity overload. Real value types rarely approach it; the
+    /// app road-test hit ordinary 11–14-member structs the flat-10 limit refused.
+    public static let memberwiseMemberLimit = memberwiseArityLimit * memberwiseArityLimit
 
     public static func strategy(
         for shape: TypeShape,
@@ -356,7 +365,7 @@ public enum DerivationStrategist {
         guard shape.kind == .struct else { return nil }
         guard !shape.storedMembers.isEmpty else { return nil }
         guard !shape.hasUserInit else { return nil }
-        guard shape.storedMembers.count <= memberwiseArityLimit else { return nil }
+        guard shape.storedMembers.count <= memberwiseMemberLimit else { return nil }
         var specs: [MemberSpec] = []
         for member in shape.storedMembers {
             if let rawType = RawType(typeName: member.typeName) {
