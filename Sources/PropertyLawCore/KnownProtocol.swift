@@ -160,6 +160,10 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         return result
     }
 
+    // Each case returns its own protocol-conformance chain, so two cases naturally share protocol
+    // names (e.g. the integer chains all include `.numeric`). Parallel List Drift pairs two such
+    // per-case return sets as one drifted list — a false positive; these are distinct data.
+    // swiftprojectlint:disable parallel-list-drift
     private var subsumedProtocols: Set<KnownProtocol> {
         switch self {
         case .hashable, .comparable: return [.equatable]
@@ -240,6 +244,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
              .caseIterable, .additiveArithmetic, .semigroup: return []
         }
     }
+    // swiftprojectlint:enable parallel-list-drift
 
     /// Function-name identifier for the kit's check call, composed as
     /// `check<declarationName>PropertyLaws` — a pure function of
