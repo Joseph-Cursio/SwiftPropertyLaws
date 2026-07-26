@@ -114,7 +114,16 @@ let package = Package(
         ),
         .testTarget(
             name: "PropertyLawCoreTests",
-            dependencies: ["PropertyLawCore"]
+            dependencies: [
+                "PropertyLawCore",
+                // Test-only. `PropertyLawCore` itself stays a dependency-free
+                // leaf; the tests link the runtime engine so
+                // `EmittedExpressionCompilesTests` can *execute* the very
+                // expressions `GeneratorExpressionEmitter` emits. A string
+                // assertion alone let a `.caseIterable` expression that could
+                // never compile ship and stay green — see that file.
+                .product(name: "PropertyBased", package: "swift-property-based")
+            ]
         ),
         // Shared SwiftSyntax helpers consumed by both the macro impl and the
         // discovery plugin. Leaf target depending only on PropertyLawCore +

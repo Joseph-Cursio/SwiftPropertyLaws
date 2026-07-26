@@ -19,7 +19,7 @@
 ///   on the compile error from a missing `gen()` symbol to surface to
 ///   the user, with the macro's `noKnownConformance`-class diagnostic
 ///   for context).
-/// - `.caseIterable` → `Gen<TypeName>.element(of: TypeName.allCases)`.
+/// - `.caseIterable` → `Gen<TypeName?>.element(of: TypeName.allCases).compactMap { $0 }`.
 /// - `.memberwiseArbitrary(members:)` → delegated to `MemberwiseEmitter`
 ///   for the `zip(...)` + tuple-positional map shape.
 /// - `.rawRepresentable(rawType)` → the raw-type generator + a
@@ -40,7 +40,28 @@ public enum GeneratorExpressionEmitter {
         case .userGen, .todo:
             return "\(typeName).gen()"
         case .caseIterable:
-            return "Gen<\(typeName)>.element(of: \(typeName).allCases)"
+            // `Gen.element(of:)` is declared `where Value == C.Element?`, so it
+            // produces a `Generator<T?, _>`. The `Gen<T>` spelling this line
+            // carried until now could therefore never compile: *"static method
+            // 'element(of:)' requires the types 'T' and 'T?' be equivalent."*
+            //
+            // The emitted form now matches the spelling every hand-written call
+            // site in this repo already used (`CaseIterableLawsTests`,
+            // `RawRepresentableLawsTests`, the planted-bug suites): name the
+            // Optional explicitly and drop it with `compactMap`. Explicit rather
+            // than inferred because this expression is interpolated into
+            // *composed* positions — inside a `zip(…).map { … }` for a member —
+            // where leaving `Value` to inference is fragile.
+            //
+            // The expression had never been executed. Every consumer that
+            // reached it emitted a stub that failed to build, and a failed build
+            // surfaces downstream as an *architectural* non-verdict rather than
+            // as a codegen error — so nothing ever pointed at this line, and the
+            // unit test below asserted the broken string verbatim. Found by
+            // SwiftInferProperties' self-dogfood road test, whose corpus is the
+            // first to put a `CaseIterable` enum in a *member* position; see
+            // `docs/roadtest-self-dogfood.md` §9.2 in that repo.
+            return "Gen<\(typeName)?>.element(of: \(typeName).allCases).compactMap { $0 }"
         case .memberwiseArbitrary(let members):
             return MemberwiseEmitter.expression(typeName: typeName, members: members)
         case .initializerBased(let arguments):

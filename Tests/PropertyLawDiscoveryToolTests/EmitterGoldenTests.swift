@@ -179,7 +179,7 @@ struct EmitterGoldenTests {
                 parseFailures: []
             )
         )
-        #expect(output.contains("using: Gen<Status>.element(of: Status.allCases)"))
+        #expect(output.contains("using: Gen<Status?>.element(of: Status.allCases).compactMap { $0 }"))
         #expect(output.contains("Status.gen()") == false)
     }
 

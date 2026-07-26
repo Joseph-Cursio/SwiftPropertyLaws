@@ -9,7 +9,8 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// emitter just references `<TypeName>.gen()` and the compiler resolves.
     case userGen
 
-    /// `enum T: CaseIterable` — emit `Gen<T>.element(of: T.allCases)`.
+    /// `enum T: CaseIterable` — emit `Gen<T?>.element(of: T.allCases).compactMap { $0 }`
+    /// (the Optional is load-bearing: `element(of:)` is `where Value == C.Element?`).
     case caseIterable
 
     /// PRD §5.7 Strategy 3 — every stored property of a struct resolves to

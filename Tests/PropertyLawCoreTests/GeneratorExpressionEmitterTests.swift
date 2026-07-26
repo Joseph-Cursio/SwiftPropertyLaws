@@ -29,12 +29,23 @@ struct GeneratorExpressionEmitterTests {
         #expect(expr == "Mystery.gen()")
     }
 
+    /// Until now this pinned `"Gen<Side>.element(of: Side.allCases)"` — byte-exact,
+    /// green for the whole life of the arm, and describing an expression that
+    /// **could never compile**: `Gen.element(of:)` is declared
+    /// `where Value == C.Element?`, so `Gen<Side>` asks the compiler to prove
+    /// `Side == Side?`. A codegen test that compares text to text can have both
+    /// sides wrong together, and here it did.
+    ///
+    /// The executable counterpart lives in `EmittedExpressionCompilesTests`,
+    /// which writes this expression out as live code and runs it. Keep both:
+    /// this one is the readable record of what is emitted, that one is the proof
+    /// that what is emitted is Swift.
     @Test func caseIterableStrategyEmitsElementOfAllCases() {
         let expr = GeneratorExpressionEmitter.expression(
             typeName: "Side",
             strategy: .caseIterable
         )
-        #expect(expr == "Gen<Side>.element(of: Side.allCases)")
+        #expect(expr == "Gen<Side?>.element(of: Side.allCases).compactMap { $0 }")
     }
 
     @Test func memberwiseArbitraryDelegatesToMemberwiseEmitter() {

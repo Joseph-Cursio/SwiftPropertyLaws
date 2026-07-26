@@ -276,7 +276,7 @@ struct DiagnosticsTests {
                 @Test func equatable_Status() async throws {
                         try await checkEquatablePropertyLaws(
                             for: Status.self,
-                            using: Gen<Status>.element(of: Status.allCases)
+                            using: Gen<Status?>.element(of: Status.allCases).compactMap { $0 }
                         )
                     }
             }

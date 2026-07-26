@@ -77,7 +77,7 @@ struct GeneratorResolverTests {
         let holder = structShape("Holder", [("dir", "Direction")])
         #expect(
             expression(for: "Holder", in: [holder, direction])
-                == "Gen<Direction>.element(of: Direction.allCases).map { Holder(dir: $0) }"
+                == "Gen<Direction?>.element(of: Direction.allCases).compactMap { $0 }.map { Holder(dir: $0) }"
         )
     }
 
@@ -172,5 +172,99 @@ struct GeneratorResolverTests {
             Issue.record("expected .todo without a resolver (macro path)")
             return
         }
+    }
+
+    // MARK: - Ambiguous bare names are refused, not guessed
+    //
+    // `TypeShape.name` is one unqualified string, so a scanner that records
+    // nested types under their bare names hands the resolver several distinct
+    // shapes all called `Kind`. The universe used to be built with
+    // `uniquingKeysWith: { first, _ in first }` — it silently kept whichever
+    // arrived first, and a member typed `Kind` on one type could be generated
+    // from an unrelated type's nested enum, with no diagnostic anywhere.
+    //
+    // SwiftInferProperties' self-dogfood road test is where this surfaced:
+    // **eight** distinct types named `Kind`, collapsed to one, and the survivor
+    // was a CLI-internal enum unrelated to any of the members referencing it.
+    // These tests pin the refusal.
+
+    private func enumShape(_ name: String, inheriting: [String]) -> TypeShape {
+        TypeShape(name: name, kind: .enum, inheritedTypes: inheriting, hasUserGen: false)
+    }
+
+    @Test func twoDistinctTypesSharingABareNameResolveToNothing() {
+        // Two different `Kind`s — as `Foo.Kind` and `Bar.Kind` would arrive from
+        // a scanner that records nested types unqualified.
+        let universe = [
+            enumShape("Kind", inheriting: ["String", "CaseIterable"]),
+            enumShape("Kind", inheriting: ["Int", "Codable"])
+        ]
+        let resolver = GeneratorResolver(types: universe)
+        #expect(
+            resolver.customTypeGenerator(forTypeName: "Kind") == nil,
+            "an ambiguous name must resolve to nothing rather than to whichever shape came first"
+        )
+    }
+
+    @Test func ambiguousNamesAreReportedSoAScannerCanExplainTheTodo() {
+        let universe = [
+            enumShape("Kind", inheriting: ["String", "CaseIterable"]),
+            enumShape("Kind", inheriting: ["Int", "Codable"]),
+            structShape("Order", [("id", "Int")])
+        ]
+        let resolver = GeneratorResolver(types: universe)
+        #expect(resolver.ambiguousTypeNames == ["Kind"])
+        // Unambiguous names in the same universe are unaffected.
+        #expect(resolver.customTypeGenerator(forTypeName: "Order") != nil)
+    }
+
+    @Test func aMemberTypedAsAnAmbiguousNameKeepsItsOwnerAtTodo() {
+        let universe = [
+            enumShape("Kind", inheriting: ["String", "CaseIterable"]),
+            enumShape("Kind", inheriting: ["Int", "Codable"]),
+            structShape("Entry", [("name", "String"), ("kind", "Kind")])
+        ]
+        let entry = universe.last!
+        guard case .todo = strategy(for: "Entry", in: universe) else {
+            Issue.record("a member of ambiguous type must leave its owner non-derivable")
+            return
+        }
+        _ = entry
+    }
+
+    /// The same shape scanned twice is **not** ambiguity — a universe assembled
+    /// from overlapping scans must still resolve. Without this, the refusal
+    /// above would turn every duplicate-free-but-rescanned type into a `.todo`
+    /// and quietly gut derivation.
+    @Test func anIdenticalDuplicateIsNotAmbiguity() {
+        let side = enumShape("Side", inheriting: ["String", "CaseIterable"])
+        let resolver = GeneratorResolver(types: [side, side])
+        #expect(resolver.ambiguousTypeNames.isEmpty)
+        #expect(
+            resolver.customTypeGenerator(forTypeName: "Side")?.expression
+                == "Gen<Side?>.element(of: Side.allCases).compactMap { $0 }"
+        )
+    }
+
+    /// The escape hatch, and the reason refusing is safe: a caller that records
+    /// nested types by **qualified** name has no collision, and every emitter
+    /// interpolates the name verbatim, so `Foo.Kind` comes out spelled
+    /// correctly with no change to the emitters at all.
+    @Test func qualifiedNamesDisambiguateAndEmitCorrectly() {
+        let universe = [
+            enumShape("Foo.Kind", inheriting: ["String", "CaseIterable"]),
+            enumShape("Bar.Kind", inheriting: ["String", "CaseIterable"]),
+            structShape("Entry", [("name", "String"), ("kind", "Foo.Kind")])
+        ]
+        let resolver = GeneratorResolver(types: universe)
+        #expect(resolver.ambiguousTypeNames.isEmpty)
+        #expect(
+            resolver.customTypeGenerator(forTypeName: "Foo.Kind")?.expression
+                == "Gen<Foo.Kind?>.element(of: Foo.Kind.allCases).compactMap { $0 }"
+        )
+        // …and the enclosing type now derives, referencing the qualified name.
+        let expr = expression(for: "Entry", in: universe)
+        #expect(expr.contains("Foo.Kind.allCases"))
+        #expect(!expr.contains("Bar.Kind"))
     }
 }
