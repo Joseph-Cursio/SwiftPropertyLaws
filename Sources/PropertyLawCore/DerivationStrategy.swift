@@ -337,11 +337,49 @@ public enum DerivationStrategist {
         if let initBased = initializerBasedStrategy(for: shape, resolve: resolve) {
             return initBased
         }
-        if shape.kind == .enum, let rawType = rawType(in: shape.inheritedTypes) {
-            return .rawRepresentable(rawType)
-        }
+        // **Case enumeration BEFORE `rawRepresentable`, and this order is
+        // load-bearing.**
+        //
+        // `.rawRepresentable` emits a *filter*:
+        //
+        //     Gen<Character>.letterOrNumber.string(of: 0...8)
+        //         .compactMap { T(rawValue: $0) }
+        //
+        // — random raw values, kept only when they happen to name a case. For a
+        // `String`-raw enum the odds are effectively zero and `compactMap`
+        // retries forever; for an `Int`-raw enum drawing from the full `Int`
+        // range they are worse. The generator does not terminate.
+        //
+        // That was not theoretical. SwiftInferProperties' self-dogfood road test
+        // found two verifier binaries built from this recipe spinning at 99.9%
+        // CPU for 46 and 71 minutes while the survey reported nothing at all —
+        // the stub compiled and ran and simply never finished, which produces no
+        // verdict, no error and no output. It was masked until then by a
+        // *separate* consumer-side defect that stopped those stubs compiling; see
+        // `docs/roadtest-self-dogfood.md` §11.2.1 in that repo.
+        //
+        // When the case list was captured, `.enumCases` enumerates it exactly
+        // (`Gen.oneOf(Gen.always(T.a), Gen.always(T.b), …)`) — terminating,
+        // uniform, and total over the enum. A raw-valued enum that also declares
+        // `CaseIterable` never reaches either arm; it short-circuits above.
         if let enumStrategy = enumCasesStrategy(for: shape, resolve: resolve) {
             return enumStrategy
+        }
+        if shape.kind == .enum, let rawType = rawType(in: shape.inheritedTypes) {
+            // Fallback only: the cases were not captured (an enum whose body the
+            // scanner could not see), so there is nothing to enumerate.
+            //
+            // **This arm is still a filter and can still fail to terminate**, and
+            // that is a known, bounded risk rather than an oversight. It is fine
+            // where the raw domain is small and densely covered by cases — `Bool`,
+            // a narrow `Int8` — and it is unusable where it is not, which is every
+            // `String`-raw enum and any `Int`-raw enum drawn from the full range.
+            // Narrowing it further would need a bounded-domain generator per raw
+            // type, which is a real design change rather than a reordering.
+            // Consumers should bound the run (SwiftInferProperties'
+            // `VerifierSubprocess.defaultRunTimeout` does) so a non-terminating
+            // generator surfaces as a verdict instead of a wedge.
+            return .rawRepresentable(rawType)
         }
         return .todo(reason: todoReason(for: shape))
     }

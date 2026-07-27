@@ -134,15 +134,62 @@ struct EnumPayloadDerivationTests {
         }
     }
 
-    // MARK: - Priority: CaseIterable / raw still win
+    // MARK: - Priority: CaseIterable wins; case enumeration beats raw filtering
 
     @Test func caseIterableWinsOverEnumCases() {
         let shape = enumShape("E", cases: [EnumCase(name: "a")], inheritedTypes: ["CaseIterable"])
         #expect(DerivationStrategist.strategy(for: shape) == .caseIterable)
     }
 
-    @Test func rawRepresentableWinsOverEnumCases() {
+    /// **Inverted deliberately. This test previously asserted the opposite, and
+    /// the behaviour it pinned did not terminate.**
+    ///
+    /// `.rawRepresentable` emits a filter — random raw values kept only when
+    /// they happen to name a case. With the case list in hand that is strictly
+    /// worse than enumerating it: for a `String`-raw enum the filter essentially
+    /// never produces a value and loops forever, and for an `Int`-raw enum drawn
+    /// from the full range it is worse still.
+    ///
+    /// SwiftInferProperties' self-dogfood road test found two verifier binaries
+    /// built from this precedence spinning at 99.9% CPU for 46 and 71 minutes
+    /// while the survey reported nothing at all. `.enumCases` covers the same
+    /// enum exactly, uniformly, and in bounded time.
+    ///
+    /// The raw arm remains as the fallback when cases were *not* captured —
+    /// see `rawRepresentableRemainsTheFallbackWithoutCases`.
+    @Test func enumCasesWinsOverRawRepresentableFiltering() {
         let shape = enumShape("E", cases: [EnumCase(name: "a")], inheritedTypes: ["Int"])
+        #expect(
+            DerivationStrategist.strategy(for: shape)
+                == .enumCases(cases: [EnumCaseGenerator(caseName: "a", arguments: [])])
+        )
+    }
+
+    /// The fallback is unchanged: with no cases captured there is nothing to
+    /// enumerate, so the raw filter is all that is left.
+    @Test func rawRepresentableRemainsTheFallbackWithoutCases() {
+        let shape = enumShape("E", cases: [], inheritedTypes: ["Int"])
         #expect(DerivationStrategist.strategy(for: shape) == .rawRepresentable(.int))
+    }
+
+    /// The shape that actually hung: a `String`-raw enum with real cases. It must
+    /// now enumerate them rather than filter random strings for ones that spell
+    /// `struct` / `class` / `enum` / `actor`.
+    @Test func stringRawEnumEnumeratesItsCasesRatherThanFiltering() {
+        let shape = enumShape(
+            "Kind",
+            cases: [EnumCase(name: "struct"), EnumCase(name: "class"), EnumCase(name: "enum")],
+            inheritedTypes: ["String", "Codable"]
+        )
+        let strategy = DerivationStrategist.strategy(for: shape)
+        guard case let .enumCases(cases) = strategy else {
+            Issue.record("expected .enumCases, got \(strategy)")
+            return
+        }
+        #expect(cases.map(\.caseName) == ["struct", "class", "enum"])
+        // And the emitted expression enumerates — no `compactMap` filter in sight.
+        let expression = GeneratorExpressionEmitter.expression(typeName: "Kind", strategy: strategy)
+        #expect(expression.contains("Gen.oneOf"))
+        #expect(!expression.contains("compactMap"), "a filter would not terminate here")
     }
 }
