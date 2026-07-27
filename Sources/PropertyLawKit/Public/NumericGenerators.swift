@@ -43,12 +43,33 @@ extension Gen where Value == Double {
     /// internally and don't require a NaN-producing generator — but having
     /// NaN samples in the always-on laws helps catch broken `isNaN` /
     /// `isFinite` predicates on custom FloatingPoint conformers.
+    /// **Seeded end to end.** The finite value comes from `Gen<Double>.double(in:)`
+    /// — the engine's seeded generator — not `Double.random(in:)`, which reads
+    /// the *system* RNG and is therefore invisible to a seed.
+    ///
+    /// That distinction is the whole replay story. Until this was fixed, the NaN
+    /// *positions* replayed from a seed but the finite values did not, so a
+    /// FloatingPoint law that failed on an ordinary value could not be
+    /// reproduced from the seed it failed under — which is precisely the case
+    /// where you need the exact input, since an edge-case failure is usually
+    /// legible from the value itself. Found by pointing SwiftProjectLint's
+    /// `Non-Injected Nondeterminism` rule at this repo; confirmed by drawing the
+    /// same seed twice and watching the finite values differ.
+    ///
+    /// Threading the seeded generator also gains shrinking on the value
+    /// (`Shrink.Floating`), which the `Double.random` form could not offer.
+    ///
+    /// **`PropertyLawComplex.edgeCaseBiased()` deliberately keeps the unseeded
+    /// finite path** and documents it, with `determinismOnSeededTagDecisions`
+    /// pinning determinism on the seeded sub-stream only. There the curated edge
+    /// cases are the payload and the finite filler is noise; here the finite
+    /// value *is* the sample the always-on laws run against.
     public static func doubleWithNaN() -> Generator<Double, some SendableSequenceType> {
-        Gen<Int>.int(in: 0 ..< 20)
-            .map { tag -> Double in
-                if tag == 0 { return Double.nan }
-                return Double.random(in: -1_000_000.0 ... 1_000_000.0)
-            }
+        zip(
+            Gen<Int>.int(in: 0 ..< 20),
+            Gen<Double>.double(in: -1_000_000.0 ... 1_000_000.0)
+        )
+        .map { tag, value in tag == 0 ? Double.nan : value }
     }
 }
 
@@ -56,11 +77,12 @@ extension Gen where Value == Float {
     /// `Float` generator that injects `Self.nan` on roughly 1 of every 20
     /// trials, with the rest in `-1e6 ... 1e6` finite range. See the
     /// `Double` overload for rationale.
+    /// Seeded end to end, for the reasons on the `Double` overload.
     public static func floatWithNaN() -> Generator<Float, some SendableSequenceType> {
-        Gen<Int>.int(in: 0 ..< 20)
-            .map { tag -> Float in
-                if tag == 0 { return Float.nan }
-                return Float.random(in: -1_000_000.0 ... 1_000_000.0)
-            }
+        zip(
+            Gen<Int>.int(in: 0 ..< 20),
+            Gen<Float>.float(in: -1_000_000.0 ... 1_000_000.0)
+        )
+        .map { tag, value in tag == 0 ? Float.nan : value }
     }
 }

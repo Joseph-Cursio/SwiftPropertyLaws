@@ -68,6 +68,21 @@ public extension Gen where Value == Complex<Double> {
             if tag < edgeCount {
                 return complexEdgeCases[tag]
             }
+            // **Deliberately unseeded, and the exception is documented here so a
+            // reader hitting the linter's `Non-Injected Nondeterminism` warning
+            // finds the reasoning rather than a silence.**
+            //
+            // `Gen<Double>.doubleWithNaN()` was changed to a fully seeded finite
+            // path because there the finite value *is* the sample the always-on
+            // laws run against, so a failure on one must be replayable. Here the
+            // payload is the 12 curated edge cases; the finite filler exists to
+            // dilute them to the 90/10 ratio and is never the interesting input.
+            // `determinismOnSeededTagDecisions` pins determinism on the seeded
+            // sub-stream — the edge-case projection — which is the guarantee this
+            // generator actually offers.
+            //
+            // Revisit if a law is ever found failing on the finite path: that
+            // would make the filler load-bearing and this trade wrong.
             let real = Double.random(in: -1_000_000.0 ... 1_000_000.0)
             let imag = Double.random(in: -1_000_000.0 ... 1_000_000.0)
             return Complex(real, imag)
