@@ -34,6 +34,30 @@ public final class GeneratorResolver {
     private let aliases: [String: String]
     private var memo: [String: DerivationStrategist.ComposedGenerator?] = [:]
 
+    /// Helper `func`s built during resolution, keyed by type name.
+    ///
+    /// Recursive generators cannot be inlined, and the plan tree that carries
+    /// their declaration does **not** survive the strategy layer —
+    /// `MemberSpec.generatorExpression` is a `String`, so a nested recursive
+    /// type's declaration is flattened away the moment it becomes a member.
+    /// Accumulating here instead means the caller can ask the resolver what it
+    /// built, whatever depth it was built at.
+    private var recursiveDeclarations: [String: String] = [:]
+
+    /// Every recursive helper this resolver emitted, sorted for stable output.
+    /// Empty unless the universe contained a self-referential type. A caller
+    /// writing a stub must emit these **above** the check that calls them.
+    public var supportingDeclarations: [String] {
+        recursiveDeclarations.keys.sorted().compactMap { recursiveDeclarations[$0] }
+    }
+
+    /// Whether `typeName` resolved to a depth-budgeted recursive helper, so a
+    /// caller can use the helper call directly as that type's generator rather
+    /// than re-composing it memberwise.
+    public func isRecursive(_ typeName: String) -> Bool {
+        recursiveDeclarations[typeName] != nil
+    }
+
     /// Build a resolver over a module's type universe.
     ///
     /// **An ambiguous name resolves to nothing, deliberately.** `TypeShape.name`
@@ -101,7 +125,24 @@ public final class GeneratorResolver {
         visiting: Set<String>
     ) -> DerivationStrategist.ComposedGenerator? {
         if let cached = memo[name] { return cached }         // already fully resolved
-        guard !visiting.contains(name) else { return nil }   // recursive cycle (don't memoize the sentinel)
+
+        // A recursive cycle. This used to `return nil`, pinning every
+        // self-referential type at `.todo` — and the referencing law was still
+        // proposed, often at Strong tier, so the tool made its most confident
+        // claim and then could not run it.
+        //
+        // Instead, hand back the recursion *point*. `derive` sees it in the
+        // resulting plan and wraps the whole thing in a depth-budgeted helper
+        // (`RecursiveGeneratorEmitter`). Deliberately not memoized: the node is
+        // only meaningful inside the declaration currently being built.
+        if visiting.contains(name) {
+            return DerivationStrategist.ComposedGenerator(
+                plan: .selfReference(
+                    typeName: name,
+                    helperName: RecursiveGeneratorEmitter.helperName(for: name)
+                )
+            )
+        }
 
         // Two or more distinct types share this bare name — see the initializer.
         // Refusing keeps the referencing type at `.todo` instead of generating
@@ -138,8 +179,37 @@ public final class GeneratorResolver {
             self.resolve(inner, visiting: nextVisiting)
         }
         if case .todo = strategy { return nil }
+        let expression = GeneratorExpressionEmitter.expression(
+            typeName: shape.name,
+            strategy: strategy
+        )
+
+        // Did resolving the members lead back here? If so the expression now
+        // contains this type's recursion point, and cannot stand on its own —
+        // it has to become the body of a depth-budgeted helper that the stub
+        // declares and the plan calls.
+        if RecursiveGeneratorEmitter.isRecursive(expression: expression, typeName: shape.name) {
+            guard let declaration = RecursiveGeneratorEmitter.declaration(
+                typeName: shape.name,
+                expression: expression
+            ) else {
+                // Recursion with no wrapper to terminate it (a bare `indirect
+                // enum` payload). Unchanged behaviour: stay `.todo`.
+                return nil
+            }
+            recursiveDeclarations[shape.name] = declaration
+            return DerivationStrategist.ComposedGenerator(
+                plan: .recursive(
+                    typeName: shape.name,
+                    helperName: RecursiveGeneratorEmitter.helperName(for: shape.name),
+                    declaration: declaration,
+                    imports: strategy.requiredImports
+                )
+            )
+        }
+
         return DerivationStrategist.ComposedGenerator(
-            expression: GeneratorExpressionEmitter.expression(typeName: shape.name, strategy: strategy),
+            expression: expression,
             requiredImports: strategy.requiredImports
         )
     }
