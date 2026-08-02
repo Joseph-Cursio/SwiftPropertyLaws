@@ -27,6 +27,15 @@ let package = Package(
         // strategist + its input/output value types — `KnownProtocol` and
         // `MemberwiseEmitter` stay `package`-scoped for now (M1 of the
         // SwiftInferProperties cross-validation work doesn't need either).
+        // Exposed 2026-08-02 so SwiftInferProperties can call
+        // `SequenceInitializerNormalizer` instead of porting it. That repo already carries a
+        // hand-copied `MemberBlockInspector` ("mirrors the in-tree port the discovery plugin
+        // uses"), and a second copy of the initializer-shape logic is exactly the cross-repo
+        // drift that cost a day this same week. One implementation, two consumers.
+        .library(
+            name: "PropertyLawSyntaxSupport",
+            targets: ["PropertyLawSyntaxSupport"]
+        ),
         .library(
             name: "PropertyLawCore",
             targets: ["PropertyLawCore"]
