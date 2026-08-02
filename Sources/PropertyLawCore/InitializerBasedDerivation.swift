@@ -55,6 +55,43 @@ public struct InitArgument: Sendable, Equatable {
 
 extension DerivationStrategist {
 
+    /// Parameter labels that name a **capacity hint** rather than a value.
+    ///
+    /// An initializer whose every parameter is one of these constructs an *empty* value: the
+    /// argument sizes the storage and contributes nothing to what the value IS. Deriving a
+    /// generator through it produces a **constant** — the same empty collection every trial,
+    /// dressed up as a hundred distinct ones.
+    ///
+    /// **Measured 2026-08-02 on swift-collections.** `Deque` declares
+    /// `init(minimumCapacity: Int)` alongside `init<S: Sequence>(_ items: S)`. `Int` resolves
+    /// and `S` does not, so the capacity hint was chosen, and the emitted generator was
+    /// `Gen<Int>.int(in: -10_000...10_000).map { Deque(minimumCapacity: $0) }`. Two failures
+    /// in one expression: every value is empty, and a negative capacity aborts the process —
+    /// `failed to allocate 18446744073709521272 bytes`.
+    ///
+    /// **The constant is the worse half.** A crash is loud. A generator that yields one value
+    /// a hundred times makes every law pass for the wrong reason, and a green suite is
+    /// believed. Declining here returns the carrier to `.todo`, where the message already
+    /// tells the user to supply `gen()` — which is true, and which the kit's own
+    /// `PropertyLawCollections` recipes then satisfy.
+    ///
+    /// Rejection requires ALL parameters to be capacity-shaped. An initializer mixing a real
+    /// value with a capacity hint still constructs something that varies, and is kept.
+    public static let capacityHintLabels: Set<String> = [
+        "capacity", "minimumCapacity", "initialCapacity",
+        "reservingCapacity", "reserveCapacity"
+    ]
+
+    /// `true` when every parameter is a capacity hint, so the initializer cannot produce a
+    /// value that varies with its arguments.
+    static func isCapacityOnly(_ initializer: InitializerSignature) -> Bool {
+        guard !initializer.parameters.isEmpty else { return false }
+        return initializer.parameters.allSatisfy { parameter in
+            guard let label = parameter.label else { return false }
+            return capacityHintLabels.contains(label)
+        }
+    }
+
     /// Tier 6 — derive through a user-defined initializer. Runs only after
     /// `memberwiseStrategy` declines (which it does whenever the struct has a
     /// user `init`). Picks the first captured initializer that is
@@ -70,6 +107,10 @@ extension DerivationStrategist {
             guard !initializer.isFailable, !initializer.isThrowing else { continue }
             guard !initializer.parameters.isEmpty else { continue }
             guard initializer.parameters.count <= memberwiseMemberLimit else { continue }
+            // A capacity-only initializer resolves (its parameters are `Int`) and derives a
+            // CONSTANT — see `capacityHintLabels`. Skipped before resolution so a later
+            // initializer, or `.todo`, wins instead.
+            guard !isCapacityOnly(initializer) else { continue }
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {
