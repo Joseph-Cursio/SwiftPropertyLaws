@@ -27,6 +27,15 @@ let package = Package(
         // strategist + its input/output value types — `KnownProtocol` and
         // `MemberwiseEmitter` stay `package`-scoped for now (M1 of the
         // SwiftInferProperties cross-validation work doesn't need either).
+        // Exposed 2026-08-02 so SwiftInferProperties can call
+        // `SequenceInitializerNormalizer` instead of porting it. That repo already carries a
+        // hand-copied `MemberBlockInspector` ("mirrors the in-tree port the discovery plugin
+        // uses"), and a second copy of the initializer-shape logic is exactly the cross-repo
+        // drift that cost a day this same week. One implementation, two consumers.
+        .library(
+            name: "PropertyLawSyntaxSupport",
+            targets: ["PropertyLawSyntaxSupport"]
+        ),
         .library(
             name: "PropertyLawCore",
             targets: ["PropertyLawCore"]
@@ -123,6 +132,18 @@ let package = Package(
                 // assertion alone let a `.caseIterable` expression that could
                 // never compile ship and stay green — see that file.
                 .product(name: "PropertyBased", package: "swift-property-based")
+            ]
+        ),
+        // `PropertyLawSyntaxSupport` had no test target of its own until 2026-08-02.
+        // `MemberBlockInspector` is the single place initializer shapes are read, and its
+        // behaviour decides whether a whole family of carriers derives or reports `.todo` —
+        // measured, when the canonical `init<S: Sequence>` constructor turned out to be
+        // invisible to Tier 6 across every swift-collections type.
+        .testTarget(
+            name: "PropertyLawSyntaxSupportTests",
+            dependencies: [
+                "PropertyLawSyntaxSupport",
+                .product(name: "SwiftParser", package: "swift-syntax")
             ]
         ),
         // Shared SwiftSyntax helpers consumed by both the macro impl and the
