@@ -125,6 +125,18 @@ let package = Package(
                 .product(name: "PropertyBased", package: "swift-property-based")
             ]
         ),
+        // `PropertyLawSyntaxSupport` had no test target of its own until 2026-08-02.
+        // `MemberBlockInspector` is the single place initializer shapes are read, and its
+        // behaviour decides whether a whole family of carriers derives or reports `.todo` —
+        // measured, when the canonical `init<S: Sequence>` constructor turned out to be
+        // invisible to Tier 6 across every swift-collections type.
+        .testTarget(
+            name: "PropertyLawSyntaxSupportTests",
+            dependencies: [
+                "PropertyLawSyntaxSupport",
+                .product(name: "SwiftParser", package: "swift-syntax")
+            ]
+        ),
         // Shared SwiftSyntax helpers consumed by both the macro impl and the
         // discovery plugin. Leaf target depending only on PropertyLawCore +
         // SwiftSyntax (the parsing lib both already link) — deliberately not

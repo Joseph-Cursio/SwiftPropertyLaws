@@ -72,7 +72,14 @@ public enum MemberBlockInspector {
                 let label = firstName == "_" ? nil : firstName
                 parameters.append(InitializerParameter(
                     label: label,
-                    typeName: param.type.trimmedDescription
+                    // `init<S: Sequence>(_ items: S) where S.Element == X` is recorded as
+                    // taking `[X]`, which is what it accepts. See
+                    // `SequenceInitializerNormalizer` — without this the canonical Swift
+                    // collection constructor resolves to no generator and every collection
+                    // type reports `.todo`.
+                    typeName: SequenceInitializerNormalizer.normalizedTypeName(
+                        declared: param.type.trimmedDescription, initializer: initDecl
+                    )
                 ))
             }
             if hasVariadic { continue }
