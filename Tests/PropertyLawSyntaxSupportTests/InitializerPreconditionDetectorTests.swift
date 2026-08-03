@@ -59,12 +59,21 @@ struct InitializerPreconditionDetectorTests {
             """))
     }
 
-    /// `fatalError` marks an unreachable path or an unimplemented stub — not a constraint on
-    /// arguments. Treating it as one would decline initializers that accept anything.
-    @Test("fatalError is not a precondition")
-    func fatalErrorIsNotAPrecondition() {
-        #expect(!statesPrecondition("""
-            struct Stub { init(x: Int) { fatalError("unimplemented") } }
+    /// **This assertion was inverted after the corpus disproved it.** `fatalError` was first
+    /// excluded on the reasoning that it marks an unreachable path or an unimplemented stub.
+    /// True of Swift generally, false inside an initializer: `BitArray.init(stringLiteral:)`
+    /// is `guard let bits = Self(value) else { fatalError("Invalid bit array literal") }`,
+    /// derivation chose it because `String` resolves, and the generated suite died on random
+    /// input within one run.
+    @Test("a fatalError guard IS a precondition")
+    func fatalErrorGuardIsAPrecondition() {
+        #expect(statesPrecondition("""
+            struct Bits {
+                init(stringLiteral value: String) {
+                    guard let bits = Self(value) else { fatalError("Invalid literal") }
+                    self = bits
+                }
+            }
             """))
     }
 

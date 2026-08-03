@@ -32,10 +32,26 @@ import SwiftSyntax
 public enum InitializerPreconditionDetector {
 
     /// Functions whose presence in an initializer body means "these arguments must satisfy
-    /// something". `fatalError` is deliberately absent: it marks an unreachable path or an
-    /// unimplemented stub, not a constraint on arguments.
+    /// something".
+    ///
+    /// **`fatalError` is included, and it was excluded on the first attempt.** The reasoning
+    /// was that it marks an unreachable path or an unimplemented stub rather than a
+    /// constraint on arguments. That is true of Swift generally and false inside an
+    /// initializer, and swift-collections produced the counter-example within one run:
+    ///
+    /// ```swift
+    /// public init(stringLiteral value: String) {
+    ///   guard let bits = Self(value) else { fatalError("Invalid bit array literal") }
+    ///   self = bits
+    /// }
+    /// ```
+    ///
+    /// `BitArray` takes a `String`, which resolves to a generator, so derivation chose this
+    /// initializer and fed it random strings — almost none of them valid bit literals. The
+    /// generated suite died on `Fatal error: Invalid bit array literal`. A `guard let … else
+    /// { fatalError }` in an initializer IS input validation, whatever the function is named.
     public static let preconditionFunctions: Set<String> = [
-        "assert", "precondition", "assertionFailure", "preconditionFailure"
+        "assert", "precondition", "assertionFailure", "preconditionFailure", "fatalError"
     ]
 
     /// `true` when the initializer's body calls one of `preconditionFunctions`.
