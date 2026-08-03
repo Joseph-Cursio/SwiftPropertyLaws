@@ -110,6 +110,35 @@ extension DerivationStrategist {
         }
     }
 
+    /// Every reason to pass over an initializer before trying to resolve its parameters.
+    ///
+    /// Extracted 2026-08-02 when the precondition gates took `initializerBasedStrategy` past
+    /// the cyclomatic-complexity cap. Worth having as one named predicate regardless: the
+    /// list is the accumulated record of what a derived generator must not call, and each
+    /// entry cost a measured failure to learn.
+    static func isDeclined(_ initializer: InitializerSignature, in shape: TypeShape) -> Bool {
+        if initializer.isFailable || initializer.isThrowing { return true }
+        if initializer.parameters.isEmpty { return true }
+        if initializer.parameters.count > memberwiseMemberLimit { return true }
+        // A capacity-only initializer resolves (its parameters are `Int`) and derives a
+        // CONSTANT — see `capacityHintLabels`.
+        if isCapacityOnly(initializer) { return true }
+        // The initializer has said its arguments must satisfy something, and a derived
+        // generator draws arbitrary ones. Three swift-collections carriers aborted the whole
+        // suite on `assert(offset >= 0)`. See `InitializerPreconditionDetector` for why this
+        // declines instead of trying to satisfy the condition.
+        if initializer.assertsPrecondition { return true }
+        // A delegating initializer inherits its target's precondition. `_HeapNode`'s
+        // `init(offset:)` asserts nothing and forwards to `init(offset:level:)`, which
+        // asserts `offset >= 0` — a body-only check calls it clean and the suite still
+        // aborts. Overload resolution is out of scope, so the test is "delegates AND some
+        // initializer on this type asserts", which cannot admit a dirty target.
+        if initializer.delegatesToSelf, shape.initializers.contains(where: { $0.assertsPrecondition }) {
+            return true
+        }
+        return false
+    }
+
     /// Tier 6 — derive through a user-defined initializer. Runs only after
     /// `memberwiseStrategy` declines (which it does whenever the struct has a
     /// user `init`). Picks the first captured initializer that is
@@ -122,25 +151,7 @@ extension DerivationStrategist {
     ) -> DerivationStrategy? {
         guard shape.kind == .struct else { return nil }
         for initializer in shape.initializers {
-            guard !initializer.isFailable, !initializer.isThrowing else { continue }
-            guard !initializer.parameters.isEmpty else { continue }
-            guard initializer.parameters.count <= memberwiseMemberLimit else { continue }
-            // A capacity-only initializer resolves (its parameters are `Int`) and derives a
-            // CONSTANT — see `capacityHintLabels`. Skipped before resolution so a later
-            // initializer, or `.todo`, wins instead.
-            guard !isCapacityOnly(initializer) else { continue }
-            // The initializer has said its arguments must satisfy something, and a derived
-            // generator draws arbitrary ones. Three swift-collections carriers aborted the
-            // whole suite on `assert(offset >= 0)`. See `InitializerPreconditionDetector`
-            // for why this declines instead of trying to satisfy the condition.
-            guard !initializer.assertsPrecondition else { continue }
-            // A delegating initializer inherits its target's precondition. `_HeapNode`'s
-            // `init(offset:)` asserts nothing and forwards to `init(offset:level:)`, which
-            // asserts `offset >= 0` — a body-only check calls it clean and the suite still
-            // aborts. Overload resolution is out of scope, so the test is "delegates AND some
-            // initializer on this type asserts", which cannot admit a dirty target.
-            let anySiblingAsserts = shape.initializers.contains { $0.assertsPrecondition }
-            guard !(initializer.delegatesToSelf && anySiblingAsserts) else { continue }
+            guard !isDeclined(initializer, in: shape) else { continue }
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {
