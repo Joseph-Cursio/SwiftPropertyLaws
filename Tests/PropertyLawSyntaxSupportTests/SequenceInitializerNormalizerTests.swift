@@ -11,7 +11,7 @@ import Testing
 struct SequenceInitializerNormalizerTests {
 
     /// Parse one initializer out of a struct body and normalise its first parameter's type.
-    private func normalized(_ source: String) -> String? {
+    func normalized(_ source: String) -> String? {
         let file = Parser.parse(source: source)
         var found: InitializerDeclSyntax?
         for statement in file.statements {
@@ -92,5 +92,41 @@ struct SequenceInitializerNormalizerTests {
         #expect(normalized("""
             struct Bag<Element> { init<S: Sequence>(_ items: S) where S.Element == Element {} }
             """) == "[Element]")
+    }
+}
+
+/// The primary-associated-type spelling, which is what real code overwhelmingly uses:
+/// **measured on swift-collections, `some Sequence<Element>` appears 159 times against 8 of
+/// the `init<S: Sequence>` form.** The first version of the normalizer matched only the rare
+/// spelling and did nothing on the corpus it was written for.
+extension SequenceInitializerNormalizerTests {
+
+    @Test("some Sequence<Element> normalises")
+    func opaqueSequence() {
+        #expect(normalized("""
+            struct Bag { init(_ items: some Sequence<Int>) {} }
+            """) == "[Int]")
+    }
+
+    @Test("some Collection<Element> normalises")
+    func opaqueCollection() {
+        #expect(normalized("""
+            struct Bag { init(_ items: some Collection<String>) {} }
+            """) == "[String]")
+    }
+
+    @Test("an ownership sigil does not defeat the opaque spelling either")
+    func opaqueWithSigil() {
+        #expect(normalized("""
+            struct Bag { init(_ items: __owned some Sequence<Int>) {} }
+            """) == "[Int]")
+    }
+
+    /// A bare `some Sequence` is a sequence of anything — declined, like a missing `where`.
+    @Test("a bare some Sequence with no element declines")
+    func bareOpaqueSequenceDeclines() {
+        #expect(normalized("""
+            struct Bag { init(_ items: some Sequence) {} }
+            """) == "some Sequence")
     }
 }
