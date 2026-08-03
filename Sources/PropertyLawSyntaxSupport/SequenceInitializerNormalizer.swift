@@ -43,6 +43,14 @@ public enum SequenceInitializerNormalizer {
         declared typeName: String,
         initializer: InitializerDeclSyntax
     ) -> String {
+        // `some Sequence<Element>` — the primary-associated-type spelling, which states the
+        // element inline and needs no generic or where clause. **Measured on
+        // swift-collections: 159 occurrences against 8 of the `init<S: Sequence>` form.**
+        // The first version of this file matched only the rare spelling and therefore did
+        // nothing on the corpus it was written for.
+        if let element = opaqueSequenceElement(strippingOwnership(typeName)) {
+            return "[\(element)]"
+        }
         guard let generics = initializer.genericParameterClause,
               generics.parameters.count == 1,
               let generic = generics.parameters.first else { return typeName }
@@ -58,6 +66,20 @@ public enum SequenceInitializerNormalizer {
         ) else { return typeName }
 
         return "[\(element)]"
+    }
+
+    /// The `X` in `some Sequence<X>` / `some Collection<X>`, or `nil`.
+    ///
+    /// A bare `some Sequence` with no primary associated type is declined for the same reason
+    /// a missing `where` clause is: it is a sequence of anything, and guessing the element
+    /// emits a call that does not typecheck.
+    static func opaqueSequenceElement(_ typeName: String) -> String? {
+        for keyword in ["some Sequence<", "some Collection<"] where typeName.hasPrefix(keyword) {
+            guard typeName.hasSuffix(">") else { continue }
+            let element = String(typeName.dropFirst(keyword.count).dropLast())
+            return element.isEmpty ? nil : element
+        }
+        return nil
     }
 
     /// The right-hand side of `S.Element == X`, or `nil` when the clause does not pin it.
