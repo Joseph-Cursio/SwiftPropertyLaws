@@ -28,10 +28,28 @@ public struct InitializerSignature: Sendable, Equatable {
     public let isFailable: Bool
     public let isThrowing: Bool
 
-    public init(parameters: [InitializerParameter], isFailable: Bool = false, isThrowing: Bool = false) {
+    /// `true` when the body calls `assert` / `precondition` — the initializer has stated that
+    /// its arguments must satisfy something. A derived generator draws arbitrary values, so
+    /// calling such an initializer aborts the process rather than failing a law. See
+    /// `InitializerPreconditionDetector`.
+    public let assertsPrecondition: Bool
+
+    /// `true` when the body delegates with `self.init(…)`, so any precondition on the target
+    /// applies here too. See `InitializerPreconditionDetector.delegatesToSelf`.
+    public let delegatesToSelf: Bool
+
+    public init(
+        parameters: [InitializerParameter],
+        isFailable: Bool = false,
+        isThrowing: Bool = false,
+        assertsPrecondition: Bool = false,
+        delegatesToSelf: Bool = false
+    ) {
         self.parameters = parameters
         self.isFailable = isFailable
         self.isThrowing = isThrowing
+        self.assertsPrecondition = assertsPrecondition
+        self.delegatesToSelf = delegatesToSelf
     }
 }
 
@@ -111,6 +129,18 @@ extension DerivationStrategist {
             // CONSTANT — see `capacityHintLabels`. Skipped before resolution so a later
             // initializer, or `.todo`, wins instead.
             guard !isCapacityOnly(initializer) else { continue }
+            // The initializer has said its arguments must satisfy something, and a derived
+            // generator draws arbitrary ones. Three swift-collections carriers aborted the
+            // whole suite on `assert(offset >= 0)`. See `InitializerPreconditionDetector`
+            // for why this declines instead of trying to satisfy the condition.
+            guard !initializer.assertsPrecondition else { continue }
+            // A delegating initializer inherits its target's precondition. `_HeapNode`'s
+            // `init(offset:)` asserts nothing and forwards to `init(offset:level:)`, which
+            // asserts `offset >= 0` — a body-only check calls it clean and the suite still
+            // aborts. Overload resolution is out of scope, so the test is "delegates AND some
+            // initializer on this type asserts", which cannot admit a dirty target.
+            let anySiblingAsserts = shape.initializers.contains { $0.assertsPrecondition }
+            guard !(initializer.delegatesToSelf && anySiblingAsserts) else { continue }
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {
