@@ -10,7 +10,8 @@ import Testing
 ///
 /// ## The claim this replaces was wrong
 ///
-/// SwiftInferProperties' `docs/parsing-catalog-gap.md` §7(a) recorded recursive
+/// `SwiftInferProperties/docs/measurements/parsing-catalog-gap.md` §7(a) recorded
+/// recursive
 /// generation as a missing **engine** capability, alongside higher-order
 /// generation, and said its absence "blocks the entire domain". Both halves
 /// were wrong, and measurement is what showed it:

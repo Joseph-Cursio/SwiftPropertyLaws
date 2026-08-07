@@ -1,6 +1,7 @@
 /// Structured representation of a composed generator — the tree the string
 /// emitters render. Introduced as Phase 1 of generator scaffolding (see
-/// `docs/GENERATOR_SCAFFOLDING_DESIGN.md`): replacing the opaque emitted
+/// `git show e8f1ac4:docs/GENERATOR_SCAFFOLDING_DESIGN.md` — pruned as superseded):
+/// replacing the opaque emitted
 /// string with a tree is what later lets a slot be a `.hole` (Phase 2) and
 /// lets SwiftInferProperties refine/fill nodes structurally (Phase 4).
 ///

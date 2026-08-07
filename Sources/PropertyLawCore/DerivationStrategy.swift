@@ -356,7 +356,7 @@ public enum DerivationStrategist {
         // the stub compiled and ran and simply never finished, which produces no
         // verdict, no error and no output. It was masked until then by a
         // *separate* consumer-side defect that stopped those stubs compiling; see
-        // `docs/roadtest-self-dogfood.md` §11.2.1 in that repo.
+        // `SwiftInferProperties/docs/measurements/roadtest-self-dogfood.md` §11.2.1.
         //
         // When the case list was captured, `.enumCases` enumerates it exactly
         // (`Gen.oneOf(Gen.always(T.a), Gen.always(T.b), …)`) — terminating,

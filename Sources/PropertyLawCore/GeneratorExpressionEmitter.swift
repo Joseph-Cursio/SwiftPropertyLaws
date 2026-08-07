@@ -60,7 +60,8 @@ public enum GeneratorExpressionEmitter {
             // unit test below asserted the broken string verbatim. Found by
             // SwiftInferProperties' self-dogfood road test, whose corpus is the
             // first to put a `CaseIterable` enum in a *member* position; see
-            // `docs/roadtest-self-dogfood.md` §9.2 in that repo.
+            // `SwiftInferProperties/docs/measurements/roadtest-self-dogfood.md`
+            // §9.2.
             return "Gen<\(typeName)?>.element(of: \(typeName).allCases).compactMap { $0 }"
         case .memberwiseArbitrary(let members):
             return MemberwiseEmitter.expression(typeName: typeName, members: members)

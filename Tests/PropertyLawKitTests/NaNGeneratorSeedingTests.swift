@@ -18,7 +18,8 @@ import Testing
 /// if you ask the question directly, which is what these tests do.
 ///
 /// Found by pointing SwiftProjectLint's `Non-Injected Nondeterminism` rule at
-/// this repo (`SwiftInferProperties/docs/roadtest-self-dogfood.md` §14).
+/// this repo
+/// (`SwiftInferProperties/docs/measurements/roadtest-self-dogfood.md` §14).
 ///
 /// **`PropertyLawComplex.edgeCaseBiased()` is deliberately exempt.** It keeps an
 /// unseeded finite path and documents it, with `determinismOnSeededTagDecisions`
