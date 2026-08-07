@@ -231,8 +231,8 @@ The PropertyBackend abstraction (PRD §4.5) is shipped public with `SwiftPropert
 
 ## Documentation
 
-- **[`docs/SwiftPropertyLaws PRD.md`](docs/SwiftPropertyLaws%20PRD.md)** — design specification, the load-bearing reference for what the kit does and why.
-- **[`docs/Swift Standard Library Protocols.md`](docs/Swift%20Standard%20Library%20Protocols.md)** — structural inventory of all ~54 stdlib protocols (Inherits / Requirements / one-liner). Laws and v1/v1.1/deferred classification live in PRD §4.3 and §4.3 Coverage Scope.
+- **[`docs/Protocols/SwiftPropertyLaws PRD.md`](docs/Protocols/SwiftPropertyLaws%20PRD.md)** — design specification, the load-bearing reference for what the kit does and why.
+- **[`docs/Protocols/Swift Standard Library Protocols.md`](docs/Protocols/Swift%20Standard%20Library%20Protocols.md)** — structural inventory of all ~54 stdlib protocols (Inherits / Requirements / one-liner). Laws and v1/v1.1/deferred classification live in PRD §4.3 and §4.3 Coverage Scope.
 - **[`docs/SwiftInferProperties PRD.md`](docs/SwiftInferProperties%20PRD.md)** — design for the downstream SwiftInferProperties package (signature-pattern matcher + test lifter).
 - **[`CLAUDE.md`](CLAUDE.md)** — repository state, design decisions baked into the current PRD, build instructions.
 

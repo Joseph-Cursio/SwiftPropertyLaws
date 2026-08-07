@@ -1,7 +1,7 @@
 # Foundation Generators (kit roadmap)
 
 **Status:** ✅ **Shipped** (v3.10.0). All four generators built in `Sources/PropertyLawKit/Public/FoundationGenerators.swift`, 10 tests in `Tests/PropertyLawKitTests/FoundationGeneratorsTests.swift`. Non-breaking additive minor. Implementation notes below record what shipped; the "why low priority" rationale is retained as history.
-**Origin:** Extracted from SwiftInferProperties' `docs/ideas/ValueSemantic Kit Proposal.md` §5 (workstream 3), which correctly identified these as a *kit* concern, not an engine one. This is their natural home; the downstream proposal now carries only a one-line pointer here.
+**Origin:** Extracted from SwiftInferProperties' `SwiftInferProperties/docs/ideas/ValueSemantic Kit Proposal.md` §5 (workstream 3), which correctly identified these as a *kit* concern, not an engine one. This is their natural home; the downstream proposal now carries only a one-line pointer here.
 
 ## What
 
