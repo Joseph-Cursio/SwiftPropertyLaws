@@ -1,7 +1,7 @@
 /// v3.3.0 — kit-defined protocol for **value semantics**: mutating one
 /// instance of `Self` must never be observable through any other instance.
 /// The load-bearing slice of SwiftInferProperties' ValueSemantic build plan
-/// (`SwiftInferProperties/docs/valuesemantic-build-plan.md`); conceptual
+/// (`SwiftInferProperties/docs/plans/valuesemantic-build-plan.md`); conceptual
 /// source is the pbt-book Chapter 9, "Value semantics, COW and identity."
 ///
 /// ## The property

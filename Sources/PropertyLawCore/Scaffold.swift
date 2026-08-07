@@ -1,4 +1,5 @@
-/// Generator scaffolding (Phases 2–3 of `docs/GENERATOR_SCAFFOLDING_DESIGN.md`).
+/// Generator scaffolding (Phases 2–3 of the generator-scaffolding design, pruned
+/// from the tree as superseded — `git show e8f1ac4:docs/GENERATOR_SCAFFOLDING_DESIGN.md`).
 /// For a type that can't be *fully* auto-derived, produce a best-effort
 /// `gen()` stub — slots we can derive filled in, the rest left as
 /// `<#Generator<T>#>` editor placeholders — for the developer to complete.
