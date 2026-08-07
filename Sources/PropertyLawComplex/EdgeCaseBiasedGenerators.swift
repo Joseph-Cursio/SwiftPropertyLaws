@@ -8,7 +8,7 @@ import RealModule
 /// — driving SwiftInferProperties' v1.42+ test-execution verify mode. Future
 /// minor bumps may extend to `Complex<Float>` and the real-axis `Double` /
 /// `Float` types; the proposal lives in SwiftInferProperties'
-/// `docs/ideas/Edge-Case-Biased Generators Kit Proposal.md`.
+/// `SwiftInferProperties/docs/archive/Edge-Case-Biased Generators Kit Proposal.md`.
 ///
 /// The design choice (90/10 mix; hard-coded ratio; 12-entry curated set) is
 /// deliberate per §7 of that proposal. Each trial is independently 10%

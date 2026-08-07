@@ -478,7 +478,7 @@ The five NaN-domain laws are gated on `LawCheckOptions.allowNaN`. Default `false
 
 #### Coverage Scope
 
-PropertyLawKit v1 covers the protocols enumerated above. The Swift Standard Library has roughly 54 public protocols (see `docs/Swift Standard Library Protocols.md` for the full inventory); v1's coverage is deliberate and audited rather than exhaustive. Other stdlib protocols are categorized as follows:
+PropertyLawKit v1 covers the protocols enumerated above. The Swift Standard Library has roughly 54 public protocols (see `docs/Protocols/Swift Standard Library Protocols.md` for the full inventory); v1's coverage is deliberate and audited rather than exhaustive. Other stdlib protocols are categorized as follows:
 
 **v1.1+ candidates (testable laws, clear contracts):** *(empty — all candidates have shipped as of v1.5.0)*
 
@@ -1083,7 +1083,7 @@ v0.3 is a tightly-scoped revision: one criterion rewritten, one protocol's law s
 Items the three external critiques did not raise but which v0.2 also addresses, identified during a follow-up review:
 
 - **§4.3 inheritance semantics.** `checkXxxPropertyLaws` runs the inherited suites by default (`checkHashable` runs Equatable's laws; `checkComparable` runs Equatable's; `checkCollection` runs Sequence's and IteratorProtocol's). `.ownOnly` is the opt-out. Property tests are too expensive to make "remember to chain" the user's responsibility, and forgetting to chain is a silent way to miss real semantic bugs. The Discovery plugin emits the most specific call per type, so generated tests don't double-run inherited laws.
-- **§4.3 IteratorProtocol and Sequence laws.** Added; v0.1 had `Collection` without its dependencies. The §4.3 Coverage Scope subsection now enumerates what's in v1, what's a v1.1 candidate, what's heuristic/deferred, and what's permanently out of scope (cross-referenced against `docs/Swift Standard Library Protocols.md`).
+- **§4.3 IteratorProtocol and Sequence laws.** Added; v0.1 had `Collection` without its dependencies. The §4.3 Coverage Scope subsection now enumerates what's in v1, what's a v1.1 candidate, what's heuristic/deferred, and what's permanently out of scope (cross-referenced against `docs/Protocols/Swift Standard Library Protocols.md`).
 - **§4.3 `Codable.partial(fields:)` typed as `[PartialKeyPath<T>]`** rather than `[String]` — type-safe, refactor-safe.
 - **§4.4 Generic Conformances.** Conditional / generic conformances are checked by binding type parameters at the call site; the Discovery plugin requires explicit `@LawGenerator(bindings: ...)` rather than enumerating the unbounded space.
 - **§4.5 Actor-Isolated and Sendable Types.** Spelled out: actor hop per trial, Sendable closures, registry implemented as an actor for Swift 6 concurrency safety. Sendable's value-semantics contract is explicitly named as a deferred research item.
