@@ -110,6 +110,97 @@ extension DerivationStrategist {
         }
     }
 
+    /// **A capacity hint plus a flag is still a constant** — the ALL-parameters rule above was
+    /// too strict, and the counterexample was measured rather than argued.
+    ///
+    /// `capacityHintLabels` documents its own limit: *"Rejection requires ALL parameters to be
+    /// capacity-shaped. An initializer mixing a real value with a capacity hint still
+    /// constructs something that varies, and is kept."* That assumption is false when the
+    /// other parameter is a `Bool`, because a flag selects a storage STRATEGY and cannot
+    /// supply contents.
+    ///
+    /// **Measured 2026-08-08 on swift-collections `c8080d05`.** `OrderedDictionary` declares
+    /// `init(minimumCapacity: Int, persistent: Bool)`. Both parameter types resolve, the
+    /// mixed-parameter escape hatch kept it, and the emitted generator was
+    /// `zip(Gen<Int>.int(in: -10_000...10_000), Gen<Bool>.bool())
+    /// .map { OrderedDictionary(minimumCapacity: $0.0, persistent: $0.1) }`. Every value is the
+    /// **empty** dictionary; `Hashable.distribution` reported *"1000 samples produced only 1
+    /// unique hashValues; last sample: `[:]`"* for `OrderedDictionary`, `.Elements` and
+    /// `.Values` alike. The negative-capacity trap from the original measurement is present
+    /// here too.
+    ///
+    /// **The distribution failure is the symptom, not the cost.** It is Heuristic-tier, so it
+    /// does not fail a suite by itself — meanwhile the Equatable and Hashable laws over that
+    /// carrier were *passing over a single value*. A vacuous pass is indistinguishable from a
+    /// real one in a count of passing laws, which is the `f(x) == f(x)` failure mode wearing a
+    /// generator.
+    ///
+    /// Scoped to `Bool` deliberately, rather than "any parameter that is not a collection". A
+    /// numeric alongside a capacity hint may well be a real component (`init(capacity:seed:)`
+    /// for a hash), and declining it would trade a measured false positive for an unmeasured
+    /// false negative — the direction this project does not take.
+    static func isCapacityWithFlagsOnly(_ initializer: InitializerSignature) -> Bool {
+        let labels = initializer.parameters.map(\.label)
+        guard labels.contains(where: { $0.map(capacityHintLabels.contains) ?? false }) else {
+            return false
+        }
+        return initializer.parameters.allSatisfy { parameter in
+            if let label = parameter.label, capacityHintLabels.contains(label) { return true }
+            return parameter.typeName == "Bool"
+        }
+    }
+
+    /// **An initializer that takes the type's private storage is not a value constructor.**
+    ///
+    /// A parameter label beginning with `_` names an implementation detail. Such an
+    /// initializer assigns the representation directly, which means its arguments must
+    /// **jointly** satisfy an invariant it does not establish — and a derived generator draws
+    /// each parameter *independently*.
+    ///
+    /// **Measured 2026-08-08 on swift-collections `c8080d05`.** `BitSet.Counted` declares
+    /// `internal init(_bits: BitSet, count: Int)`, whose body ends in `_checkInvariants()`.
+    /// The derived generator drew `count` from `-10_000...10_000` with no relation to `_bits`,
+    /// so it built values whose count contradicts their contents — and the emitted suite then
+    /// reported `SetAlgebra.unionIdempotence` (Strict, trial 1),
+    /// `Sequence.underestimatedCountLowerBound` (Strict) and `Codable.roundTripFidelity[JSON]`
+    /// (Conventional) as **violated on correct swift-collections code**. Three false
+    /// refutations against a library that is not wrong.
+    ///
+    /// **This is the `@testable` hazard, and the label is the cheapest sound signal for it.**
+    /// A consumer generating suites imports the module `@testable`, which makes internal
+    /// storage constructors callable that no public caller could reach. Access level would be
+    /// the more direct test, but `InitializerSignature` does not carry it and inventing the
+    /// field is a larger change than the evidence needs: `_checkInvariants()` is also not
+    /// recognised by `InitializerPreconditionDetector`, so neither existing gate fires.
+    ///
+    /// The rule is **conservative in the safe direction**. Declining returns the carrier to
+    /// `.todo`, whose message already asks for a `gen()` — a carrier nobody can generate is a
+    /// gap, while a carrier generated wrongly is a lie about somebody else's library.
+    ///
+    /// **The arity requirement is the whole rule, not a softening of it.** The defect is
+    /// *independence between* parameters: a generator draws each one separately, so it can
+    /// build a `count` that contradicts its `_bits`. A **single**-parameter initializer has
+    /// nothing to be inconsistent with — its argument fully determines the value — so
+    /// declining one buys no soundness and costs real coverage.
+    ///
+    /// Measured, on the first version of this rule which omitted the arity test:
+    /// `OrderedSet.UnorderedView(_base:)`, `OrderedDictionary.Values(_base:)` and
+    /// `.Elements(_base:)` are single-parameter wrappers around a value that generates
+    /// perfectly well, and all three stopped deriving — **10 of 26 emitted tests lost** on
+    /// swift-collections for no gain. With the arity test they derive again, and
+    /// `BitSet.Counted(_bits:count:)` stays declined.
+    ///
+    /// Two parameters is where it starts to bite correctly, and the second witness confirms
+    /// the direction rather than the letter: `OrderedDictionary.Elements.SubSequence(_base:
+    /// bounds:)` pairs a base with a `Range` that must lie inside it, which independent draws
+    /// cannot honour. That one *should* decline, and does.
+    static func takesPrivateStorage(_ initializer: InitializerSignature) -> Bool {
+        guard initializer.parameters.count > 1 else { return false }
+        return initializer.parameters.contains { parameter in
+            parameter.label?.hasPrefix("_") ?? false
+        }
+    }
+
     /// Every reason to pass over an initializer before trying to resolve its parameters.
     ///
     /// Extracted 2026-08-02 when the precondition gates took `initializerBasedStrategy` past
@@ -123,6 +214,14 @@ extension DerivationStrategist {
         // A capacity-only initializer resolves (its parameters are `Int`) and derives a
         // CONSTANT — see `capacityHintLabels`.
         if isCapacityOnly(initializer) { return true }
+        // …and so does a capacity hint paired only with flags: `OrderedDictionary
+        // (minimumCapacity:persistent:)` derived 1000 samples with 1 unique hash.
+        if isCapacityWithFlagsOnly(initializer) { return true }
+        // An `_`-prefixed label takes the type's private storage, so the arguments must
+        // jointly hold an invariant a generator drawing them independently cannot.
+        // `BitSet.Counted(_bits:count:)` produced three FALSE refutations against correct
+        // swift-collections code.
+        if takesPrivateStorage(initializer) { return true }
         // The initializer has said its arguments must satisfy something, and a derived
         // generator draws arbitrary ones. Three swift-collections carriers aborted the whole
         // suite on `assert(offset >= 0)`. See `InitializerPreconditionDetector` for why this
