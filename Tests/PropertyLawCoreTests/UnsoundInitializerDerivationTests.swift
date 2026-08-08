@@ -78,6 +78,32 @@ struct UnsoundInitializerDerivationTests {
         }
     }
 
+    /// **A single-parameter wrapper has no joint invariant to violate**, so declining it buys
+    /// no soundness. Measured: the first version of this rule omitted the arity test and cost
+    /// `UnorderedView(_base:)`, `.Values(_base:)` and `.Elements(_base:)` — 10 of 26 emitted
+    /// swift-collections tests — for nothing.
+    @Test("a single-parameter storage wrapper still derives")
+    func singleParameterWrapperSurvives() {
+        let initializer = InitializerSignature(parameters: [parameter("_base", "Int")])
+        #expect(!DerivationStrategist.takesPrivateStorage(initializer))
+        let strategy = DerivationStrategist.strategy(for: shape("UnorderedView", [initializer]))
+        if case .todo = strategy {
+            Issue.record("a single-parameter wrapper must keep deriving")
+        }
+    }
+
+    /// The direction the arity rule is really about: two parameters that must AGREE.
+    /// `.Elements.SubSequence(_base:bounds:)` pairs a base with a range that must lie inside
+    /// it, which independent draws cannot honour.
+    @Test("a storage base paired with bounds does not derive")
+    func storageWithBoundsDeclines() {
+        #expect(DerivationStrategist.takesPrivateStorage(
+            InitializerSignature(parameters: [
+                parameter("_base", "Int"), parameter("bounds", "Int")
+            ])
+        ))
+    }
+
     // MARK: - Capacity plus flags
 
     /// `OrderedDictionary(minimumCapacity:persistent:)`, reduced. The pre-existing

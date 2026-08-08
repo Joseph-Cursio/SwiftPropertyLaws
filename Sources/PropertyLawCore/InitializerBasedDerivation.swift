@@ -176,8 +176,27 @@ extension DerivationStrategist {
     /// The rule is **conservative in the safe direction**. Declining returns the carrier to
     /// `.todo`, whose message already asks for a `gen()` — a carrier nobody can generate is a
     /// gap, while a carrier generated wrongly is a lie about somebody else's library.
+    ///
+    /// **The arity requirement is the whole rule, not a softening of it.** The defect is
+    /// *independence between* parameters: a generator draws each one separately, so it can
+    /// build a `count` that contradicts its `_bits`. A **single**-parameter initializer has
+    /// nothing to be inconsistent with — its argument fully determines the value — so
+    /// declining one buys no soundness and costs real coverage.
+    ///
+    /// Measured, on the first version of this rule which omitted the arity test:
+    /// `OrderedSet.UnorderedView(_base:)`, `OrderedDictionary.Values(_base:)` and
+    /// `.Elements(_base:)` are single-parameter wrappers around a value that generates
+    /// perfectly well, and all three stopped deriving — **10 of 26 emitted tests lost** on
+    /// swift-collections for no gain. With the arity test they derive again, and
+    /// `BitSet.Counted(_bits:count:)` stays declined.
+    ///
+    /// Two parameters is where it starts to bite correctly, and the second witness confirms
+    /// the direction rather than the letter: `OrderedDictionary.Elements.SubSequence(_base:
+    /// bounds:)` pairs a base with a `Range` that must lie inside it, which independent draws
+    /// cannot honour. That one *should* decline, and does.
     static func takesPrivateStorage(_ initializer: InitializerSignature) -> Bool {
-        initializer.parameters.contains { parameter in
+        guard initializer.parameters.count > 1 else { return false }
+        return initializer.parameters.contains { parameter in
             parameter.label?.hasPrefix("_") ?? false
         }
     }
