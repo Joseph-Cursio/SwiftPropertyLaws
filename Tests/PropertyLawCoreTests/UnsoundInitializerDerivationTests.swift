@@ -104,6 +104,48 @@ struct UnsoundInitializerDerivationTests {
         ))
     }
 
+    /// **The NIOCore false positive, and the reason the rule needs two halves.**
+    /// `NIOAsyncWriterError(_code:file:line:)` has three parameters and an `_` label, and is
+    /// sound — its `==` and `hash` key only on `_code`, and a code, a file and a line
+    /// constrain each other in no way. The arity-only rule declined it, costing one carrier
+    /// and four laws on NIOCore.
+    @Test("a storage label beside unrelated metadata still derives")
+    func storageWithUnrelatedMetadataSurvives() {
+        let initializer = InitializerSignature(parameters: [
+            parameter("_code", "Int"), parameter("file", "String"), parameter("line", "Int")
+        ])
+        #expect(!DerivationStrategist.takesPrivateStorage(initializer))
+        let strategy = DerivationStrategist.strategy(
+            for: shape("NIOAsyncWriterError", [initializer])
+        )
+        if case .todo = strategy {
+            Issue.record("independent parameters beside a storage label must keep deriving")
+        }
+    }
+
+    /// `line` is an `Int` sitting beside a storage parameter, exactly as `count` is — so the
+    /// rule cannot key on the TYPE. It keys on the label, and this pins that distinction.
+    @Test("the rule keys on the label, not on the parameter type")
+    func numericAloneIsNotAMeasurement() {
+        #expect(!DerivationStrategist.takesPrivateStorage(
+            InitializerSignature(parameters: [parameter("_code", "Int"), parameter("line", "Int")])
+        ))
+        #expect(DerivationStrategist.takesPrivateStorage(
+            InitializerSignature(parameters: [parameter("_bits", "Int"), parameter("count", "Int")])
+        ))
+    }
+
+    /// A measurement label with no storage parameter is an ordinary component — `init(count:)`
+    /// on a value type describes the value rather than restating an aggregate.
+    @Test("a measurement label without storage is untouched")
+    func measurementAloneSurvives() {
+        #expect(!DerivationStrategist.takesPrivateStorage(
+            InitializerSignature(parameters: [
+                parameter("count", "Int"), parameter("name", "String")
+            ])
+        ))
+    }
+
     // MARK: - Capacity plus flags
 
     /// `OrderedDictionary(minimumCapacity:persistent:)`, reduced. The pre-existing

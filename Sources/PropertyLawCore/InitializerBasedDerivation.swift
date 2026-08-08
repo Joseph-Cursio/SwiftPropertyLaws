@@ -194,12 +194,50 @@ extension DerivationStrategist {
     /// the direction rather than the letter: `OrderedDictionary.Elements.SubSequence(_base:
     /// bounds:)` pairs a base with a `Range` that must lie inside it, which independent draws
     /// cannot honour. That one *should* decline, and does.
+    ///
+    /// **NARROWED 2026-08-08 — arity alone still over-reached, and NIO paid for it.**
+    /// `NIOAsyncWriterError(_code:file:line:)` has three parameters and an `_`-prefixed label,
+    /// and is perfectly sound: its `==` and `hash` key only on `_code`, and a code, a file and
+    /// a line constrain each other in no way at all. The rule declined it, costing one carrier
+    /// and four laws on `NIOCore` — measured and reported as the price of the first version,
+    /// then paid back here.
+    ///
+    /// What separates it from the true positives is not the storage parameter but **what the
+    /// OTHER parameters are**. In both witnesses they are *measurements of the storage*:
+    /// `count` is the size of `_bits`, `bounds` is a range of positions into `_base`. Those
+    /// must agree with the aggregate, and independent draws cannot make them agree. NIO's
+    /// `file` and `line` describe the source that raised the error, not the value beside them.
+    ///
+    /// So the rule needs **both halves**: a storage parameter *and* a parameter naming a
+    /// property that storage determines.
     static func takesPrivateStorage(_ initializer: InitializerSignature) -> Bool {
         guard initializer.parameters.count > 1 else { return false }
-        return initializer.parameters.contains { parameter in
-            parameter.label?.hasPrefix("_") ?? false
-        }
+        let labels = initializer.parameters.compactMap(\.label)
+        guard labels.contains(where: { $0.hasPrefix("_") }) else { return false }
+        return labels.contains { storageMeasurementLabels.contains($0) }
     }
+
+    /// Parameter labels naming a property that an aggregate **determines** — its size, or a
+    /// position within it.
+    ///
+    /// Beside a storage parameter these cannot be drawn independently: `count` must equal the
+    /// storage's count, `bounds` must lie inside its indices. That is the joint invariant a
+    /// derived generator breaks.
+    ///
+    /// Curated rather than inferred, in the same style and for the same reason as
+    /// `capacityHintLabels` — deciding whether one parameter's value is computable from
+    /// another's is static analysis this tier does not do, while the *names* library authors
+    /// give these things are stable and few. Each entry is a property OF a container rather
+    /// than a component of a value: an initializer taking a `count` beside private storage is
+    /// restating something the storage already says.
+    ///
+    /// The witnesses that set the list are `BitSet.Counted(_bits:count:)` and
+    /// `OrderedDictionary.Elements.SubSequence(_base:bounds:)`; the rest are the same idea
+    /// under the spellings the standard library and swift-collections use for it.
+    public static let storageMeasurementLabels: Set<String> = [
+        "count", "bounds", "range", "indices", "length", "size",
+        "startIndex", "endIndex", "offset", "position"
+    ]
 
     /// Every reason to pass over an initializer before trying to resolve its parameters.
     ///
