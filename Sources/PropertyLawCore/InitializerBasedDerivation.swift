@@ -38,18 +38,34 @@ public struct InitializerSignature: Sendable, Equatable {
     /// applies here too. See `InitializerPreconditionDetector.delegatesToSelf`.
     public let delegatesToSelf: Bool
 
+    /// Access level written on the initializer. **This is the field
+    /// `takesPrivateStorage` says it wants** — *"Access level would be the more
+    /// direct test, but `InitializerSignature` does not carry it."*
+    ///
+    /// It does not replace that rule, which catches a different defect: a
+    /// *public* `init(_bits:count:)` is perfectly callable and still derives a
+    /// wrong generator, because its parameters constrain each other. This
+    /// field catches the plain case that rule never covered — a `private init`
+    /// the emitted call simply cannot name.
+    ///
+    /// Defaults to `.implicit`, which is Swift's own default and preserves
+    /// every existing caller's behaviour.
+    public let accessLevel: AccessLevel
+
     public init(
         parameters: [InitializerParameter],
         isFailable: Bool = false,
         isThrowing: Bool = false,
         assertsPrecondition: Bool = false,
-        delegatesToSelf: Bool = false
+        delegatesToSelf: Bool = false,
+        accessLevel: AccessLevel = .implicit
     ) {
         self.parameters = parameters
         self.isFailable = isFailable
         self.isThrowing = isThrowing
         self.assertsPrecondition = assertsPrecondition
         self.delegatesToSelf = delegatesToSelf
+        self.accessLevel = accessLevel
     }
 }
 
@@ -245,7 +261,19 @@ extension DerivationStrategist {
     /// the cyclomatic-complexity cap. Worth having as one named predicate regardless: the
     /// list is the accumulated record of what a derived generator must not call, and each
     /// entry cost a measured failure to learn.
-    static func isDeclined(_ initializer: InitializerSignature, in shape: TypeShape) -> Bool {
+    static func isDeclined(
+        _ initializer: InitializerSignature,
+        in shape: TypeShape,
+        from emissionSite: EmissionSite = .separateFile
+    ) -> Bool {
+        // The emitted call has to name this initializer. A `private init` is
+        // scoped to the type's own body and a `fileprivate` one to its file,
+        // so neither is reachable from a generated test — the same rule the
+        // memberwise path applies to the *synthesized* initializer, applied
+        // here to a written one. Declining skips this initializer, not the
+        // type: a struct with a `private init` and a `public init` derives
+        // through the public one.
+        if !initializer.accessLevel.isCallable(from: emissionSite) { return true }
         if initializer.isFailable || initializer.isThrowing { return true }
         if initializer.parameters.isEmpty { return true }
         if initializer.parameters.count > memberwiseMemberLimit { return true }
@@ -284,11 +312,12 @@ extension DerivationStrategist {
     /// (not `.todo`) so `strategy(for:)` can fall through to later candidates.
     static func initializerBasedStrategy(
         for shape: TypeShape,
-        resolve: CustomTypeResolver = { _ in nil }
+        resolve: CustomTypeResolver = { _ in nil },
+        emissionSite: EmissionSite = .separateFile
     ) -> DerivationStrategy? {
         guard shape.kind == .struct else { return nil }
         for initializer in shape.initializers {
-            guard !isDeclined(initializer, in: shape) else { continue }
+            guard !isDeclined(initializer, in: shape, from: emissionSite) else { continue }
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {

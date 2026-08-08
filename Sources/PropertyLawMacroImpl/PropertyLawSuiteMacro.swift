@@ -50,7 +50,12 @@ public struct PropertyLawSuiteMacro: PeerMacro {
             initializers: target.initializers,
             enumCases: target.enumCases
         )
-        let strategy = DerivationStrategist.strategy(for: shape)
+        // `.sameFile`: a peer macro's expansion is attributed to the file the
+        // decoratee lives in, so a `fileprivate` stored property's synthesized
+        // memberwise init is in reach here even though it isn't for the
+        // discovery plugin's separate test file. `EndToEndTests` compiles a
+        // `fileprivate`-member type through this path as the proof.
+        let strategy = DerivationStrategist.strategy(for: shape, emissionSite: .sameFile)
         if case .todo(let reason) = strategy {
             context.diagnose(Diagnostic(
                 node: declaration,

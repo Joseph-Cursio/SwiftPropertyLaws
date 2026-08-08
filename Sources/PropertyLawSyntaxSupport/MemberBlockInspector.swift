@@ -32,7 +32,8 @@ public enum MemberBlockInspector {
                 let typeName = typeAnnotation.type.trimmedDescription
                 result.append(StoredMember(
                     name: identifier.identifier.text,
-                    typeName: typeName
+                    typeName: typeName,
+                    accessLevel: accessLevel(of: varDecl)
                 ))
             }
         }
@@ -90,7 +91,8 @@ public enum MemberBlockInspector {
                 isThrowing: effects?.throwsClause != nil,
                 assertsPrecondition: InitializerPreconditionDetector
                     .statesPrecondition(initDecl),
-                delegatesToSelf: InitializerPreconditionDetector.delegatesToSelf(initDecl)
+                delegatesToSelf: InitializerPreconditionDetector.delegatesToSelf(initDecl),
+                accessLevel: accessLevel(of: initDecl.modifiers)
             ))
         }
         return result
@@ -120,6 +122,35 @@ public enum MemberBlockInspector {
             }
         }
         return result
+    }
+
+    /// Declared access level of a stored property, or `.implicit` when no
+    /// access modifier is written.
+    ///
+    /// **Detail-carrying modifiers are skipped, and that is the whole
+    /// subtlety.** `private(set) var b: Int` writes `private` in the syntax but
+    /// restricts only the setter — the synthesized memberwise initializer
+    /// follows the *getter*, so `Type(a:b:)` stays `internal` and compiles from
+    /// another file. Verified against the compiler on 2026-08-08: a two-file
+    /// `swiftc -typecheck` accepts the cross-file call for `private(set)` and
+    /// rejects it for `fileprivate`. Reading the modifier name alone would
+    /// decline a derivable type on a spelling.
+    private static func accessLevel(of decl: VariableDeclSyntax) -> AccessLevel {
+        accessLevel(of: decl.modifiers)
+    }
+
+    /// Shared by the stored-property reader, the initializer reader, and
+    /// `ModuleScanner`'s type-declaration reader, so a `private` type, a
+    /// `private` init and a `private` member are all recognised by one rule —
+    /// including the `private(set)` exclusion, which each of them would
+    /// otherwise have to remember separately.
+    public static func accessLevel(of modifiers: DeclModifierListSyntax) -> AccessLevel {
+        for modifier in modifiers where modifier.detail == nil {
+            if let level = AccessLevel(modifierName: modifier.name.text) {
+                return level
+            }
+        }
+        return .implicit
     }
 
     private static func isStaticOrClass(_ decl: VariableDeclSyntax) -> Bool {

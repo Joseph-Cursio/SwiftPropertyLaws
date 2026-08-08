@@ -29,20 +29,55 @@ enum GeneratedFileEmitter {
     static func emit(
         target: String,
         map: ConformanceMap,
-        suppressions: Set<String> = []
+        suppressions: Set<String> = [],
+        extraImports: [String] = []
     ) -> String {
         var lines: [String] = []
         lines.append(contentsOf: headerLines(target: target, map: map))
         lines.append("")
         lines.append("import Testing")
         lines.append("import PropertyLawKit")
-        // Extra imports required by derived generators (e.g. `Foundation`
-        // for a `Date` member). Sorted for deterministic output; empty for
-        // stdlib-only targets, so existing generated files are unchanged.
-        let extraImports = map.entries.reduce(into: Set<String>()) {
+        // **The module under test, imported `@testable`.** Without this line
+        // the file names types it never imported and nothing it emits compiles
+        // — the suites went out referencing `Foo` with only `Testing` and
+        // `PropertyLawKit` in scope. Measured across swift-collections,
+        // swift-numerics and swift-async-algorithms: 180 detected types, none
+        // of them nameable.
+        //
+        // `@testable` rather than a plain import because roughly half those
+        // types are `internal` (20 public / 19 not, on the unique names in that
+        // corpus), and a plain import would reach only the public half while
+        // silently dropping the rest at compile time. `@testable` is also what
+        // the strategist's `.separateFile` reachability assumes — it promotes
+        // `internal`, which is exactly where that table draws its line.
+        //
+        // Two shapes this does not rescue, both by construction: `private` and
+        // `fileprivate` types, which `@testable` cannot promote (the scanner
+        // declines to emit a suite for them — see `ConformanceMap`), and a
+        // `--output` path inside the scanned target itself, where the module
+        // would be importing itself. The default output path
+        // (`Tests/<Target>Tests/`) is a separate target and does not hit that.
+        lines.append("@testable import \(target)")
+        // Modules that *declare* types this file names. Plain `import`, not
+        // `@testable`: a foreign module's `internal` API is out of reach anyway
+        // (`skipReason` drops those), and `@testable` across a package boundary
+        // needs the dependency built with testability, which is not ours to
+        // assume.
+        let foreignModules = Set(map.entries.compactMap(\.declaringModule))
+            .subtracting([target])
+        // Imports required by derived generators (e.g. `Foundation` for a
+        // `Date` member), plus any the caller asked for with `--extra-import`
+        // — the opt-in path for a module that *supplies* generators, such as
+        // `PropertyLawSyntax` answering `Syntax.gen()`. Not inferred, because
+        // guessing an import for an opt-in product breaks every project that
+        // does not depend on it.
+        let generatorImports = map.entries.reduce(into: Set<String>()) {
             $0.formUnion($1.derivationStrategy.requiredImports)
         }
-        for module in extraImports.sorted() {
+        // Sorted and unioned for deterministic output; empty for a
+        // stdlib-only target with no context, so existing files are unchanged.
+        for module in foreignModules.union(generatorImports)
+            .union(extraImports).subtracting([target]).sorted() {
             lines.append("import \(module)")
         }
         for entry in map.entries {
@@ -69,6 +104,16 @@ enum GeneratedFileEmitter {
                 lines.append("//   - \(failure.filePath): \(failure.message)")
             }
         }
+        // Same rationale as the parse-failure block: a type that disappears
+        // from a generated file with no note reads as "nothing to test".
+        if !map.skippedTypes.isEmpty {
+            lines.append("//")
+            lines.append("// Detected but skipped — a suite for these would not compile "
+                + "(\(map.skippedTypes.count)):")
+            for type in map.skippedTypes {
+                lines.append("//   - \(type.typeName): \(type.explanation)")
+            }
+        }
         return lines
     }
 
@@ -89,7 +134,7 @@ enum GeneratedFileEmitter {
             lines.append("// No emit-able stdlib conformance recognized.")
             return lines
         }
-        lines.append("@Suite struct \(entry.typeName)PropertyLawTests {")
+        lines.append("@Suite struct \(suiteName(for: entry.typeName)) {")
         let generatorExpr = GeneratorExpressionEmitter.expression(
             typeName: entry.typeName,
             strategy: entry.derivationStrategy
@@ -97,7 +142,13 @@ enum GeneratedFileEmitter {
         let orderedConformances = testEmissionOrder.filter { entry.conformances.contains($0) }
         for (index, conformance) in orderedConformances.enumerated() {
             if index > 0 { lines.append("") }
-            let suppressionKey = "\(conformance.testNameFragment)_\(entry.typeName)"
+            // Same spelling as the emitted `@Test func`, via the one converter
+            // — a marker the user copies out of the file has to match the test
+            // it suppresses, and a nested type's qualified name would otherwise
+            // give the two different strings.
+            let suppressionKey = PropertyLawTestStub.testName(
+                conformance: conformance, typeName: entry.typeName
+            )
             if suppressions.contains(suppressionKey) {
                 lines.append(contentsOf: suppressedTestLines(
                     suppressionKey: suppressionKey,
@@ -114,6 +165,12 @@ enum GeneratedFileEmitter {
         }
         lines.append("}")
         return lines
+    }
+
+    /// `BitSet.Counted` → `BitSet_CountedPropertyLawTests`. The suite name is
+    /// an identifier; the type reference inside it stays qualified.
+    private static func suiteName(for typeName: String) -> String {
+        "\(QualifiedTypeName.identifier(for: typeName))PropertyLawTests"
     }
 
     private static func provenanceComment(for entry: ConformanceMap.Entry) -> String {

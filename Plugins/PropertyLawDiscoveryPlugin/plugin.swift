@@ -44,6 +44,16 @@ struct PropertyLawDiscoveryPlugin: CommandPlugin {
         }
         toolArgs.append("--source-files")
         toolArgs.append(contentsOf: sourceFiles)
+        // Dependency sources, for declarations only. Without them a type this
+        // target merely *extends* is invisible — no members, no initializers,
+        // not even its kind — and its diagnostic can only say so. Measured on
+        // swift-syntax: `SwiftParser` had 114 such types scanned alone and 9
+        // with its dependencies as context.
+        let contextFiles = dependencySourceFilePaths(of: resolvedTarget)
+        if !contextFiles.isEmpty {
+            toolArgs.append("--context-files")
+            toolArgs.append(contentsOf: contextFiles)
+        }
         process.arguments = toolArgs
         let status: Int32 = try await withCheckedThrowingContinuation { continuation in
             process.terminationHandler = { proc in
@@ -67,6 +77,50 @@ struct PropertyLawDiscoveryPlugin: CommandPlugin {
         let testsDir = context.package.directory
             .appending(["Tests", "\(target.name)Tests"])
         return testsDir.appending(["PropertyLawTests.generated.swift"]).string
+    }
+
+    /// Every source file of every target this one depends on, transitively.
+    ///
+    /// Deduplicated and sorted: a diamond in the dependency graph would
+    /// otherwise hand the same file to the scanner twice, and the tool's
+    /// regeneration-as-diff guarantee needs a stable order.
+    ///
+    /// **This costs real time** — the scanner parses each context file. Measured
+    /// on `SwiftParser` (46 target files, 102 context files): 3.1s → 17.9s.
+    /// Discovery is an on-demand pass rather than a build step, so the trade is
+    /// accurate diagnostics and more derivations for a slower explicit run.
+    private func dependencySourceFilePaths(of target: Target) -> [String] {
+        var seen: Set<String> = [target.name]
+        var files: Set<String> = []
+
+        func visit(_ dependencies: [TargetDependency]) {
+            for dependency in dependencies {
+                switch dependency {
+                case .target(let dependencyTarget):
+                    guard seen.insert(dependencyTarget.name).inserted else { continue }
+                    files.formUnion(attributed(dependencyTarget))
+                    visit(dependencyTarget.dependencies)
+                case .product(let product):
+                    for productTarget in product.targets {
+                        guard seen.insert(productTarget.name).inserted else { continue }
+                        files.formUnion(attributed(productTarget))
+                        visit(productTarget.dependencies)
+                    }
+                @unknown default:
+                    continue
+                }
+            }
+        }
+        visit(target.dependencies)
+        return files.sorted()
+    }
+
+    /// `Module=path` entries, so the tool can tell the emitter which module to
+    /// `import` for a type this target only extends. A bare path would leave
+    /// the emitter naming a foreign type it never imported — the same defect
+    /// the `@testable import <Target>` line was added to fix, one module over.
+    private func attributed(_ target: Target) -> [String] {
+        sourceFilePaths(in: target).map { "\(target.name)=\($0)" }
     }
 
     private func sourceFilePaths(in target: Target) -> [String] {

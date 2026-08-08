@@ -29,6 +29,15 @@ public final class GeneratorResolver {
     /// universe. Resolution refuses these — see `init(types:aliases:)`.
     private let ambiguousNames: Set<String>
 
+    /// Qualified shapes indexed by their last path component, so an
+    /// unqualified member reference (`let x: Counted`) can reach
+    /// `BitSet.Counted`. Excludes leaves that collide with each other or with a
+    /// top-level type of the same name.
+    private let shapesByLeafName: [String: TypeShape]
+
+    /// Leaf names carried by two or more distinct qualified shapes.
+    private let ambiguousLeafNames: Set<String>
+
     /// User-declared typealiases collected from the scanned source, mapping
     /// the alias name to its underlying type spelling (e.g. `UserID` → `Int`).
     private let aliases: [String: String]
@@ -101,8 +110,42 @@ public final class GeneratorResolver {
             }
             byName[shape.name] = shape
         }
+        // Leaf index, for the other half of the qualified-name bargain. Once a
+        // scanner records `BitSet.Counted`, a member written `let x: Counted`
+        // inside `BitSet` stops matching any key — Swift resolves that name
+        // through lexical scope, which a flat universe does not model. Without
+        // this index, qualifying names would *cost* derivations it was meant to
+        // gain.
+        //
+        // The ambiguity rule is the same one, applied to leaves: a leaf carried
+        // by two or more distinct shapes resolves to nothing rather than to
+        // whichever was scanned first. That is the `Kind` collision the header
+        // above describes, and qualifying the keys does not make guessing safe
+        // — it only makes the guess look better informed.
+        var byLeaf: [String: TypeShape] = [:]
+        var ambiguousLeaves: Set<String> = []
+        for shape in types {
+            guard let leaf = shape.name.split(separator: ".").last.map(String.init),
+                  leaf != shape.name else { continue }
+            if let existing = byLeaf[leaf] {
+                if existing != shape { ambiguousLeaves.insert(leaf) }
+                continue
+            }
+            byLeaf[leaf] = shape
+        }
+        // A top-level type always wins its own leaf — `struct Counted` and
+        // `Foo.Counted` in one module is not a collision to arbitrate, because
+        // an unqualified `Counted` in source means the top-level one everywhere
+        // except inside `Foo`. **That fall-out is guaranteed by lookup order,
+        // not by pruning the index**: `resolve` consults `shapesByName` first
+        // and only reaches the leaf map on a miss, so a leaf that shadows a
+        // top-level name is unreachable. An earlier version deleted those
+        // entries here; a mutant that removed the deletion changed nothing,
+        // which is how the line was found to be dead.
         self.shapesByName = byName
         self.ambiguousNames = ambiguous
+        self.shapesByLeafName = byLeaf
+        self.ambiguousLeafNames = ambiguousLeaves
         self.aliases = aliases
     }
 
@@ -160,11 +203,21 @@ public final class GeneratorResolver {
             memo[name] = result
             return result
         }
-        guard let shape = shapesByName[name] else { return nil }   // external / unknown
+        guard let shape = shapesByName[name] ?? unambiguousLeafMatch(for: name) else {
+            return nil   // external / unknown / ambiguous leaf
+        }
 
         let result = derive(shape, visiting: visiting)
         memo[name] = result
         return result
+    }
+
+    /// The nested type an unqualified reference names, when exactly one
+    /// qualified shape carries that leaf. Ambiguous leaves resolve to nothing,
+    /// matching the full-name rule.
+    private func unambiguousLeafMatch(for name: String) -> TypeShape? {
+        guard !name.contains("."), !ambiguousLeafNames.contains(name) else { return nil }
+        return shapesByLeafName[name]
     }
 
     private func derive(

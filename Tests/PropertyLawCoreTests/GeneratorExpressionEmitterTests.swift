@@ -18,15 +18,29 @@ struct GeneratorExpressionEmitterTests {
         #expect(expr == "Widget.gen()")
     }
 
-    @Test func todoStrategyAlsoEmitsTypeNameDotGen() {
-        // `.todo` shares the `<TypeName>.gen()` shape so the user gets a
-        // compile error pointing at the missing `gen()` symbol — the
-        // macro's diagnostic surfaces the why-it's-todo context.
-        let expr = GeneratorExpressionEmitter.expression(
+    /// **`.todo` and `.userGen` used to render identically**, and this test
+    /// asserted exactly that. The call still has the `<TypeName>.gen()` shape,
+    /// so the missing-symbol compile error still points where it should — but a
+    /// reader of the generated file could not tell a deliberate compile error
+    /// from a working user generator, and neither could anything grepping it.
+    /// That is not academic: a survey of emitted output counted `.userGen`
+    /// entries as unresolved for exactly this reason.
+    @Test func todoIsDistinguishableFromUserGen() {
+        let todo = GeneratorExpressionEmitter.expression(
             typeName: "Mystery",
             strategy: .todo(reason: "no recognized strategy")
         )
-        #expect(expr == "Mystery.gen()")
+        let userGen = GeneratorExpressionEmitter.expression(
+            typeName: "Mystery",
+            strategy: .userGen
+        )
+        // Same call, so the compile error still lands on the missing symbol…
+        #expect(todo.hasPrefix("Mystery.gen()"))
+        #expect(userGen == "Mystery.gen()")
+        // …and the two are no longer the same string.
+        #expect(todo != userGen)
+        #expect(todo.contains(GeneratorExpressionEmitter.todoMarker))
+        #expect(userGen.contains("//") == false)
     }
 
     /// Until now this pinned `"Gen<Side>.element(of: Side.allCases)"` — byte-exact,

@@ -4,13 +4,6 @@ import PropertyLawSyntaxSupport
 import SwiftSyntax
 import SwiftParser
 
-// One private struct + one private static helper per syntactic concern
-// the scanner aggregates (inheritance, gen detection, witnesses, member
-// functions, stored members, user inits) — the enum body grows linearly
-// with the discovery feature surface. Disable is paired with an explicit
-// re-enable at end of file.
-// swiftlint:disable type_body_length
-
 /// Walks every `.swift` file in a target and aggregates type declarations
 /// + their inheritance clauses (including extensions in other files) into
 /// a single `ConformanceMap`.
@@ -20,51 +13,142 @@ import SwiftParser
 /// can surface in the generated header.
 enum ModuleScanner {
 
-    static func scan(sourceFiles: [String]) -> ConformanceMap {
+    /// - Parameters:
+    ///   - sourceFiles: the target's own sources. Types recorded from these get
+    ///     an emitted suite.
+    ///   - contextFiles: sources of the target's **dependencies**. Read for
+    ///     declarations only — they enrich the resolver universe and tell the
+    ///     diagnostics what a type actually is, but never produce a suite of
+    ///     their own.
+    ///
+    /// **Why the split exists.** A per-target scan reaches types it can only see
+    /// *extended*: `AccessorBlockSyntax` is declared in `SwiftSyntax` and
+    /// extended in `SwiftParser`, so scanning `SwiftParser` alone knows nothing
+    /// about it — no members, no initializers, not even its kind. Measured on
+    /// swift-syntax: **114 of `SwiftParser`'s 199 detected types had no
+    /// declaration in the target.** Handing the scan its dependencies' sources
+    /// drops that to 46, and the rest are stdlib or out-of-scan modules.
+    ///
+    /// Merging the two lists into one would be the wrong fix: it also emits a
+    /// suite for every dependency type, so `SwiftParser`'s generated file would
+    /// carry 842 suites instead of 199 and duplicate every one that
+    /// `SwiftSyntax`'s own run already emits. Context is for *knowing*, not for
+    /// testing.
+    static func scan(
+        sourceFiles: [String],
+        contextFiles: [String] = []
+    ) -> ConformanceMap {
         var perType: [String: TypeAggregate] = [:]
         var failures: [ConformanceMap.ParseFailure] = []
         var topLevelFunctions: [FunctionSignature] = []
         var aliases: [String: String] = [:]
+        var parsedFiles: [SourceFileSyntax] = []
 
-        // Sorted input → sorted scan order → deterministic output.
-        for filePath in sourceFiles.sorted() {
+        // Sorted input → sorted scan order → deterministic output. Context
+        // files are walked first so a target extension always lands on an
+        // aggregate that already knows the declaration.
+        for file in orderedFiles(sourceFiles: sourceFiles, contextFiles: contextFiles) {
             let source: String
             do {
-                source = try String(contentsOfFile: filePath, encoding: .utf8)
+                source = try String(contentsOfFile: file.path, encoding: .utf8)
             } catch {
                 failures.append(ConformanceMap.ParseFailure(
-                    filePath: filePath,
+                    filePath: file.path,
                     message: "could not read file: \(error.localizedDescription)"
                 ))
                 continue
             }
             let parsed = Parser.parse(source: source)
-            let converter = SourceLocationConverter(fileName: filePath, tree: parsed)
-            // M5 module-scope round-trip discovery — collect top-level
-            // free functions across files for the suggester's module
-            // pairing pass.
+            parsedFiles.append(parsed)
             topLevelFunctions.append(contentsOf: RoundTripFinder.findTopLevel(in: parsed))
-            for statement in parsed.statements {
-                if let alias = statement.item.as(TypeAliasDeclSyntax.self) {
-                    aliases[alias.name.text] = alias.initializer.value.trimmedDescription
-                }
-                accumulate(
-                    statement: statement.item,
-                    context: RecordingContext(filePath: filePath, converter: converter),
-                    into: &perType
-                )
-            }
+            absorb(parsed, from: file, into: &perType, aliases: &aliases)
         }
         let shapes = makeShapes(from: perType)
+        // Protocols that refine `Sendable`, so a type conforming to one of them
+        // is not mistaken for a non-Sendable public type. See `SendableProtocols`.
+        let sendableProtocols = SendableProtocols.refining(in: parsedFiles)
         return ConformanceMap(
-            entries: makeEntries(from: perType, shapes: shapes, aliases: aliases),
+            entries: makeEntries(
+                from: perType, shapes: shapes, aliases: aliases,
+                sendableProtocols: sendableProtocols
+            ),
             parseFailures: failures,
+            skippedTypes: skippedTypes(in: perType, sendableProtocols: sendableProtocols),
             witnesses: makeWitnesses(from: perType),
             memberFunctions: makeMemberFunctions(from: perType),
             topLevelFunctions: topLevelFunctions,
             shapesByName: shapes,
             aliases: aliases
         )
+    }
+
+    /// Walks one parsed file's top-level statements into the aggregate.
+    private static func absorb(
+        _ parsed: SourceFileSyntax,
+        from file: ScannedFile,
+        into perType: inout [String: TypeAggregate],
+        aliases: inout [String: String]
+    ) {
+        let converter = SourceLocationConverter(fileName: file.path, tree: parsed)
+        for statement in parsed.statements {
+            if let alias = statement.item.as(TypeAliasDeclSyntax.self) {
+                aliases[alias.name.text] = alias.initializer.value.trimmedDescription
+            }
+            accumulate(
+                statement: statement.item,
+                context: RecordingContext(
+                    filePath: file.path,
+                    converter: converter,
+                    isContext: file.isContext,
+                    moduleName: file.module
+                ),
+                into: &perType
+            )
+        }
+    }
+
+    /// Context first, then target sources — both sorted, so the scan order and
+    /// therefore the output are deterministic.
+    ///
+    /// Context-first is load-bearing when a name is declared on both sides:
+    /// `record` lets the last non-empty member list win, so target-last means
+    /// the target's own declaration survives.
+    static func orderedFiles(
+        sourceFiles: [String],
+        contextFiles: [String]
+    ) -> [ScannedFile] {
+        contextFiles.sorted().map(attributed)
+            .map { ScannedFile(path: $0.path, module: $0.module, isContext: true) }
+            + sourceFiles.sorted().map {
+                ScannedFile(path: $0, module: nil, isContext: false)
+            }
+    }
+
+    /// One file the scan will read, and what the scan knows about where it came
+    /// from.
+    struct ScannedFile {
+        let path: String
+        /// Module attributed by the caller (`Module=path`); `nil` for target
+        /// files and unattributed context.
+        let module: String?
+        let isContext: Bool
+    }
+
+    /// Splits a `Module=path` context entry.
+    ///
+    /// A bare path (no `=`) is kept unattributed, so a caller that does not
+    /// know or care which module a file belongs to keeps working. The split is
+    /// on the **first** `=` and only when the left side looks like a module
+    /// name — a path may legitimately contain `=`, and misreading one as a
+    /// module would silently emit an import for a directory.
+    static func attributed(_ entry: String) -> (path: String, module: String?) {
+        guard let separator = entry.firstIndex(of: "=") else { return (entry, nil) }
+        let candidate = String(entry[entry.startIndex ..< separator])
+        let isModuleName = !candidate.isEmpty
+            && !candidate.contains("/")
+            && !candidate.contains(".")
+        guard isModuleName else { return (entry, nil) }
+        return (String(entry[entry.index(after: separator)...]), candidate)
     }
 
     private static func makeWitnesses(
@@ -98,6 +182,17 @@ enum ModuleScanner {
         /// `nil` if only extensions were seen (rare; extensions of types
         /// declared in other modules).
         var typeKind: TypeShape.Kind?
+        /// `true` once any *target* file declared or extended this type. Only
+        /// these become emitted entries; a type known solely from context is
+        /// somebody else's to test.
+        var seenInTarget: Bool = false
+        /// Module whose context files carried the **primary declaration**, when
+        /// that was not the target. Drives the foreign-type import and the
+        /// foreign-access skip rule.
+        var declaringModule: String?
+        /// Access level of the primary declaration. `.implicit` until a
+        /// primary decl is seen — an extension never restates it.
+        var accessLevel: AccessLevel = .implicit
         var hasUserGen: Bool = false
         /// Stored properties from the primary decl (extensions can't
         /// add stored properties in Swift, so only the primary decl
@@ -127,22 +222,38 @@ enum ModuleScanner {
 
     /// Bundles file-level scanning context so `recordType` stays under
     /// the function-parameter-count lint.
-    private struct RecordingContext {
+    struct RecordingContext {
         let filePath: String
         let converter: SourceLocationConverter
+        /// `true` for a dependency's sources — recorded for knowledge, never
+        /// for emission. See `scan(sourceFiles:contextFiles:)`.
+        let isContext: Bool
+        /// Module a context file belongs to, when the caller attributed one
+        /// (`--context-files SwiftSyntax=/path/File.swift`). `nil` for target
+        /// files and for unattributed context.
+        let moduleName: String?
     }
 
     private static func makeEntries(
         from perType: [String: TypeAggregate],
         shapes shapesByName: [String: TypeShape],
-        aliases: [String: String]
+        aliases: [String: String],
+        sendableProtocols: Set<String>
     ) -> [ConformanceMap.Entry] {
         // The whole-module type universe (built once in `scan`) lets nested
         // custom-type members/parameters resolve (Tier 3). Every scanned type
         // is included — even non-conformance-bearing helper types — so a
         // referenced type still resolves when it isn't itself a test target.
         let resolver = GeneratorResolver(types: Array(shapesByName.values), aliases: aliases)
-        return perType.keys.sorted().map { typeName -> ConformanceMap.Entry in
+        // Skipped types stay in `shapesByName` above — a `private` helper
+        // struct is still a fine *member* type for a public type's generator,
+        // and dropping it from the resolver universe would cost derivations
+        // that compile perfectly well. Only the emitted suite goes away.
+        let usable = perType.keys.sorted().filter {
+            perType[$0]!.seenInTarget
+                && skipReason(for: perType[$0]!, sendableProtocols: sendableProtocols) == nil
+        }
+        return usable.map { typeName -> ConformanceMap.Entry in
             let aggregate = perType[typeName]!
             let raw = KnownProtocol.set(from: aggregate.inheritedNames)
             let shape = shapesByName[typeName]!
@@ -155,164 +266,16 @@ enum ModuleScanner {
                 derivationStrategy: DerivationStrategist.strategy(
                     for: shape,
                     resolve: resolver.customTypeGenerator
-                )
-            )
-        }
-    }
-
-    private static func accumulate(
-        statement: CodeBlockItemSyntax.Item,
-        context: RecordingContext,
-        into perType: inout [String: TypeAggregate]
-    ) {
-        if let primary = primaryDecl(from: statement) {
-            record(
-                RecordRequest(
-                    name: primary.name,
-                    inheritance: primary.inheritance,
-                    node: primary.node,
-                    kind: .primary,
-                    typeKind: primary.kind,
-                    hasUserGen: primary.hasUserGen,
-                    storedMembers: primary.storedMembers,
-                    hasUserInit: primary.hasUserInit,
-                    initializers: primary.initializers,
-                    enumCases: primary.enumCases,
-                    witnesses: primary.witnesses,
-                    memberFunctions: primary.memberFunctions
                 ),
-                context: context,
-                into: &perType
-            )
-            return
-        }
-        guard let extensionDecl = statement.as(ExtensionDeclSyntax.self) else { return }
-        // Skip conditional conformances (`extension Foo: Equatable where T: ...`)
-        // — they're not unconditional, so emitting an unconditional check
-        // would be wrong. PRD §4.4 generic conformances handle the bound
-        // case via an explicit @LawGenerator(bindings:) annotation, M3 scope.
-        guard extensionDecl.genericWhereClause == nil else { return }
-        guard let typeName = topLevelExtendedTypeName(of: extensionDecl) else { return }
-        record(
-            RecordRequest(
-                name: typeName,
-                inheritance: extensionDecl.inheritanceClause,
-                node: Syntax(extensionDecl),
-                kind: .extension,
-                typeKind: nil,  // extension doesn't redefine the type kind
-                hasUserGen: hasGenMethod(in: extensionDecl.memberBlock),
-                // Extensions can't add stored properties or suppress the
-                // synthesized memberwise init — both stay empty/false here.
-                storedMembers: [],
-                hasUserInit: false,
-                initializers: [],
-                enumCases: [],
-                witnesses: WitnessFinder.find(in: extensionDecl.memberBlock),
-                memberFunctions: RoundTripFinder.findMembers(in: extensionDecl.memberBlock)
-            ),
-            context: context,
-            into: &perType
-        )
-    }
-
-    /// Unifies the four type-decl shapes a peer macro / scanner can see —
-    /// keeps `accumulate` free of repeated `if let` ladders.
-    private struct PrimaryDecl {
-        let name: String
-        let kind: TypeShape.Kind
-        let inheritance: InheritanceClauseSyntax?
-        let node: Syntax
-        let hasUserGen: Bool
-        let storedMembers: [StoredMember]
-        let hasUserInit: Bool
-        let initializers: [InitializerSignature]
-        let enumCases: [EnumCase]
-        let witnesses: WitnessSet
-        let memberFunctions: [FunctionSignature]
-    }
-
-    private static func primaryDecl(
-        from statement: CodeBlockItemSyntax.Item
-    ) -> PrimaryDecl? {
-        if let decl = statement.as(StructDeclSyntax.self) {
-            return makePrimaryDecl(
-                name: decl.name.text,
-                kind: .struct,
-                inheritance: decl.inheritanceClause,
-                node: Syntax(decl),
-                memberBlock: decl.memberBlock
+                declaringModule: aggregate.declaringModule
             )
         }
-        if let decl = statement.as(ClassDeclSyntax.self) {
-            return makePrimaryDecl(
-                name: decl.name.text,
-                kind: .class,
-                inheritance: decl.inheritanceClause,
-                node: Syntax(decl),
-                memberBlock: decl.memberBlock
-            )
-        }
-        if let decl = statement.as(EnumDeclSyntax.self) {
-            return makePrimaryDecl(
-                name: decl.name.text,
-                kind: .enum,
-                inheritance: decl.inheritanceClause,
-                node: Syntax(decl),
-                memberBlock: decl.memberBlock
-            )
-        }
-        if let decl = statement.as(ActorDeclSyntax.self) {
-            return makePrimaryDecl(
-                name: decl.name.text,
-                kind: .actor,
-                inheritance: decl.inheritanceClause,
-                node: Syntax(decl),
-                memberBlock: decl.memberBlock
-            )
-        }
-        return nil
-    }
-
-    /// Single funnel that builds a `PrimaryDecl` from any of the four
-    /// type-decl shapes — keeps the per-kind branches above small and
-    /// makes the stored-member / user-init scan rules visible in one
-    /// place. Stored members and user-init detection are gated on
-    /// `kind == .struct` because PRD §5.7 Strategy 3 supports structs
-    /// only.
-    private static func makePrimaryDecl(
-        name: String,
-        kind: TypeShape.Kind,
-        inheritance: InheritanceClauseSyntax?,
-        node: Syntax,
-        memberBlock: MemberBlockSyntax
-    ) -> PrimaryDecl {
-        PrimaryDecl(
-            name: name,
-            kind: kind,
-            inheritance: inheritance,
-            node: node,
-            hasUserGen: hasGenMethod(in: memberBlock),
-            storedMembers: kind == .struct
-                ? MemberBlockInspector.storedMembers(in: memberBlock)
-                : [],
-            hasUserInit: kind == .struct
-                ? MemberBlockInspector.hasUserInit(in: memberBlock)
-                : false,
-            initializers: kind == .struct
-                ? MemberBlockInspector.initializers(in: memberBlock)
-                : [],
-            enumCases: kind == .enum
-                ? MemberBlockInspector.enumCases(in: memberBlock)
-                : [],
-            witnesses: WitnessFinder.find(in: memberBlock),
-            memberFunctions: RoundTripFinder.findMembers(in: memberBlock)
-        )
     }
 
     /// True when `memberBlock` declares a `static func gen()` method.
     /// The plugin sees the whole module so this catches gen() defined in
     /// the primary body OR in any extension.
-    private static func hasGenMethod(in memberBlock: MemberBlockSyntax) -> Bool {
+    static func hasGenMethod(in memberBlock: MemberBlockSyntax) -> Bool {
         for member in memberBlock.members {
             guard let funcDecl = member.decl.as(FunctionDeclSyntax.self) else { continue }
             guard funcDecl.name.text == "gen" else { continue }
@@ -326,8 +289,9 @@ enum ModuleScanner {
 
     /// Single-record-call payload — keeps `record` under the
     /// function-parameter-count lint.
-    private struct RecordRequest {
+    struct RecordRequest {
         let name: String
+        let accessLevel: AccessLevel
         let inheritance: InheritanceClauseSyntax?
         let node: Syntax
         let kind: ConformanceMap.ProvenanceKind
@@ -341,12 +305,15 @@ enum ModuleScanner {
         let memberFunctions: [FunctionSignature]
     }
 
-    private static func record(
+    static func record(
         _ request: RecordRequest,
         context: RecordingContext,
         into perType: inout [String: TypeAggregate]
     ) {
         var aggregate = perType[request.name] ?? TypeAggregate()
+        // Latches: one target file mentioning the type is enough to make it
+        // this target's to test, however many context files also describe it.
+        if !context.isContext { aggregate.seenInTarget = true }
         if let inheritance = request.inheritance {
             for inheritedType in inheritance.inheritedTypes {
                 aggregate.inheritedNames.append(inheritedType.type.trimmedDescription)
@@ -361,6 +328,11 @@ enum ModuleScanner {
         // Set typeKind from the primary decl, never from an extension.
         if let primaryKind = request.typeKind {
             aggregate.typeKind = primaryKind
+            aggregate.accessLevel = request.accessLevel
+            // Only a context declaration attributes a module; a target
+            // declaration clears it, so a name declared on both sides is
+            // treated as the target's (matching the walk order).
+            aggregate.declaringModule = context.isContext ? context.moduleName : nil
         }
         // hasUserGen latches once true — gen() seen anywhere wins.
         if request.hasUserGen { aggregate.hasUserGen = true }
@@ -389,5 +361,3 @@ enum ModuleScanner {
         return typeText.split(separator: ".").last.map(String.init)
     }
 }
-
-// swiftlint:enable type_body_length
