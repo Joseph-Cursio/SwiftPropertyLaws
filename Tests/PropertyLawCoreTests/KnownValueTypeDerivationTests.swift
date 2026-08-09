@@ -151,4 +151,49 @@ struct KnownValueTypeDerivationTests {
         )
         #expect(DerivationStrategist.strategy(for: shape).requiredImports == [])
     }
+
+    /// `Unicode.Scalar` was an enum-payload blocker on the swift.org corpus and
+    /// the only *stdlib* one in the tail. A mutant removing its arm from
+    /// `knownValueGenerator` survived until this test existed — nothing
+    /// asserted that a scalar-typed member actually derives.
+    @Test("a Unicode.Scalar member derives")
+    func unicodeScalarMemberDerives() {
+        let shape = TypeShape(
+            name: "Glyph",
+            kind: .struct,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            storedMembers: [
+                StoredMember(name: "scalar", typeName: "Unicode.Scalar"),
+                StoredMember(name: "legacy", typeName: "UnicodeScalar")
+            ]
+        )
+        guard case .memberwiseArbitrary(let members) = DerivationStrategist.strategy(for: shape) else {
+            Issue.record("expected memberwise derivation")
+            return
+        }
+        #expect(members.allSatisfy {
+            $0.generatorExpression == "Gen<Unicode.Scalar>.unicodeScalar()"
+        })
+        // Stdlib, not Foundation — no extra import beyond the emitters' default.
+        #expect(members.allSatisfy { $0.requiredImports.isEmpty })
+    }
+
+    /// The enum path is the one the corpus measured, so pin it too.
+    @Test("a Unicode.Scalar enum payload derives")
+    func unicodeScalarPayloadDerives() {
+        let shape = TypeShape(
+            name: "Token",
+            kind: .enum,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            enumCases: [EnumCase(name: "scalar", associatedValues: [
+                InitializerParameter(label: nil, typeName: "Unicode.Scalar")
+            ])]
+        )
+        guard case .enumCases = DerivationStrategist.strategy(for: shape) else {
+            Issue.record("expected case enumeration")
+            return
+        }
+    }
 }

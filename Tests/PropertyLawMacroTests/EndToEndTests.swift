@@ -34,3 +34,23 @@ struct EndToEndCoordinate: Equatable, Hashable, Sendable, CustomStringConvertibl
 
     var description: String { "(\(easting), \(northing))" }
 }
+
+/// The `.sameFile` half of the access-level rule, proved the only way it can
+/// be: by compiling.
+///
+/// A peer macro's expansion is attributed to the decoratee's file, so the
+/// `fileprivate` memberwise initializer this type gets is in reach — which is
+/// why `PropertyLawSuiteMacro` passes `emissionSite: .sameFile` and why the
+/// strategist takes a site at all instead of declining `fileprivate`
+/// everywhere. Declining it would have been a regression against exactly this
+/// shape, and a string-comparison expansion test could not have told the
+/// difference. The discovery plugin, writing into another file, correctly
+/// reports `.todo` for the same declaration.
+///
+/// `private` is deliberately not exercised here — there is no version of this
+/// type that compiles, which is the point of the rule.
+@PropertyLawSuite
+struct EndToEndFileprivateMember: Equatable, Hashable, Sendable {
+    let visible: Int
+    fileprivate let hidden: Int
+}

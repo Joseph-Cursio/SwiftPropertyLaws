@@ -118,186 +118,6 @@ public struct MemberSpec: Sendable, Equatable {
     }
 }
 
-/// Recognized stdlib raw types for `RawRepresentable` derivation. Each
-/// case maps to a generator the emitter can spell out inline.
-public enum RawType: String, Sendable, Equatable, CaseIterable {
-    case int = "Int"
-    case string = "String"
-    case bool = "Bool"
-    case double = "Double"
-    case float = "Float"
-    case int8 = "Int8"
-    case int16 = "Int16"
-    case int32 = "Int32"
-    case int64 = "Int64"
-    case uint = "UInt"
-    case uint8 = "UInt8"
-    case uint16 = "UInt16"
-    case uint32 = "UInt32"
-    case uint64 = "UInt64"
-
-    public init?(typeName: String) {
-        guard let match = RawType.allCases.first(where: { $0.rawValue == typeName }) else {
-            return nil
-        }
-        self = match
-    }
-
-    /// `swift-property-based` generator factory expression for this raw
-    /// type. The emitter inlines this into the lifted `compactMap`. Names
-    /// match `Gen+Int.swift` / `Gen+Float.swift` / `Gen.swift` / `Gen+String.swift`
-    /// in upstream `swift-property-based` 1.2.x.
-    public var generatorExpression: String {
-        switch self {
-        case .int: return "Gen<Int>.int()"
-        case .string: return "Gen<Character>.letterOrNumber.string(of: 0...8)"
-        case .bool: return "Gen<Bool>.bool()"
-        case .double: return "Gen<Double>.double(in: -1_000_000...1_000_000)"
-        case .float: return "Gen<Float>.float(in: -1_000_000...1_000_000)"
-        case .int8: return "Gen<Int8>.int8()"
-        case .int16: return "Gen<Int16>.int16()"
-        case .int32: return "Gen<Int32>.int32()"
-        case .int64: return "Gen<Int64>.int64()"
-        case .uint: return "Gen<UInt>.uint()"
-        case .uint8: return "Gen<UInt8>.uint8()"
-        case .uint16: return "Gen<UInt16>.uint16()"
-        case .uint32: return "Gen<UInt32>.uint32()"
-        case .uint64: return "Gen<UInt64>.uint64()"
-        }
-    }
-
-    /// v3.2 — an *edge-biased* generator expression for the `String` raw
-    /// type, or `nil` for every other case. `generatorExpression`'s String
-    /// arm (`Gen<Character>.letterOrNumber.string`) is alphanumeric-only, so
-    /// a property check over a string-processing function never sees the
-    /// whitespace / newline / punctuation inputs that falsify structural
-    /// string logic (YAML `- ` markers, indentation, trimming) — the check
-    /// then false-passes. This mixes the alphanumeric baseline (weight 3)
-    /// with curated structural edge strings (weight 2) via `Gen.frequency`,
-    /// so those counterexamples become reachable.
-    ///
-    /// Intended for the *top-level* carrier of a String property. Struct
-    /// members keep `generatorExpression` (the plain form), so memberwise
-    /// derivation and its goldens are unaffected. The expression targets
-    /// `swift-property-based` 1.2.x (`Gen.frequency` / `Gen.element`); the
-    /// consumer inlines it into a stub that imports `PropertyBased`.
-    public var edgeBiasedGeneratorExpression: String? {
-        guard self == .string else { return nil }
-        let edges = RawType.stringEdgeCases
-            .map(RawType.swiftStringLiteral)
-            .joined(separator: ", ")
-        return "Gen.frequency("
-            + "(3.0, Gen<Character>.letterOrNumber.string(of: 0...8)), "
-            + "(2.0, Gen<String?>.element(of: [\(edges)] as [String]).map { $0! })"
-            + ")"
-    }
-
-    /// Curated whole-string edge values injected alongside random strings:
-    /// empty / whitespace / newline boundaries plus the YAML/markup tokens
-    /// (`-`, `- `, leading-space `-`, multi-line) that dominate real
-    /// string-structural bugs.
-    static let stringEdgeCases: [String] = [
-        "", " ", "  ", "\n", "\t", "-", "- ", "  -", "- x", "a\n- b", ":", "#", "/"
-    ]
-
-    /// Render `value` as a Swift double-quoted string literal, escaping the
-    /// characters that would otherwise break the emitted source.
-    static func swiftStringLiteral(_ value: String) -> String {
-        var out = "\""
-        for character in value {
-            switch character {
-            case "\\": out += "\\\\"
-            case "\"": out += "\\\""
-            case "\n": out += "\\n"
-            case "\t": out += "\\t"
-            default: out.append(character)
-            }
-        }
-        out += "\""
-        return out
-    }
-}
-
-/// Stored property declared on a struct/class type — name + source-declared
-/// type spelling. The macro and discovery plugin produce `[StoredMember]`
-/// from SwiftSyntax independently; `DerivationStrategist` reads it for the
-/// memberwise-Arbitrary strategy. Members whose type spelling doesn't
-/// resolve to a `RawType` are still listed here — the strategist filters
-/// and falls through to `.todo` if any one fails.
-public struct StoredMember: Sendable, Equatable {
-    public let name: String
-    public let typeName: String
-
-    public init(name: String, typeName: String) {
-        self.name = name
-        self.typeName = typeName
-    }
-}
-
-/// Syntax-agnostic shape of a type declaration — built from SwiftSyntax
-/// by the macro impl and the discovery plugin separately, consumed by
-/// `DerivationStrategist` to choose a strategy.
-public struct TypeShape: Sendable, Equatable {
-    public enum Kind: String, Sendable, Equatable {
-        case `struct`, `class`, `enum`, `actor`
-    }
-
-    public let name: String
-    public let kind: Kind
-    /// Inheritance-clause type names verbatim, in source order. Used to
-    /// detect `CaseIterable`, `RawRepresentable` raw types, and (in
-    /// future M3.5) member-conformance scanning.
-    public let inheritedTypes: [String]
-    /// Whether the user explicitly provides a `gen()` static method on
-    /// the type or via an extension in the same file. The macro/plugin
-    /// determines this from the surrounding source; the strategist
-    /// honors it as the highest-priority strategy (Strategy A from
-    /// PRD §5.7).
-    public let hasUserGen: Bool
-    /// Stored properties seen in the type's primary declaration, in
-    /// source order. Empty for enums, actors, and any type whose
-    /// primary body the macro/scanner couldn't see (e.g. extension-only
-    /// types). The memberwise-Arbitrary strategy reads this.
-    public let storedMembers: [StoredMember]
-    /// `true` when the type's primary body contains any `init(...)`
-    /// declaration. Swift suppresses the synthesized memberwise init in
-    /// that case, so memberwise-Arbitrary derivation falls through to
-    /// `.todo` — the synthesized init the strategy would call no longer
-    /// exists. Inits declared in extensions don't suppress synthesis and
-    /// don't set this flag.
-    public let hasUserInit: Bool
-    /// User-declared initializers captured from the type's primary body, in
-    /// source order. Consumed by the Tier 6 `initializerBased` strategy when
-    /// memberwise derivation can't apply. Empty when the scanner captured no
-    /// init signatures (pre-Tier-6 callers, or a type with only the
-    /// synthesized memberwise init).
-    public let initializers: [InitializerSignature]
-    /// Enum cases (name + associated values) captured from the primary body,
-    /// in source order. Consumed by the Tier 4 `enumCases` strategy. Empty
-    /// for non-enums and pre-Tier-4 callers.
-    public let enumCases: [EnumCase]
-
-    public init(
-        name: String,
-        kind: Kind,
-        inheritedTypes: [String],
-        hasUserGen: Bool,
-        storedMembers: [StoredMember] = [],
-        hasUserInit: Bool = false,
-        initializers: [InitializerSignature] = [],
-        enumCases: [EnumCase] = []
-    ) {
-        self.name = name
-        self.kind = kind
-        self.inheritedTypes = inheritedTypes
-        self.hasUserGen = hasUserGen
-        self.storedMembers = storedMembers
-        self.hasUserInit = hasUserInit
-        self.initializers = initializers
-        self.enumCases = enumCases
-    }
-}
-
 /// Pure-logic strategist. Consumes a `TypeShape`, returns a
 /// `DerivationStrategy`. No SwiftSyntax dependency — the syntax-to-shape
 /// conversion lives in each consumer (macro impl, discovery tool).
@@ -318,9 +138,14 @@ public enum DerivationStrategist {
     /// app road-test hit ordinary 11–14-member structs the flat-10 limit refused.
     public static let memberwiseMemberLimit = memberwiseArityLimit * memberwiseArityLimit
 
+    /// - Parameter emissionSite: where the caller will write the code this
+    ///   strategy describes, which decides whether a `fileprivate` member is
+    ///   reachable. Defaults to `.separateFile` — the conservative answer, and
+    ///   the correct one for every consumer except the peer macro.
     public static func strategy(
         for shape: TypeShape,
-        resolve: CustomTypeResolver = { _ in nil }
+        resolve: CustomTypeResolver = { _ in nil },
+        emissionSite: EmissionSite = .separateFile
     ) -> DerivationStrategy {
         // Priority order from PRD §5.7. Strategy A — explicit user-provided
         // `gen()` — wins unconditionally. Users who want a derived
@@ -331,10 +156,14 @@ public enum DerivationStrategist {
         if shape.kind == .enum, shape.inheritedTypes.contains("CaseIterable") {
             return .caseIterable
         }
-        if let memberwise = memberwiseStrategy(for: shape, resolve: resolve) {
+        if let memberwise = memberwiseStrategy(
+            for: shape, resolve: resolve, emissionSite: emissionSite
+        ) {
             return memberwise
         }
-        if let initBased = initializerBasedStrategy(for: shape, resolve: resolve) {
+        if let initBased = initializerBasedStrategy(
+            for: shape, resolve: resolve, emissionSite: emissionSite
+        ) {
             return initBased
         }
         // **Case enumeration BEFORE `rawRepresentable`, and this order is
@@ -381,7 +210,9 @@ public enum DerivationStrategist {
             // generator surfaces as a verdict instead of a wedge.
             return .rawRepresentable(rawType)
         }
-        return .todo(reason: todoReason(for: shape))
+        return .todo(reason: todoReason(
+            for: shape, emissionSite: emissionSite, resolve: resolve
+        ))
     }
 
     /// PRD §5.7 Strategy 3 — memberwise-Arbitrary composition. Returns
@@ -397,14 +228,31 @@ public enum DerivationStrategist {
     ///   suppresses the synthesized memberwise init in that case).
     /// - Any member's type doesn't resolve to a recognized `RawType`.
     /// - Member count exceeds `memberwiseArityLimit` (10).
+    /// - A member's access level puts the synthesized init out of reach of
+    ///   `emissionSite` (see below).
+    ///
+    /// **The access-level guard, and why it declines rather than warns.** Swift
+    /// gives the synthesized memberwise initializer the access level of the
+    /// *narrowest* stored property, so a restricted member makes the call this
+    /// strategy emits uncompilable — see `AccessLevel.isCallable(from:)` for the
+    /// per-site table and the compiler runs behind it.
+    ///
+    /// Emitting anyway produces *"initializer is inaccessible due to 'private'
+    /// protection level"* against a generated file the header tells the user not
+    /// to edit, taking the whole test target with it. `.todo` costs the same
+    /// coverage and states the actual problem — the trade `takesPrivateStorage`
+    /// already makes one tier down.
     private static func memberwiseStrategy(
         for shape: TypeShape,
-        resolve: CustomTypeResolver
+        resolve: CustomTypeResolver,
+        emissionSite: EmissionSite
     ) -> DerivationStrategy? {
         guard shape.kind == .struct else { return nil }
         guard !shape.storedMembers.isEmpty else { return nil }
         guard !shape.hasUserInit else { return nil }
         guard shape.storedMembers.count <= memberwiseMemberLimit else { return nil }
+        guard shape.storedMembers
+            .firstBlockingMemberwiseDerivation(from: emissionSite) == nil else { return nil }
         var specs: [MemberSpec] = []
         for member in shape.storedMembers {
             if let rawType = RawType(typeName: member.typeName) {

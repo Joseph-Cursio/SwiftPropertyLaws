@@ -298,9 +298,16 @@ struct DerivationStrategistTests {
         #expect(DerivationStrategist.strategy(for: shape) == .userGen)
     }
 
-    @Test func plainEnumWithoutCaseIterableOrRawFallsThroughToTodo() {
-        // Associated-value enum without CaseIterable + without recognized
-        // raw type → .todo.
+    /// **This test's comment and its fixture disagreed, and the old diagnostic
+    /// hid it.** The comment said "associated-value enum"; the shape carries no
+    /// `enumCases` at all, which is a *caseless* enum — an uninhabited type. The
+    /// single catch-all reason ("not `CaseIterable` … or add `: CaseIterable`")
+    /// was emitted for both, so the assertion passed either way and the
+    /// mismatch was invisible.
+    ///
+    /// It now asserts what the fixture actually is. The associated-value case
+    /// it meant to cover lives in `EnumTodoReasonTests.unresolvablePayload`.
+    @Test func caselessEnumFallsThroughToTodo() {
         let shape = TypeShape(
             name: "Either",
             kind: .enum,
@@ -312,7 +319,10 @@ struct DerivationStrategistTests {
             return
         }
         #expect(reason.contains("Either"))
-        #expect(reason.contains("CaseIterable"))
+        #expect(reason.contains("declares no cases"))
+        // `: CaseIterable` cannot rescue an uninhabited type — `allCases` would
+        // be empty and the generator would never yield.
+        #expect(reason.contains("CaseIterable") == false)
     }
 
     @Test func unknownRawTypeFallsThroughToTodo() {

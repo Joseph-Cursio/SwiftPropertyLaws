@@ -222,4 +222,63 @@ struct CompositeMemberDerivationTests {
             """
         #expect(expr == expected)
     }
+
+    /// `ArraySlice<T>` — requested by a downstream consumer whose blocked type
+    /// was `ArraySlice<CodeBlockItemSyntax>`, and general rather than
+    /// syntax-specific: `ArraySlice` is stdlib, so every element type gains.
+    ///
+    /// A distinct plan case rather than a spelling of `.array`, because the
+    /// *type* differs — a member declared `ArraySlice<T>` will not accept `[T]`.
+    @Test("an ArraySlice member derives through the array generator, re-sliced")
+    func arraySliceMemberDerives() {
+        let shape = TypeShape(
+            name: "Window",
+            kind: .struct,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            storedMembers: [StoredMember(name: "items", typeName: "ArraySlice<Int>")]
+        )
+        guard case .memberwiseArbitrary(let members) = DerivationStrategist.strategy(for: shape) else {
+            Issue.record("expected memberwise derivation")
+            return
+        }
+        #expect(members.first?.generatorExpression
+            == "Gen<Int>.int().array(of: 0...8).map { $0[...] }")
+    }
+
+    /// Composition still works — the element may itself be a composite.
+    @Test("an ArraySlice of optionals derives")
+    func arraySliceOfOptionalsDerives() {
+        let shape = TypeShape(
+            name: "Window",
+            kind: .struct,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            storedMembers: [StoredMember(name: "items", typeName: "ArraySlice<String?>")]
+        )
+        guard case .memberwiseArbitrary(let members) = DerivationStrategist.strategy(for: shape) else {
+            Issue.record("expected memberwise derivation")
+            return
+        }
+        let expression = members.first?.generatorExpression ?? ""
+        #expect(expression.contains(".optional"))
+        #expect(expression.hasSuffix(".array(of: 0...8).map { $0[...] }"))
+    }
+
+    /// An unresolvable element still declines — `ArraySlice` must not become a
+    /// way to smuggle a type the kit cannot generate.
+    @Test("an ArraySlice of an unresolvable type declines")
+    func arraySliceOfUnknownDeclines() {
+        let shape = TypeShape(
+            name: "Window",
+            kind: .struct,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            storedMembers: [StoredMember(name: "items", typeName: "ArraySlice<Opaque>")]
+        )
+        guard case .todo = DerivationStrategist.strategy(for: shape) else {
+            Issue.record("expected .todo")
+            return
+        }
+    }
 }

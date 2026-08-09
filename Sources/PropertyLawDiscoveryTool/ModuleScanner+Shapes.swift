@@ -19,7 +19,11 @@ extension ModuleScanner {
                 storedMembers: aggregate.storedMembers,
                 hasUserInit: aggregate.hasUserInit,
                 initializers: aggregate.initializers,
-                enumCases: aggregate.enumCases
+                enumCases: aggregate.enumCases,
+                accessLevel: aggregate.accessLevel,
+                // `typeKind` is set only from a primary declaration, so its
+                // absence is exactly "we never saw this type declared".
+                hasPrimaryDeclaration: aggregate.typeKind != nil
             )
         }
         return shapes

@@ -8,10 +8,12 @@ import Testing
 /// library look broken, the other made an untested carrier look tested. The second is the
 /// more dangerous and the harder to notice.
 ///
-/// | witness | derived generator | what the suite then reported |
-/// |---|---|---|
-/// | `BitSet.Counted(_bits:count:)` | `count` drawn independently of `_bits` | three laws **violated** on correct code |
-/// | `OrderedDictionary(minimumCapacity:persistent:)` | every value the empty dictionary | every law **passing**, over one value |
+/// - `BitSet.Counted(_bits:count:)` — the derived generator drew `count`
+///   independently of `_bits`, and the suite reported three laws **violated**
+///   on correct code.
+/// - `OrderedDictionary(minimumCapacity:persistent:)` — the derived generator
+///   produced the empty dictionary every trial, and every law **passed**, over
+///   that one value.
 struct UnsoundInitializerDerivationTests {
 
     private func shape(_ name: String, _ initializers: [InitializerSignature]) -> TypeShape {

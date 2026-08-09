@@ -33,6 +33,29 @@ struct ConformanceMap: Sendable, Equatable {
         /// from the type's kind, inheritance clause, and whether any
         /// declaration in the module supplies `static func gen()`.
         let derivationStrategy: DerivationStrategy
+        /// The module that **declares** this type, when it is not the scanned
+        /// target — i.e. when the declaration was found in a context file the
+        /// caller attributed to a module.
+        ///
+        /// `nil` means "this target", which is the common case and the one that
+        /// needs no import beyond the `@testable import <Target>` already
+        /// emitted. A non-`nil` value is what lets the emitter write the plain
+        /// `import` a foreign type's suite needs to name it.
+        let declaringModule: String?
+
+        init(
+            typeName: String,
+            conformances: Set<KnownProtocol>,
+            provenances: [Provenance],
+            derivationStrategy: DerivationStrategy,
+            declaringModule: String? = nil
+        ) {
+            self.typeName = typeName
+            self.conformances = conformances
+            self.provenances = provenances
+            self.derivationStrategy = derivationStrategy
+            self.declaringModule = declaringModule
+        }
     }
 
     /// Sorted by `typeName` ascending.
@@ -41,6 +64,14 @@ struct ConformanceMap: Sendable, Equatable {
     /// Files the scanner couldn't parse — surfaced in the generated
     /// header so the user knows their output is partial.
     let parseFailures: [ParseFailure]
+
+    /// Types the generated file could detect but not *use* — a suite for them
+    /// would not compile, so none is emitted.
+    ///
+    /// Reported rather than silently dropped, for the same reason
+    /// `parseFailures` is: a type that vanishes from the output with no
+    /// explanation reads as "nothing to test here". Sorted by name.
+    let skippedTypes: [SkippedType]
 
     /// Per-type witness signatures consumed by `AdvisorySuggester`
     /// (PRD §5.4). Keyed by the same `typeName` as `entries`; a missing
@@ -81,6 +112,7 @@ struct ConformanceMap: Sendable, Equatable {
     init(
         entries: [Entry],
         parseFailures: [ParseFailure],
+        skippedTypes: [SkippedType] = [],
         witnesses: [String: WitnessSet] = [:],
         memberFunctions: [String: [FunctionSignature]] = [:],
         topLevelFunctions: [FunctionSignature] = [],
@@ -89,11 +121,53 @@ struct ConformanceMap: Sendable, Equatable {
     ) {
         self.entries = entries
         self.parseFailures = parseFailures
+        self.skippedTypes = skippedTypes
         self.witnesses = witnesses
         self.memberFunctions = memberFunctions
         self.topLevelFunctions = topLevelFunctions
         self.shapesByName = shapesByName
         self.aliases = aliases
+    }
+}
+
+/// A type the scanner detected but emitted no suite for. Top-level rather
+/// than nested in `ConformanceMap` so `Reason` stays one level deep.
+struct SkippedType: Sendable, Equatable {
+    enum Reason: Sendable, Equatable {
+        /// `private` / `fileprivate`, which `@testable import` does not
+        /// promote the way it promotes `internal` — the suite could not
+        /// even write `for: Thing.self`.
+        case notNameable(AccessLevel)
+        /// Declared in another module and not `public`. A foreign type is
+        /// reachable only through a plain `import` — `@testable` is emitted for
+        /// the scanned target alone, and across a package boundary it needs the
+        /// dependency built with testability, which is not ours to assume — so
+        /// anything narrower than `public` cannot be named however the imports
+        /// are written.
+        case foreignNonPublic(String)
+        /// `public` or `open` with no `Sendable` conformance in sight.
+        /// Swift infers `Sendable` for non-public types only, and every
+        /// `check…PropertyLaws` entry point constrains its value to
+        /// `Sendable`, so the call fails to type-check.
+        case notSendable
+    }
+
+    let typeName: String
+    let reason: Reason
+
+    /// One-line explanation, shared by the file header and the CLI summary
+    /// so the two never drift.
+    var explanation: String {
+        switch reason {
+        case .notNameable(let level):
+            return "declared `\(level.rawValue)` — not nameable from another file"
+        case .foreignNonPublic(let module):
+            return "declared in `\(module)` and not `public` — a foreign type "
+                + "is only reachable through a plain import"
+        case .notSendable:
+            return "`public` without a `Sendable` conformance — "
+                + "the law entry points require one"
+        }
     }
 }
 

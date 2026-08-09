@@ -50,6 +50,14 @@ let package = Package(
             name: "PropertyLawComplex",
             targets: ["PropertyLawComplex"]
         ),
+        // Opt-in generators for swift-syntax node types. `swift-syntax` is
+        // already a dependency of the macro and plugin targets, but it is *not*
+        // in `PropertyLawKit`'s transitive set and this keeps it that way — the
+        // same posture as `PropertyLawComplex`.
+        .library(
+            name: "PropertyLawSyntax",
+            targets: ["PropertyLawSyntax"]
+        ),
         // Phase 1 M0 of the collections/async workplan — swift-collections
         // law coverage carved out as an opt-in product (same posture as
         // `PropertyLawComplex`) so the main `PropertyLawKit` line keeps a
@@ -252,6 +260,33 @@ let package = Package(
                 // brings `Double: Real`, which `Complex<Double>` requires.
                 .product(name: "ComplexModule", package: "swift-numerics"),
                 .product(name: "RealModule", package: "swift-numerics")
+            ]
+        ),
+        .target(
+            name: "PropertyLawSyntax",
+            dependencies: [
+                .product(name: "PropertyBased", package: "swift-property-based"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                // **Parsing, not hand-built nodes.** `SwiftSyntax`'s generated
+                // initializers can assemble a tree, but covering the node kinds
+                // that matter would mean bespoke construction code per kind, and
+                // the result would carry synthetic trivia and hand-wired
+                // parent/child links. A dozen source snippets parse into
+                // hundreds of real nodes of dozens of kinds, which is exactly
+                // the variety this generator exists to supply. `SwiftParser` was
+                // already a dependency of the discovery tool and three test
+                // targets; this is the first *shipped library* to link it, and
+                // the product is opt-in precisely so that choice stays local.
+                .product(name: "SwiftParser", package: "swift-syntax")
+            ]
+        ),
+        .testTarget(
+            name: "PropertyLawSyntaxTests",
+            dependencies: [
+                "PropertyLawSyntax",
+                "PropertyLawKit",
+                .product(name: "PropertyBased", package: "swift-property-based"),
+                .product(name: "SwiftSyntax", package: "swift-syntax")
             ]
         ),
         .testTarget(

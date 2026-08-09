@@ -10,9 +10,11 @@
 package enum PropertyLawTestStub {
 
     /// `<testNameFragment>_<typeName>` — keeps generated tests greppable in
-    /// test output.
+    /// test output. The type name goes through `QualifiedTypeName.identifier`
+    /// because a nested type arrives here qualified (`BitSet.Counted`) and a
+    /// dot is not legal in a function name; unqualified names are unchanged.
     package static func testName(conformance: KnownProtocol, typeName: String) -> String {
-        "\(conformance.testNameFragment)_\(typeName)"
+        "\(conformance.testNameFragment)_\(QualifiedTypeName.identifier(for: typeName))"
     }
 
     /// The six source lines of the generated test method, 4-space-indented.

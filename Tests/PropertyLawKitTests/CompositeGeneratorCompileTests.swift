@@ -37,7 +37,7 @@ struct CompositeGeneratorCompileTests {
 
     /// 11 stored properties — over the flat zip-10 limit, so the emitter nests.
     private struct Wide11: Equatable {
-        let m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10: Int
+        let mem0, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10: Int
     }
 
     /// The nested `zip` shape `MemberwiseEmitter.nestedZip` emits for an
@@ -56,8 +56,8 @@ struct CompositeGeneratorCompileTests {
         )
         .map {
             Wide11(
-                m0: $0.0.0, m1: $0.0.1, m2: $0.0.2, m3: $0.0.3, m4: $0.0.4,
-                m5: $0.0.5, m6: $0.0.6, m7: $0.0.7, m8: $0.0.8, m9: $0.0.9, m10: $0.1
+                mem0: $0.0.0, mem1: $0.0.1, mem2: $0.0.2, mem3: $0.0.3, mem4: $0.0.4,
+                mem5: $0.0.5, mem6: $0.0.6, mem7: $0.0.7, mem8: $0.0.8, mem9: $0.0.9, mem10: $0.1
             )
         }
         .run(using: &rng)

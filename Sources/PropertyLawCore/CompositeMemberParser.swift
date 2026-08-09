@@ -92,6 +92,9 @@ extension DerivationStrategist {
         if let inner = genericArgument(of: text, named: "Array") {
             return wrap(inner, resolve: resolve) { .array($0) }
         }
+        if let inner = genericArgument(of: text, named: "ArraySlice") {
+            return wrap(inner, resolve: resolve) { .arraySlice($0) }
+        }
         if let inner = genericArgument(of: text, named: "Set") {
             return wrap(inner, resolve: resolve) { .set($0) }
         }
@@ -194,6 +197,11 @@ extension DerivationStrategist {
             return ComposedGenerator(expression: "Gen<URL>.url()", requiredImports: ["Foundation"])
         case "Decimal":
             return ComposedGenerator(expression: "Gen<Decimal>.decimal()", requiredImports: ["Foundation"])
+        // Stdlib, not Foundation — so no import beyond the `PropertyLawKit` the
+        // emitters already write. Measured as an enum-payload blocker on the
+        // swift.org corpus; `Character` was here and its scalar sibling was not.
+        case "Unicode.Scalar", "UnicodeScalar":
+            return ComposedGenerator(expression: "Gen<Unicode.Scalar>.unicodeScalar()")
         default:
             return nil
         }

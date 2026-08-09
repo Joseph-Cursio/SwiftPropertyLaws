@@ -8,11 +8,18 @@ excluded:
   - docs
   - Package.swift
 
-# Idiomatic two-letter identifier name we use; everything else complies
-# with the default 3-character minimum. The 50-char max accommodates the
-# kit's `check<Protocol>ProtocolLaws` family — `LosslessStringConvertible`
-# would otherwise overflow the SwiftLint default.
+# Idiomatic short identifier names we use; everything else complies with
+# the default 3-character minimum. `id` is `Identifiable`'s own spelling,
+# and `x` / `y` name the coordinates of the `Point` fixtures the derivation
+# tests build — a two-member struct is the smallest thing memberwise
+# derivation applies to, and renaming its members to satisfy a length rule
+# would make the fixture read as something other than a point.
+# The 50-char max accommodates the kit's `check<Protocol>ProtocolLaws`
+# family — `LosslessStringConvertible` would otherwise overflow the
+# SwiftLint default.
 identifier_name:
   excluded:
     - id
+    - x
+    - y
   max_length: 50

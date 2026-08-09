@@ -19,12 +19,16 @@ struct PropertyLawDiscoveryTool {
         }
 
         let invocation = try ToolInvocation(arguments: args)
-        let map = ModuleScanner.scan(sourceFiles: invocation.sourceFiles)
+        let map = ModuleScanner.scan(
+            sourceFiles: invocation.sourceFiles,
+            contextFiles: invocation.contextFiles
+        )
         let suppressions = SuppressionParser.parse(existingFileAt: invocation.outputPath)
         let output = GeneratedFileEmitter.emit(
             target: invocation.target,
             map: map,
-            suppressions: suppressions
+            suppressions: suppressions,
+            extraImports: invocation.extraImports
         )
         try writeOutput(output, to: invocation.outputPath)
         printSummary(invocation: invocation, map: map, suppressions: suppressions)
@@ -86,6 +90,19 @@ struct PropertyLawDiscoveryTool {
                                           partially-derivable types (with <#...#>
                                           placeholders) to a separate file for review.
                 --source-files <paths>... Required. Source paths the plugin discovers.
+                --extra-import <Module>   Optional, repeatable. Add an `import <Module>` to
+                                          the generated file. Use for a package that supplies
+                                          generators the emitted code calls — e.g.
+                                          `--extra-import PropertyLawSyntax` so an emitted
+                                          `Syntax.gen()` resolves. Never inferred.
+                --context-files <paths>...
+                                          Optional. Sources of the target's dependencies,
+                                          read for declarations only. Types found here get
+                                          no suite of their own; they let the scan resolve
+                                          members and report accurate diagnostics for types
+                                          this target merely extends. Each path may be
+                                          prefixed `Module=` so the emitter knows which
+                                          module to import for a foreign type.
                 --advisory                Optional. Emit missing-conformance suggestions
                                           to stderr (PRD §5.4). Off by default. Output
                                           is informational only and does not change the
@@ -124,6 +141,13 @@ struct PropertyLawDiscoveryTool {
         if !suppressions.isEmpty {
             lines.append("  suppressions preserved: \(suppressions.count)")
         }
+        if !map.skippedTypes.isEmpty {
+            lines.append("  detected but skipped, no suite emitted "
+                + "(\(map.skippedTypes.count)):")
+            for type in map.skippedTypes {
+                lines.append("    - \(type.typeName): \(type.explanation)")
+            }
+        }
         // PRD §5.7 weak-generator telemetry — list types that need a
         // user-supplied gen() because no derivation strategy applied.
         let todoEntries = map.entries.filter { entry in
@@ -154,16 +178,54 @@ struct PropertyLawDiscoveryTool {
 
     /// Buckets a `.todo` strategy's reason into a coarse derivation-gap
     /// category for the summary scoreboard.
-    private static func todoCategory(for strategy: DerivationStrategy) -> String {
+    ///
+    /// Matching is on substrings of `TodoReason`'s prose, so the two files are
+    /// coupled: a reworded reason silently falls through to `"other"`, and a new
+    /// reason that happens to contain an earlier arm's substring is swallowed by
+    /// it. `TodoCategoryTests` pins every arm against the strings the strategist
+    /// actually produces. Internal rather than private for that reason.
+    static func todoCategory(for strategy: DerivationStrategy) -> String {
         guard case .todo(let reason) = strategy else { return "n/a" }
-        if reason.contains("structs only") { return "non-struct (class/actor/enum-payload)" }
-        if reason.contains("no stored properties") { return "no visible stored properties" }
-        if reason.contains("user `init") { return "user-defined init" }
-        if reason.contains("memberwise derivation supports up to") { return "arity > 10" }
-        if reason.contains("stored property") { return "unsupported member type (nested/custom)" }
-        if reason.contains("not `CaseIterable`") { return "enum without CaseIterable/raw" }
+        for (needle, category) in categoryTable where reason.contains(needle) {
+            return category
+        }
         return "other"
     }
+
+    /// Substring → bucket, **in match order**, which is load-bearing in two
+    /// places and inert in a third:
+    ///
+    /// - `"memberwise initializer"` must precede `"stored property"`: the
+    ///   access reason says both, and reporting a `private let x: Int` as an
+    ///   unsupported member *type* sends the user to fix the one thing that
+    ///   isn't wrong.
+    /// - the enum arms must precede nothing in particular, but they replaced a
+    ///   single `"enum without CaseIterable/raw"` bucket that conflated four
+    ///   causes and named the one remedy impossible for the commonest of them
+    ///   (an enum with associated values cannot conform to `CaseIterable`).
+    /// - `"every initializer the type declares is"` before `"user `init"` is
+    ///   *not* load-bearing — the latter matches a phrase the former never
+    ///   contains. A mutant swapping them leaves every test green, which is how
+    ///   an earlier comment claiming a hazard there was caught.
+    ///
+    /// A table rather than an `if` ladder because the ladder tripped the
+    /// cyclomatic-complexity lint at twelve arms, and the ordering is easier to
+    /// read as data.
+    private static let categoryTable: [(needle: String, category: String)] = [
+        ("only extends the type", "declaration not in this target"),
+        ("structs only", "non-struct (class/actor/enum-payload)"),
+        ("no stored properties", "no visible stored properties"),
+        ("every initializer the type declares is",
+         "access-restricted initializer (private/fileprivate)"),
+        ("user `init", "user-defined init"),
+        ("memberwise derivation supports up to", "arity > 10"),
+        ("memberwise initializer", "access-restricted member (private/fileprivate)"),
+        ("stored property", "unsupported member type (nested/custom)"),
+        ("declares no cases", "caseless enum (uninhabited)"),
+        ("associated values; case enumeration", "enum case over the arity limit"),
+        ("associated value of type", "enum payload type unresolved"),
+        ("neither `CaseIterable` nor", "enum cases not captured")
+    ]
 
     /// Render advisory suggestions as Swift-compiler-style `note:` lines
     /// on stderr. One block per suggestion with two indented detail
@@ -223,133 +285,5 @@ struct PropertyLawDiscoveryTool {
             )
         }
         FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
-    }
-}
-
-/// Argv-parsed invocation. Plugin → tool argv shape:
-/// `--target <name> --output <path> [--advisory] [--advisory-min <level>]
-///  --source-files <p1> <p2> ...`
-struct ToolInvocation: Sendable {
-    let target: String
-    let outputPath: String
-    let sourceFiles: [String]
-    let advisory: Bool
-    let advisoryMinConfidence: SuggestionConfidence
-    /// Optional path for the opt-in scaffold file (`--scaffold-out`).
-    let scaffoldOutputPath: String?
-
-    init(arguments: [String]) throws {
-        var builder = Builder()
-        var index = 0
-        while index < arguments.count {
-            index = try Self.advance(arguments: arguments, from: index, into: &builder)
-        }
-        try self.init(builder: builder)
-    }
-
-    private init(builder: Builder) throws {
-        guard let target = builder.target else {
-            throw InvocationError.missingValue("--target")
-        }
-        guard let outputPath = builder.outputPath else {
-            throw InvocationError.missingValue("--output")
-        }
-        self.target = target
-        self.outputPath = outputPath
-        self.sourceFiles = builder.sourceFiles
-        self.advisory = builder.advisory
-        self.advisoryMinConfidence = builder.advisoryMin
-        self.scaffoldOutputPath = builder.scaffoldOutputPath
-    }
-
-    /// Mutable accumulator for the argv loop — keeps `init(arguments:)`
-    /// under the cyclomatic-complexity / function-length lints.
-    private struct Builder {
-        var target: String?
-        var outputPath: String?
-        var sourceFiles: [String] = []
-        var advisory = false
-        var advisoryMin: SuggestionConfidence = .high
-        var scaffoldOutputPath: String?
-    }
-
-    /// Consumes one flag (and its value, if any) from `arguments` and
-    /// returns the next index. The dispatch lives here so the init
-    /// itself stays a tight while loop.
-    private static func advance(
-        arguments: [String],
-        from index: Int,
-        into builder: inout Builder
-    ) throws -> Int {
-        let arg = arguments[index]
-        switch arg {
-        case "--target":
-            builder.target = try requireValue(after: arg, arguments: arguments, at: index)
-            return index + 2
-        case "--output":
-            builder.outputPath = try requireValue(after: arg, arguments: arguments, at: index)
-            return index + 2
-        case "--scaffold-out":
-            builder.scaffoldOutputPath = try requireValue(after: arg, arguments: arguments, at: index)
-            return index + 2
-        case "--advisory":
-            builder.advisory = true
-            return index + 1
-        case "--advisory-min":
-            let raw = try requireValue(after: arg, arguments: arguments, at: index)
-            guard let level = SuggestionConfidence(rawValue: raw) else {
-                throw InvocationError.invalidValue(
-                    flag: arg, value: raw, allowed: "low | medium | high"
-                )
-            }
-            builder.advisoryMin = level
-            return index + 2
-        case "--source-files":
-            return consumeSourceFiles(arguments: arguments, from: index + 1, into: &builder)
-        default:
-            throw InvocationError.unknownArgument(arg)
-        }
-    }
-
-    private static func requireValue(
-        after flag: String,
-        arguments: [String],
-        at index: Int
-    ) throws -> String {
-        let next = index + 1
-        guard next < arguments.count else {
-            throw InvocationError.missingValue(flag)
-        }
-        return arguments[next]
-    }
-
-    /// `--source-files` greedily consumes positional arguments until the
-    /// next `--`-prefixed flag (or end of input).
-    private static func consumeSourceFiles(
-        arguments: [String],
-        from start: Int,
-        into builder: inout Builder
-    ) -> Int {
-        var index = start
-        while index < arguments.count, !arguments[index].hasPrefix("--") {
-            builder.sourceFiles.append(arguments[index])
-            index += 1
-        }
-        return index
-    }
-}
-
-enum InvocationError: Error, CustomStringConvertible {
-    case missingValue(String)
-    case unknownArgument(String)
-    case invalidValue(flag: String, value: String, allowed: String)
-
-    var description: String {
-        switch self {
-        case .missingValue(let flag): return "missing value for \(flag)"
-        case .unknownArgument(let arg): return "unknown argument: \(arg)"
-        case .invalidValue(let flag, let value, let allowed):
-            return "invalid value '\(value)' for \(flag); allowed: \(allowed)"
-        }
     }
 }
