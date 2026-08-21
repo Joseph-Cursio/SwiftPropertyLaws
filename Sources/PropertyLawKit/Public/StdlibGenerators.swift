@@ -60,3 +60,63 @@ extension Gen where Value == Unicode.Scalar {
         }
     }
 }
+
+/// The ASCII-restricted sibling of `unicodeScalar()`.
+///
+/// **Why a second generator rather than a narrower first one.** `unicodeScalar()` is right for
+/// what it is for: text-handling code should be tested across the seams where byte-oriented
+/// assumptions break. But a scalar is not always destined for text. When an initializer's
+/// parameter is labelled `ascii:`, the label is a **domain declaration** — the API is telling
+/// you it accepts a subset — and handing it the full scalar space is not a stronger test, it is
+/// a guaranteed trap before the property is ever compared.
+///
+/// **Measured 2026-08-21 on `swift-system` @ `6a63f08`.** Derivation emitted
+///
+///     Gen<Unicode.Scalar>.unicodeScalar().map { SystemChar(ascii: $0) }
+///
+/// against `SystemString.swift:27`'s `internal init(ascii: Unicode.Scalar)`, which traps on
+/// anything outside ASCII. Nine of the nineteen laws that reached the build stage compiled,
+/// linked, ran, and died on `Fatal error: Code point value does not fit into ASCII` — the
+/// single largest bucket in that survey, and every one of them evidence about the generator
+/// rather than about the law. See `docs/measurements/criterion-a-swift-system.md` §2 in
+/// SwiftInferProperties.
+///
+/// **Controls are included, and that is the point.** ASCII is `0x00 ... 0x7F`, not the
+/// printable subset, and the interesting inputs for a path or parser library are exactly the
+/// ones a "realistic" alphabet omits: NUL, the separators, tab and newline. Weighted so
+/// printable characters dominate — a suite that is 90% control characters tests a different
+/// program — with `\t`, `\n`, `\r` given their own band because they are the controls real
+/// code actually branches on, and would otherwise be three draws in thirty-three.
+///
+/// Fully seeded: both the band choice and the offset within it come from the engine's RNG.
+///
+/// **Total by construction.** Every band lies inside `0 ... 0x7F`, which contains no surrogate
+/// code points, so `Unicode.Scalar(UInt8)` — the non-failable overload — applies and no
+/// `precondition` is needed. `unicodeScalar()` needs one because its bands are hand-written
+/// against the surrogate hole; this one cannot reach it.
+extension Gen where Value == Unicode.Scalar {
+
+    public static func asciiScalar() -> Generator<Unicode.Scalar, some SendableSequenceType> {
+        Gen<UInt8>.frequency(
+            // Printable ASCII — space through `~`. What most code is written against.
+            (6.0, Gen<UInt8>.uint8(in: 0x20 ... 0x7E)),
+            // Tab, newline, carriage return: the controls real code branches on.
+            // `element(of:)` is not used here: it vends an OPTIONAL, and a
+            // `compactMap` back to non-optional would be three lines saying what
+            // three equal-weight `always`es say plainly.
+            (2.0, Gen<UInt8>.frequency(
+                (1.0, Gen<UInt8>.always(0x09)),
+                (1.0, Gen<UInt8>.always(0x0A)),
+                (1.0, Gen<UInt8>.always(0x0D))
+            )),
+            // The rest of the control range, plus DEL. NUL is in here, which is what
+            // makes this generator able to find a C-string truncation bug.
+            (1.0, Gen<UInt8>.frequency(
+                (1.0, Gen<UInt8>.uint8(in: 0x00 ... 0x08)),
+                (1.0, Gen<UInt8>.uint8(in: 0x0B ... 0x1F)),
+                (1.0, Gen<UInt8>.always(0x7F))
+            ))
+        )
+        .map { Unicode.Scalar($0) }
+    }
+}
