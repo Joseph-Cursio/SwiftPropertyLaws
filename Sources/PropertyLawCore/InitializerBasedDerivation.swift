@@ -321,10 +321,11 @@ extension DerivationStrategist {
             var arguments: [InitArgument] = []
             var allResolved = true
             for parameter in initializer.parameters {
-                guard let composed = composedGenerator(forTypeName: parameter.typeName, resolve: resolve) else {
+                guard let resolved = composedGenerator(forTypeName: parameter.typeName, resolve: resolve) else {
                     allResolved = false
                     break
                 }
+                let composed = narrowedByLabel(resolved, label: parameter.label, typeName: parameter.typeName)
                 arguments.append(InitArgument(
                     label: parameter.label,
                     generatorExpression: composed.expression,
