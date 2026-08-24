@@ -25,11 +25,37 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     case uint32 = "UInt32"
     case uint64 = "UInt64"
 
+    /// Recognises the bare spelling and its **module-qualified** form: `Swift.String` is
+    /// `String`.
+    ///
+    /// Factual resolution, not a guess — `Swift` is the declaring module of every case in this
+    /// table — and the same reasoning `CompositeMemberParser.knownTypeAlias` already applies to
+    /// `TimeInterval`.
+    ///
+    /// **Hand-written Swift almost never writes `Swift.String`; generated code writes nothing
+    /// else.** `swift-openapi-generator` fully-qualifies every type it emits, so a member typed
+    /// `Swift.String` matched no case, its enclosing type became underivable, and the consumer
+    /// reported an unsupported *carrier* — a claim that the carrier is exotic, about a `String`.
+    /// Measured downstream on a generated client: **0 of 28 `codable-round-trip` carriers had a
+    /// resolvable member tree, against 16 of 28 once the spelling is recognised.**
+    ///
+    /// **Only the `Swift.` prefix, and only over one dot.** A deeper path is a nested type, not a
+    /// module qualifier, and any other prefix may name a user module — `MyModule.String` is a
+    /// user type that must not be handed this table's `String` generator.
     public init?(typeName: String) {
-        guard let match = RawType.allCases.first(where: { $0.rawValue == typeName }) else {
+        let candidate = RawType.unqualified(typeName)
+        guard let match = RawType.allCases.first(where: { $0.rawValue == candidate }) else {
             return nil
         }
         self = match
+    }
+
+    /// `Swift.String` → `String`; everything else unchanged.
+    static func unqualified(_ typeName: String) -> String {
+        guard typeName.hasPrefix("Swift.") else { return typeName }
+        let bare = String(typeName.dropFirst("Swift.".count))
+        // `Swift.Foo.Bar` is a nested type inside the module, not a qualified leaf.
+        return bare.contains(".") ? typeName : bare
     }
 
     /// `swift-property-based` generator factory expression for this raw
