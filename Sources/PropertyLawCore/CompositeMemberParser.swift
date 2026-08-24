@@ -154,7 +154,40 @@ extension DerivationStrategist {
         if let underlying = knownTypeAlias(text) {
             return composedGenerator(forTypeName: underlying, resolve: resolve)
         }
+        // A module-qualified spelling of a leaf this file already generates for.
+        // `RawType` handles its own `Swift.`-qualified table; this covers the Foundation
+        // half — `Foundation.Date`, `Foundation.UUID` — by the same rule.
+        if let unqualified = moduleQualifiedLeaf(text) {
+            return composedGenerator(forTypeName: unqualified, resolve: resolve)
+        }
         return resolve(text)
+    }
+
+    /// `Foundation.Date` → `Date`, when the bare name is a leaf this file can generate.
+    ///
+    /// **Resolution is attempted only against the KNOWN-leaf tables, never against `resolve`.**
+    /// Stripping first and asking the whole-module resolver second would let a source that said
+    /// `Swift.Foo` bind to a user type called `Foo`, which is a different type. Restricting the
+    /// remainder to names this file already generates for makes that impossible.
+    ///
+    /// Only `Swift.` and `Foundation.` are stripped, and only over a single dot: a deeper path is
+    /// a nested type, and any other prefix may be a user module. `Unicode.Scalar` is untouched —
+    /// `Unicode` is not a strippable module, so the entry in `knownValueGenerator` still matches
+    /// the spelling as written.
+    ///
+    /// Generated code is the population: `swift-openapi-generator` fully-qualifies everything it
+    /// emits, and hand-written Swift almost never does.
+    private static func moduleQualifiedLeaf(_ text: String) -> String? {
+        let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 2,
+              parts[0] == "Swift" || parts[0] == "Foundation"
+        else { return nil }
+        let bare = String(parts[1])
+        guard RawType(typeName: bare) != nil
+            || knownValueGenerator(forTypeName: bare) != nil
+            || knownTypeAlias(bare) != nil
+        else { return nil }
+        return bare
     }
 
     /// Common stdlib/Foundation typealiases the scanner can't see the
