@@ -2,7 +2,7 @@ import PropertyBased
 
 /// Run `SetAlgebra` protocol laws over `Value` (PRD §4.3).
 ///
-/// Fifteen Strict-tier laws — a violation under any of them is a bug:
+/// Nineteen Strict-tier laws — a violation under any of them is a bug:
 /// - `unionIdempotence` — `x.union(x) == x`
 /// - `intersectionIdempotence` — `x.intersection(x) == x`
 /// - `unionCommutativity` — `x.union(y) == y.union(x)`
@@ -24,6 +24,13 @@ import PropertyBased
 ///   x.subtracting(y).intersection(x.subtracting(z))`
 /// - `deMorganForIntersection` — `x.subtracting(y.intersection(z)) ==
 ///   x.subtracting(y).union(x.subtracting(z))`
+/// - `formUnionMatchesUnion` — `var c = x; c.formUnion(y)` leaves `c ==
+///   x.union(y)`
+/// - `formIntersectionMatchesIntersection` — likewise for
+///   `formIntersection` / `intersection`
+/// - `subtractMatchesSubtracting` — likewise for `subtract` / `subtracting`
+/// - `formSymmetricDifferenceMatchesSymmetricDifference` — likewise for
+///   `formSymmetricDifference` / `symmetricDifference`
 ///
 /// The four `symmetricDifference*` laws closed a real-world gap: pre-fix
 /// `swift-collections@35349601`, `TreeSet.symmetricDifference` returned the
@@ -41,6 +48,14 @@ import PropertyBased
 /// nine. The two De Morgan laws exercise `subtracting` with overlapping and
 /// disjoint operands, where that bug bites. SetAlgebra has no complement
 /// operation, so De Morgan is stated in relative (subtracting) form.
+///
+/// The four `*Matches*` laws close a different gap: every law above is stated
+/// over the non-mutating operations only, so a `formUnion` that is simply
+/// wrong passes all fifteen. `SetAlgebra` gives each operation a mutating
+/// twin and requires them to agree, but nothing here checked that they do.
+/// The pairing is the strongest kind of law available — both members are
+/// required to exist on the same type and to mean the same thing, so a
+/// divergence is a bug rather than a debatable finding.
 ///
 /// `SetAlgebra` does not formally extend `Equatable`, but in practice every
 /// stdlib SetAlgebra type is `Equatable` and the laws above compare
@@ -71,7 +86,12 @@ public func checkSetAlgebraPropertyLaws<
             await checkUnionAbsorption(generator: generator, options: options),
             await checkIntersectionAbsorption(generator: generator, options: options),
             await checkDeMorganForUnion(generator: generator, options: options),
-            await checkDeMorganForIntersection(generator: generator, options: options)
+            await checkDeMorganForIntersection(generator: generator, options: options),
+            await checkFormUnionMatchesUnion(generator: generator, options: options),
+            await checkFormIntersectionMatchesIntersection(generator: generator, options: options),
+            await checkSubtractMatchesSubtracting(generator: generator, options: options),
+            await checkFormSymmetricDifferenceMatchesSymmetricDifference(
+                generator: generator, options: options)
         ]
     }
 }
@@ -392,6 +412,110 @@ private func checkSymmetricDifferenceDefinition<
             return "x = \(first), y = \(second); "
                 + "x.symmetricDifference(y) = \(viaSymDiff), "
                 + "(x ∪ y) \\ (x ∩ y) = \(viaDefinition)"
+        }
+    )
+}
+
+private func checkFormUnionMatchesUnion<
+    Value: SetAlgebra & Equatable & Sendable,
+    Shrinker: SendableSequenceType
+>(
+    generator: Generator<Value, Shrinker>,
+    options: LawCheckOptions
+) async -> CheckResult {
+    await runBinaryLaw(
+        "SetAlgebra.formUnionMatchesUnion",
+        generator: generator,
+        options: options,
+        property: { first, second in
+            var mutated = first
+            mutated.formUnion(second)
+            return mutated == first.union(second)
+        },
+        formatCounterexample: { first, second, _ in
+            var mutated = first
+            mutated.formUnion(second)
+            return "x = \(first), y = \(second); "
+                + "x.formUnion(y) leaves \(mutated), "
+                + "x.union(y) = \(first.union(second))"
+        }
+    )
+}
+
+private func checkFormIntersectionMatchesIntersection<
+    Value: SetAlgebra & Equatable & Sendable,
+    Shrinker: SendableSequenceType
+>(
+    generator: Generator<Value, Shrinker>,
+    options: LawCheckOptions
+) async -> CheckResult {
+    await runBinaryLaw(
+        "SetAlgebra.formIntersectionMatchesIntersection",
+        generator: generator,
+        options: options,
+        property: { first, second in
+            var mutated = first
+            mutated.formIntersection(second)
+            return mutated == first.intersection(second)
+        },
+        formatCounterexample: { first, second, _ in
+            var mutated = first
+            mutated.formIntersection(second)
+            return "x = \(first), y = \(second); "
+                + "x.formIntersection(y) leaves \(mutated), "
+                + "x.intersection(y) = \(first.intersection(second))"
+        }
+    )
+}
+
+private func checkSubtractMatchesSubtracting<
+    Value: SetAlgebra & Equatable & Sendable,
+    Shrinker: SendableSequenceType
+>(
+    generator: Generator<Value, Shrinker>,
+    options: LawCheckOptions
+) async -> CheckResult {
+    await runBinaryLaw(
+        "SetAlgebra.subtractMatchesSubtracting",
+        generator: generator,
+        options: options,
+        property: { first, second in
+            var mutated = first
+            mutated.subtract(second)
+            return mutated == first.subtracting(second)
+        },
+        formatCounterexample: { first, second, _ in
+            var mutated = first
+            mutated.subtract(second)
+            return "x = \(first), y = \(second); "
+                + "x.subtract(y) leaves \(mutated), "
+                + "x.subtracting(y) = \(first.subtracting(second))"
+        }
+    )
+}
+
+private func checkFormSymmetricDifferenceMatchesSymmetricDifference<
+    Value: SetAlgebra & Equatable & Sendable,
+    Shrinker: SendableSequenceType
+>(
+    generator: Generator<Value, Shrinker>,
+    options: LawCheckOptions
+) async -> CheckResult {
+    await runBinaryLaw(
+        "SetAlgebra.formSymmetricDifferenceMatchesSymmetricDifference",
+        generator: generator,
+        options: options,
+        property: { first, second in
+            var mutated = first
+            mutated.formSymmetricDifference(second)
+            return mutated == first.symmetricDifference(second)
+        },
+        formatCounterexample: { first, second, _ in
+            var mutated = first
+            mutated.formSymmetricDifference(second)
+            return "x = \(first), y = \(second); "
+                + "x.formSymmetricDifference(y) leaves \(mutated), "
+                + "x.symmetricDifference(y) = \(first.symmetricDifference(second))"
         }
     )
 }

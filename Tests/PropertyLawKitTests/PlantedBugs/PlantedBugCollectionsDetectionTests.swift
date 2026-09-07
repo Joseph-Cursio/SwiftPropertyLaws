@@ -163,6 +163,51 @@ struct PlantedBugCollectionsDetectionTests {
         )
     }
 
+    /// The gap the four `*Matches*` laws close, kept executable.
+    ///
+    /// `DivergentFormUnion` has correct non-mutating operations and a
+    /// `formUnion` that intersects. Both halves are asserted: the new law
+    /// fires, and none of the fifteen laws that predate it do — so if someone
+    /// later states a paired-mutation property in terms of the non-mutating
+    /// operations, or drops the new laws, this test says so.
+    @Test("DivergentFormUnion: only the paired-mutation law catches it")
+    func divergentFormUnionCaughtOnlyByPairedMutationLaw() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkSetAlgebraPropertyLaws(
+                for: DivergentFormUnion.self,
+                using: Gen<DivergentFormUnion>.divergentFormUnion(),
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+        let fired = Set(violation?.results.map(\.protocolLaw) ?? [])
+
+        #expect(
+            fired.contains("SetAlgebra.formUnionMatchesUnion"),
+            "expected formUnionMatchesUnion to fire; got: \(fired.sorted())"
+        )
+
+        let nonMutatingLaws: Set<String> = [
+            "SetAlgebra.unionIdempotence", "SetAlgebra.intersectionIdempotence",
+            "SetAlgebra.unionCommutativity", "SetAlgebra.intersectionCommutativity",
+            "SetAlgebra.emptyIdentity",
+            "SetAlgebra.symmetricDifferenceSelfIsEmpty",
+            "SetAlgebra.symmetricDifferenceEmptyIdentity",
+            "SetAlgebra.symmetricDifferenceCommutativity",
+            "SetAlgebra.symmetricDifferenceDefinition",
+            "SetAlgebra.unionDistributivity", "SetAlgebra.intersectionDistributivity",
+            "SetAlgebra.unionAbsorption", "SetAlgebra.intersectionAbsorption",
+            "SetAlgebra.deMorganForUnion", "SetAlgebra.deMorganForIntersection"
+        ]
+        #expect(
+            fired.intersection(nonMutatingLaws).isEmpty,
+            """
+            the pre-existing laws are stated over the non-mutating operations \
+            and should not fire here; got: \
+            \(fired.intersection(nonMutatingLaws).sorted())
+            """
+        )
+    }
+
     @Test func detectsSetAlgebraSubtractingViolationOnlyViaDeMorgan() async throws {
         // BuggySubtracting implements `subtracting` as `symmetricDifference` —
         // they agree exactly when the subtrahend is a subset of the minuend,
