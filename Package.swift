@@ -67,6 +67,14 @@ let package = Package(
             name: "PropertyLawCollections",
             targets: ["PropertyLawCollections"]
         ),
+        // Minimal conformances — the weakest legal implementations of Sequence,
+        // Collection and BidirectionalCollection, for running a law suite against
+        // something that is not Array. Opt-in like the two above: it is a testing
+        // aid, not part of the main PropertyLawKit line.
+        .library(
+            name: "PropertyLawMinimalTypes",
+            targets: ["PropertyLawMinimalTypes"]
+        ),
         // Phase 3 M1 of the collections/async workplan — async-tier-1 law
         // coverage for swift-async-algorithms, opt-in like the two above so
         // the main `PropertyLawKit` line keeps a zero async-algorithms
@@ -305,6 +313,20 @@ let package = Package(
         // `PropertyLawComplex` precedent). Depends on the five per-module
         // products rather than the `Collections` umbrella so each type's
         // module lineage stays explicit.
+        .target(
+            name: "PropertyLawMinimalTypes",
+            dependencies: [
+                .product(name: "PropertyBased", package: "swift-property-based")
+            ]
+        ),
+        .testTarget(
+            name: "PropertyLawMinimalTypesTests",
+            dependencies: [
+                "PropertyLawMinimalTypes",
+                "PropertyLawKit",
+                .product(name: "PropertyBased", package: "swift-property-based")
+            ]
+        ),
         .target(
             name: "PropertyLawCollections",
             dependencies: [
