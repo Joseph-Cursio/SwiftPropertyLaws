@@ -316,6 +316,7 @@ let package = Package(
         .target(
             name: "PropertyLawMinimalTypes",
             dependencies: [
+                "PropertyLawKit",
                 .product(name: "PropertyBased", package: "swift-property-based")
             ]
         ),
