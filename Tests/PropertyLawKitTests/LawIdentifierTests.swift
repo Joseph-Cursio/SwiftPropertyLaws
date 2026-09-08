@@ -241,4 +241,88 @@ struct LawIdentifierTests {
         #expect(lhs == rhs)
         #expect(lhs.hashValue == rhs.hashValue)
     }
+
+    // MARK: - The exported vocabulary
+
+    /// `allLawNames` must contain every law the runtime actually emits, or a
+    /// consumer validating its coverage claims against it gets false negatives
+    /// — the failure mode the export exists to remove, reintroduced one layer
+    /// up.
+    ///
+    /// Runs four real suites rather than trusting `allCases`: the enums are the
+    /// source of the set, so comparing the set to the enums would be circular.
+    @Test func exportedVocabularyCoversEveryEmittedLaw() async throws {
+        var emitted: Set<String> = []
+
+        emitted.formUnion(try await checkSetAlgebraPropertyLaws(
+            for: Set<Int>.self,
+            using: Gen<Int>.int(in: 0...20).array(of: 0...3).map(Set.init),
+            options: LawCheckOptions(budget: .sanity)
+        ).map(\.protocolLaw))
+
+        emitted.formUnion(try await checkEquatablePropertyLaws(
+            for: Int.self,
+            using: Gen<Int>.int(in: -20...20),
+            options: LawCheckOptions(budget: .sanity)
+        ).map(\.protocolLaw))
+
+        emitted.formUnion(try await checkHashablePropertyLaws(
+            for: Int.self,
+            using: Gen<Int>.int(in: -20...20),
+            options: LawCheckOptions(budget: .sanity)
+        ).map(\.protocolLaw))
+
+        emitted.formUnion(try await checkComparablePropertyLaws(
+            for: Int.self,
+            using: Gen<Int>.int(in: -20...20),
+            options: LawCheckOptions(budget: .sanity)
+        ).map(\.protocolLaw))
+
+        #expect(!emitted.isEmpty, "no laws ran; the check below would pass vacuously")
+
+        let unknown = emitted.filter { !LawIdentifier.isKnownLawName($0) }
+        #expect(
+            unknown.isEmpty,
+            """
+            These law names are emitted at runtime but absent from \
+            LawIdentifier.allLawNames, so a consumer checking against it would \
+            call them unknown: \(unknown.sorted().joined(separator: ", "))
+            """
+        )
+    }
+
+    /// The bracketed-backend case, which is the reason `allLawNames` holds base
+    /// names and `isKnownLawName` exists at all. `CodableLaw` has one case and
+    /// the runner emits `Codable.roundTripFidelity[<codec>]`, so a plain set
+    /// membership test on the emitted name fails.
+    @Test func backendSuffixIsStrippedBeforeMembership() {
+        #expect(LawIdentifier.allLawNames.contains("Codable.roundTripFidelity"))
+        #expect(!LawIdentifier.allLawNames.contains("Codable.roundTripFidelity[JSON]"))
+        #expect(LawIdentifier.isKnownLawName("Codable.roundTripFidelity[JSON]"))
+        #expect(LawIdentifier.baseName(of: "Codable.roundTripFidelity[JSON]")
+                == "Codable.roundTripFidelity")
+        #expect(LawIdentifier.baseName(of: "Equatable.reflexivity") == "Equatable.reflexivity")
+    }
+
+    /// The control. Without it, `isKnownLawName` returning true for everything
+    /// would satisfy the two tests above.
+    @Test func inventedLawNamesAreNotKnown() {
+        #expect(!LawIdentifier.isKnownLawName("SetAlgebra.unionAssociativity"))
+        #expect(!LawIdentifier.isKnownLawName("Equatable.notALaw"))
+        #expect(!LawIdentifier.isKnownLawName(""))
+    }
+
+    /// The vocabulary is assembled by hand from twelve enums; a dropped line
+    /// would silently shrink it. Counting against `allCases` catches that
+    /// without asserting a frozen total that every new law would have to edit.
+    @Test func vocabularyIncludesEveryEnumCase() {
+        let expected = EquatableLaw.allCases.count + HashableLaw.allCases.count
+            + ComparableLaw.allCases.count + CodableLaw.allCases.count
+            + IteratorProtocolLaw.allCases.count + SequenceLaw.allCases.count
+            + CollectionLaw.allCases.count + BidirectionalCollectionLaw.allCases.count
+            + RandomAccessCollectionLaw.allCases.count + MutableCollectionLaw.allCases.count
+            + RangeReplaceableCollectionLaw.allCases.count + SetAlgebraLaw.allCases.count
+        #expect(LawIdentifier.allLawIdentifiers.count == expected)
+        #expect(LawIdentifier.allLawNames.count == expected, "a qualified name collided")
+    }
 }
