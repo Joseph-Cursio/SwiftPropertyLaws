@@ -148,9 +148,17 @@ extension LawIdentifier {
 
     /// Every law this module can emit.
     ///
-    /// Built from the twelve law enums' `allCases` through the same factories
-    /// callers use, so the protocol-name strings are written once and a new
-    /// enum case joins the vocabulary without a second edit.
+    /// Built from every law enum's `allCases` through the same factories callers
+    /// use, so the protocol-name strings are written once and a new enum case
+    /// joins the vocabulary without a second edit.
+    ///
+    /// **This was wrong when introduced.** It covered twelve enums while the
+    /// module emits laws for 39 protocols, and claimed to be every law the
+    /// module can emit. `isKnownLawName` therefore returned `false` for laws the
+    /// kit genuinely runs — `Semilattice.combineIdempotence` among them. The
+    /// test meant to catch that ran four suites, all of them twelve-enum ones,
+    /// so it confirmed the vocabulary against the part of the kit it was built
+    /// from.
     ///
     /// **Why this is public.** A consumer that wants to know whether a law name
     /// is real has otherwise to scan this package's *sources* — which means
@@ -164,19 +172,52 @@ extension LawIdentifier {
     ///
     /// Deliberately not an exhaustive `switch` anywhere: adding a law must stay
     /// source-compatible for downstream packages.
-    public static let allLawIdentifiers: [LawIdentifier] =
-        EquatableLaw.allCases.map(LawIdentifier.equatable)
-        + HashableLaw.allCases.map(LawIdentifier.hashable)
-        + ComparableLaw.allCases.map(LawIdentifier.comparable)
-        + CodableLaw.allCases.map(LawIdentifier.codable)
-        + IteratorProtocolLaw.allCases.map(LawIdentifier.iteratorProtocol)
-        + SequenceLaw.allCases.map(LawIdentifier.sequence)
-        + CollectionLaw.allCases.map(LawIdentifier.collection)
-        + BidirectionalCollectionLaw.allCases.map(LawIdentifier.bidirectionalCollection)
-        + RandomAccessCollectionLaw.allCases.map(LawIdentifier.randomAccessCollection)
-        + MutableCollectionLaw.allCases.map(LawIdentifier.mutableCollection)
-        + RangeReplaceableCollectionLaw.allCases.map(LawIdentifier.rangeReplaceableCollection)
-        + SetAlgebraLaw.allCases.map(LawIdentifier.setAlgebra)
+    public static let allLawIdentifiers: [LawIdentifier] = {
+        // Statements rather than one `+` chain: a 39-term chain exceeds the
+        // type checker's budget outright, and a shorter one has tripped CI
+        // timeouts in this codebase's history while compiling locally.
+        var result: [LawIdentifier] = []
+        result += ActionIdempotenceInvariantLaw.allCases.map(LawIdentifier.actionIdempotenceInvariant)
+        result += AdditiveArithmeticLaw.allCases.map(LawIdentifier.additiveArithmetic)
+        result += BidirectionalCollectionLaw.allCases.map(LawIdentifier.bidirectionalCollection)
+        result += BinaryFloatingPointLaw.allCases.map(LawIdentifier.binaryFloatingPoint)
+        result += BinaryIntegerLaw.allCases.map(LawIdentifier.binaryInteger)
+        result += CaseIterableLaw.allCases.map(LawIdentifier.caseIterable)
+        result += CodableLaw.allCases.map(LawIdentifier.codable)
+        result += CollectionLaw.allCases.map(LawIdentifier.collection)
+        result += CommutativeMonoidLaw.allCases.map(LawIdentifier.commutativeMonoid)
+        result += ComparableLaw.allCases.map(LawIdentifier.comparable)
+        result += DefensiveCopyLaw.allCases.map(LawIdentifier.defensiveCopy)
+        result += EquatableLaw.allCases.map(LawIdentifier.equatable)
+        result += FixedWidthIntegerLaw.allCases.map(LawIdentifier.fixedWidthInteger)
+        result += FloatingPointLaw.allCases.map(LawIdentifier.floatingPoint)
+        result += GroupLaw.allCases.map(LawIdentifier.group)
+        result += HashableLaw.allCases.map(LawIdentifier.hashable)
+        result += IdentifiableLaw.allCases.map(LawIdentifier.identifiable)
+        result += InteractionInvariantLaw.allCases.map(LawIdentifier.interactionInvariant)
+        result += IteratorProtocolLaw.allCases.map(LawIdentifier.iteratorProtocol)
+        result += LosslessStringConvertibleLaw.allCases.map(LawIdentifier.losslessStringConvertible)
+        result += MonoidLaw.allCases.map(LawIdentifier.monoid)
+        result += MutableCollectionLaw.allCases.map(LawIdentifier.mutableCollection)
+        result += NumericLaw.allCases.map(LawIdentifier.numeric)
+        result += RandomAccessCollectionLaw.allCases.map(LawIdentifier.randomAccessCollection)
+        result += RangeReplaceableCollectionLaw.allCases.map(LawIdentifier.rangeReplaceableCollection)
+        result += RawRepresentableLaw.allCases.map(LawIdentifier.rawRepresentable)
+        result += RingLaw.allCases.map(LawIdentifier.ring)
+        result += SemigroupLaw.allCases.map(LawIdentifier.semigroup)
+        result += SemilatticeLaw.allCases.map(LawIdentifier.semilattice)
+        result += SequenceLaw.allCases.map(LawIdentifier.sequence)
+        result += SetAlgebraLaw.allCases.map(LawIdentifier.setAlgebra)
+        result += SignedIntegerLaw.allCases.map(LawIdentifier.signedInteger)
+        result += SignedNumericLaw.allCases.map(LawIdentifier.signedNumeric)
+        result += StableIdentityLaw.allCases.map(LawIdentifier.stableIdentity)
+        result += StrideableLaw.allCases.map(LawIdentifier.strideable)
+        result += StringProtocolLaw.allCases.map(LawIdentifier.stringProtocol)
+        result += TransformationLaw.allCases.map(LawIdentifier.transformation)
+        result += UnsignedIntegerLaw.allCases.map(LawIdentifier.unsignedInteger)
+        result += ValueSemanticLaw.allCases.map(LawIdentifier.valueSemantic)
+        return result
+    }()
 
     /// Every law name this module can emit, as `"<Protocol>.<law>"`.
     ///
@@ -191,4 +232,236 @@ extension LawIdentifier {
     public static func isKnownLawName(_ checkResultLaw: String) -> Bool {
         allLawNames.contains(baseName(of: checkResultLaw))
     }
+}
+
+// MARK: - Law enums for the suites the first twelve missed
+
+public enum ActionIdempotenceInvariantLaw: String, Sendable, Hashable, CaseIterable {
+    case doubleApplicationEqualsSingle
+}
+
+public enum AdditiveArithmeticLaw: String, Sendable, Hashable, CaseIterable {
+    case additionAssociativity, additionCommutativity, selfSubtractionIsZero
+    case subtractionInverse, zeroAdditiveIdentity
+}
+
+public enum BinaryFloatingPointLaw: String, Sendable, Hashable, CaseIterable {
+    case binadeMembership, convertingFromIntegerExactness, radix
+    case significandExponentReconstruction
+}
+
+public enum BinaryIntegerLaw: String, Sendable, Hashable, CaseIterable {
+    case bitwiseAndCommutativity, bitwiseAndDistributesOverOr, bitwiseAndIdempotence
+    case bitwiseDeMorgan, bitwiseDoubleNegation, bitwiseOrCommutativity
+    case bitwiseOrIdempotence, bitwiseXorSelfIsZero, bitwiseXorZeroIdentity
+    case divisionByOneIdentity, divisionMultiplicationRoundTrip
+    case quotientAndRemainderConsistency, remainderMagnitudeBound, selfDivisionIsOne
+    case shiftByZeroIdentity, trailingZeroBitCountRange
+}
+
+public enum CaseIterableLaw: String, Sendable, Hashable, CaseIterable {
+    case exactlyOnce
+}
+
+public enum CommutativeMonoidLaw: String, Sendable, Hashable, CaseIterable {
+    case combineCommutativity
+}
+
+public enum DefensiveCopyLaw: String, Sendable, Hashable, CaseIterable {
+    case copyIsDistinctInstance, copyIsIndependent
+}
+
+public enum FixedWidthIntegerLaw: String, Sendable, Hashable, CaseIterable {
+    case addingReportingOverflowConsistency, bitWidthMatchesType, byteSwappedInvolution
+    case dividedReportingOverflowOnDivByZero, minMaxBoundsAreReachable
+    case multipliedReportingOverflowConsistency, nonzeroBitCountRange
+    case subtractingReportingOverflowConsistency, wrappingArithmeticDoesNotTrap
+}
+
+public enum FloatingPointLaw: String, Sendable, Hashable, CaseIterable {
+    case absoluteValueNonNegative, additionCommutativity, additiveInverseFinite
+    case infinityIsInfinite, multiplicationCommutativity, nanComparisonIsUnordered
+    case nanInequality, nanIsNaN, nanPropagatesAddition, nanPropagatesMultiplication
+    case negativeInfinityComparison, nextUpDownRoundTrip, roundedZeroIdentity
+    case signMatchesIsLessThanZero, signedZeroEquality, zeroIsZero
+}
+
+public enum GroupLaw: String, Sendable, Hashable, CaseIterable {
+    case combineLeftInverse, combineRightInverse
+}
+
+public enum IdentifiableLaw: String, Sendable, Hashable, CaseIterable {
+    case idStability
+}
+
+public enum InteractionInvariantLaw: String, Sendable, Hashable, CaseIterable {
+    case invariantHoldsAfterEachStep, isFalsifiable
+}
+
+public enum LosslessStringConvertibleLaw: String, Sendable, Hashable, CaseIterable {
+    case roundTrip
+}
+
+public enum MonoidLaw: String, Sendable, Hashable, CaseIterable {
+    case combineLeftIdentity, combineRightIdentity
+}
+
+public enum NumericLaw: String, Sendable, Hashable, CaseIterable {
+    case leftDistributivity, multiplicationAssociativity, multiplicationCommutativity
+    case oneMultiplicativeIdentity, rightDistributivity, zeroAnnihilation
+}
+
+public enum RawRepresentableLaw: String, Sendable, Hashable, CaseIterable {
+    case roundTrip
+}
+
+public enum RingLaw: String, Sendable, Hashable, CaseIterable {
+    case addAssociativity, addCommutativity, addLeftIdentity, addLeftInverse
+    case addRightIdentity, addRightInverse, leftDistributivity, multiplyAssociativity
+    case multiplyLeftIdentity, multiplyRightIdentity, rightDistributivity
+}
+
+public enum SemigroupLaw: String, Sendable, Hashable, CaseIterable {
+    case combineAssociativity
+}
+
+public enum SemilatticeLaw: String, Sendable, Hashable, CaseIterable {
+    case combineIdempotence
+}
+
+public enum SignedIntegerLaw: String, Sendable, Hashable, CaseIterable {
+    case signednessConsistency
+}
+
+public enum SignedNumericLaw: String, Sendable, Hashable, CaseIterable {
+    case additiveInverse, negateMutationConsistency, negationDistributesOverAddition
+    case negationInvolution
+}
+
+public enum StableIdentityLaw: String, Sendable, Hashable, CaseIterable {
+    case equalityStableUnderMutation, hashStableUnderMutation
+}
+
+public enum StrideableLaw: String, Sendable, Hashable, CaseIterable {
+    case advanceRoundTrip, distanceRoundTrip, selfDistanceIsZero, zeroAdvanceIdentity
+}
+
+public enum StringProtocolLaw: String, Sendable, Hashable, CaseIterable {
+    case countMatchesStringInit, hasPrefixEmpty, hasSuffixEmpty, isEmptyMatchesCountZero
+    case lowercasedIdempotent, stringInitRoundTrip, uppercasedIdempotent, utf
+}
+
+public enum UnsignedIntegerLaw: String, Sendable, Hashable, CaseIterable {
+    case magnitudeIsSelf, nonNegative
+}
+
+public enum ValueSemanticLaw: String, Sendable, Hashable, CaseIterable {
+    case copyMutationDoesNotLeak, copyMutationDoesNotLeakUnderInterleaving
+}
+
+extension LawIdentifier {
+    public static func actionIdempotenceInvariant(_ law: ActionIdempotenceInvariantLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "ActionIdempotenceInvariant", lawName: law.rawValue)
+    }
+
+    public static func additiveArithmetic(_ law: AdditiveArithmeticLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "AdditiveArithmetic", lawName: law.rawValue)
+    }
+
+    public static func binaryFloatingPoint(_ law: BinaryFloatingPointLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "BinaryFloatingPoint", lawName: law.rawValue)
+    }
+
+    public static func binaryInteger(_ law: BinaryIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "BinaryInteger", lawName: law.rawValue)
+    }
+
+    public static func caseIterable(_ law: CaseIterableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "CaseIterable", lawName: law.rawValue)
+    }
+
+    public static func commutativeMonoid(_ law: CommutativeMonoidLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "CommutativeMonoid", lawName: law.rawValue)
+    }
+
+    public static func defensiveCopy(_ law: DefensiveCopyLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "DefensiveCopy", lawName: law.rawValue)
+    }
+
+    public static func fixedWidthInteger(_ law: FixedWidthIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "FixedWidthInteger", lawName: law.rawValue)
+    }
+
+    public static func floatingPoint(_ law: FloatingPointLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "FloatingPoint", lawName: law.rawValue)
+    }
+
+    public static func group(_ law: GroupLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Group", lawName: law.rawValue)
+    }
+
+    public static func identifiable(_ law: IdentifiableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Identifiable", lawName: law.rawValue)
+    }
+
+    public static func interactionInvariant(_ law: InteractionInvariantLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "InteractionInvariant", lawName: law.rawValue)
+    }
+
+    public static func losslessStringConvertible(_ law: LosslessStringConvertibleLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "LosslessStringConvertible", lawName: law.rawValue)
+    }
+
+    public static func monoid(_ law: MonoidLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Monoid", lawName: law.rawValue)
+    }
+
+    public static func numeric(_ law: NumericLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Numeric", lawName: law.rawValue)
+    }
+
+    public static func rawRepresentable(_ law: RawRepresentableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "RawRepresentable", lawName: law.rawValue)
+    }
+
+    public static func ring(_ law: RingLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Ring", lawName: law.rawValue)
+    }
+
+    public static func semigroup(_ law: SemigroupLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Semigroup", lawName: law.rawValue)
+    }
+
+    public static func semilattice(_ law: SemilatticeLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Semilattice", lawName: law.rawValue)
+    }
+
+    public static func signedInteger(_ law: SignedIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "SignedInteger", lawName: law.rawValue)
+    }
+
+    public static func signedNumeric(_ law: SignedNumericLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "SignedNumeric", lawName: law.rawValue)
+    }
+
+    public static func stableIdentity(_ law: StableIdentityLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "StableIdentity", lawName: law.rawValue)
+    }
+
+    public static func strideable(_ law: StrideableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Strideable", lawName: law.rawValue)
+    }
+
+    public static func stringProtocol(_ law: StringProtocolLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "StringProtocol", lawName: law.rawValue)
+    }
+
+    public static func unsignedInteger(_ law: UnsignedIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "UnsignedInteger", lawName: law.rawValue)
+    }
+
+    public static func valueSemantic(_ law: ValueSemanticLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "ValueSemantic", lawName: law.rawValue)
+    }
+
 }
