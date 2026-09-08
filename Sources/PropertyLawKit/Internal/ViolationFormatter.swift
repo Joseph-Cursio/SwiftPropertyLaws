@@ -19,7 +19,13 @@ internal enum ViolationFormatter {
         if let coverageBody = coverageLines(result.coverageHints) {
             lines.append(contentsOf: coverageBody)
         }
-        lines.append("  Replay with seed: \(result.seed.description)")
+        // A walk consumes no randomness, so printing a seed for one would offer
+        // a replay handle that means nothing. It replays from its own space.
+        if result.coverage == nil {
+            lines.append("  Replay with seed: \(result.seed.description)")
+        } else {
+            lines.append("  Deterministic walk — replays from the space, not a seed.")
+        }
         lines.append("  (Empirical evidence, not a proof.)")
         return lines.joined(separator: "\n")
     }
@@ -33,7 +39,21 @@ internal enum ViolationFormatter {
         case .expectedViolation: glyph = "⊘"
         }
         return "\(glyph) \(result.protocolLaw)  "
-            + "[\(result.tier.rawValue.capitalized), \(result.trials) trials]"
+            + "[\(result.tier.rawValue.capitalized), \(extentDescription(result))]"
+    }
+
+    /// What the run actually covered. A sampled law can only report how many
+    /// draws it made; a walk over an `Enumeration` knows its denominator and
+    /// says so, which is the distinction `SpaceCoverage` exists to preserve.
+    private static func extentDescription(_ result: CheckResult) -> String {
+        guard let coverage = result.coverage else { return "\(result.trials) trials" }
+        if result.isViolation {
+            return "failed at case \(coverage.casesRun) of \(coverage.spaceSize)"
+        }
+        if coverage.isComplete {
+            return "walked all \(coverage.spaceSize) cases"
+        }
+        return "walked \(coverage.casesRun) of \(coverage.spaceSize) cases"
     }
 
     private static func outcomeBodyLines(_ outcome: CheckResult.Outcome) -> [String]? {
