@@ -223,7 +223,14 @@ Three things came out differently from the proposal above.
   via `Enumeration.prefix(_:)`. A default cap would be the same defect as `.exhaustive` in a
   new place: coverage quietly bounded, under a name that reads like completeness.
 
-**Slice 2 — the algebraic overloads.** *(Not shipped.)* An `InputSource<Value>` seam inside
+**Slice 2 — the algebraic overloads.** *(Seam shipped; the algebraic overloads are not.)*
+`InputSource<Value>` and the `.sampled` / `.enumerated` arms of the three law builders landed
+early, pulled forward by a flake: two `StrictWeakOrderingLawsTests` cases failed about 3 runs
+in 10 because their conditional laws' antecedents — a chain `x < y < z`, two values `==` and
+not identical — are reachable only by luck at 100 trials. Walking the carrier made both
+deterministic, and the strict-weak-ordering family now has `overEvery:` entry points. It also
+settled the vacuity question below. **The algebraic cluster still samples.** The original
+plan follows. An `InputSource<Value>` seam inside
 `runUnaryLaw` / `runBinaryLaw` / `runTernaryLaw` carrying `.sampled(Generator)` or
 `.enumerated(Enumeration)`, then per-protocol overloads added **where they pay**, starting
 with Semigroup / Monoid / CommutativeMonoid / Group / Semilattice / Ring. This is the
@@ -252,11 +259,12 @@ built and checked against brute force.)*
 - The `Deque` wrapped-layout gap is demonstrated as **unreachable**, not as **hiding a bug**.
   Whether `Deque`'s wrapped-buffer arithmetic has a defect is unknown; the honest statement is
   that the kit could not currently tell.
-- The vacuity claim in §"what the kit can say" is reasoned, and Slice 1 did **not** act on
-  it. It rests on enumeration being *complete over the carrier*, which is true only when
-  the space is walked in full — a sampled space, and a `prefix`-truncated one, inherit the
-  original ambiguity exactly. `SpaceCoverage.isComplete` is the flag a law would have to
-  consult to make the stronger statement, and no law consults it yet.
+- ~~The vacuity claim in §"what the kit can say" is reasoned~~ — **now built and measured.**
+  `requiringApplicableCases` consults `SpaceCoverage.isComplete` and reports the two causes
+  differently; a truncated walk is treated as sampled, since the cases it skipped are the
+  ones that would have decided the question. The asymmetry the note predicted held:
+  `incomparabilityTransitivity` stays unguarded even where the evidence is conclusive,
+  because the fact a guard would establish there is the definition of a total order.
 - Slice 1 ships no per-protocol entry point. The algebraic application it was built for is
   demonstrated in tests (`associativityOverEveryTripleOfASmallCarrier`) by passing the law
   to `checkEveryCase` by hand; wiring it into `checkSemigroupPropertyLaws` and its siblings
