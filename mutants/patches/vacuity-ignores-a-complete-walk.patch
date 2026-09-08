@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift b/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift
+index 60d3575..fad185a 100644
+--- a/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift
++++ b/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift
+@@ -40,7 +40,7 @@ func requiringApplicableCases(
+     needing description: String
+ ) -> CheckResult {
+     guard case .passed = result.outcome, applications.recorded == 0 else { return result }
+-    let complete = result.coverage?.isComplete ?? false
++    let complete = false
+     let counterexample = complete
+         ? """
+             vacuous: none of the \(result.trials) cases walked contains \(description), so this \
