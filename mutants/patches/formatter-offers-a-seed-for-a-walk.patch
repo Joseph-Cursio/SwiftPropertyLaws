@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/ViolationFormatter.swift b/Sources/PropertyLawKit/Internal/ViolationFormatter.swift
+index 7af708b..d8ed757 100644
+--- a/Sources/PropertyLawKit/Internal/ViolationFormatter.swift
++++ b/Sources/PropertyLawKit/Internal/ViolationFormatter.swift
+@@ -21,7 +21,7 @@ internal enum ViolationFormatter {
+         }
+         // A walk consumes no randomness, so printing a seed for one would offer
+         // a replay handle that means nothing. It replays from its own space.
+-        if result.coverage == nil {
++        if true {
+             lines.append("  Replay with seed: \(result.seed.description)")
+         } else {
+             lines.append("  Deterministic walk — replays from the space, not a seed.")

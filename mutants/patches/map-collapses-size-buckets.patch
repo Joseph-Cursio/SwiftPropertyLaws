@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/Enumeration.swift b/Sources/PropertyLawKit/Public/Enumeration.swift
+index 6e0c3e7..5a1b820 100644
+--- a/Sources/PropertyLawKit/Public/Enumeration.swift
++++ b/Sources/PropertyLawKit/Public/Enumeration.swift
+@@ -175,7 +175,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
+     ) -> Enumeration<Mapped> {
+         let build = self.build
+         return Enumeration<Mapped>(
+-            buckets: buckets,
++            buckets: [EnumerationBucket(size: 0, start: 0, count: count)],
+             fullCount: fullCount,
+             build: { transform(build($0)) },
+             describe: describe

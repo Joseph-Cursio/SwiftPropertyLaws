@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Internal/EnumerationDriver.swift b/Sources/PropertyLawKit/Internal/EnumerationDriver.swift
+index a351d9d..eb0f4aa 100644
+--- a/Sources/PropertyLawKit/Internal/EnumerationDriver.swift
++++ b/Sources/PropertyLawKit/Internal/EnumerationDriver.swift
+@@ -51,7 +51,6 @@ package enum EnumerationDriver {
+             do {
+                 if try await property(space[index]) == false {
+                     outcome = .failed(counterexample: space.address(of: index))
+-                    break walk
+                 }
+             } catch {
+                 outcome = .failed(counterexample: "\(space.address(of: index)); threw \(error)")

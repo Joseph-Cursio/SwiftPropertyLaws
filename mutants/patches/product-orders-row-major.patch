@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Public/EnumerationProduct.swift b/Sources/PropertyLawKit/Public/EnumerationProduct.swift
+index 18d9d25..88b1e75 100644
+--- a/Sources/PropertyLawKit/Public/EnumerationProduct.swift
++++ b/Sources/PropertyLawKit/Public/EnumerationProduct.swift
+@@ -111,7 +111,6 @@ struct PendingRectangle: Comparable {
+     /// Summed size first — that is the ordering. Ties fall back to the factors'
+     /// own bucket order, which makes the layout deterministic.
+     static func < (lhs: PendingRectangle, rhs: PendingRectangle) -> Bool {
+-        if lhs.size != rhs.size { return lhs.size < rhs.size }
+         if lhs.firstIndex != rhs.firstIndex { return lhs.firstIndex < rhs.firstIndex }
+         return lhs.secondIndex < rhs.secondIndex
+     }

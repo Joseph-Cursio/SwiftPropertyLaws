@@ -1,0 +1,11 @@
+diff --git a/Sources/PropertyLawKit/Model/SpaceCoverage.swift b/Sources/PropertyLawKit/Model/SpaceCoverage.swift
+index 0acef41..84e8a66 100644
+--- a/Sources/PropertyLawKit/Model/SpaceCoverage.swift
++++ b/Sources/PropertyLawKit/Model/SpaceCoverage.swift
+@@ -28,5 +28,5 @@ public struct SpaceCoverage: Sendable, Hashable {
+     /// Whether every case in the space was examined. Only meaningful on a
+     /// passing result — a walk that stopped early stopped because it found
+     /// something, not because it ran out.
+-    public var isComplete: Bool { casesRun >= spaceSize }
++    public var isComplete: Bool { casesRun > spaceSize }
+ }
