@@ -208,6 +208,7 @@ extension LawIdentifier {
         result += SemilatticeLaw.allCases.map(LawIdentifier.semilattice)
         result += SequenceLaw.allCases.map(LawIdentifier.sequence)
         result += SetAlgebraLaw.allCases.map(LawIdentifier.setAlgebra)
+        result += StrictWeakOrderingLaw.allCases.map(LawIdentifier.strictWeakOrdering)
         result += SignedIntegerLaw.allCases.map(LawIdentifier.signedInteger)
         result += SignedNumericLaw.allCases.map(LawIdentifier.signedNumeric)
         result += StableIdentityLaw.allCases.map(LawIdentifier.stableIdentity)
@@ -464,4 +465,15 @@ extension LawIdentifier {
         LawIdentifier(protocolName: "ValueSemantic", lawName: law.rawValue)
     }
 
+}
+
+public enum StrictWeakOrderingLaw: String, Sendable, Hashable, CaseIterable {
+    case irreflexivity, asymmetry, transitivity, incomparabilityTransitivity
+    case discrimination, congruence
+}
+
+extension LawIdentifier {
+    public static func strictWeakOrdering(_ law: StrictWeakOrderingLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "StrictWeakOrdering", lawName: law.rawValue)
+    }
 }

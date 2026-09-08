@@ -345,9 +345,9 @@ struct LawIdentifierTests {
     @Test func vocabularyCoversEverySuiteThatShipsLaws() {
         let protocols = Set(LawIdentifier.allLawIdentifiers.map(\.protocolName))
         #expect(
-            protocols.count == 39,
+            protocols.count == 40,
             """
-            The vocabulary covers \(protocols.count) protocols, not 39. If a law \
+            The vocabulary covers \(protocols.count) protocols, not 40. If a law \
             suite was added, add its enum to `allLawIdentifiers` and raise this \
             number; if one was removed, lower it. A silent drop here is the bug \
             that shipped in 4.3.0, where the aggregate covered twelve protocols \
