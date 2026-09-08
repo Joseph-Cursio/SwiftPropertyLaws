@@ -138,10 +138,12 @@ for the product — not of their case counts, which is what makes it affordable 
 locate the `(sizeA, sizeB)` split within it, index row-major inside that rectangle, map back
 through each factor's size-bucket offset.
 
-Recommend summed-size ordering with `size` a required part of a space's definition.
-**Not implemented; the histogram-convolution scheme above is reasoned, not measured**, and
-should be built and checked against a materialised brute-force ordering before it is
-relied on.
+**Shipped and measured.** `Every.product` orders by summed size, and
+`EnumerationProductTests.productWalkMatchesABruteForceSummedSizeOrdering` checks the
+closed-form unranking case-by-case against a materialised brute-force ordering — which is
+the check this section asked for before the scheme was relied on.
+`summedSizeOrderingIsNotRowMajorOrdering` pins the decision itself, so a change that
+quietly reverted to row-major fails rather than passing as a reordering.
 
 ## Coverage should be a reported fact, which retires `.exhaustive`
 
@@ -201,31 +203,48 @@ name a smaller case. Same space, same law ("cardinality < 3" over subsets of `0.
 `[0, 1, 2]` is exactly the minimal witness. A driver that owns the index gets the second row
 without putting the index in the caller's hands.
 
-**Slice 1 — `Enumeration` + an enumeration driver.** The space type, `every`, `everyRange`,
-`everySubset`, `everyTriple`, `product`, plus an `EnumerationDriver` beside `AggregateDriver`
-(which already sets the precedent for a driver that bypasses `PropertyBackend`), and the
-`CheckResult` coverage field. One generic entry point running a caller's property over every
-case smallest-first, reporting the address of the first failure.
+**Slice 1 — `Enumeration` + an enumeration driver. SHIPPED.** `Enumeration<Element>` +
+`EnumerationBucket`, the constructors under the `Every` namespace, `EnumerationDriver`,
+`SpaceCoverage`, and `checkEveryCase`. 39 tests; 6 mutants in a new
+`enumeration-machinery` shape, 6 killed.
 
-**Slice 2 — the algebraic overloads.** An `InputSource<Value>` seam inside
+Three things came out differently from the proposal above.
+
+- **The combinators are named `Every.elements` / `Every.ranges` / `Every.subsets` /
+  `Every.triples` / `Every.product`,** not `every` / `everyRange` / `everySubset`.
+  `Every.everySubset(of: 8)` stutters; the `withEvery` spelling is Apple's, where the
+  combinator is a free function and the prefix is carrying the meaning. Under a namespace it
+  is redundant.
+- **The ordering contract is a value, not a convention.** `EnumerationBucket` — contiguous
+  runs of equal size, ascending — is public, so a space *states* its order rather than
+  being trusted to have one. The invariant is enforced in `init` and asserted directly on
+  every constructor, because everything this type claims about minimality rests on it.
+- **`checkEveryCase` takes no trial cap and has no hidden default.** Capping is explicit
+  via `Enumeration.prefix(_:)`. A default cap would be the same defect as `.exhaustive` in a
+  new place: coverage quietly bounded, under a name that reads like completeness.
+
+**Slice 2 — the algebraic overloads.** *(Not shipped.)* An `InputSource<Value>` seam inside
 `runUnaryLaw` / `runBinaryLaw` / `runTernaryLaw` carrying `.sampled(Generator)` or
 `.enumerated(Enumeration)`, then per-protocol overloads added **where they pay**, starting
 with Semigroup / Monoid / CommutativeMonoid / Group / Semilattice / Ring. This is the
 highest-value application, and the seam is what keeps it from being a 48-signature change.
 
-**Slice 3 — the `Generator` bridge.** `Gen<Int>.int(in: 0 ..< count).map { space[$0] }` is a
+**Slice 3 — the `Generator` bridge.** *(Not shipped.)* `Gen<Int>.int(in: 0 ..< count).map { space[$0] }` is a
 `Generator<Element, Shrink.Integer<Int>>` and drives every existing entry point unchanged —
 **measured** against `checkEquatablePropertyLaws`. Now framed correctly: not a compatibility
 shim, but the honest fallback for a space too large to walk, and the thing that closes the
 `Deque`-layout gap without touching any of the kit's 48 signatures. Callers accept that it
 samples and does not shrink.
 
-**Slice 4 — carrier enumeration around existing suites.** Enumerate carriers outside, run an
+**Slice 4 — carrier enumeration around existing suites.** *(Not shipped.)* Enumerate carriers outside, run an
 existing suite on each. Needs no per-protocol overloads. It does need a documented budget
 convention, because 6 layouts × 1 000 trials × N laws is not what a caller expects from one
 call — Apple avoids this because their inner checkers are deterministic and ours sample.
 
 ## What was not verified
+
+*(Updated after Slice 1 shipped. Summed-size ordering moved out of this list — it is now
+built and checked against brute force.)*
 
 - No enumerated law was run against a real violator. The `% 8` index violator in the note is
   Apple's, in Apple's harness; nothing here reproduces it, so "enumeration would have caught
@@ -233,10 +252,15 @@ call — Apple avoids this because their inner checkers are deterministic and ou
 - The `Deque` wrapped-layout gap is demonstrated as **unreachable**, not as **hiding a bug**.
   Whether `Deque`'s wrapped-buffer arithmetic has a defect is unknown; the honest statement is
   that the kit could not currently tell.
-- Summed-size product ordering is designed, not built.
-- The vacuity claim in §"what the kit can say" is reasoned. It rests on enumeration being
-  *complete over the carrier*, which is true only when the space is walked in full — a
-  sampled space inherits the original ambiguity exactly.
+- The vacuity claim in §"what the kit can say" is reasoned, and Slice 1 did **not** act on
+  it. It rests on enumeration being *complete over the carrier*, which is true only when
+  the space is walked in full — a sampled space, and a `prefix`-truncated one, inherit the
+  original ambiguity exactly. `SpaceCoverage.isComplete` is the flag a law would have to
+  consult to make the stronger statement, and no law consults it yet.
+- Slice 1 ships no per-protocol entry point. The algebraic application it was built for is
+  demonstrated in tests (`associativityOverEveryTripleOfASmallCarrier`) by passing the law
+  to `checkEveryCase` by hand; wiring it into `checkSemigroupPropertyLaws` and its siblings
+  is Slice 2.
 - Slice 4's budget interaction is reasoned about, not measured.
 
 ## What the first draft got wrong
