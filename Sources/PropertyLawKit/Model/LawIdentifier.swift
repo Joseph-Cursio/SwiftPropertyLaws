@@ -20,9 +20,20 @@ public struct LawIdentifier: Sendable, Hashable {
     public var qualifiedName: String { "\(protocolName).\(lawName)" }
 
     func matches(_ checkResultLaw: String) -> Bool {
-        let head = checkResultLaw.split(separator: "[", maxSplits: 1).first.map(String.init)
+        Self.baseName(of: checkResultLaw) == qualifiedName
+    }
+
+    /// A `CheckResult.protocolLaw` with any backend-specific suffix removed.
+    ///
+    /// The runner appends a bracketed discriminator to laws that run once per
+    /// backend — `Codable.roundTripFidelity[JSON]`. `CodableLaw` has one case,
+    /// `roundTripFidelity`, so the emitted name is not an enum case and never
+    /// will be. Everything comparing an emitted law to this module's vocabulary
+    /// has to strip the suffix first, which is why this is public rather than
+    /// left inline in `matches`.
+    public static func baseName(of checkResultLaw: String) -> String {
+        checkResultLaw.split(separator: "[", maxSplits: 1).first.map(String.init)
             ?? checkResultLaw
-        return head == qualifiedName
     }
 }
 
@@ -129,4 +140,55 @@ public enum SetAlgebraLaw: String, Sendable, Hashable, CaseIterable {
     case formUnionMatchesUnion, formIntersectionMatchesIntersection
     case subtractMatchesSubtracting
     case formSymmetricDifferenceMatchesSymmetricDifference
+}
+
+// MARK: - The vocabulary
+
+extension LawIdentifier {
+
+    /// Every law this module can emit.
+    ///
+    /// Built from the twelve law enums' `allCases` through the same factories
+    /// callers use, so the protocol-name strings are written once and a new
+    /// enum case joins the vocabulary without a second edit.
+    ///
+    /// **Why this is public.** A consumer that wants to know whether a law name
+    /// is real has otherwise to scan this package's *sources* — which means
+    /// reading whatever happens to be in `.build/checkouts` rather than the
+    /// version actually linked, failing outright against a binary dependency,
+    /// and matching string literals wherever they appear, including in doc
+    /// comments. `SwiftInferProperties` does exactly that today, in two
+    /// hand-copied places, to validate a table asserting which laws this kit
+    /// runs. That table is a claim about this module, and this module is where
+    /// the answer should come from.
+    ///
+    /// Deliberately not an exhaustive `switch` anywhere: adding a law must stay
+    /// source-compatible for downstream packages.
+    public static let allLawIdentifiers: [LawIdentifier] =
+        EquatableLaw.allCases.map(LawIdentifier.equatable)
+        + HashableLaw.allCases.map(LawIdentifier.hashable)
+        + ComparableLaw.allCases.map(LawIdentifier.comparable)
+        + CodableLaw.allCases.map(LawIdentifier.codable)
+        + IteratorProtocolLaw.allCases.map(LawIdentifier.iteratorProtocol)
+        + SequenceLaw.allCases.map(LawIdentifier.sequence)
+        + CollectionLaw.allCases.map(LawIdentifier.collection)
+        + BidirectionalCollectionLaw.allCases.map(LawIdentifier.bidirectionalCollection)
+        + RandomAccessCollectionLaw.allCases.map(LawIdentifier.randomAccessCollection)
+        + MutableCollectionLaw.allCases.map(LawIdentifier.mutableCollection)
+        + RangeReplaceableCollectionLaw.allCases.map(LawIdentifier.rangeReplaceableCollection)
+        + SetAlgebraLaw.allCases.map(LawIdentifier.setAlgebra)
+
+    /// Every law name this module can emit, as `"<Protocol>.<law>"`.
+    ///
+    /// **Base names.** A law that runs once per backend is emitted with a
+    /// bracketed suffix that is not in this set; normalise with
+    /// `baseName(of:)`, or use `isKnownLawName(_:)` which does it for you.
+    public static let allLawNames: Set<String> =
+        Set(allLawIdentifiers.map(\.qualifiedName))
+
+    /// Whether `checkResultLaw` names a law this module can emit, ignoring any
+    /// backend-specific suffix.
+    public static func isKnownLawName(_ checkResultLaw: String) -> Bool {
+        allLawNames.contains(baseName(of: checkResultLaw))
+    }
 }
