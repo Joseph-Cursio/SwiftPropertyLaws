@@ -28,10 +28,32 @@ Requires a clean working tree.
 | `equatable-transitivity-always-holds` | law-detection | killed | `detectsNonTransitiveEquality` |
 | `monoid-left-identity-always-holds` | law-detection | killed | `detectsBadLeftIdentity` |
 | `equatable-symmetry-always-holds` | law-detection | killed | `detectsSymmetryOnlyEquality` |
+| `product-orders-row-major` | enumeration-machinery | killed | `productWalkMatchesABruteForceSummedSizeOrdering` |
+| `prefix-forgets-full-count` | enumeration-machinery | killed | `prefixTruncatesButRemembersTheFullSpace` |
+| `walk-does-not-stop-at-first-failure` | enumeration-machinery | killed | `aWalkStopsAtTheFirstFailure` |
+| `map-collapses-size-buckets` | enumeration-machinery | killed | `mapKeepsOrderSizesAndAddresses` |
+| `formatter-offers-a-seed-for-a-walk` | enumeration-machinery | killed | `aCompleteWalkSaysSoAndOffersNoSeed` |
+| `coverage-complete-off-by-one` | enumeration-machinery | killed | `coverageIsCompleteOnlyWhenEveryCaseWasSeen` |
 
-Each blinds a Strict-tier law by making its `property:` closure return `true`
-unconditionally; the planted violator sails through, and the detection test that
-demanded it be caught goes red. All four verified killed.
+The first four blind a Strict-tier law by making its `property:` closure return
+`true` unconditionally; the planted violator sails through, and the detection
+test that demanded it be caught goes red. All four verified killed.
+
+**The `enumeration-machinery` shape is different, and deliberately so.** A law
+mutant asks *does the suite still catch this bug?* A machinery mutant asks *does
+the harness still tell the truth about what it did?* — which is the failure mode
+`SpaceCoverage` exists to prevent, and it does not show up as an uncaught
+violator. Four of the six degrade a **claim** rather than a check:
+`prefix-forgets-full-count` makes a truncated walk report complete coverage,
+`coverage-complete-off-by-one` makes a complete walk deny it,
+`formatter-offers-a-seed-for-a-walk` hands back a replay handle that means
+nothing, and `map-collapses-size-buckets` discards the ordering contract while
+every case still walks. Each leaves the suite green in every other respect. The
+other two, `product-orders-row-major` and
+`walk-does-not-stop-at-first-failure`, take away minimality — the first failure
+found stops being the smallest failure that exists — which is the property the
+whole design turns on and which no assertion about pass/fail would notice.
+All six verified killed.
 
 **A gap this corpus found — and we then closed.** Blinding `Equatable.symmetry`
 originally *survived*: the only asymmetric planted violator

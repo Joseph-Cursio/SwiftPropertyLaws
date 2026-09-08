@@ -1,6 +1,6 @@
 {
   "kind": "spm",
-  "note": "Private mutation/regression corpus for SwiftPropertyLaws — the law kit dogfooding on itself (Chapter 30 §30.4.4). Each mutant forces a law's property to always-true, so the law stops detecting its planted violator; the corresponding PlantedBugs detection test (which expects the violation) then fails. Run via `swift test --filter`. Not a scored benchmark.",
+  "note": "Private mutation/regression corpus for SwiftPropertyLaws \u2014 the law kit dogfooding on itself (Chapter 30 \u00a730.4.4). Each mutant forces a law's property to always-true, so the law stops detecting its planted violator; the corresponding PlantedBugs detection test (which expects the violation) then fails. Run via `swift test --filter`. Not a scored benchmark.",
   "mutants": [
     {
       "id": "semigroup-associativity-always-holds",
@@ -8,7 +8,7 @@
       "shape": "law-detection",
       "expected": "killed",
       "test": "detectsNonAssociativeCombine",
-      "label": "Semigroup.combineAssociativity always returns true — a non-associative combine is no longer caught"
+      "label": "Semigroup.combineAssociativity always returns true \u2014 a non-associative combine is no longer caught"
     },
     {
       "id": "monoid-left-identity-always-holds",
@@ -16,7 +16,7 @@
       "shape": "law-detection",
       "expected": "killed",
       "test": "detectsBadLeftIdentity",
-      "label": "Monoid.combineLeftIdentity always returns true — a broken left identity is no longer caught (detectsBadLeftIdentity asserts the specific law name)"
+      "label": "Monoid.combineLeftIdentity always returns true \u2014 a broken left identity is no longer caught (detectsBadLeftIdentity asserts the specific law name)"
     },
     {
       "id": "equatable-transitivity-always-holds",
@@ -24,7 +24,7 @@
       "shape": "law-detection",
       "expected": "killed",
       "test": "detectsNonTransitiveEquality",
-      "label": "Equatable.transitivity always returns true — a non-transitive == is no longer caught"
+      "label": "Equatable.transitivity always returns true \u2014 a non-transitive == is no longer caught"
     },
     {
       "id": "equatable-symmetry-always-holds",
@@ -32,7 +32,55 @@
       "shape": "law-detection",
       "expected": "killed",
       "test": "detectsSymmetryOnlyEquality",
-      "label": "Equatable.symmetry always returns true — an asymmetric == is no longer caught. Killable only after adding SymmetryOnlyEquatable (a `>=` violator that breaks symmetry alone) + detectsSymmetryOnlyEquality, which pins the symmetry law specifically."
+      "label": "Equatable.symmetry always returns true \u2014 an asymmetric == is no longer caught. Killable only after adding SymmetryOnlyEquatable (a `>=` violator that breaks symmetry alone) + detectsSymmetryOnlyEquality, which pins the symmetry law specifically."
+    },
+    {
+      "id": "product-orders-row-major",
+      "patch": "patches/product-orders-row-major.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "productWalkMatchesABruteForceSummedSizeOrdering",
+      "label": "Every.product sorts its bucket rectangles ignoring summed size, collapsing the ordering to row-major \u2014 the design decision the note measured as changing which failure gets reported."
+    },
+    {
+      "id": "prefix-forgets-full-count",
+      "patch": "patches/prefix-forgets-full-count.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "prefixTruncatesButRemembersTheFullSpace",
+      "label": "Enumeration.prefix drops the original fullCount, so a truncated walk reports complete coverage of a space it only sampled the front of \u2014 the exact overclaim SpaceCoverage exists to prevent."
+    },
+    {
+      "id": "walk-does-not-stop-at-first-failure",
+      "patch": "patches/walk-does-not-stop-at-first-failure.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "aWalkStopsAtTheFirstFailure",
+      "label": "EnumerationDriver keeps walking past a failure, so the reported case is the last failure rather than the smallest \u2014 the minimality guarantee, silently lost."
+    },
+    {
+      "id": "map-collapses-size-buckets",
+      "patch": "patches/map-collapses-size-buckets.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "mapKeepsOrderSizesAndAddresses",
+      "label": "Enumeration.map rebuilds the space as one size-0 bucket, so a mapped space loses its ordering contract and any product built on it degrades to row-major."
+    },
+    {
+      "id": "formatter-offers-a-seed-for-a-walk",
+      "patch": "patches/formatter-offers-a-seed-for-a-walk.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "aCompleteWalkSaysSoAndOffersNoSeed",
+      "label": "ViolationFormatter prints a replay seed for a walk, offering a handle that means nothing \u2014 a walk consumes no randomness and replays from its own space."
+    },
+    {
+      "id": "coverage-complete-off-by-one",
+      "patch": "patches/coverage-complete-off-by-one.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "coverageIsCompleteOnlyWhenEveryCaseWasSeen",
+      "label": "SpaceCoverage.isComplete requires strictly more cases than the space holds, so a complete walk never reports itself complete."
     }
   ]
 }

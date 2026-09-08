@@ -37,6 +37,12 @@ public struct CheckResult: Sendable, Hashable {
     /// shrinkable, or the first failing input was already minimal.
     public internal(set) var shrinkSteps: Int
 
+    /// How much of a bounded input space this check walked (Slice 1 of the
+    /// enumeration work). `nil` — the case for every sampled law — means the
+    /// check does not know its input space, which is distinct from knowing it
+    /// and having covered none of it. See ``SpaceCoverage``.
+    public internal(set) var coverage: SpaceCoverage?
+
     public init(
         protocolLaw: String,
         tier: StrictnessTier,
@@ -47,7 +53,8 @@ public struct CheckResult: Sendable, Hashable {
         nearMisses: [String]? = nil,
         coverageHints: CoverageHints? = nil,
         shrunkFrom: String? = nil,
-        shrinkSteps: Int = 0
+        shrinkSteps: Int = 0,
+        coverage: SpaceCoverage? = nil
     ) {
         self.protocolLaw = protocolLaw
         self.tier = tier
@@ -59,6 +66,7 @@ public struct CheckResult: Sendable, Hashable {
         self.coverageHints = coverageHints
         self.shrunkFrom = shrunkFrom
         self.shrinkSteps = shrinkSteps
+        self.coverage = coverage
     }
 
     public var isViolation: Bool {

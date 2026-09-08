@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/Enumeration.swift b/Sources/PropertyLawKit/Public/Enumeration.swift
+index 6e0c3e7..19a2311 100644
+--- a/Sources/PropertyLawKit/Public/Enumeration.swift
++++ b/Sources/PropertyLawKit/Public/Enumeration.swift
+@@ -165,7 +165,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
+             kept.append(EnumerationBucket(size: bucket.size, start: bucket.start, count: take))
+             taken += take
+         }
+-        return Enumeration(buckets: kept, fullCount: fullCount, build: build, describe: describe)
++        return Enumeration(buckets: kept, build: build, describe: describe)
+     }
+ 
+     /// Transform each case, keeping the order, the sizes and the addresses.
