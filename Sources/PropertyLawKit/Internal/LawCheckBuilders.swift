@@ -61,6 +61,26 @@ package func runUnaryLaw<Value: Sendable>(
             property: property,
             describeFailure: formatCounterexample
         )
+    case .sampledFromSpace(let space):
+        let sampler = SpaceSampler(space)
+        let result = await PerLawDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            check: LawCheck(
+                sample: { rng in
+                    let draw = sampler.draw(&rng)
+                    sampler.record([draw])
+                    return draw
+                },
+                property: { try await property($0.value) },
+                formatCounterexample: { draw, error in
+                    sampler.describe([draw], formatCounterexample(draw.value, error))
+                },
+                shrink: { sampler.shrink($0) }
+            )
+        )
+        return result.reporting(sampler.coverage(arity: 1))
     }
 }
 
@@ -134,7 +154,49 @@ package func runBinaryLaw<Value: Sendable>(
             property: { try await property($0.0, $0.1) },
             describeFailure: { formatCounterexample($0.0, $0.1, $1) }
         )
+    case .sampledFromSpace(let space):
+        return await runBinaryLawSampling(
+            protocolLaw, tier: tier, space: space, options: options,
+            property: property, formatCounterexample: formatCounterexample)
     }
+}
+
+/// Two independent draws from one space rather than one draw from
+/// `product(space, space)`: the composite is n squared cases, which overflows
+/// for a large space, and shrinking each position separately is the strategy the
+/// sampled path already uses.
+private func runBinaryLawSampling<Value: Sendable>(
+    _ protocolLaw: String,
+    tier: StrictnessTier = .strict,
+    space: Enumeration<Value>,
+    options: LawCheckOptions,
+    property: @escaping @Sendable (Value, Value) async throws -> Bool,
+    formatCounterexample: @escaping @Sendable (Value, Value, ErrorBox?) -> String
+) async -> CheckResult {
+    let sampler = SpaceSampler(space)
+    let result = await PerLawDriver.run(
+        protocolLaw: protocolLaw,
+        tier: tier,
+        options: options,
+        check: LawCheck(
+            sample: { rng in
+                let pair = (sampler.draw(&rng), sampler.draw(&rng))
+                sampler.record([pair.0, pair.1])
+                return pair
+            },
+            property: { try await property($0.0.value, $0.1.value) },
+            formatCounterexample: { pair, error in
+                sampler.describe(
+                    [pair.0, pair.1],
+                    formatCounterexample(pair.0.value, pair.1.value, error))
+            },
+            shrink: { pair in
+                sampler.shrink(pair.0).map { ($0, pair.1) }
+                    + sampler.shrink(pair.1).map { (pair.0, $0) }
+            }
+        )
+    )
+    return result.reporting(sampler.coverage(arity: 2))
 }
 
 /// Two-value law over a generator — the shape every existing call site uses.
@@ -216,7 +278,59 @@ package func runTernaryLaw<Value: Sendable>(
             property: { try await property($0.first, $0.second, $0.third) },
             describeFailure: { formatCounterexample($0.first, $0.second, $0.third, $1) }
         )
+    case .sampledFromSpace(let space):
+        return await runTernaryLawSampling(
+            protocolLaw, tier: tier, space: space, options: options,
+            property: property, formatCounterexample: formatCounterexample)
     }
+}
+
+/// `Triple` rather than a 3-tuple, for the same reason the walked path uses it:
+/// three independent draws, each shrinking on its own index.
+private func runTernaryLawSampling<Value: Sendable>(
+    _ protocolLaw: String,
+    tier: StrictnessTier = .strict,
+    space: Enumeration<Value>,
+    options: LawCheckOptions,
+    property: @escaping @Sendable (Value, Value, Value) async throws -> Bool,
+    formatCounterexample: @escaping @Sendable (Value, Value, Value, ErrorBox?) -> String
+) async -> CheckResult {
+    let sampler = SpaceSampler(space)
+    let result = await PerLawDriver.run(
+        protocolLaw: protocolLaw,
+        tier: tier,
+        options: options,
+        check: LawCheck(
+            sample: { rng in
+                let triple = Triple(
+                    first: sampler.draw(&rng),
+                    second: sampler.draw(&rng),
+                    third: sampler.draw(&rng))
+                sampler.record([triple.first, triple.second, triple.third])
+                return triple
+            },
+            property: { try await property($0.first.value, $0.second.value, $0.third.value) },
+            formatCounterexample: { triple, error in
+                sampler.describe(
+                    [triple.first, triple.second, triple.third],
+                    formatCounterexample(
+                        triple.first.value, triple.second.value, triple.third.value, error))
+            },
+            shrink: { triple in
+                let firsts = sampler.shrink(triple.first).map {
+                    Triple(first: $0, second: triple.second, third: triple.third)
+                }
+                let seconds = sampler.shrink(triple.second).map {
+                    Triple(first: triple.first, second: $0, third: triple.third)
+                }
+                let thirds = sampler.shrink(triple.third).map {
+                    Triple(first: triple.first, second: triple.second, third: $0)
+                }
+                return firsts + seconds + thirds
+            }
+        )
+    )
+    return result.reporting(sampler.coverage(arity: 3))
 }
 
 /// Three-value law over a generator — the shape every existing call site uses.

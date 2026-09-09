@@ -53,3 +53,49 @@ public func checkEveryCase<Element: Sendable>(
         ]
     }
 }
+
+/// Check a law against **random draws from** a bounded space, keeping what the
+/// space knows.
+///
+/// The sibling of ``checkEveryCase(of:law:tier:options:satisfies:)`` for a space
+/// too large to walk. Unlike `Enumeration.generator`, which erases the index at
+/// the `.map` and so gives up both, this keeps it inside the driver and
+/// therefore keeps:
+///
+/// - **Minimality.** A failure shrinks toward index 0, and because spaces are
+///   ordered smallest-first that walks the *case* toward the smallest one. The
+///   bridge cannot: the kit's shrinker is value-level, and a bare value cannot
+///   name a smaller sibling.
+/// - **A denominator.** The run reports how many *distinct* cases it drew
+///   against the size of the space — the only sampled path in the kit that can
+///   say what fraction it saw.
+///
+/// The index never reaches `property`, which still receives a bare `Element`.
+///
+/// `options.budget` decides how many draws — this is sampling, so effort is a
+/// budget again, unlike the walked entry where it is ignored.
+///
+/// Prefer the walked entry when the space fits. This is for when it does not,
+/// and it is strictly better than `space.generator` wherever a law can take an
+/// `InputSource`.
+@discardableResult
+public func checkSampledCases<Element: Sendable>(
+    of space: Enumeration<Element>,
+    law protocolLaw: String,
+    tier: StrictnessTier = .strict,
+    options: LawCheckOptions = LawCheckOptions(),
+    satisfies property: @escaping @Sendable (Element) async throws -> Bool
+) async throws -> [CheckResult] {
+    try await runPropertyLawSuite(options: options) {
+        [
+            await runUnaryLaw(
+                protocolLaw,
+                tier: tier,
+                source: .sampledFromSpace(space),
+                options: options,
+                property: property,
+                formatCounterexample: { element, _ in "\(element)" }
+            )
+        ]
+    }
+}
