@@ -17,18 +17,69 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: Se
     coverage: AnyCoverageClassifier<Value>? = nil,
     shrink: (@Sendable (Value) -> [Value])? = nil
 ) async throws -> [CheckResult] {
+    try await checkEquatablePropertyLaws(
+        from: .sampling(generator), options: options, coverage: coverage, shrink: shrink)
+}
+
+/// The same four laws over **every case** of a bounded carrier.
+///
+/// `Equatable.transitivity` is conditional — it says nothing until three drawn
+/// values satisfy `x == y && y == z` — and that antecedent is rare under any
+/// generator wide enough to be realistic. Measured on a type whose `==` is
+/// "within 1": over 1 000 trials the chain fires 80 times from a 4-value domain,
+/// once from 16 values, and **not at all** from 100. A genuinely non-transitive
+/// `==` therefore goes undetected at 0...200 on every seed tried, with the suite
+/// reporting a clean pass.
+///
+/// Walking a carrier removes the luck: every pair and every triple of it are
+/// present by construction, so the law applies rather than hoping to. The
+/// carrier is the explicit choice a narrow generator was making silently, and
+/// the result reports how much of it was covered.
+///
+/// `coverage:` and `shrink:` are absent. Near-miss classification is a sampled
+/// concern, and a walk needs no shrinker: ordered smallest-first, the first
+/// failure is already the smallest.
+@discardableResult
+public func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
+    for type: Value.Type = Value.self,
+    overEvery carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkEquatablePropertyLaws(from: .enumerated(carrier), options: options)
+}
+
+/// Random draws from a bounded carrier, keeping the index — for a carrier too
+/// large to walk. Failures still shrink toward the smallest case and the run
+/// still reports a denominator.
+@discardableResult
+public func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
+    for type: Value.Type = Value.self,
+    sampling carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkEquatablePropertyLaws(from: .sampledFromSpace(carrier), options: options)
+}
+
+/// One assembler, three sources — so no traversal can run a different set of
+/// laws from another.
+func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
+    from source: InputSource<Value>,
+    options: LawCheckOptions,
+    coverage: AnyCoverageClassifier<Value>? = nil,
+    shrink: (@Sendable (Value) -> [Value])? = nil
+) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         [
-            await checkReflexivity(generator: generator, options: options, coverage: coverage, shrink: shrink),
-            await checkSymmetry(generator: generator, options: options, shrink: shrink),
-            await checkTransitivity(generator: generator, options: options, shrink: shrink),
-            await checkNegationConsistency(generator: generator, options: options, shrink: shrink)
+            await checkReflexivity(source: source, options: options, coverage: coverage, shrink: shrink),
+            await checkSymmetry(source: source, options: options, shrink: shrink),
+            await checkTransitivity(source: source, options: options, shrink: shrink),
+            await checkNegationConsistency(source: source, options: options, shrink: shrink)
         ]
     }
 }
 
-private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
-    generator: Generator<Value, Shrinker>,
+private func checkReflexivity<Value: Equatable & Sendable>(
+    source: InputSource<Value>,
     options: LawCheckOptions,
     coverage: AnyCoverageClassifier<Value>?,
     shrink: (@Sendable (Value) -> [Value])?
@@ -41,7 +92,7 @@ private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSeq
     }
     return await runUnaryLaw(
         "Equatable.reflexivity",
-        generator: generator,
+        source: source,
         options: options,
         observation: PerLawDriver.Observation(classify: classify),
         property: { sample in sample == sample },
@@ -52,14 +103,14 @@ private func checkReflexivity<Value: Equatable & Sendable, Shrinker: SendableSeq
     )
 }
 
-private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
-    generator: Generator<Value, Shrinker>,
+private func checkSymmetry<Value: Equatable & Sendable>(
+    source: InputSource<Value>,
     options: LawCheckOptions,
     shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     await runBinaryLaw(
         "Equatable.symmetry",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second in
             (first == second) == (second == first)
@@ -72,14 +123,14 @@ private func checkSymmetry<Value: Equatable & Sendable, Shrinker: SendableSequen
     )
 }
 
-private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
-    generator: Generator<Value, Shrinker>,
+private func checkTransitivity<Value: Equatable & Sendable>(
+    source: InputSource<Value>,
     options: LawCheckOptions,
     shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     await runTernaryLaw(
         "Equatable.transitivity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             !(first == second && second == third) || (first == third)
@@ -97,14 +148,14 @@ private func checkTransitivity<Value: Equatable & Sendable, Shrinker: SendableSe
 // whose `==` is observed through generic dispatch. The check stays in case a
 // future Swift change makes `!=` independently overridable; today it always
 // passes.
-private func checkNegationConsistency<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
-    generator: Generator<Value, Shrinker>,
+private func checkNegationConsistency<Value: Equatable & Sendable>(
+    source: InputSource<Value>,
     options: LawCheckOptions,
     shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     await runBinaryLaw(
         "Equatable.negationConsistency",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second in
             (first != second) == !(first == second)
