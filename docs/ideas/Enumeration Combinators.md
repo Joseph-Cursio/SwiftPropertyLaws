@@ -279,10 +279,43 @@ Mutation-tested: 3 mutants in a new `space-sampling` shape, 3 killed.
 by appending, so nothing is wrapped, and the space still enumerates, still reports its size,
 and still drives every law to a pass while closing nothing.
 
-**Slice 4 — carrier enumeration around existing suites.** *(Not shipped.)* Enumerate carriers outside, run an
-existing suite on each. Needs no per-protocol overloads. It does need a documented budget
-convention, because 6 layouts × 1 000 trials × N laws is not what a caller expects from one
-call — Apple avoids this because their inner checkers are deterministic and ours sample.
+**Slice 4 — carrier enumeration around existing suites. SHIPPED.**
+`checkEveryCarrier(of:options:perCarrier:suite:)` runs an existing suite once against each
+case of a carrier space. Every other entry varies a law's *inputs*; this varies its
+*subject*.
+
+**The budget convention this item predicted would be needed is the whole design.** Apple
+composes this freely because their checkers are deterministic — one pass per carrier
+exhausts it. Ours sample, so the naive composition multiplies: 107 carriers × 1 000 trials
+× 15 laws is 1.6 million evaluations from one innocuous-looking call. `perCarrier` is
+therefore a separate explicit parameter defaulting to `.sanity`, and `options.budget` is
+ignored. The default is a claim rather than caution: in a carrier walk the variety comes
+from the carriers, not the trials.
+
+Results merge one per law with `trials` summing the inputs drawn and `coverage` describing
+the **carrier** space. The walk stops at the first failing carrier, so the one reported is
+the smallest exhibiting the failure.
+
+**What it catches that nothing else does.** `LyingCount` is a `Collection` whose `count` is
+correct at every length but seven — a property of the *subject*, not of any input drawn
+from it. Pointing the suite at one carrier finds it only if that carrier is the seventh, and
+no budget improves those odds, because the budget varies inputs. The control is asserted
+too: the same suite passes on every other single carrier.
+
+**It also sharpens Slice 3's `Deque` work.** The generator bridge draws layouts as inputs,
+so each law *probably* meets every arrangement — coupon-collector puts it near 578 draws for
+107 layouts — and cannot say that it did. The carrier form meets every arrangement by
+construction and reports the denominator.
+
+Mutation-tested: 3 mutants in a `carrier-walk` shape, 3 killed. Two are about cost or
+honesty rather than correctness — a run that silently multiplies the caller's budget, and a
+walk that stopped early while claiming complete coverage — which is the character of this
+entry point.
+
+**Not recommended, and still not: `overEvery:` overloads on every protocol suite.** The
+48-signature cost lives there, and Slices 2 to 4 between them cover the ground — a walked
+entry where the laws are quantified over a carrier, a bridge everywhere else, and a carrier
+walk around any suite at all.
 
 ## What was not verified
 
@@ -305,7 +338,9 @@ built and checked against brute force.)*
   demonstrated in tests (`associativityOverEveryTripleOfASmallCarrier`) by passing the law
   to `checkEveryCase` by hand; wiring it into `checkSemigroupPropertyLaws` and its siblings
   is Slice 2.
-- Slice 4's budget interaction is reasoned about, not measured.
+- Slice 4's budget default (`.sanity` per carrier) is reasoned, not measured. The claim that
+  carrier variety beats trial depth is untested — it is the kind of thing a corpus run would
+  settle and nothing here settles it.
 
 ## What the first draft got wrong
 
