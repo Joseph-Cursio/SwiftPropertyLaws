@@ -41,9 +41,12 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// generators (including payload-free cases). The emitter builds a
     /// `Generator<T>` per case (`Gen.always(T.c)` for payload-free, else
     /// `zip(...).map { T.c(...) }`) and combines them with
-    /// `Gen.oneOf(...eraseToAny())`. Slots in after `rawRepresentable`, so
-    /// `CaseIterable` and raw-value enums keep their simpler strategies; this
-    /// fills the "enum without CaseIterable/raw" gap.
+    /// `Gen.oneOf(...eraseToAny())`. Slots in *before* `rawRepresentable` and
+    /// after `caseIterable`, so `CaseIterable` enums keep their simpler
+    /// strategy while a raw-valued enum whose cases were captured is
+    /// enumerated here rather than filtered through `init(rawValue:)` — see
+    /// the ordering note in `strategy(for:resolve:)`. This fills the "enum
+    /// without CaseIterable" gap.
     case enumCases(cases: [EnumCaseGenerator])
 
     /// No strategy matched. The emitter produces a deliberate compile

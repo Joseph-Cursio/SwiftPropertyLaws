@@ -249,12 +249,35 @@ patch regenerated. The Ring mutant did not die at first: the test asserted
 `results.count == 11`, and a suite running one law twice and another never is still eleven
 results. It now asserts law names.
 
-**Slice 3 — the `Generator` bridge.** *(Not shipped.)* `Gen<Int>.int(in: 0 ..< count).map { space[$0] }` is a
-`Generator<Element, Shrink.Integer<Int>>` and drives every existing entry point unchanged —
-**measured** against `checkEquatablePropertyLaws`. Now framed correctly: not a compatibility
-shim, but the honest fallback for a space too large to walk, and the thing that closes the
-`Deque`-layout gap without touching any of the kit's 48 signatures. Callers accept that it
-samples and does not shrink.
+**Slice 3 — the `Generator` bridge. SHIPPED.** `Enumeration.generator` draws from a space
+at random as an ordinary kit `Generator`, which is the door into the forty-odd suites with
+no `overEvery:` entry — `Equatable`, `Hashable`, `Collection` and the rest all take a
+`Generator`.
+
+**Both concessions are pinned by tests**, because a concession that drifts from the code is
+worse than none. The kit's per-law shrinker is value-level and no driver threads a
+`Generator`, so the index shrinker in the bridge's own type is not consulted: a failure is
+the first drawn, not the smallest that exists. And a sampled run reports `nil` coverage, so
+it cannot say what fraction of the space it saw. `theBridgeDoesNotShrink` and
+`theBridgeReportsNoCoverageButAWalkDoes` fail if either stops being true.
+
+What survives sampling is the reason to want it: a space's cases are *defined* rather than
+constructed, so it reaches configurations a construction-path generator never produces.
+That belongs to the space, not the traversal.
+
+**The `Deque` gap this note opens with is now closed.** A layout cannot be drawn, only
+built — the head moves only when you `prepend` — so `DequeLayouts.everyLayout()` enumerates
+`(capacity, prepended, appended)` arrangements: **107 of them, 59 wrapped**, against the
+array path's 0 of 1 000. Contents are fixed at `0 ..< count`, so two arrangements of one
+size are equal as values and differ only in head position, which is what makes it a test of
+layout rather than of contents. `DequeLawsTests` runs the RandomAccess chain and both
+mutation suites over it. They pass — so `Deque`'s wrapped-buffer index arithmetic is
+correct, which the kit previously could not have determined either way.
+
+Mutation-tested: 3 mutants in a new `space-sampling` shape, 3 killed.
+`layout-space-never-prepends` is the sharpest in the corpus — it builds every arrangement
+by appending, so nothing is wrapped, and the space still enumerates, still reports its size,
+and still drives every law to a pass while closing nothing.
 
 **Slice 4 — carrier enumeration around existing suites.** *(Not shipped.)* Enumerate carriers outside, run an
 existing suite on each. Needs no per-protocol overloads. It does need a documented budget
