@@ -43,7 +43,6 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable, Shrinker: Send
     }
 }
 
-
 /// The Hashable laws over **every case** of a bounded carrier.
 ///
 /// `Hashable.equalityConsistency` is conditional on `x == y`, and that
