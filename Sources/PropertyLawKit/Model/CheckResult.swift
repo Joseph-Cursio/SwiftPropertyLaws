@@ -43,6 +43,23 @@ public struct CheckResult: Sendable, Hashable {
     /// and having covered none of it. See ``SpaceCoverage``.
     public internal(set) var coverage: SpaceCoverage?
 
+    /// How many times a **conditional** law's antecedent fired.
+    ///
+    /// `nil` — the case for every unconditional law — means the question does
+    /// not apply, not that the answer is zero. A law written
+    /// `!(antecedent) || consequent` returns `true` whenever the antecedent
+    /// fails, so a run that never reached the case reports a pass; this is the
+    /// number that says whether that happened.
+    ///
+    /// **It is a floor, not a verdict.** Zero means the law tested nothing. A
+    /// small non-zero number means the law applied, and says nothing about
+    /// whether it applied to a case that could have refuted it — measured on a
+    /// non-transitive `==` over a 100-value domain, the antecedent fired twice
+    /// per thousand trials and the refuting configuration zero times. Reported
+    /// rather than enforced for that reason, following the same discipline as
+    /// ``SpaceCoverage``: surface the fact, do not fabricate a verdict.
+    public internal(set) var applications: Int?
+
     public init(
         protocolLaw: String,
         tier: StrictnessTier,
@@ -54,7 +71,8 @@ public struct CheckResult: Sendable, Hashable {
         coverageHints: CoverageHints? = nil,
         shrunkFrom: String? = nil,
         shrinkSteps: Int = 0,
-        coverage: SpaceCoverage? = nil
+        coverage: SpaceCoverage? = nil,
+        applications: Int? = nil
     ) {
         self.protocolLaw = protocolLaw
         self.tier = tier
@@ -67,6 +85,7 @@ public struct CheckResult: Sendable, Hashable {
         self.shrunkFrom = shrunkFrom
         self.shrinkSteps = shrinkSteps
         self.coverage = coverage
+        self.applications = applications
     }
 
     public var isViolation: Bool {

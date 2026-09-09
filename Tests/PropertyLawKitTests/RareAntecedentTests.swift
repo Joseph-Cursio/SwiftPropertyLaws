@@ -113,4 +113,65 @@ struct RareAntecedentTests {
         #expect(walkedLaws.contains("Hashable.equalityConsistency"))
         #expect(walkedLaws.contains("Equatable.transitivity"), "the inherited chain is walked too")
     }
+
+    // MARK: - Reporting the count rather than enforcing it
+
+    /// **The number that makes the gap visible.** A wide generator gives a
+    /// passing `Equatable.transitivity` that applied zero times, and until now
+    /// nothing said so.
+    @Test func aConditionalLawReportsHowOftenItApplied() async throws {
+        let wide = try await checkEquatablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ... 100_000),
+            options: LawCheckOptions(budget: .standard))
+        let transitivity = try #require(wide.first { $0.protocolLaw == "Equatable.transitivity" })
+        #expect(!transitivity.isViolation, "the verdict is unchanged — this is reported, not enforced")
+        #expect(transitivity.applications == 0, "and it applied to nothing")
+
+        let narrow = try await checkEquatablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ... 3),
+            options: LawCheckOptions(budget: .standard))
+        let applied = try #require(narrow.first { $0.protocolLaw == "Equatable.transitivity" }?.applications)
+        // Exact equality over four values: a chain needs all three draws equal,
+        // so P = 1/16 and roughly 60 of 1 000 trials apply the law.
+        #expect(applied > 20, "a narrow domain applies it constantly; got \(applied)")
+    }
+
+    /// `nil` is load-bearing, as everywhere else in the kit: an unconditional law
+    /// is not answering zero, it is not being asked.
+    @Test func unconditionalLawsReportNoCountAtAll() async throws {
+        let results = try await checkEquatablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ... 100), options: LawCheckOptions(budget: .sanity))
+        let reflexivity = try #require(results.first { $0.protocolLaw == "Equatable.reflexivity" })
+        let transitivity = try #require(results.first { $0.protocolLaw == "Equatable.transitivity" })
+        #expect(reflexivity.applications == nil)
+        #expect(transitivity.applications != nil)
+    }
+
+    /// Walking a carrier applies the law by construction, which is the fix the
+    /// count exists to point at.
+    @Test func walkingAppliesTheLawByConstruction() async throws {
+        let results = try await checkEquatablePropertyLaws(
+            overEvery: Every.elements("n", in: 0 ..< 12))
+        let applied = try #require(results.first { $0.protocolLaw == "Equatable.transitivity" }?.applications)
+        #expect(applied == 12, "one chain per value, x == y == z with all three the same")
+    }
+
+    /// The rendered output, because a count nobody reads is not a diagnostic.
+    @Test func theCountIsRenderedAndZeroSaysWhatItMeans() {
+        let environment = Environment.current(backend: SwiftPropertyBasedBackend())
+        func rendered(applications: Int?) -> String {
+            ViolationFormatter.format(CheckResult(
+                protocolLaw: "Equatable.transitivity",
+                tier: .strict,
+                trials: 1_000,
+                seed: Seed(stateA: 1, stateB: 2, stateC: 3, stateD: 4),
+                environment: environment,
+                outcome: .passed,
+                applications: applications))
+        }
+        #expect(rendered(applications: 0).contains(
+            "Applied: never — the antecedent did not fire, so this pass tested nothing."))
+        #expect(rendered(applications: 37).contains("Applied: 37 of 1000."))
+        #expect(!rendered(applications: nil).contains("Applied:"))
+    }
 }

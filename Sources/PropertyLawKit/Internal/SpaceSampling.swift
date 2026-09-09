@@ -119,6 +119,13 @@ extension CheckResult {
     /// Attach a coverage denominator to a result the driver produced without
     /// one. A `nil` denominator leaves the result saying it does not know its
     /// input space, which is the honest answer for a space too large to count.
+    /// Attach a conditional law's application count.
+    func reporting(applications: Int) -> CheckResult {
+        var copy = self
+        copy.applications = applications
+        return copy
+    }
+
     func reporting(_ coverage: SpaceCoverage?) -> CheckResult {
         guard let coverage else { return self }
         var copy = self

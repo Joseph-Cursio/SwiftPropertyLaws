@@ -46,10 +46,11 @@ final class Applications: @unchecked Sendable {
 func requiringApplicableCases(
     _ result: CheckResult,
     _ applications: Applications,
-    needing description: String,
-    tier: StrictnessTier = .conventional
+    needing description: String
 ) -> CheckResult {
-    guard case .passed = result.outcome, applications.recorded == 0 else { return result }
+    guard case .passed = result.outcome, applications.recorded == 0 else {
+        return result.reporting(applications: applications.recorded)
+    }
     let complete = result.coverage?.isComplete ?? false
     let counterexample = complete
         ? """
@@ -64,7 +65,7 @@ func requiringApplicableCases(
             """
     return CheckResult(
         protocolLaw: result.protocolLaw,
-        tier: tier,
+        tier: .conventional,
         trials: result.trials,
         seed: result.seed,
         environment: result.environment,
@@ -73,6 +74,19 @@ func requiringApplicableCases(
         coverageHints: result.coverageHints,
         shrunkFrom: result.shrunkFrom,
         shrinkSteps: result.shrinkSteps,
-        coverage: result.coverage
+        coverage: result.coverage,
+        applications: 0
     )
+}
+
+/// Attach a conditional law's application count without touching its verdict.
+///
+/// The counterpart to `requiringApplicableCases` for laws where a vacuous pass
+/// is reported rather than enforced. Which of the two a law uses is a judgement
+/// about blast radius, not about correctness: turning the count into a failure
+/// on `Equatable.transitivity` was measured to redden 67 of the kit's own
+/// 1 091 tests, every report of them true, and a diagnostic that large is one
+/// people suppress rather than act on.
+func reportingApplications(_ applications: Applications, of result: CheckResult) -> CheckResult {
+    result.reporting(applications: applications.recorded)
 }

@@ -19,6 +19,9 @@ internal enum ViolationFormatter {
         if let coverageBody = coverageLines(result.coverageHints) {
             lines.append(contentsOf: coverageBody)
         }
+        if let applicationLine = applicationLine(result) {
+            lines.append(applicationLine)
+        }
         // A walk consumes no randomness, so printing a seed for one would offer
         // a replay handle that means nothing. It replays from its own space.
         if result.coverage == nil {
@@ -89,6 +92,17 @@ internal enum ViolationFormatter {
             lines.append("    … \(nearMisses.count - cap) more")
         }
         return lines
+    }
+
+    /// A conditional law's application count. `nil` — every unconditional law —
+    /// prints nothing, because the question does not apply. Zero prints the
+    /// sentence a reader most needs, since the result above it says `passed`.
+    private static func applicationLine(_ result: CheckResult) -> String? {
+        guard let applications = result.applications else { return nil }
+        guard applications > 0 else {
+            return "  Applied: never — the antecedent did not fire, so this pass tested nothing."
+        }
+        return "  Applied: \(applications) of \(result.trials)."
     }
 
     private static func coverageLines(_ coverageHints: CoverageHints?) -> [String]? {

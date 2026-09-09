@@ -129,7 +129,7 @@ private func checkTransitivity<Value: Equatable & Sendable>(
     shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     let applications = Applications()
-    return await requiringApplicableCases(await runTernaryLaw(
+    return await reportingApplications(applications, of: await runTernaryLaw(
         "Equatable.transitivity",
         source: source,
         options: options,
@@ -143,7 +143,7 @@ private func checkTransitivity<Value: Equatable & Sendable>(
                 + "x == y and y == z but x != z"
         },
         shrink: shrink
-    ), applications, needing: "a chain x == y == z", tier: .heuristic)
+    ))
 }
 
 // Defensive coverage. `!=` is dispatched through Equatable's protocol witness
