@@ -223,18 +223,31 @@ Three things came out differently from the proposal above.
   via `Enumeration.prefix(_:)`. A default cap would be the same defect as `.exhaustive` in a
   new place: coverage quietly bounded, under a name that reads like completeness.
 
-**Slice 2 — the algebraic overloads.** *(Seam shipped; the algebraic overloads are not.)*
-`InputSource<Value>` and the `.sampled` / `.enumerated` arms of the three law builders landed
-early, pulled forward by a flake: two `StrictWeakOrderingLawsTests` cases failed about 3 runs
-in 10 because their conditional laws' antecedents — a chain `x < y < z`, two values `==` and
-not identical — are reachable only by luck at 100 trials. Walking the carrier made both
-deterministic, and the strict-weak-ordering family now has `overEvery:` entry points. It also
-settled the vacuity question below. **The algebraic cluster still samples.** The original
-plan follows. An `InputSource<Value>` seam inside
-`runUnaryLaw` / `runBinaryLaw` / `runTernaryLaw` carrying `.sampled(Generator)` or
-`.enumerated(Enumeration)`, then per-protocol overloads added **where they pay**, starting
-with Semigroup / Monoid / CommutativeMonoid / Group / Semilattice / Ring. This is the
-highest-value application, and the seam is what keeps it from being a 48-signature change.
+**Slice 2 — the algebraic overloads. SHIPPED.** All six suites — Semigroup, Monoid,
+CommutativeMonoid, Group, Semilattice, Ring — take `overEvery carrier:` beside `using
+generator:`. The `InputSource` seam landed earlier, pulled forward by a flake in the
+strict-weak-ordering suite; this is the application it was proposed for.
+
+Each `check<X>PropertyLaws` is a pair of thin public entries delegating to one shared
+`from source:` assembler, so **a walked suite cannot run a different set of laws from the
+sampled one**. Inheritance chains through the assembler, so a walked `Group` walks
+`Monoid`'s and `Semigroup`'s laws rather than silently sampling them. The 18 private law
+helpers are written once.
+
+**The payoff, measured.** `RarelyNonAssociative` is addition modulo 32 with one anomalous
+pair, `combine(29, 27) = 1`. One bad pair breaks associativity only for the triples routed
+through it — **122 of 32 768**, brute-forced in a test so the number cannot drift. At that
+density a sampled run misses the defect **69% of the time at `.sanity`** and 2.4% at
+`.standard`: a CI flake, not a failure. The walk finds it every time and reports
+`value=1 / value=28 / value=27`, the smallest triple that proves it, with no shrinker.
+
+No probabilistic assertion was written — the density is pinned and the miss-rate follows
+arithmetically, so no test depends on a distribution.
+
+Mutation-tested: 3 mutants in a new `algebraic-walk` shape, 3 killed, plus one existing
+patch regenerated. The Ring mutant did not die at first: the test asserted
+`results.count == 11`, and a suite running one law twice and another never is still eleven
+results. It now asserts law names.
 
 **Slice 3 — the `Generator` bridge.** *(Not shipped.)* `Gen<Int>.int(in: 0 ..< count).map { space[$0] }` is a
 `Generator<Element, Shrink.Integer<Int>>` and drives every existing entry point unchanged —
