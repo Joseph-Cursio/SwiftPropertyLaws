@@ -41,12 +41,44 @@ public func checkStrictWeakOrderingLaws<
     by compare: @escaping @Sendable (Value, Value) -> Bool,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
+    try await checkStrictWeakOrderingLaws(from: .sampling(generator), by: compare, options: options)
+}
+
+/// The same four laws over **every case** of a bounded carrier.
+///
+/// Three of the four are conditional — asymmetry needs an ordered pair,
+/// transitivity a chain `x < y < z`, incomparability transitivity two
+/// incomparable pairs that share a value — and sampling reaches those
+/// antecedents only by luck. A comparator with sparse chains can pass
+/// `transitivity` a hundred times having never applied it once, and the vacuity
+/// guard's report ("the generator never produced …") is then true but
+/// unactionable, because widening the generator is not always possible.
+///
+/// Walking removes the luck. Over a complete walk the antecedent either occurs
+/// or **cannot** occur, and the guard says which — see
+/// ``Applications/verdict(coverage:)``.
+@discardableResult
+public func checkStrictWeakOrderingLaws<Value: Sendable>(
+    overEvery carrier: Enumeration<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkStrictWeakOrderingLaws(from: .enumerated(carrier), by: compare, options: options)
+}
+
+/// One assembler, two sources — so the walked form can never run a different
+/// set of laws from the sampled one.
+private func checkStrictWeakOrderingLaws<Value: Sendable>(
+    from source: InputSource<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions
+) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         [
-            await checkIrreflexivity(generator, compare, options),
-            await checkAsymmetry(generator, compare, options),
-            await checkOrderTransitivity(generator, compare, options),
-            await checkIncomparabilityTransitivity(generator, compare, options)
+            await checkIrreflexivity(source, compare, options),
+            await checkAsymmetry(source, compare, options),
+            await checkOrderTransitivity(source, compare, options),
+            await checkIncomparabilityTransitivity(source, compare, options)
         ]
     }
 }
@@ -82,13 +114,37 @@ public func checkComparatorDiscriminates<
     distinct: @escaping @Sendable (Value, Value) -> Bool,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
+    try await checkComparatorDiscriminates(
+        from: .sampling(generator), by: compare, distinct: distinct, options: options)
+}
+
+/// Discrimination over **every pair** of a bounded carrier. A sampled run that
+/// never draws two distinct values reports a vacuous pass; a walk either finds
+/// such a pair or proves the carrier holds none.
+@discardableResult
+public func checkComparatorDiscriminates<Value: Sendable>(
+    overEvery carrier: Enumeration<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    distinct: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkComparatorDiscriminates(
+        from: .enumerated(carrier), by: compare, distinct: distinct, options: options)
+}
+
+private func checkComparatorDiscriminates<Value: Sendable>(
+    from source: InputSource<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    distinct: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions
+) async throws -> [CheckResult] {
     let applications = Applications()
     return try await runPropertyLawSuite(options: options) {
         [
             await requiringApplicableCases(await runBinaryLaw(
                 "StrictWeakOrdering.discrimination",
                 tier: .conventional,
-                generator: generator,
+                source: source,
                 options: options,
                 property: { first, second in
                     guard distinct(first, second) else { return true }
@@ -141,13 +197,34 @@ public func checkComparatorIsCongruent<
     by compare: @escaping @Sendable (Value, Value) -> Bool,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
+    try await checkComparatorIsCongruent(from: .sampling(generator), by: compare, options: options)
+}
+
+/// Congruence over **every triple** of a bounded carrier. This law needs two
+/// values that are `==` and not identical, which a wide generator produces
+/// close to never — so it is the law most likely to go green having tested
+/// nothing, and the one that gains most from being walked.
+@discardableResult
+public func checkComparatorIsCongruent<Value: Equatable & Sendable>(
+    overEvery carrier: Enumeration<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkComparatorIsCongruent(from: .enumerated(carrier), by: compare, options: options)
+}
+
+private func checkComparatorIsCongruent<Value: Equatable & Sendable>(
+    from source: InputSource<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions
+) async throws -> [CheckResult] {
     let applications = Applications()
     return try await runPropertyLawSuite(options: options) {
         [
             await requiringApplicableCases(await runTernaryLaw(
                 "StrictWeakOrdering.congruence",
                 tier: .conventional,
-                generator: generator,
+                source: source,
                 options: options,
                 property: { first, second, probe in
                     guard first == second else { return true }
@@ -167,66 +244,14 @@ public func checkComparatorIsCongruent<
     }
 }
 
-// MARK: - The vacuity guard
-
-/// Counts how often a conditional law's antecedent held.
-///
-/// Four of the six laws here are conditional — `guard compare(a, b), compare(b, c)`,
-/// `guard first == second`, and so on — and **a conditional law whose antecedent
-/// never fires reports `.passed` having tested nothing.** That is not a
-/// hypothetical: `congruence` needs the generator to produce two equal values,
-/// which over a wide domain is close to never, so the law goes green for free on
-/// exactly the callers most likely to need it.
-///
-/// This is the same fault `checkInvariantIsFalsifiable` exists to catch, one
-/// level down: there the *invariant* forbids nothing, here the *law* applies to
-/// nothing. Both are specifications that cannot fail.
-private final class Applications: @unchecked Sendable {
-    private let lock = NSLock()
-    private var count = 0
-    func record() { lock.lock(); count += 1; lock.unlock() }
-    var count_: Int { lock.lock(); defer { lock.unlock() }; return count }
-}
-
-/// Turn a vacuous pass into a reported failure.
-///
-/// Conventional tier: a generator too narrow to produce a qualifying case is
-/// outside the law's control, so this reports rather than throws — the caller
-/// widens the generator, or passes `.strict` to make it fail the build.
-private func requiringApplicableCases(
-    _ result: CheckResult,
-    _ applications: Applications,
-    needing description: String
-) -> CheckResult {
-    guard case .passed = result.outcome, applications.count_ == 0 else { return result }
-    return CheckResult(
-        protocolLaw: result.protocolLaw,
-        tier: .conventional,
-        trials: result.trials,
-        seed: result.seed,
-        environment: result.environment,
-        outcome: .failed(counterexample: """
-            vacuous: across \(result.trials) trials the generator never produced \
-            \(description), so this law was never applied and its pass means nothing. \
-            Widen the generator, or narrow the domain so the case is reachable.
-            """),
-        nearMisses: result.nearMisses,
-        coverageHints: result.coverageHints,
-        shrunkFrom: result.shrunkFrom,
-        shrinkSteps: result.shrinkSteps
-    )
-}
-
-// MARK: - The four laws
-
-private func checkIrreflexivity<Value: Sendable, Shrinker: SendableSequenceType>(
-    _ generator: Generator<Value, Shrinker>,
+private func checkIrreflexivity<Value: Sendable>(
+    _ source: InputSource<Value>,
     _ compare: @escaping @Sendable (Value, Value) -> Bool,
     _ options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "StrictWeakOrdering.irreflexivity",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in !compare(sample, sample) },
         formatCounterexample: { sample, _ in
@@ -235,14 +260,14 @@ private func checkIrreflexivity<Value: Sendable, Shrinker: SendableSequenceType>
     )
 }
 
-private func checkAsymmetry<Value: Sendable, Shrinker: SendableSequenceType>(
-    _ generator: Generator<Value, Shrinker>,
+private func checkAsymmetry<Value: Sendable>(
+    _ source: InputSource<Value>,
     _ compare: @escaping @Sendable (Value, Value) -> Bool,
     _ options: LawCheckOptions
 ) async -> CheckResult {
     await runBinaryLaw(
         "StrictWeakOrdering.asymmetry",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second in
             !(compare(first, second) && compare(second, first))
@@ -253,15 +278,15 @@ private func checkAsymmetry<Value: Sendable, Shrinker: SendableSequenceType>(
     )
 }
 
-private func checkOrderTransitivity<Value: Sendable, Shrinker: SendableSequenceType>(
-    _ generator: Generator<Value, Shrinker>,
+private func checkOrderTransitivity<Value: Sendable>(
+    _ source: InputSource<Value>,
     _ compare: @escaping @Sendable (Value, Value) -> Bool,
     _ options: LawCheckOptions
 ) async -> CheckResult {
     let applications = Applications()
     return await requiringApplicableCases(await runTernaryLaw(
         "StrictWeakOrdering.transitivity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             guard compare(first, second), compare(second, third) else { return true }
@@ -274,8 +299,8 @@ private func checkOrderTransitivity<Value: Sendable, Shrinker: SendableSequenceT
     ), applications, needing: "a chain x < y < z")
 }
 
-private func checkIncomparabilityTransitivity<Value: Sendable, Shrinker: SendableSequenceType>(
-    _ generator: Generator<Value, Shrinker>,
+private func checkIncomparabilityTransitivity<Value: Sendable>(
+    _ source: InputSource<Value>,
     _ compare: @escaping @Sendable (Value, Value) -> Bool,
     _ options: LawCheckOptions
 ) async -> CheckResult {
@@ -289,9 +314,17 @@ private func checkIncomparabilityTransitivity<Value: Sendable, Shrinker: Sendabl
     // case as a defect. The other three conditional laws have no such reading:
     // no chains, no distinct pairs and no equal pairs are all generator
     // weaknesses rather than properties worth having.
+    //
+    // **Walking the carrier does not change this, and that is the asymmetry
+    // worth noticing.** For the other three, a complete walk converts an
+    // ambiguous silence into a fact, so the guard gets sharper. Here the fact it
+    // would establish — "no two cases in this carrier are incomparable" — is the
+    // definition of a total order, which is a result rather than a defect. So
+    // vacuity detection is a property of the *law*, not of the harness, and no
+    // amount of coverage makes it uniform.
     return await runTernaryLaw(
         "StrictWeakOrdering.incomparabilityTransitivity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             guard incomparable(first, second), incomparable(second, third) else { return true }

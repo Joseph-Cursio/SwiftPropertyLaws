@@ -34,6 +34,9 @@ Requires a clean working tree.
 | `map-collapses-size-buckets` | enumeration-machinery | killed | `mapKeepsOrderSizesAndAddresses` |
 | `formatter-offers-a-seed-for-a-walk` | enumeration-machinery | killed | `aCompleteWalkSaysSoAndOffersNoSeed` |
 | `coverage-complete-off-by-one` | enumeration-machinery | killed | `coverageIsCompleteOnlyWhenEveryCaseWasSeen` |
+| `vacuity-ignores-a-complete-walk` | enumeration-machinery | killed | `vacuityMessageDistinguishesItsTwoCauses` |
+| `enumerated-ternary-degenerates-to-pairs` | enumeration-machinery | killed | `walkedSuiteReportsCoverage` |
+| `enumerated-failure-drops-the-law-message` | enumeration-machinery | killed | `walkedCounterexampleCarriesBothHalves` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection

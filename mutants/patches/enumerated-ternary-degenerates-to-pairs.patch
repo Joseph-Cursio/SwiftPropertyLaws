@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
+index f8dc8c5..b16066a 100644
+--- a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
++++ b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
+@@ -212,7 +212,7 @@ package func runTernaryLaw<Value: Sendable>(
+             protocolLaw: protocolLaw,
+             tier: tier,
+             options: options,
+-            space: Every.triples(of: space),
++            space: Every.product(space, space).map { Triple(first: $0.0, second: $0.1, third: $0.1) },
+             property: { try await property($0.first, $0.second, $0.third) },
+             describeFailure: { formatCounterexample($0.first, $0.second, $0.third, $1) }
+         )

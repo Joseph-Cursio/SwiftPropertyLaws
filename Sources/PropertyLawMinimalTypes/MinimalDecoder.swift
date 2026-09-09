@@ -7,7 +7,7 @@ public enum MinimalDecoder {
 
     /// Decodes `type` from a typed tree.
     public static func decode<T: Decodable>(_ type: T.Type, from value: MinimalCodableValue) throws -> T {
-        try T(from: _Decoder(value: value, codingPath: []))
+        try T(from: BoxedDecoder(value: value, codingPath: []))
     }
 }
 
@@ -15,7 +15,7 @@ struct MinimalDecodingError: Error, CustomStringConvertible {
     let description: String
 }
 
-struct _Decoder: Decoder {
+struct BoxedDecoder: Decoder {
     let value: MinimalCodableValue
     let codingPath: [any CodingKey]
     var userInfo: [CodingUserInfoKey: Any] { [:] }
@@ -24,39 +24,39 @@ struct _Decoder: Decoder {
         guard case let .dictionary(entries) = value else {
             throw MinimalDecodingError(description: "expected dictionary, found \(value.kindName)")
         }
-        return KeyedDecodingContainer(_KeyedDecoding<Key>(entries: entries, codingPath: codingPath))
+        return KeyedDecodingContainer(KeyedDecoding<Key>(entries: entries, codingPath: codingPath))
     }
 
     func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
         guard case let .array(items) = value else {
             throw MinimalDecodingError(description: "expected array, found \(value.kindName)")
         }
-        return _UnkeyedDecoding(items: items, codingPath: codingPath)
+        return UnkeyedDecoding(items: items, codingPath: codingPath)
     }
 
     func singleValueContainer() throws -> any SingleValueDecodingContainer {
-        _SingleValueDecoding(value: value, codingPath: codingPath)
+        SingleValueDecoding(value: value, codingPath: codingPath)
     }
 }
 
 /// Reads one primitive, requiring the tree's case to match the requested type exactly.
-enum _Read {
+enum PrimitiveReading {
     static func primitive<T>(_ type: T.Type, from value: MinimalCodableValue, at path: [any CodingKey]) throws -> T? {
         let decoded: Any? = switch (value, type) {
-        case let (.bool(v), is Bool.Type): v
-        case let (.int(v), is Int.Type): v
-        case let (.int8(v), is Int8.Type): v
-        case let (.int16(v), is Int16.Type): v
-        case let (.int32(v), is Int32.Type): v
-        case let (.int64(v), is Int64.Type): v
-        case let (.uint(v), is UInt.Type): v
-        case let (.uint8(v), is UInt8.Type): v
-        case let (.uint16(v), is UInt16.Type): v
-        case let (.uint32(v), is UInt32.Type): v
-        case let (.uint64(v), is UInt64.Type): v
-        case let (.float(v), is Float.Type): v
-        case let (.double(v), is Double.Type): v
-        case let (.string(v), is String.Type): v
+        case let (.bool(payload), is Bool.Type): payload
+        case let (.int(payload), is Int.Type): payload
+        case let (.int8(payload), is Int8.Type): payload
+        case let (.int16(payload), is Int16.Type): payload
+        case let (.int32(payload), is Int32.Type): payload
+        case let (.int64(payload), is Int64.Type): payload
+        case let (.uint(payload), is UInt.Type): payload
+        case let (.uint8(payload), is UInt8.Type): payload
+        case let (.uint16(payload), is UInt16.Type): payload
+        case let (.uint32(payload), is UInt32.Type): payload
+        case let (.uint64(payload), is UInt64.Type): payload
+        case let (.float(payload), is Float.Type): payload
+        case let (.double(payload), is Double.Type): payload
+        case let (.string(payload), is String.Type): payload
         default: nil
         }
         guard let decoded else { return nil }
@@ -90,15 +90,17 @@ enum _Read {
         if isLeaf(T.self) {
             throw MinimalDecodingError(
                 description: """
-                expected \(T.self) but the value was encoded as \(value.kindName)                 at \(path.map(\.stringValue)). Foundation's decoders convert between number                 types here; this one does not, which is the point.
+                expected \(T.self) but the value was encoded as \(value.kindName) \
+                at \(path.map(\.stringValue)). Foundation's decoders convert between \
+                number types here; this one does not, which is the point.
                 """
             )
         }
-        return try T(from: _Decoder(value: value, codingPath: path))
+        return try T(from: BoxedDecoder(value: value, codingPath: path))
     }
 }
 
-struct _KeyedDecoding<Key: CodingKey>: KeyedDecodingContainerProtocol {
+struct KeyedDecoding<Key: CodingKey>: KeyedDecodingContainerProtocol {
     let entries: [String: MinimalCodableValue]
     let codingPath: [any CodingKey]
     var allKeys: [Key] { entries.keys.compactMap { Key(stringValue: $0) } }
@@ -119,7 +121,7 @@ struct _KeyedDecoding<Key: CodingKey>: KeyedDecodingContainerProtocol {
     }
 
     func decode<T: Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
-        try _Read.value(T.self, from: require(key), at: codingPath + [key])
+        try PrimitiveReading.value(T.self, from: require(key), at: codingPath + [key])
     }
 
     func nestedContainer<NestedKey: CodingKey>(
@@ -129,7 +131,7 @@ struct _KeyedDecoding<Key: CodingKey>: KeyedDecodingContainerProtocol {
             throw MinimalDecodingError(description: "expected dictionary at '\(key.stringValue)'")
         }
         return KeyedDecodingContainer(
-            _KeyedDecoding<NestedKey>(entries: nested, codingPath: codingPath + [key])
+            KeyedDecoding<NestedKey>(entries: nested, codingPath: codingPath + [key])
         )
     }
 
@@ -137,16 +139,16 @@ struct _KeyedDecoding<Key: CodingKey>: KeyedDecodingContainerProtocol {
         guard case let .array(items) = try require(key) else {
             throw MinimalDecodingError(description: "expected array at '\(key.stringValue)'")
         }
-        return _UnkeyedDecoding(items: items, codingPath: codingPath + [key])
+        return UnkeyedDecoding(items: items, codingPath: codingPath + [key])
     }
 
-    func superDecoder() throws -> any Decoder { _Decoder(value: .dictionary(entries), codingPath: codingPath) }
+    func superDecoder() throws -> any Decoder { BoxedDecoder(value: .dictionary(entries), codingPath: codingPath) }
     func superDecoder(forKey key: Key) throws -> any Decoder {
-        _Decoder(value: try require(key), codingPath: codingPath + [key])
+        BoxedDecoder(value: try require(key), codingPath: codingPath + [key])
     }
 }
 
-struct _UnkeyedDecoding: UnkeyedDecodingContainer {
+struct UnkeyedDecoding: UnkeyedDecodingContainer {
     let items: [MinimalCodableValue]
     let codingPath: [any CodingKey]
     var count: Int? { items.count }
@@ -166,7 +168,7 @@ struct _UnkeyedDecoding: UnkeyedDecodingContainer {
     }
 
     mutating func decode<T: Decodable>(_ type: T.Type) throws -> T {
-        try _Read.value(T.self, from: try next(), at: codingPath)
+        try PrimitiveReading.value(T.self, from: try next(), at: codingPath)
     }
 
     mutating func nestedContainer<NestedKey: CodingKey>(
@@ -175,22 +177,22 @@ struct _UnkeyedDecoding: UnkeyedDecodingContainer {
         guard case let .dictionary(entries) = try next() else {
             throw MinimalDecodingError(description: "expected dictionary in unkeyed container")
         }
-        return KeyedDecodingContainer(_KeyedDecoding<NestedKey>(entries: entries, codingPath: codingPath))
+        return KeyedDecodingContainer(KeyedDecoding<NestedKey>(entries: entries, codingPath: codingPath))
     }
 
     mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer {
         guard case let .array(nested) = try next() else {
             throw MinimalDecodingError(description: "expected array in unkeyed container")
         }
-        return _UnkeyedDecoding(items: nested, codingPath: codingPath)
+        return UnkeyedDecoding(items: nested, codingPath: codingPath)
     }
 
     mutating func superDecoder() throws -> any Decoder {
-        _Decoder(value: try next(), codingPath: codingPath)
+        BoxedDecoder(value: try next(), codingPath: codingPath)
     }
 }
 
-struct _SingleValueDecoding: SingleValueDecodingContainer {
+struct SingleValueDecoding: SingleValueDecodingContainer {
     let value: MinimalCodableValue
     let codingPath: [any CodingKey]
 
@@ -200,6 +202,6 @@ struct _SingleValueDecoding: SingleValueDecodingContainer {
     }
 
     func decode<T: Decodable>(_ type: T.Type) throws -> T {
-        try _Read.value(T.self, from: value, at: codingPath)
+        try PrimitiveReading.value(T.self, from: value, at: codingPath)
     }
 }

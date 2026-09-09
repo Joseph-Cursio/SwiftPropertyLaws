@@ -1,0 +1,16 @@
+diff --git a/Sources/PropertyLawKit/Internal/EnumerationDriver.swift b/Sources/PropertyLawKit/Internal/EnumerationDriver.swift
+index bcb4891..35dad3a 100644
+--- a/Sources/PropertyLawKit/Internal/EnumerationDriver.swift
++++ b/Sources/PropertyLawKit/Internal/EnumerationDriver.swift
+@@ -83,9 +83,9 @@ package enum EnumerationDriver {
+         _ describeFailure: (@Sendable (Element, ErrorBox?) -> String)?
+     ) -> String {
+         let address = space.address(of: index)
+-        guard let describeFailure else {
++        guard describeFailure != nil else {
+             return thrown.map { "\(address); threw \($0.message)" } ?? address
+         }
+-        return "\(address) — \(describeFailure(space[index], thrown))"
++        return address
+     }
+ }

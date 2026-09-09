@@ -28,7 +28,8 @@ package enum EnumerationDriver {
         tier: StrictnessTier,
         options: LawCheckOptions,
         space: Enumeration<Element>,
-        property: @Sendable (Element) async throws -> Bool
+        property: @Sendable (Element) async throws -> Bool,
+        describeFailure: (@Sendable (Element, ErrorBox?) -> String)? = nil
     ) async -> CheckResult {
         let environment = Environment.current(backend: options.backend)
         if let skip = LawSuppressionPolicy.match(
@@ -50,11 +51,12 @@ package enum EnumerationDriver {
             casesRun = index + 1
             do {
                 if try await property(space[index]) == false {
-                    outcome = .failed(counterexample: space.address(of: index))
+                    outcome = .failed(counterexample: describe(space, index, nil, describeFailure))
                     break walk
                 }
             } catch {
-                outcome = .failed(counterexample: "\(space.address(of: index)); threw \(error)")
+                let boxed = ErrorBox(error)
+                outcome = .failed(counterexample: describe(space, index, boxed, describeFailure))
                 break walk
             }
         }
@@ -68,5 +70,22 @@ package enum EnumerationDriver {
             coverage: SpaceCoverage(casesRun: casesRun, spaceSize: space.fullCount)
         )
         return LawSuppressionPolicy.rewriteIfIntentional(raw, in: options.suppressions)
+    }
+
+    /// The address says *where* in the space the failure is; a law's own
+    /// formatter says *why* it failed. Both are worth having, so both are
+    /// reported — the address first, because it is what makes the case
+    /// reproducible without a seed.
+    private static func describe<Element: Sendable>(
+        _ space: Enumeration<Element>,
+        _ index: Int,
+        _ thrown: ErrorBox?,
+        _ describeFailure: (@Sendable (Element, ErrorBox?) -> String)?
+    ) -> String {
+        let address = space.address(of: index)
+        guard let describeFailure else {
+            return thrown.map { "\(address); threw \($0.message)" } ?? address
+        }
+        return "\(address) — \(describeFailure(space[index], thrown))"
     }
 }

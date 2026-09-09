@@ -22,7 +22,49 @@ import PropertyBased
 // position at a time, holding the others fixed — the standard "shrink each
 // component independently" strategy.
 
-/// One-value law: `property(x)` must hold for every sampled `x`.
+/// One-value law: `property(x)` must hold for every `x` the source supplies.
+///
+/// `observation` is honoured on the sampled path only. The enumerated path
+/// reports `SpaceCoverage` instead, which answers the question near-miss and
+/// class tracking exist to approximate — how much of the input space was
+/// actually reached — as a count rather than as a sample of hints.
+package func runUnaryLaw<Value: Sendable>(
+    _ protocolLaw: String,
+    tier: StrictnessTier = .strict,
+    source: InputSource<Value>,
+    options: LawCheckOptions,
+    observation: PerLawDriver.Observation<Value> = PerLawDriver.Observation(),
+    property: @escaping @Sendable (Value) async throws -> Bool,
+    formatCounterexample: @escaping @Sendable (Value, ErrorBox?) -> String,
+    shrink: (@Sendable (Value) -> [Value])? = nil
+) async -> CheckResult {
+    switch source {
+    case .sampled(let sample):
+        return await PerLawDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            check: LawCheck(
+                sample: sample,
+                property: property,
+                formatCounterexample: formatCounterexample,
+                shrink: shrink
+            ),
+            observation: observation
+        )
+    case .enumerated(let space):
+        return await EnumerationDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            space: space,
+            property: property,
+            describeFailure: formatCounterexample
+        )
+    }
+}
+
+/// One-value law over a generator — the shape every existing call site uses.
 package func runUnaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
@@ -33,21 +75,69 @@ package func runUnaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     formatCounterexample: @escaping @Sendable (Value, ErrorBox?) -> String,
     shrink: (@Sendable (Value) -> [Value])? = nil
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: protocolLaw,
+    await runUnaryLaw(
+        protocolLaw,
         tier: tier,
+        source: .sampling(generator),
         options: options,
-        check: LawCheck(
-            sample: { rng in generator.run(using: &rng) },
-            property: property,
-            formatCounterexample: formatCounterexample,
-            shrink: shrink
-        ),
-        observation: observation
+        observation: observation,
+        property: property,
+        formatCounterexample: formatCounterexample,
+        shrink: shrink
     )
 }
 
-/// Two-value law: `property(x, y)` must hold for every sampled pair.
+/// Two-value law: `property(x, y)` must hold for every pair the source supplies.
+///
+/// Sampled, that is two independent draws per trial. Enumerated, it is
+/// `Every.product(space, space)` — every ordered pair, smallest summed size
+/// first — so a pair the sampled form reaches by luck is reached by
+/// construction, and a pair it never reaches is reported as never reached.
+package func runBinaryLaw<Value: Sendable>(
+    _ protocolLaw: String,
+    tier: StrictnessTier = .strict,
+    source: InputSource<Value>,
+    options: LawCheckOptions,
+    property: @escaping @Sendable (Value, Value) async throws -> Bool,
+    formatCounterexample: @escaping @Sendable (Value, Value, ErrorBox?) -> String,
+    shrink: (@Sendable (Value) -> [Value])? = nil
+) async -> CheckResult {
+    switch source {
+    case .sampled(let sample):
+        let tupleShrink: (@Sendable ((Value, Value)) -> [(Value, Value)])?
+        if let element = shrink {
+            tupleShrink = { (pair: (Value, Value)) -> [(Value, Value)] in
+                let first: [(Value, Value)] = element(pair.0).map { ($0, pair.1) }
+                let second: [(Value, Value)] = element(pair.1).map { (pair.0, $0) }
+                return first + second
+            }
+        } else {
+            tupleShrink = nil
+        }
+        return await PerLawDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            check: LawCheck(
+                sample: { rng in (sample(&rng), sample(&rng)) },
+                property: { try await property($0.0, $0.1) },
+                formatCounterexample: { formatCounterexample($0.0, $0.1, $1) },
+                shrink: tupleShrink
+            )
+        )
+    case .enumerated(let space):
+        return await EnumerationDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            space: Every.product(space, space),
+            property: { try await property($0.0, $0.1) },
+            describeFailure: { formatCounterexample($0.0, $0.1, $1) }
+        )
+    }
+}
+
+/// Two-value law over a generator — the shape every existing call site uses.
 package func runBinaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
@@ -57,26 +147,14 @@ package func runBinaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     formatCounterexample: @escaping @Sendable (Value, Value, ErrorBox?) -> String,
     shrink: (@Sendable (Value) -> [Value])? = nil
 ) async -> CheckResult {
-    let tupleShrink: (@Sendable ((Value, Value)) -> [(Value, Value)])?
-    if let element = shrink {
-        tupleShrink = { (pair: (Value, Value)) -> [(Value, Value)] in
-            let first: [(Value, Value)] = element(pair.0).map { ($0, pair.1) }
-            let second: [(Value, Value)] = element(pair.1).map { (pair.0, $0) }
-            return first + second
-        }
-    } else {
-        tupleShrink = nil
-    }
-    return await PerLawDriver.run(
-        protocolLaw: protocolLaw,
+    await runBinaryLaw(
+        protocolLaw,
         tier: tier,
+        source: .sampling(generator),
         options: options,
-        check: LawCheck(
-            sample: { rng in (generator.run(using: &rng), generator.run(using: &rng)) },
-            property: { try await property($0.0, $0.1) },
-            formatCounterexample: { formatCounterexample($0.0, $0.1, $1) },
-            shrink: tupleShrink
-        )
+        property: property,
+        formatCounterexample: formatCounterexample,
+        shrink: shrink
     )
 }
 
@@ -100,7 +178,48 @@ private func liftToTripleShrinker<Value>(
 }
 // swiftlint:enable large_tuple
 
-/// Three-value law: `property(x, y, z)` must hold for every sampled triple.
+/// Three-value law: `property(x, y, z)` must hold for every triple the source
+/// supplies.
+///
+/// Enumerated, that is `Every.triples(of: space)` — an 8-case carrier gives 512
+/// triples, which is a walk. This is the shape the algebraic cluster is
+/// quantified over, and the shape a conditional law like transitivity needs a
+/// chain to reach at all.
+package func runTernaryLaw<Value: Sendable>(
+    _ protocolLaw: String,
+    tier: StrictnessTier = .strict,
+    source: InputSource<Value>,
+    options: LawCheckOptions,
+    property: @escaping @Sendable (Value, Value, Value) async throws -> Bool,
+    formatCounterexample: @escaping @Sendable (Value, Value, Value, ErrorBox?) -> String,
+    shrink: (@Sendable (Value) -> [Value])? = nil
+) async -> CheckResult {
+    switch source {
+    case .sampled(let sample):
+        return await PerLawDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            check: LawCheck(
+                sample: { rng in (sample(&rng), sample(&rng), sample(&rng)) },
+                property: { try await property($0.0, $0.1, $0.2) },
+                formatCounterexample: { formatCounterexample($0.0, $0.1, $0.2, $1) },
+                shrink: liftToTripleShrinker(shrink)
+            )
+        )
+    case .enumerated(let space):
+        return await EnumerationDriver.run(
+            protocolLaw: protocolLaw,
+            tier: tier,
+            options: options,
+            space: Every.triples(of: space),
+            property: { try await property($0.first, $0.second, $0.third) },
+            describeFailure: { formatCounterexample($0.first, $0.second, $0.third, $1) }
+        )
+    }
+}
+
+/// Three-value law over a generator — the shape every existing call site uses.
 package func runTernaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     _ protocolLaw: String,
     tier: StrictnessTier = .strict,
@@ -110,17 +229,13 @@ package func runTernaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
     formatCounterexample: @escaping @Sendable (Value, Value, Value, ErrorBox?) -> String,
     shrink: (@Sendable (Value) -> [Value])? = nil
 ) async -> CheckResult {
-    await PerLawDriver.run(
-        protocolLaw: protocolLaw,
+    await runTernaryLaw(
+        protocolLaw,
         tier: tier,
+        source: .sampling(generator),
         options: options,
-        check: LawCheck(
-            sample: { rng in
-                (generator.run(using: &rng), generator.run(using: &rng), generator.run(using: &rng))
-            },
-            property: { try await property($0.0, $0.1, $0.2) },
-            formatCounterexample: { formatCounterexample($0.0, $0.1, $0.2, $1) },
-            shrink: liftToTripleShrinker(shrink)
-        )
+        property: property,
+        formatCounterexample: formatCounterexample,
+        shrink: shrink
     )
 }

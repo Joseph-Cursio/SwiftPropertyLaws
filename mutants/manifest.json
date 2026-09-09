@@ -81,6 +81,30 @@
       "expected": "killed",
       "test": "coverageIsCompleteOnlyWhenEveryCaseWasSeen",
       "label": "SpaceCoverage.isComplete requires strictly more cases than the space holds, so a complete walk never reports itself complete."
+    },
+    {
+      "id": "vacuity-ignores-a-complete-walk",
+      "patch": "patches/vacuity-ignores-a-complete-walk.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "vacuityMessageDistinguishesItsTwoCauses",
+      "label": "requiringApplicableCases treats every walk as if it were sampled, so a vacuous pass over a fully walked carrier still advises widening a generator that does not exist \u2014 the distinction between 'never sampled' and 'cannot exist' collapses back."
+    },
+    {
+      "id": "enumerated-ternary-degenerates-to-pairs",
+      "patch": "patches/enumerated-ternary-degenerates-to-pairs.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "walkedSuiteReportsCoverage",
+      "label": "runTernaryLaw's enumerated arm walks pairs with a repeated third value instead of every triple, so a ternary law silently checks a diagonal slice of its input space while still reporting a complete walk."
+    },
+    {
+      "id": "enumerated-failure-drops-the-law-message",
+      "patch": "patches/enumerated-failure-drops-the-law-message.patch",
+      "shape": "enumeration-machinery",
+      "expected": "killed",
+      "test": "walkedCounterexampleCarriesBothHalves",
+      "label": "EnumerationDriver reports only the address of a failing case, dropping the law's own explanation \u2014 the counterexample stays reproducible but stops saying what went wrong."
     }
   ]
 }
