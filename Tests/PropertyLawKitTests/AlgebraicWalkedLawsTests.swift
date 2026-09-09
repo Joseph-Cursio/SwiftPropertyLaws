@@ -109,6 +109,20 @@ struct AlgebraicWalkedLawsTests {
         #expect(results.map(\.protocolLaw) == ["Group.combineLeftInverse", "Group.combineRightInverse"])
     }
 
+    /// `Ring` has no inheritance chain and eleven laws over two operations, so
+    /// it exercises the flat half of the transform. `IntMod5` is the existing
+    /// correct fixture from `RingLawsTests`.
+    @Test("a walked Ring suite runs all eleven laws over every case")
+    func ringWalkCoversEveryLaw() async throws {
+        let carrier = Every.elements("value", in: (0 ..< 5).map { IntMod5(value: $0) })
+        let results = try await checkRingPropertyLaws(overEvery: carrier)
+        #expect(results.count == 11)
+        #expect(results.allSatisfy { $0.coverage?.isComplete == true })
+        // 5 values: unary laws walk 5, binary 25, ternary 125.
+        #expect(Set(results.compactMap { $0.coverage?.spaceSize }) == [5, 25, 125])
+        #expect(results.allSatisfy { !$0.isViolation })
+    }
+
     // MARK: - The payoff
 
     /// **The number that makes walking worth the cost.** Brute-forced here so
