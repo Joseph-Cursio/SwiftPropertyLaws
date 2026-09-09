@@ -105,6 +105,30 @@
       "expected": "killed",
       "test": "walkedCounterexampleCarriesBothHalves",
       "label": "EnumerationDriver reports only the address of a failing case, dropping the law's own explanation \u2014 the counterexample stays reproducible but stops saying what went wrong."
+    },
+    {
+      "id": "walked-chain-drops-inherited-laws",
+      "patch": "patches/walked-chain-drops-inherited-laws.patch",
+      "shape": "algebraic-walk",
+      "expected": "killed",
+      "test": "groupWalkChainsInherited",
+      "label": "Group's chain condition is inverted, so `.all` skips the inherited Monoid and Semigroup laws and `.ownOnly` runs them \u2014 a walked Group suite reports complete coverage of a third of the laws it claims."
+    },
+    {
+      "id": "semilattice-chains-to-the-wrong-parent",
+      "patch": "patches/semilattice-chains-to-the-wrong-parent.patch",
+      "shape": "algebraic-walk",
+      "expected": "killed",
+      "test": "semilatticeWalkChainsWholeCluster",
+      "label": "Semilattice chains to Monoid instead of CommutativeMonoid, dropping commutativity from the walk while every remaining law still passes and still reports a complete walk."
+    },
+    {
+      "id": "walked-ring-drops-right-distributivity",
+      "patch": "patches/walked-ring-drops-right-distributivity.patch",
+      "shape": "algebraic-walk",
+      "expected": "killed",
+      "test": "ringWalkCoversEveryLaw",
+      "label": "Ring runs left-distributivity twice and right-distributivity never. The result count is still eleven, which is why the test asserts law names rather than a count."
     }
   ]
 }

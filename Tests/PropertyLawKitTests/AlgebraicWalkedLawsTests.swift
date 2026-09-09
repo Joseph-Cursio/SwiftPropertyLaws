@@ -116,7 +116,11 @@ struct AlgebraicWalkedLawsTests {
     func ringWalkCoversEveryLaw() async throws {
         let carrier = Every.elements("value", in: (0 ..< 5).map { IntMod5(value: $0) })
         let results = try await checkRingPropertyLaws(overEvery: carrier)
-        #expect(results.count == 11)
+        // Names, not just a count: a suite that ran one law twice and another
+        // never would still be eleven results.
+        #expect(Set(results.map(\.protocolLaw)).count == 11, "a law is duplicated or missing")
+        #expect(results.map(\.protocolLaw).contains("Ring.rightDistributivity"))
+        #expect(results.map(\.protocolLaw).contains("Ring.leftDistributivity"))
         #expect(results.allSatisfy { $0.coverage?.isComplete == true })
         // 5 values: unary laws walk 5, binary 25, ternary 125.
         #expect(Set(results.compactMap { $0.coverage?.spaceSize }) == [5, 25, 125])

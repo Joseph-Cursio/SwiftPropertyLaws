@@ -37,6 +37,9 @@ Requires a clean working tree.
 | `vacuity-ignores-a-complete-walk` | enumeration-machinery | killed | `vacuityMessageDistinguishesItsTwoCauses` |
 | `enumerated-ternary-degenerates-to-pairs` | enumeration-machinery | killed | `walkedSuiteReportsCoverage` |
 | `enumerated-failure-drops-the-law-message` | enumeration-machinery | killed | `walkedCounterexampleCarriesBothHalves` |
+| `walked-chain-drops-inherited-laws` | algebraic-walk | killed | `groupWalkChainsInherited` |
+| `semilattice-chains-to-the-wrong-parent` | algebraic-walk | killed | `semilatticeWalkChainsWholeCluster` |
+| `walked-ring-drops-right-distributivity` | algebraic-walk | killed | `ringWalkCoversEveryLaw` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -57,6 +60,16 @@ other two, `product-orders-row-major` and
 found stops being the smallest failure that exists — which is the property the
 whole design turns on and which no assertion about pass/fail would notice.
 All six verified killed.
+
+**`algebraic-walk` is a third shape, and it targets the chain rather than a
+law.** Each of the six algebraic suites now has a sampled and a walked entry
+delegating to one assembler, and the risk that shape carries is that the two
+stop agreeing about *which laws run*. All three mutants leave every law passing
+and every result reporting a complete walk, while quietly changing the set:
+`.all` and `.ownOnly` swapped, a chain that skips `CommutativeMonoid`, and a
+Ring that runs left-distributivity twice and right-distributivity never. The
+last is the reason `ringWalkCoversEveryLaw` asserts law *names* — the result
+count is still eleven.
 
 **A gap this corpus found — and we then closed.** Blinding `Equatable.symmetry`
 originally *survived*: the only asymmetric planted violator
