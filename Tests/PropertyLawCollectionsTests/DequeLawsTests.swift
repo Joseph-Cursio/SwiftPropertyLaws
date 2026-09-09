@@ -69,4 +69,43 @@ struct DequeLawsTests {
         #expect(results.isEmpty == false)
         #expect(results.allSatisfy { $0.outcome == .passed })
     }
+
+    // MARK: - The same chain, over every ring-buffer layout
+
+    /// **Every run above draws from `smallIntDeque`, which builds each deque as
+    /// `Deque(array)` — and that path produced 1 000 contiguous buffers and zero
+    /// wrapped ones over 1 000 draws.** So the whole file, at any budget, has
+    /// only ever exercised one of the layouts a `Deque` can be in.
+    ///
+    /// A layout cannot be drawn, only built, so closing that needs a space
+    /// rather than a wider generator. `DequeLayouts.everyLayout()` is 107
+    /// arrangements of which 59 are wrapped, and these two runs put the index
+    /// arithmetic that walks a wrapped buffer under the same laws for the first
+    /// time.
+    @Test func dequePassesTheCollectionChainOverEveryLayout() async throws {
+        let results = try await checkRandomAccessCollectionPropertyLaws(
+            for: Deque<Int>.self,
+            using: DequeLayouts.everyLayout().generator,
+            options: LawCheckOptions(budget: .standard),
+            laws: .all
+        )
+        #expect(results.allSatisfy { $0.outcome == .passed })
+    }
+
+    @Test func dequePassesMutationLawsOverEveryLayout() async throws {
+        let layouts = DequeLayouts.everyLayout().generator
+        let mutable = try await checkMutableCollectionPropertyLaws(
+            for: Deque<Int>.self,
+            using: layouts,
+            options: LawCheckOptions(budget: .standard),
+            laws: .ownOnly
+        )
+        let rangeReplaceable = try await checkRangeReplaceableCollectionPropertyLaws(
+            for: Deque<Int>.self,
+            using: layouts,
+            options: LawCheckOptions(budget: .standard),
+            laws: .ownOnly
+        )
+        #expect((mutable + rangeReplaceable).allSatisfy { $0.outcome == .passed })
+    }
 }

@@ -1,3 +1,5 @@
+import PropertyBased
+
 /// A contiguous run of cases sharing one size, inside an ``Enumeration``.
 ///
 /// Deliberately not nested inside `Enumeration`: it carries no element type, and
@@ -180,5 +182,49 @@ public struct Enumeration<Element: Sendable>: Sendable {
             build: { transform(build($0)) },
             describe: describe
         )
+    }
+}
+
+extension Enumeration {
+
+    /// Draw from this space at random, as an ordinary kit `Generator`.
+    ///
+    /// The escape hatch for a space too large to walk, and the door into the
+    /// forty-odd suites that have no `overEvery:` entry point — `Equatable`,
+    /// `Hashable`, `Collection` and the rest all take a `Generator`, so this is
+    /// how a structured space reaches them:
+    ///
+    /// ```swift
+    /// try await checkSequencePropertyLaws(using: dequeLayouts.generator)
+    /// ```
+    ///
+    /// ## What this gives up, stated plainly
+    ///
+    /// **No minimality and no shrinking.** The kit's per-law shrinker is
+    /// value-level (`LawCheck.shrink`) and the kit deliberately never threads a
+    /// `Generator` through a driver, so the index shrinker in this type's
+    /// signature is *not consulted*. A failure here is the first one drawn, not
+    /// the smallest one that exists. Measured on a 1 024-case space: walking
+    /// reports the minimal `[0, 1, 2]`, this reports whatever came up — in that
+    /// run, `[0, 3, 4, 8, 9]`.
+    ///
+    /// **No coverage denominator.** A sampled run reports `nil` coverage like
+    /// any other, so it cannot say what fraction of the space it saw.
+    ///
+    /// Prefer ``checkEveryCase(of:law:tier:options:satisfies:)`` or a suite's
+    /// `overEvery:` entry where one exists. Reach for this when the space is too
+    /// large to walk, or when the suite you need has no walked entry.
+    ///
+    /// ## What it still gives
+    ///
+    /// **Structural reach.** The point of a space is that its cases are defined
+    /// rather than constructed, so it reaches configurations a generator built
+    /// from a construction path never produces — not rarely, never. That
+    /// property survives sampling intact, and it is the reason this is worth
+    /// having despite the two paragraphs above.
+    public var generator: Generator<Element, Shrink.Integer<Int>> {
+        precondition(count > 0, "Enumeration.generator: cannot draw from an empty space")
+        let space = self
+        return Gen<Int>.int(in: 0 ..< count).map { space[$0] }
     }
 }
