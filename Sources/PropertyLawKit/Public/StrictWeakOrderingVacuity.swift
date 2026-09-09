@@ -25,8 +25,17 @@ final class Applications: @unchecked Sendable {
 /// Conventional tier: neither cause is the law's fault, so this reports rather
 /// than throws — `.strict` promotes it.
 ///
-/// **The two causes are not the same finding, and only a complete walk can tell
-/// them apart.** Sampled, a zero-application run means "the draws never produced
+/// **This is a floor, not a defence.** It reports a law that never applied. It
+/// says nothing about a law that applied only to cases which could not have
+/// refuted it — measured on a non-transitive `==` over a 100-value domain, the
+/// antecedent fired twice per thousand trials and the refuting configuration
+/// zero times, so a counter would have reported the law as working. No counter
+/// can close that gap: telling a *telling* application from a harmless one needs
+/// the answer you were looking for. Walking the carrier does close it, by
+/// applying the law to every case rather than hoping the sample was telling.
+///
+/// **The two causes of never-applying are not the same finding, and only a
+/// complete walk can tell them apart.** Sampled, a zero-application run means "the draws never produced
 /// a qualifying case", which might be a narrow generator or might be a case that
 /// cannot exist — the count is zero either way and the harness cannot see which.
 /// Over a walk that covered its whole space the second reading is the only one
@@ -39,7 +48,9 @@ func requiringApplicableCases(
     _ applications: Applications,
     needing description: String
 ) -> CheckResult {
-    guard case .passed = result.outcome, applications.recorded == 0 else { return result }
+    guard case .passed = result.outcome, applications.recorded == 0 else {
+        return result.reporting(applications: applications.recorded)
+    }
     let complete = result.coverage?.isComplete ?? false
     let counterexample = complete
         ? """
@@ -63,6 +74,19 @@ func requiringApplicableCases(
         coverageHints: result.coverageHints,
         shrunkFrom: result.shrunkFrom,
         shrinkSteps: result.shrinkSteps,
-        coverage: result.coverage
+        coverage: result.coverage,
+        applications: 0
     )
+}
+
+/// Attach a conditional law's application count without touching its verdict.
+///
+/// The counterpart to `requiringApplicableCases` for laws where a vacuous pass
+/// is reported rather than enforced. Which of the two a law uses is a judgement
+/// about blast radius, not about correctness: turning the count into a failure
+/// on `Equatable.transitivity` was measured to redden 67 of the kit's own
+/// 1 091 tests, every report of them true, and a diagnostic that large is one
+/// people suppress rather than act on.
+func reportingApplications(_ applications: Applications, of result: CheckResult) -> CheckResult {
+    result.reporting(applications: applications.recorded)
 }
