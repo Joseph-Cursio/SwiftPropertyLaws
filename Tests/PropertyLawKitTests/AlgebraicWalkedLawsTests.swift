@@ -127,6 +127,48 @@ struct AlgebraicWalkedLawsTests {
         #expect(results.allSatisfy { !$0.isViolation })
     }
 
+    // MARK: - Sampling a carrier too large to walk
+
+    /// **Coverage for a multi-value law is the product space, not the carrier.**
+    /// A ternary law over eight values samples from 512 triples; reporting the
+    /// eight would let a run that drew every carrier value claim complete
+    /// coverage while having seen a fraction of the triples. That is the same
+    /// overclaim `SpaceCoverage` exists to prevent, one level down, and it is
+    /// the thing this assertion pins.
+    @Test("a sampled ternary law reports the triple space, not the carrier")
+    func sampledCoverageIsArityAware() async throws {
+        let results = try await checkSemigroupPropertyLaws(
+            sampling: mod8Carrier(),
+            options: LawCheckOptions(budget: .standard)
+        )
+        let coverage = try #require(results.first?.coverage)
+        #expect(coverage.spaceSize == 512, "8 values cubed, not 8")
+        #expect(coverage.casesRun > 8, "1 000 draws reach far more than the carrier size")
+        #expect(coverage.casesRun <= 512)
+        #expect(coverage.isComplete == false, "1 000 draws cannot exhaust 512 triples by chance")
+        #expect(results.allSatisfy { !$0.isViolation })
+    }
+
+    /// The sampled entry is a real alternative to walking, not a demo: over the
+    /// 32-element carrier whose walk is 32 768 triples, sampling still finds the
+    /// rare defect and still reports what it drew.
+    @Test("sampling a carrier too large to walk still finds the rare violator")
+    func samplingFindsTheRareViolator() async {
+        var reported: CheckResult?
+        do {
+            _ = try await checkSemigroupPropertyLaws(
+                sampling: rareCarrier(),
+                options: LawCheckOptions(budget: .thorough)
+            )
+        } catch let violation as PropertyLawViolation {
+            reported = violation.results.first
+        } catch {}
+        let result = try? #require(reported)
+        #expect(result?.isViolation == true)
+        #expect(result?.coverage?.spaceSize == 32_768)
+        #expect(result?.coverage?.isComplete == false)
+    }
+
     // MARK: - The payoff
 
     /// **The number that makes walking worth the cost.** Brute-forced here so

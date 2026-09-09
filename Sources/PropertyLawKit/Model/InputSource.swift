@@ -25,6 +25,20 @@ import PropertyBased
 package enum InputSource<Value: Sendable>: Sendable {
     case sampled(@Sendable (inout Xoshiro) -> Value)
     case enumerated(Enumeration<Value>)
+    /// Random draws **from a bounded space**, keeping the index.
+    ///
+    /// The middle ground, and the one the plain `Generator` bridge cannot
+    /// occupy. `Enumeration.generator` erases the index at the `.map`, so a
+    /// failure is the first drawn rather than the smallest, and the run cannot
+    /// say what fraction of the space it saw. Keeping the index inside the
+    /// driver recovers both — it shrinks toward index 0, which is the smallest
+    /// case because spaces are ordered smallest-first, and it counts the
+    /// distinct cases it drew against a denominator it knows.
+    ///
+    /// The index never reaches the law: property closures still receive a bare
+    /// `Value`. That is the whole reason this is a source rather than a
+    /// generator.
+    case sampledFromSpace(Enumeration<Value>)
 }
 
 extension InputSource {

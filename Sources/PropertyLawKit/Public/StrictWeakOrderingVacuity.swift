@@ -66,4 +66,3 @@ func requiringApplicableCases(
         coverage: result.coverage
     )
 }
-

@@ -52,6 +52,21 @@ public func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
     try await checkRingPropertyLaws(from: .enumerated(carrier), options: options)
 }
 
+/// The same laws over **random draws from** a bounded carrier, keeping the index.
+///
+/// For a carrier too large to walk. Unlike handing `carrier.generator` to the
+/// sampled entry, this keeps the index inside the driver, so a failure shrinks
+/// toward the smallest case and the run reports how many distinct cases it drew.
+/// `options.budget` decides the number of draws.
+@discardableResult
+public func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
+    for type: Value.Type = Value.self,
+    sampling carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkRingPropertyLaws(from: .sampledFromSpace(carrier), options: options)
+}
+
 /// One assembler, two sources — so a walked suite can never run a different set
 /// of laws from the sampled one.
 func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(

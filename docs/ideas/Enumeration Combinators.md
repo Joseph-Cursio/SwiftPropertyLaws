@@ -255,6 +255,9 @@ patch regenerated. The Ring mutant did not die at first: the test asserted
 `results.count == 11`, and a suite running one law twice and another never is still eleven
 results. It now asserts law names.
 
+**Slice 3 — the `Generator` bridge. SHIPPED, and its concessions since closed for suites
+that can take an `InputSource`** — see the sampled-space note at the end of this section.
+
 **Slice 3 — the `Generator` bridge. SHIPPED.** `Enumeration.generator` draws from a space
 at random as an ordinary kit `Generator`, which is the door into the forty-odd suites with
 no `overEvery:` entry — `Equatable`, `Hashable`, `Collection` and the rest all take a
@@ -284,6 +287,24 @@ Mutation-tested: 3 mutants in a new `space-sampling` shape, 3 killed.
 `layout-space-never-prepends` is the sharpest in the corpus — it builds every arrangement
 by appending, so nothing is wrapped, and the space still enumerates, still reports its size,
 and still drives every law to a pass while closing nothing.
+
+**The bridge's two concessions, closed where they could be.** `.sampledFromSpace` is a third
+`InputSource` case that keeps the index inside the driver: a failure shrinks toward index 0
+— the smallest case, since spaces are ordered — and the run counts distinct combinations
+drawn against a denominator it knows. Measured against the bridge on the same space and law:
+the bridge reports whatever came up at 0 shrink steps; this reports `subset=[0, 1, 2]`, the
+minimal witness. Surface is `checkSampledCases` plus a `sampling:` entry beside `overEvery:`
+on the six algebraic and three strict-weak-ordering suites.
+
+Coverage counts distinct **combinations**, not draws and not positions. Counting draws
+would let 1 000 draws over 64 cases report `casesRun: 1000, spaceSize: 64` and call itself
+complete; counting positions would let a ternary law that drew all 32 carrier values claim
+complete coverage of 32 768 triples. The denominator is `fullCount ^ arity`, or `nil` when
+that overflows. **The second mistake was in the first implementation and was caught while
+writing the tests rather than by them**, which is why it is now also a mutant.
+
+**This does not retire the bridge.** The forty-odd suites that take only a `Generator` still
+need it; the sampled source is better wherever a law can take an `InputSource`.
 
 **Slice 4 — carrier enumeration around existing suites. SHIPPED.**
 `checkEveryCarrier(of:options:perCarrier:suite:)` runs an existing suite once against each

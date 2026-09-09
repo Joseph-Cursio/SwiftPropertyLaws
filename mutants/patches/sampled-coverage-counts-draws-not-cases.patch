@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/SpaceSampling.swift b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+index 2136ab4..d0d9bcb 100644
+--- a/Sources/PropertyLawKit/Internal/SpaceSampling.swift
++++ b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+@@ -34,7 +34,7 @@ final class DrawnCombinations: @unchecked Sendable {
+ 
+     func record(_ indices: [Int]) {
+         lock.lock()
+-        seen.insert(indices)
++        seen.insert(indices + [seen.count])
+         lock.unlock()
+     }
+ 

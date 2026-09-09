@@ -66,6 +66,21 @@ public func checkStrictWeakOrderingLaws<Value: Sendable>(
     try await checkStrictWeakOrderingLaws(from: .enumerated(carrier), by: compare, options: options)
 }
 
+/// The same laws over **random draws from** a bounded carrier, keeping the index.
+///
+/// For a carrier too large to walk. A failure still shrinks toward the smallest
+/// case and the run still reports how many distinct cases it drew — but a
+/// *sampled* run cannot resolve the vacuity question the walked entry can, so a
+/// law whose antecedent never fires is reported the way any sampled law is.
+@discardableResult
+public func checkStrictWeakOrderingLaws<Value: Sendable>(
+    sampling carrier: Enumeration<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkStrictWeakOrderingLaws(from: .sampledFromSpace(carrier), by: compare, options: options)
+}
+
 /// One assembler, two sources — so the walked form can never run a different
 /// set of laws from the sampled one.
 private func checkStrictWeakOrderingLaws<Value: Sendable>(
@@ -130,6 +145,23 @@ public func checkComparatorDiscriminates<Value: Sendable>(
 ) async throws -> [CheckResult] {
     try await checkComparatorDiscriminates(
         from: .enumerated(carrier), by: compare, distinct: distinct, options: options)
+}
+
+/// The same laws over **random draws from** a bounded carrier, keeping the index.
+///
+/// For a carrier too large to walk. A failure still shrinks toward the smallest
+/// case and the run still reports how many distinct cases it drew — but a
+/// *sampled* run cannot resolve the vacuity question the walked entry can, so a
+/// law whose antecedent never fires is reported the way any sampled law is.
+@discardableResult
+public func checkComparatorDiscriminates<Value: Sendable>(
+    sampling carrier: Enumeration<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    distinct: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkComparatorDiscriminates(
+        from: .sampledFromSpace(carrier), by: compare, distinct: distinct, options: options)
 }
 
 private func checkComparatorDiscriminates<Value: Sendable>(
@@ -211,6 +243,21 @@ public func checkComparatorIsCongruent<Value: Equatable & Sendable>(
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
     try await checkComparatorIsCongruent(from: .enumerated(carrier), by: compare, options: options)
+}
+
+/// The same laws over **random draws from** a bounded carrier, keeping the index.
+///
+/// For a carrier too large to walk. A failure still shrinks toward the smallest
+/// case and the run still reports how many distinct cases it drew — but a
+/// *sampled* run cannot resolve the vacuity question the walked entry can, so a
+/// law whose antecedent never fires is reported the way any sampled law is.
+@discardableResult
+public func checkComparatorIsCongruent<Value: Equatable & Sendable>(
+    sampling carrier: Enumeration<Value>,
+    by compare: @escaping @Sendable (Value, Value) -> Bool,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkComparatorIsCongruent(from: .sampledFromSpace(carrier), by: compare, options: options)
 }
 
 private func checkComparatorIsCongruent<Value: Equatable & Sendable>(
