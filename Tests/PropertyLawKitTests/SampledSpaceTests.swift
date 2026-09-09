@@ -62,21 +62,44 @@ struct SampledSpaceTests {
         #expect(coverage.isComplete)
     }
 
-    /// **Why the count is deduplicated.** Counting draws would let 1 000 draws
-    /// over a 64-case space report `casesRun: 1000`, and `isComplete` —
-    /// `casesRun >= spaceSize` — would answer `true` for a run that missed
-    /// cases. Distinct counting makes the number mean what it says.
+    /// **Why the count is deduplicated**, tested where draws and distinct cases
+    /// actually diverge.
+    ///
+    /// An earlier version of this test drew 50 times from a 1 024-case space and
+    /// asserted `casesRun <= 50`. Both counting rules satisfy that — 50 draws
+    /// into a large space almost never collide — so the assertion was shaped
+    /// like a check without discriminating, and a mutant that counted draws
+    /// survived it. **Over-sampling a small space is the only arrangement where
+    /// the two rules give different answers**, so that is what this draws: 500
+    /// times from 16 cases, where draw-counting would report 500.
     @Test func coverageCountsDistinctCasesNotDraws() async throws {
-        let space = Every.subsets("subset", of: 10)
+        let space = Every.subsets("subset", of: 4)
+        #expect(space.count == 16)
         let results = try await checkSampledCases(
             of: space,
+            law: "Spike.alwaysHolds",
+            options: LawCheckOptions(budget: .custom(trials: 500)),
+            satisfies: { _ in true }
+        )
+        let coverage = try #require(results.first?.coverage)
+        #expect(coverage.spaceSize == 16)
+        #expect(coverage.casesRun <= 16,
+                "500 draws from 16 cases cannot cover more than 16 — a count of draws would say 500")
+        #expect(coverage.casesRun == 16, "500 draws should reach all 16")
+    }
+
+    /// The companion: a space large enough that 50 draws cannot exhaust it, so
+    /// the run reports incomplete coverage rather than rounding up to it.
+    @Test func aSmallSampleOfALargeSpaceReportsIncompleteCoverage() async throws {
+        let results = try await checkSampledCases(
+            of: Every.subsets("subset", of: 10),
             law: "Spike.alwaysHolds",
             options: LawCheckOptions(budget: .custom(trials: 50)),
             satisfies: { _ in true }
         )
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.spaceSize == 1024)
-        #expect(coverage.casesRun <= 50, "50 draws cannot cover more than 50 cases")
+        #expect(coverage.casesRun <= 50)
         #expect(coverage.isComplete == false)
     }
 
