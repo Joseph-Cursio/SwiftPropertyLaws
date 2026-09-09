@@ -153,6 +153,30 @@
       "expected": "killed",
       "test": "theBridgeReachesMostOfASmallSpace",
       "label": "Enumeration.generator draws only from the first four cases of any space, so the bridge silently samples a corner while every law it drives still passes."
+    },
+    {
+      "id": "carrier-walk-does-not-stop-at-first-failure",
+      "patch": "patches/carrier-walk-does-not-stop-at-first-failure.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "carrierEnumerationFindsWhatOneCarrierCannot",
+      "label": "checkEveryCarrier keeps walking past a failing carrier. The right carrier is still reported, so the counterexample looks correct \u2014 only the coverage count betrays that the walk did not stop where it said it did."
+    },
+    {
+      "id": "carrier-run-ignores-the-per-carrier-budget",
+      "patch": "patches/carrier-run-ignores-the-per-carrier-budget.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "perCarrierBudgetIsWhatCounts",
+      "label": "checkEveryCarrier passes options.budget to every carrier instead of perCarrier, so a caller's outer budget is multiplied by the carrier count \u2014 the cost blow-up the separate parameter exists to prevent."
+    },
+    {
+      "id": "carrier-coverage-always-reports-complete",
+      "patch": "patches/carrier-coverage-always-reports-complete.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "carrierEnumerationFindsWhatOneCarrierCannot",
+      "label": "Carrier coverage reports the carriers visited as the whole space, so a walk that stopped at the eighth of eleven carriers claims to have covered everything."
     }
   ]
 }

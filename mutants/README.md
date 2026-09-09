@@ -43,6 +43,9 @@ Requires a clean working tree.
 | `layout-space-never-prepends` | space-sampling | killed | `layoutSpaceReachesWrappedBuffers` |
 | `layout-space-loses-its-size-ordering` | space-sampling | killed | `layoutSpaceIsSmallestFirst` |
 | `bridge-draws-from-a-truncated-range` | space-sampling | killed | `theBridgeReachesMostOfASmallSpace` |
+| `carrier-walk-does-not-stop-at-first-failure` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
+| `carrier-run-ignores-the-per-carrier-budget` | carrier-walk | killed | `perCarrierBudgetIsWhatCounts` |
+| `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -99,3 +102,12 @@ drives every `Deque` law to a pass — and builds every one of them by appending
 so the head never moves and not one is wrapped. It closes exactly nothing while
 looking identical to the version that closes the gap. Only a test that measures
 the wrapped fraction can tell them apart.
+
+**`carrier-walk` is the fifth shape, and two of its three mutants are about
+cost or honesty rather than correctness.** `carrier-run-ignores-the-per-carrier-budget`
+multiplies a caller's outer budget by the carrier count — every law still
+passes, it just costs a hundred times more than the call implies, which is
+precisely what the separate `perCarrier` parameter exists to prevent.
+`carrier-coverage-always-reports-complete` lets a walk that stopped at the
+eighth of eleven carriers claim it covered everything. Neither would be noticed
+by any assertion about pass or fail.
