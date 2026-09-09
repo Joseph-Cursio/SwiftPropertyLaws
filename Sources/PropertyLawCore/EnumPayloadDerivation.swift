@@ -1,8 +1,9 @@
-/// Tier 4 — deriving a generator for an enum with cases (payload-bearing or
-/// plain, but not `CaseIterable`/raw-representable). Each case becomes a
-/// `Generator<T>`; the cases combine with `Gen.oneOf(...)`. This fills the
-/// "enum without CaseIterable/raw" `.todo` bucket — the largest addressable
-/// gap on value-type-heavy code.
+/// Tier 4 — deriving a generator for any enum whose cases were captured
+/// (payload-bearing or plain), short of a `CaseIterable` conformance. Each
+/// case becomes a `Generator<T>`; the cases combine with `Gen.oneOf(...)`.
+/// This fills the "enum without CaseIterable" `.todo` bucket — the largest
+/// addressable gap on value-type-heavy code — and takes raw-valued enums too,
+/// ahead of the filtering `rawRepresentable` arm.
 
 /// One enum case captured from SwiftSyntax: its name and associated values
 /// (each a label + type spelling, reusing `InitializerParameter` — an enum
@@ -32,9 +33,13 @@ public struct EnumCaseGenerator: Sendable, Equatable {
 
 extension DerivationStrategist {
 
-    /// Tier 4 — derive an enum from its cases. Runs after `caseIterable` and
-    /// `rawRepresentable` decline, so those enums keep their simpler
-    /// strategies. Requires every case's associated values to resolve to
+    /// Tier 4 — derive an enum from its cases. Runs after `caseIterable`,
+    /// `memberwiseArbitrary` and `initializerBased` decline, and *before*
+    /// `rawRepresentable` is tried, so a `CaseIterable` enum keeps its simpler
+    /// strategy while a raw-valued enum whose cases were captured is
+    /// enumerated here instead of filtered through `init(rawValue:)` — the
+    /// non-termination hazard documented in `strategy(for:resolve:)`.
+    /// Requires every case's associated values to resolve to
     /// generators and each case to stay within the `zip` arity limit;
     /// otherwise returns `nil` (the enum can't be partially represented — a
     /// `oneOf` must cover every case).
