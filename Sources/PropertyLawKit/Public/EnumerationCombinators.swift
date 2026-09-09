@@ -141,6 +141,65 @@ public enum Every {
             describe: { "\(label)=\(decode($0, table))" }
         )
     }
+
+    /// Every sequence over `alphabet` of length `0 ... maxLength`, shortest
+    /// first and lexicographic within a length. Size is the sequence's length,
+    /// so a failure is reported at the shortest sequence that exhibits it.
+    ///
+    /// **This is the combinator with no `StdlibUnittest` ancestor.** Apple's
+    /// four exist for `Collection` index arithmetic; a *sequence of actions* is
+    /// the shape model-based testing is quantified over, and idempotence is
+    /// definitionally the length-2 case of it. Over three actions, length `0...4`
+    /// is 121 sequences — walkable outright, with a minimal witness for free.
+    ///
+    /// The count is `1 + |A| + |A|² + … + |A|^maxLength`, which climbs fast: ten
+    /// actions to length six is already 1 111 111 cases. That is the point at
+    /// which `Enumeration.prefix(_:)` or the `sampling:` entries take over, and
+    /// the run says which it did.
+    public static func sequences<Value: Sendable>(
+        _ label: String,
+        of alphabet: Enumeration<Value>,
+        upTo maxLength: Int
+    ) -> Enumeration<[Value]> {
+        precondition(maxLength >= 0, "Every.sequences: negative maxLength \(maxLength)")
+        let width = alphabet.count
+        var buckets: [EnumerationBucket] = []
+        var start = 0
+        for length in 0 ... maxLength {
+            let atLength = raised(width, to: length)
+            // An empty alphabet admits the empty sequence and nothing longer.
+            if atLength == 0 { break }
+            buckets.append(EnumerationBucket(size: length, start: start, count: atLength))
+            let advanced = start.addingReportingOverflow(atLength)
+            precondition(!advanced.overflow, "Every.sequences: the space does not fit in an Int")
+            start = advanced.partialValue
+        }
+        let table = buckets
+        // Closed-form: the bucket gives the length, and the offset within it is
+        // that length's digits in base `width`, most significant first — which
+        // is what makes the order lexicographic.
+        let decode: @Sendable (Int) -> [Value] = { index in
+            for bucket in table where index < bucket.start + bucket.count {
+                var offset = index - bucket.start
+                var chosen: [Value] = []
+                chosen.reserveCapacity(bucket.size)
+                var remaining = bucket.size
+                while remaining > 0 {
+                    let place = raised(width, to: remaining - 1)
+                    chosen.append(alphabet[offset / place])
+                    offset %= place
+                    remaining -= 1
+                }
+                return chosen
+            }
+            preconditionFailure("Every.sequences: index \(index) outside the space")
+        }
+        return Enumeration(
+            buckets: buckets,
+            build: decode,
+            describe: { "\(label)=\(decode($0))" }
+        )
+    }
 }
 
 /// `n` choose `k`, trapping on overflow rather than wrapping — a silently
@@ -153,6 +212,20 @@ func binomial(_ setSize: Int, _ pick: Int) -> Int {
         let scaled = result.multipliedReportingOverflow(by: setSize - step)
         precondition(!scaled.overflow, "binomial(\(setSize), \(pick)) overflows Int")
         result = scaled.partialValue / (step + 1)
+    }
+    return result
+}
+
+/// `base ^ exponent`, trapping on overflow. `raised(0, to: 0)` is 1 — the empty
+/// sequence exists over any alphabet, including the empty one.
+@Sendable
+func raised(_ base: Int, to exponent: Int) -> Int {
+    precondition(exponent >= 0, "raised(_:to:): negative exponent \(exponent)")
+    var result = 1
+    for _ in 0 ..< exponent {
+        let scaled = result.multipliedReportingOverflow(by: base)
+        precondition(!scaled.overflow, "raised(\(base), to: \(exponent)) overflows Int")
+        result = scaled.partialValue
     }
     return result
 }
