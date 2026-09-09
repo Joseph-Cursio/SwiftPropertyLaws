@@ -177,6 +177,22 @@
       "expected": "killed",
       "test": "carrierEnumerationFindsWhatOneCarrierCannot",
       "label": "Carrier coverage reports the carriers visited as the whole space, so a walk that stopped at the eighth of eleven carriers claims to have covered everything."
+    },
+    {
+      "id": "thorough-is-not-ten-thousand",
+      "patch": "patches/thorough-is-not-ten-thousand.patch",
+      "shape": "budget-naming",
+      "expected": "killed",
+      "test": "everyBudgetIsATrialCountAndNothingElse",
+      "label": "TrialBudget.thorough returns 1 000 rather than 10 000, so the top effort tier silently becomes the default one and every law that asked for more quietly gets less."
+    },
+    {
+      "id": "deprecated-exhaustive-loses-its-argument",
+      "patch": "patches/deprecated-exhaustive-loses-its-argument.patch",
+      "shape": "budget-naming",
+      "expected": "killed",
+      "test": "theDeprecatedExhaustiveSpellingStillResolvesToACount",
+      "label": "The deprecated `exhaustive(_:)` shim ignores its argument and always yields the 10 000 tier, so a migrating call site that said .exhaustive(500) silently runs twenty times the trials \u2014 a deprecation that changes behaviour rather than just its spelling."
     }
   ]
 }
