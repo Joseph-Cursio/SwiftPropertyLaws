@@ -4,6 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**`TrialBudget.exhaustive` is now `.thorough` (2026-09-08).** The old name claimed a property of the *input space* — everything was tried — and delivered a property of the *loop*: ten thousand random draws, nothing exhausted. **This was the kit's own instance of the defect this file keeps recording**, a default presented as a guarantee, sitting in the public API since v1.
+
+**The prose was the evidence.** Three files carried doc comments whose only job was to walk the name back — `SpaceCoverage`, `DequeLayouts` and `SyntaxGenerators` between them spent a paragraph and five references explaining that the identifier did not mean what it said. When three files apologise for a name, the name is wrong. Those passages are deleted or restated positively.
+
+**It also got worse once the enumeration work shipped.** Before Slice 1 the kit had no way to make the real claim, so `exhaustive` was the closest available word. Now `SpaceCoverage` genuinely says "walked all 512 cases", so the two sat side by side and a reader could reasonably assume they were related.
+
+**`.thorough` is deliberately payload-free.** A tier carrying a count *is* `.custom(trials:)` wearing a tier's name — `exhaustive(n)` and `custom(trials: n)` were literally the same case with different labels, so the enum had four cases and three meanings. Three named effort tiers plus one escape hatch is the shape that was wanted.
+
+**Migration cost was near zero, which is why it was worth doing now.** `exhaustive(_:)` survives as a deprecated static factory returning `.custom(trials:)`, so every *expression* call site still compiles; only pattern matching on the case breaks, and nothing does that. Three call sites in this repo's tests, one PRD table row, and **downstream SwiftInferProperties uses the kit's budget solely as `.sanity`** — zero `.exhaustive`.
+
+Mutation-tested: **2 mutants in a `budget-naming` shape, 2 killed** (24 total, 24 killed). `deprecated-exhaustive-loses-its-argument` is the one worth having — the shim ignores its argument and always yields the 10 000 tier, so `.exhaustive(500)` silently runs twenty times the trials it asked for. **A deprecation that changes behaviour rather than only its spelling is the classic migration hazard**, and it is invisible to every law in the kit: they all still pass, just slower.
+
+1066 tests; swiftlint exits 0.
+
+**Remaining from the enumeration arc:** `Enumeration.generator`'s two concessions — a sampled space gets neither minimality nor a coverage denominator. The fix is a third `InputSource` case where the driver keeps the index, so it can shrink toward index 0 (which, spaces being smallest-first, is the smallest case) and report a real denominator, while the law's closure still receives a bare `Element`. Measured in the Slice 1 spike: bare bridge `[0, 3, 4, 8, 9]` at 0 shrink steps against index-carrying `#56 [0, 1, 2]` in 5. **It would not retire the bridge** — the forty-odd suites that take only a `Generator` still need it.
+
 **Slice 4: a whole law suite, once per carrier (2026-09-08).** `checkEveryCarrier(of:options:perCarrier:suite:)` runs an existing suite against each case of a bounded carrier space. Every other entry point varies a law's *inputs*; this varies its *subject*. **This completes the four slices** of `docs/ideas/Enumeration Combinators.md`.
 
 **The budget convention is the design problem, and is why this could not fall out of the other entries.** Apple composes this freely because their conformance checkers are deterministic — one pass per carrier exhausts it. Ours **sample**, so the naive composition multiplies: 107 carriers × 1 000 trials × 15 laws is 1.6 million property evaluations from one innocuous-looking call. `perCarrier` is a separate explicit parameter defaulting to `.sanity`, and `options.budget` is ignored. The default is a claim, not caution: **in a carrier walk the variety comes from the carriers, not the trials** — a hundred deque layouts at a hundred trials each explores more of what matters than one layout at ten thousand.

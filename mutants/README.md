@@ -46,6 +46,8 @@ Requires a clean working tree.
 | `carrier-walk-does-not-stop-at-first-failure` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `carrier-run-ignores-the-per-carrier-budget` | carrier-walk | killed | `perCarrierBudgetIsWhatCounts` |
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
+| `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
+| `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -111,3 +113,12 @@ precisely what the separate `perCarrier` parameter exists to prevent.
 `carrier-coverage-always-reports-complete` lets a walk that stopped at the
 eighth of eleven carriers claim it covered everything. Neither would be noticed
 by any assertion about pass or fail.
+
+**`budget-naming` guards a migration, which is a different risk again.**
+`deprecated-exhaustive-loses-its-argument` is the one worth reading: the
+deprecated `exhaustive(_:)` shim ignores its argument and always yields the
+10 000 tier, so a call site that said `.exhaustive(500)` silently runs twenty
+times the trials it asked for. **A deprecation that changes behaviour rather
+than only its spelling is the classic migration hazard**, and it is invisible to
+every law — they all still pass, just slower. Only a test that reads the shim's
+result can see it.

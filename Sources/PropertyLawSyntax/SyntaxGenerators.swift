@@ -35,7 +35,7 @@ import SwiftSyntax
 ///    freed the moment the tree is dropped and whose address is then reused.
 ///    Measured: 300 parsed-and-dropped trees yielded **78** unique ids, and the
 ///    generator gave 751 unique in 10 000 draws — ratio 0.075, *failing* the
-///    same law at `.exhaustive` that attempt 1 was rejected for.
+///    same law at `.thorough` that attempt 1 was rejected for.
 /// 3. **What actually works — a large pool whose trees stay alive.** The same
 ///    300 trees, retained, yield **11 700 unique ids from 11 700 nodes**: every
 ///    node distinct. Identity is available exactly as long as the arena is.
@@ -43,7 +43,7 @@ import SwiftSyntax
 /// So the pool was right and the reason for rejecting it was wrong: a pool does
 /// cap unique hashes at its size, but the alternative caps them *lower*. Sizing
 /// is the whole game — `distribution` needs `poolSize > budget / 10`, so
-/// `defaultPoolSize` is set for `.exhaustive` with room to spare.
+/// `defaultPoolSize` is set for `.thorough` with room to spare.
 ///
 /// The cost of that, stated plainly: `a == b` between two draws happens at
 /// `1 / poolSize`, so the Equatable laws needing an equal pair are close to
@@ -94,7 +94,7 @@ public extension Gen where Value == Syntax {
     ///
     /// `Hashable.distribution` fails under a 0.10 unique-hash ratio, and a pool
     /// of `N` yields exactly `N` unique hashes, so the pool must exceed
-    /// `budget / 10`. 4 096 clears the kit's largest budget (`.exhaustive`,
+    /// `budget / 10`. 4 096 clears the kit's largest budget (`.thorough`,
     /// 10 000 trials → 0.41) with room for a caller who raises it further.
     static var defaultPoolSize: Int { 4096 }
 
@@ -157,7 +157,7 @@ enum SyntaxNodePool {
     /// created no identities whatsoever, and the generator's whole identity
     /// space was `templates × nodes-per-template`: **10 000 draws gave 751
     /// unique ids, ratio 0.075, under the 0.10 threshold.** The fixed pool this
-    /// design was chosen over would have failed at `.exhaustive`, and so did
+    /// design was chosen over would have failed at `.thorough`, and so did
     /// this — the claim that fresh parsing kept distribution healthy "at any
     /// budget" was simply false.
     ///
@@ -186,7 +186,7 @@ enum SyntaxNodePool {
         var nodes: [Syntax] = []
         var round = 0
         // Grow until the pool clears the largest budget the kit ships
-        // (`.exhaustive`, 10 000 trials, needing > 1 000 nodes), with the round
+        // (`.thorough`, 10 000 trials, needing > 1 000 nodes), with the round
         // cap as a backstop so a template-list edit cannot spin here.
         while nodes.count < Gen<Syntax>.defaultPoolSize && round < 64 {
             for template in Gen<Syntax>.syntaxSourceTemplates.indices {

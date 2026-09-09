@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Model/TrialBudget.swift b/Sources/PropertyLawKit/Model/TrialBudget.swift
+index 162f405..6a8a94f 100644
+--- a/Sources/PropertyLawKit/Model/TrialBudget.swift
++++ b/Sources/PropertyLawKit/Model/TrialBudget.swift
+@@ -29,7 +29,7 @@ public enum TrialBudget: Sendable, Hashable {
+         switch self {
+         case .sanity: return 100
+         case .standard: return 1_000
+-        case .thorough: return 10_000
++        case .thorough: return 1_000
+         case .custom(let count): return count
+         }
+     }

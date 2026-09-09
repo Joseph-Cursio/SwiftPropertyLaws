@@ -145,20 +145,26 @@ the check this section asked for before the scheme was relied on.
 `summedSizeOrderingIsNotRowMajorOrdering` pins the decision itself, so a change that
 quietly reverted to row-major fails rather than passing as a reordering.
 
-## Coverage should be a reported fact, which retires `.exhaustive`
+## Coverage should be a reported fact — done, and the budget renamed
 
-`TrialBudget.exhaustive(10_000)` is a trial count. The first draft proposed a separate entry
-point plus a corrected doc comment. Self-consistency asks for more than that, because
-`.exhaustive` is our own instance of the defect CLAUDE.md keeps recording — **a default
-presented as a guarantee**, sitting in the public API under a name that invites the belief
-that coverage is handled. Bolting enumeration on beside it repeats the defect; making
-coverage sayable retires it.
+`TrialBudget.exhaustive(10_000)` named a trial count. The first draft proposed a separate
+entry point plus a corrected doc comment; the shipped answer went further, because
+`.exhaustive` was this kit's own instance of the defect its notes keep recording — **a
+default presented as a guarantee**, in the public API.
 
-So: `CheckResult` should carry what the run actually covered — `covered 512 of 512 cases`
-for an enumerated run, `1 000 trials` for a sampled one — with the same nil-versus-empty
-discipline the kit already applies to `nearMisses` (a law that cannot know says `nil`, not
-a fabricated denominator). `.exhaustive`'s doc comment should say plainly that it is a trial
-count regardless of whether the rest of this ships.
+Both halves are now done. `CheckResult` carries what the run actually covered — `walked all
+512 cases`, `walked 100 of 1024` after a `prefix` — under the same nil-versus-empty
+discipline as `nearMisses`. And the tier is now **`.thorough`**, payload-free, with
+`exhaustive(_:)` surviving as a deprecated factory so expression call sites still compile.
+
+Payload-free matters: a tier carrying a count *is* `.custom(trials:)` under another name,
+which is how the old spelling came to be two ways of saying one thing. Three named effort
+tiers plus one escape hatch is the shape that was wanted.
+
+The prose is the evidence the name was wrong. Three files — `SpaceCoverage`,
+`DequeLayouts`, `SyntaxGenerators` — carried a paragraph and five references whose only job
+was to explain that the identifier did not mean what it said. Those are deleted or restated
+positively.
 
 `CheckResult.seed` is non-optional and a fully enumerated run has no seed. Not a blocker,
 but it should be decided deliberately rather than defaulted into.

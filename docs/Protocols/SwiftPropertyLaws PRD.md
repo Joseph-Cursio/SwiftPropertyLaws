@@ -587,8 +587,10 @@ Property-based testing on `Collection` or recursive structures at 10,000 trials 
 |---|---|---|
 | `.sanity` | 100 | Local pre-commit, fast feedback |
 | `.standard` | 1,000 | Default; PR-level CI |
-| `.exhaustive(n)` | n (default 10,000) | Nightly / release branches |
+| `.thorough` | 10,000 | Nightly / release branches |
 | `.custom(trials:)` | n | Explicit override |
+
+**These are effort tiers, not coverage claims.** Every case names a number of random draws and none says anything about the input space — a generator has no space to be exhaustive over. The tier was originally spelled `.exhaustive(n)`, which claimed the opposite and was additionally just `.custom(trials:)` under another name; it is deprecated in favour of `.thorough`. A run that genuinely covers its input space walks an `Enumeration` and reports `SpaceCoverage` (§4.6).
 
 #### Generic Conformances
 
@@ -1059,7 +1061,7 @@ v0.3 is a tightly-scoped revision: one criterion rewritten, one protocol's law s
 **Tier 2 — substantive single-reviewer changes:**
 
 - **§4.5**: `PropertyBackend.check` signature now `@Sendable (T) async throws -> Bool` returning `async throws -> CheckResult`; explicit deferral of the public abstraction surface to M4.
-- **§4.4**: Trial budget tiers (`.sanity` / `.standard` / `.exhaustive` / `.custom`).
+- **§4.4**: Trial budget tiers (`.sanity` / `.standard` / `.thorough` / `.custom`).
 - **§4.7 (new)**: Suppression and customization API — per-type, per-law, intentional-violation, custom equivalence.
 - **§5.6**: Property contradiction detection reframed as "pattern warnings for known combinations" — curated, not derived; explicitly disclaims soundness.
 - **§9 Decision 4**: Whole-module discovery committed to a Swift Package Plugin, not a macro.

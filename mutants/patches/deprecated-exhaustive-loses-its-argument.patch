@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Model/TrialBudget.swift b/Sources/PropertyLawKit/Model/TrialBudget.swift
+index 162f405..5c54e8a 100644
+--- a/Sources/PropertyLawKit/Model/TrialBudget.swift
++++ b/Sources/PropertyLawKit/Model/TrialBudget.swift
+@@ -48,6 +48,6 @@ extension TrialBudget {
+         or walk an Enumeration for a run that can actually report its coverage.
+         """)
+     public static func exhaustive(_ trials: Int = 10_000) -> TrialBudget {
+-        .custom(trials: trials)
++        .thorough
+     }
+ }
