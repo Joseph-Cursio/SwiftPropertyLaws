@@ -83,18 +83,21 @@ private func checkEqualityConsistency<Value: Hashable & Sendable>(
     source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await runBinaryLaw(
+    let applications = Applications()
+    return await requiringApplicableCases(await runBinaryLaw(
         "Hashable.equalityConsistency",
         source: source,
         options: options,
         property: { first, second in
-            !(first == second) || (first.hashValue == second.hashValue)
+            guard first == second else { return true }
+            applications.record()
+            return first.hashValue == second.hashValue
         },
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); x == y but hashValues differ "
                 + "(\(first.hashValue) vs \(second.hashValue))"
         }
-    )
+    ), applications, needing: "two values that are equal", tier: .heuristic)
 }
 
 private func checkStabilityWithinProcess<Value: Hashable & Sendable>(
