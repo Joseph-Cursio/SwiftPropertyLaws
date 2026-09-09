@@ -12,12 +12,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Then the opposite result, from the last unbuilt space.** "Every pair within an equivalence class" needed no new combinator — it needed the walked entries `Equatable` and `Hashable` never got. **Two laws in the kit are conditional and neither counts applications:** `Equatable.transitivity` (`x == y && y == z`) and `Hashable.equalityConsistency` (`x == y`). Both are `!(antecedent) || consequent`, so a run that never reaches the case returns true and reports a pass, with no diagnostic. Unlike `StrictWeakOrderingLaws` they have no vacuity guard at all.
 
-| domain | `x == y` fired /1 000 | chain fired /1 000 |
-|---|---|---|
-| 4 values | 269 | 80 |
-| 16 | 57 | 1 |
-| 100 | 4 | **0** |
-| 1 000 | 1 | **0** |
+| domain | `x == y` fired /1 000 | chain fired | chain **violated** |
+|---|---|---|---|
+| 4 values | 615 | 379 | 72 |
+| 16 | 171 | 28 | 4 |
+| 100 | 37 | 2 | **0** |
+| 1 000 | 4 | 1 | **0** |
+
+**The third column is the one that matters, and an earlier draft of this entry did not have it.** The first table published here quoted 269/80/4/1 — numbers measured on a *different* fixture, one whose `==` compares a key exactly, pasted under a description of the "within 1" type. Re-measured on the type actually used: the antecedent does **not** vanish at a realistic domain. It fires twice in a thousand trials at 100 values, so the law is not merely vacuous — what disappears is the *refuting* configuration. A chain `R(7), R(7), R(7)` satisfies the antecedent and is perfectly transitive; only one that spans two, `R(7), R(8), R(9)`, proves anything. **A conditional law has two ways to tell you nothing, and vacuity is only one of them.**
 
 **End to end against a genuinely non-transitive `==`, at `.standard`, 20 seeds: caught 20/20 from `0...3` and 0/20 from `0...200`.** The kit reports a clean pass on a broken conformance, and no budget fixes it. **The hand-narrowed `0...3` in `PlantedEquatableViolators` is the manual fix** — and it is the same manual fix the workbook survey found the exercise generators making. Two codebases arriving independently at "tune the domain until the antecedent fires, with nothing to say whether you succeeded".
 

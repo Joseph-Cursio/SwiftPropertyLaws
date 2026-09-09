@@ -84,7 +84,11 @@ a genuinely non-transitive `==`, at `.standard`, across 20 seeds:
 | `0...3` — the hand-narrowed one in the planted-bug suite | 20/20 |
 | `0...200` — the one anyone would write | **0/20** |
 
-No budget fixes that: at a 100-value domain the chain fired **0 times in 1 000 trials**. The
+No budget fixes that, and the reason is sharper than vacuity. At a 100-value domain the
+antecedent still fires — twice in a thousand trials — so the law is not simply never
+applied. What vanishes is the *refuting* case: a chain `R(7), R(7), R(7)` satisfies
+`x == y && y == z` and is perfectly transitive, and only one that spans two proves anything.
+**A conditional law has two ways to tell you nothing, and vacuity is only one of them.** The
 walk catches it at every carrier width and is *faster* than the sampled run that misses,
 because smallest-first reaches the witness long before it would consider eight million
 triples.
