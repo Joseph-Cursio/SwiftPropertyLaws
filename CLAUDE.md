@@ -4,6 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**The enumeration menu completed, and the measurement that reversed the conclusion (2026-09-08).** The design note proposed four spaces; Slice 1 shipped three and the note then read as though it were complete. The two that arrived late are the two that mattered.
+
+**`Every.sequences(_:of:upTo:)`** — the one the note singled out as having no `StdlibUnittest` ancestor, because a sequence of actions is what model-based testing quantifies over. A capability gap, not a convenience one: `product` gives fixed arity and variable-length sequences are a sum of products. Closed-form like the others; the bucket gives the length, the offset within it is that length's digits in base `|A|`. `checkInteractionInvariantPropertyLaws(overEverySequenceUpTo:)` is the walked entry, routed through the same per-step law body. `statefulGuards` are deliberately absent — a guard keeps a *random* draw legal, and filtering a walked space would break the closed-form indexing its denominator depends on.
+
+**Measured, and it went against the prediction:** planting a reducer whose `withdraw` skips its balance check while frozen, sampling at the default `0...16` found it on **50 of 50 seeds** and reported a median of **13 moves**; the walk reported `[freeze, withdraw]`. **The win is minimality, not detection** — 6.5× less for a reader to decode, and nothing caught that sampling missed. Space is `|A|^k`: 341 sequences at length 4, 87 381 at 8, 22 369 621 at 12.
+
+**Then the opposite result, from the last unbuilt space.** "Every pair within an equivalence class" needed no new combinator — it needed the walked entries `Equatable` and `Hashable` never got. **Two laws in the kit are conditional and neither counts applications:** `Equatable.transitivity` (`x == y && y == z`) and `Hashable.equalityConsistency` (`x == y`). Both are `!(antecedent) || consequent`, so a run that never reaches the case returns true and reports a pass, with no diagnostic. Unlike `StrictWeakOrderingLaws` they have no vacuity guard at all.
+
+| domain | `x == y` fired /1 000 | chain fired /1 000 |
+|---|---|---|
+| 4 values | 269 | 80 |
+| 16 | 57 | 1 |
+| 100 | 4 | **0** |
+| 1 000 | 1 | **0** |
+
+**End to end against a genuinely non-transitive `==`, at `.standard`, 20 seeds: caught 20/20 from `0...3` and 0/20 from `0...200`.** The kit reports a clean pass on a broken conformance, and no budget fixes it. **The hand-narrowed `0...3` in `PlantedEquatableViolators` is the manual fix** — and it is the same manual fix the workbook survey found the exercise generators making. Two codebases arriving independently at "tune the domain until the antecedent fires, with nothing to say whether you succeeded".
+
+Walking catches it at every carrier width **and is faster than the sampled run that misses**, because smallest-first reaches `R(0), R(1), R(2)` before it would consider 8 120 601 triples. `checkEquatablePropertyLaws` gained `overEvery:` and `sampling:`; `checkHashablePropertyLaws` gained `overEvery:`.
+
+**`Hashable.distribution` is the one law a walked suite does not run** — the only place in this arc where a traversal checks less than its twin. It asks what fraction of a *budget* produced distinct hash values, a statistic about draws; over a walk the same question has an exact answer this entry does not compute. `walkedHashableOmitsOnlyTheDistributionLaw` asserts the set difference in **both** directions so it stays a decision.
+
+**The dividing line the two measurements establish, and the note is now organised around it:** ask *does this law have an antecedent?* — not *is my domain bounded?* A conditional law with a rare antecedent is where a walk changes what gets **caught**; everywhere else it changes the counterexample and the denominator. The note's original four applicability conditions were ranked backwards, and two of its three "reasons not to" were artifacts of a half-built implementation — the large-space one was stale on arrival (`.sampledFromSpace` had already fixed it) and "you want to be surprised" was nearly backwards, since a generator is bounded by a description too. Both recorded in the note's own provenance table.
+
+1091 tests; swiftlint exits 0.
+
+**Deliberately not done, and the measurement is the argument for it:** a vacuity guard on those two equality laws. `requiringApplicableCases` already exists, but on the sampled path it would start reporting Conventional failures across many existing suites — a large behavioural change that deserves its own decision rather than riding along.
+
 **Sampling a bounded space without discarding what it knows (2026-09-08).** `Enumeration.generator` erases the index at its `.map`, and with it both things the space could have told you: a failure is the first drawn rather than the smallest, and the run cannot say what fraction it saw. Neither is repairable in the bridge — the kit's shrinker is value-level and no driver threads a `Generator`, deliberately — so `.sampledFromSpace` is a **third `InputSource` case**, not a fix to the second.
 
 Keeping the index inside the driver recovers both: a failure shrinks toward index 0, which is the smallest case because spaces are ordered smallest-first, and the run counts distinct cases against a denominator it knows. **The index never reaches the law** — property closures still receive a bare value, which is the whole reason this is a source rather than a generator. Measured against the bridge, same space and law: the bridge reports whatever came up at **0 shrink steps**; this reports `subset=[0, 1, 2]`, the minimal witness.
