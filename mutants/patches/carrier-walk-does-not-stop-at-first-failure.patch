@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+index f1e5033..c819af0 100644
+--- a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
++++ b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+@@ -60,7 +60,6 @@ public func checkEveryCarrier<Carrier: Sendable>(
+                 try await suite(carriers[index], $0)
+             }
+             merged.absorb(results, carrier: carriers.address(of: index))
+-            if merged.sawViolation { break }
+         }
+         return merged.assembled()
+     }

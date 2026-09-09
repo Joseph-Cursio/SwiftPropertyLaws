@@ -32,7 +32,7 @@ struct DequeLayoutTests {
         let wrapped = space.indices.filter { !isContiguous(space[$0]) }.count
         #expect(space.count == 107, "6 capacities: 1 + 3 + 6 + 10 + 21 + 66 arrangements")
         #expect(wrapped > 0, "a space that reaches no wrapped layout closes nothing")
-        print("SPIKE layouts: \(wrapped) of \(space.count) arrangements are wrapped")
+
     }
 
     @Test("layouts are ordered smallest deque first")
@@ -62,5 +62,33 @@ struct DequeLayoutTests {
         let generator = DequeLayouts.everyLayout().generator
         try await checkSequencePropertyLaws(using: generator, options: LawCheckOptions(budget: .sanity))
         try await checkCollectionPropertyLaws(using: generator, options: LawCheckOptions(budget: .sanity))
+    }
+
+    /// **The carrier form, and why it is not the same as the bridge above.**
+    ///
+    /// `checkSequencePropertyLaws(using: space.generator)` draws layouts as
+    /// inputs: 1 000 trials spread over 107 arrangements, so each law *probably*
+    /// sees every layout — coupon-collector says about 578 draws suffice — and
+    /// **cannot say that it did**. `checkEveryCarrier` runs the whole suite once
+    /// per layout, so every law meets every arrangement by construction, and the
+    /// result reports the denominator.
+    ///
+    /// The cost is the reason it needs its own budget: 107 carriers at
+    /// `.sanity` is 10 700 evaluations per law, against 1 000 for the bridge.
+    @Test("every law meets every layout, and the run says so")
+    func everyLawMeetsEveryLayout() async throws {
+        let layouts = DequeLayouts.everyLayout()
+        let results = try await checkEveryCarrier(of: layouts) { deque, options in
+            try await checkBidirectionalCollectionPropertyLaws(
+                using: Gen.always(deque),
+                options: options,
+                laws: .all
+            )
+        }
+        #expect(results.allSatisfy { $0.coverage?.spaceSize == 107 })
+        #expect(results.allSatisfy { $0.coverage?.isComplete == true },
+                "every layout must be reached by every law, not merely likely to be")
+        #expect(results.allSatisfy { !$0.isViolation })
+        #expect(results.map(\.protocolLaw).contains("BidirectionalCollection.indexBeforeAfterRoundTrip"))
     }
 }

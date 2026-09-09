@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+index f1e5033..2192acd 100644
+--- a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
++++ b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+@@ -118,7 +118,7 @@ private struct MergedCarrierResults {
+     func assembled() -> [CheckResult] {
+         order.compactMap { name in
+             guard var result = byLaw[name] else { return nil }
+-            result.coverage = SpaceCoverage(casesRun: carriersVisited, spaceSize: spaceSize)
++            result.coverage = SpaceCoverage(casesRun: carriersVisited, spaceSize: carriersVisited)
+             return result
+         }
+     }

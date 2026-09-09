@@ -1,0 +1,14 @@
+diff --git a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+index f1e5033..7d36646 100644
+--- a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
++++ b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+@@ -53,8 +53,7 @@ public func checkEveryCarrier<Carrier: Sendable>(
+ ) async throws -> [CheckResult] {
+     try await runPropertyLawSuite(options: options) {
+         var merged = MergedCarrierResults(spaceSize: carriers.fullCount)
+-        var perCarrierOptions = options
+-        perCarrierOptions.budget = perCarrier
++        let perCarrierOptions = options
+         for index in carriers.indices {
+             let results = await collectingInheritedLaws(rebasing: perCarrierOptions) {
+                 try await suite(carriers[index], $0)

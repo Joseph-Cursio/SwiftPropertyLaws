@@ -4,6 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**Slice 4: a whole law suite, once per carrier (2026-09-08).** `checkEveryCarrier(of:options:perCarrier:suite:)` runs an existing suite against each case of a bounded carrier space. Every other entry point varies a law's *inputs*; this varies its *subject*. **This completes the four slices** of `docs/ideas/Enumeration Combinators.md`.
+
+**The budget convention is the design problem, and is why this could not fall out of the other entries.** Apple composes this freely because their conformance checkers are deterministic — one pass per carrier exhausts it. Ours **sample**, so the naive composition multiplies: 107 carriers × 1 000 trials × 15 laws is 1.6 million property evaluations from one innocuous-looking call. `perCarrier` is a separate explicit parameter defaulting to `.sanity`, and `options.budget` is ignored. The default is a claim, not caution: **in a carrier walk the variety comes from the carriers, not the trials** — a hundred deque layouts at a hundred trials each explores more of what matters than one layout at ten thousand.
+
+**Results merge one per law, not one per carrier**, with `trials` summing the inputs actually drawn and `coverage` describing the **carrier** space rather than any law's input space. The walk stops at the first failing carrier, so the one reported is the smallest exhibiting the failure, and the counterexample names it alongside the law's own explanation.
+
+**What it catches that no other entry can.** `LyingCount` is a `Collection` whose `count` is correct at every length but seven. That is a property of the **subject**, not of any input drawn from it, so pointing the suite at one carrier finds it only if that carrier happens to be the seventh — and **no trial budget improves those odds**, because the budget varies inputs. The test asserts the control as well: the same suite passes on every other single carrier, which is what makes it a statement about carrier coverage rather than about the laws.
+
+**It also sharpens Slice 3's `Deque` work, and the distinction is worth keeping straight.** The generator bridge draws layouts *as inputs*: 1 000 trials over 107 arrangements, so each law **probably** meets every layout — coupon-collector puts it near 578 draws — and **cannot say that it did**. The carrier form meets every arrangement by construction and reports the denominator. `DequeLayoutTests` runs the Bidirectional chain that way.
+
+Mutation-tested: **3 mutants in a `carrier-walk` shape, 3 killed** (22 total, 22 killed). Two are about cost or honesty rather than correctness — a run that silently multiplies the caller's budget by the carrier count, and a walk that stopped at the eighth of eleven carriers while claiming complete coverage. Neither would be noticed by any assertion about pass or fail, which is the character of this entry point.
+
+1064 tests; swiftlint exits 0.
+
+**All four slices are now shipped. What remains from the design note:** `TrialBudget.exhaustive` is still a trial count — `SpaceCoverage` made the honest statement *sayable* without retiring the misnomer. And `Enumeration.generator`'s two concessions stand: a sampled space gets neither minimality nor a denominator, and closing that means a sampled-from-space `InputSource` case where the driver keeps the index. Cheap given the current architecture; still not built.
+
 **Slice 3: the `Generator` bridge, and the `Deque` layout gap closed (2026-09-08).** `Enumeration.generator` draws from a bounded space at random as an ordinary kit `Generator` — the door into the forty-odd suites with no `overEvery:` entry, since `Equatable`, `Hashable`, `Collection` and the rest all take a `Generator`. Design note: `docs/ideas/Enumeration Combinators.md`.
 
 **Both concessions are pinned by tests, deliberately.** The kit's per-law shrinker is value-level (`LawCheck.shrink`) and no driver threads a `Generator`, so the index shrinker in the bridge's own type is **not consulted**: a failure is the first drawn, not the smallest that exists. And a sampled run reports `nil` coverage, so it cannot say what fraction of the space it saw. `theBridgeDoesNotShrink` and `theBridgeReportsNoCoverageButAWalkDoes` fail if either stops being true — **a concession that drifts from the code is worse than no concession**.
