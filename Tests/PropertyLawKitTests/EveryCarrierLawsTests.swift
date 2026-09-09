@@ -66,7 +66,7 @@ struct EveryCarrierLawsTests {
     func perCarrierBudgetIsWhatCounts() async throws {
         let results = try await checkEveryCarrier(
             of: honestCarriers(),
-            options: LawCheckOptions(budget: .exhaustive(10_000)),
+            options: LawCheckOptions(budget: .thorough),
             perCarrier: .custom(trials: 5)
         ) { carrier, options in
             try await checkCollectionPropertyLaws(using: Gen.always(carrier), options: options)

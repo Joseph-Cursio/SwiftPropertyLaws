@@ -1,11 +1,15 @@
 /// How much of a bounded input space a check actually walked.
 ///
 /// This is the field that lets a result stop implying coverage it does not
-/// have. `TrialBudget.exhaustive(10_000)` names a *trial count* — ten thousand
-/// random draws — and a reader is entitled to hear "exhaustive" as a statement
-/// about the input space. It is not one. A walk over an ``Enumeration`` can make
-/// that statement, so it reports it here as a fact rather than leaving it to be
-/// inferred from a budget's name.
+/// have. A `TrialBudget` is *effort* — a number of random draws — and says
+/// nothing about the input space, because a generator has no space to be
+/// measured against. A walk over an ``Enumeration`` does have one, so it reports
+/// the fraction it covered here as a fact rather than leaving a reader to infer
+/// it from how hard the run tried.
+///
+/// The kit used to spell its largest budget `exhaustive`, which invited exactly
+/// that inference; it is now `TrialBudget.thorough`, and this type carries the
+/// claim the old name was borrowing.
 ///
 /// Follows the same nil-versus-empty discipline as `CheckResult.nearMisses`:
 /// `nil` on a result means **this check does not know its input space** — true

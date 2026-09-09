@@ -174,7 +174,7 @@ struct ReplayValidationTests {
                 for: Int.self,
                 using: TestGen.smallInt(),
                 options: LawCheckOptions(
-                    budget: .exhaustive(),
+                    budget: .thorough,
                     expectedReplayEnvironment: stale
                 )
             )

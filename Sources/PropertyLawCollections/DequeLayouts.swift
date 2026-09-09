@@ -9,7 +9,7 @@ import PropertyLawKit
 /// its buffer out from slot 0. Over 1 000 draws that path produced 1 000
 /// contiguous deques and **zero wrapped ones** — not rarely, never. So every
 /// `Deque` law the kit ships has only ever run against one layout, and no trial
-/// budget fixes it: `.exhaustive(10_000)` draws ten thousand contiguous deques.
+/// budget fixes it: `.thorough` draws ten thousand contiguous deques.
 ///
 /// A layout cannot be *drawn*, it has to be *built*: the head moves only when
 /// you `prepend`, so reaching a wrapped buffer means constructing it on purpose.
