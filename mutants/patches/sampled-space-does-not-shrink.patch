@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
+index 2e4aa13..9f2e9f6 100644
+--- a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
++++ b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
+@@ -77,7 +77,7 @@ package func runUnaryLaw<Value: Sendable>(
+                 formatCounterexample: { draw, error in
+                     sampler.describe([draw], formatCounterexample(draw.value, error))
+                 },
+-                shrink: { sampler.shrink($0) }
++                shrink: nil
+             )
+         )
+         return result.reporting(sampler.coverage(arity: 1))

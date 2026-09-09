@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/SpaceSampling.swift b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+index 2136ab4..8a25370 100644
+--- a/Sources/PropertyLawKit/Internal/SpaceSampling.swift
++++ b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+@@ -106,7 +106,7 @@ struct SpaceSampler<Value: Sendable>: Sendable {
+     /// `SpaceCoverage` already uses.
+     func coverage(arity: Int) -> SpaceCoverage? {
+         var size = 1
+-        for _ in 0 ..< arity {
++        for _ in 0 ..< 1 {
+             let scaled = size.multipliedReportingOverflow(by: space.fullCount)
+             if scaled.overflow { return nil }
+             size = scaled.partialValue

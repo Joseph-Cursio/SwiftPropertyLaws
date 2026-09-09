@@ -193,6 +193,30 @@
       "expected": "killed",
       "test": "theDeprecatedExhaustiveSpellingStillResolvesToACount",
       "label": "The deprecated `exhaustive(_:)` shim ignores its argument and always yields the 10 000 tier, so a migrating call site that said .exhaustive(500) silently runs twenty times the trials \u2014 a deprecation that changes behaviour rather than just its spelling."
+    },
+    {
+      "id": "sampled-coverage-counts-draws-not-cases",
+      "patch": "patches/sampled-coverage-counts-draws-not-cases.patch",
+      "shape": "space-sampling",
+      "expected": "killed",
+      "test": "coverageCountsDistinctCasesNotDraws",
+      "label": "Sampled coverage counts draws instead of distinct cases, so 1 000 draws over a 64-case space report casesRun 1000 against spaceSize 64 and isComplete answers true for a run that may have missed cases."
+    },
+    {
+      "id": "sampled-coverage-ignores-arity",
+      "patch": "patches/sampled-coverage-ignores-arity.patch",
+      "shape": "space-sampling",
+      "expected": "killed",
+      "test": "sampledCoverageIsArityAware",
+      "label": "Sampled coverage reports the carrier as the input space regardless of the law's arity, so a ternary law that drew all 32 carrier values claims complete coverage having seen a fraction of the 32 768 triples."
+    },
+    {
+      "id": "sampled-space-does-not-shrink",
+      "patch": "patches/sampled-space-does-not-shrink.patch",
+      "shape": "space-sampling",
+      "expected": "killed",
+      "test": "samplingKeepsMinimalityWhereTheBridgeLosesIt",
+      "label": "The sampled-from-space path drops its index shrinker, so it reports the first failure drawn rather than the smallest \u2014 which is exactly the concession the plain generator bridge makes, and the reason this path exists."
     }
   ]
 }
