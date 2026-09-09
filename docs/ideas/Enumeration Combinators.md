@@ -39,12 +39,74 @@ a branch `Sequence`'s own laws observe.
 | four `prepend`s, then two `append`s | 1 | 0 | 1 |
 
 Every `Deque` law this kit ships runs against one ring-buffer layout, and no budget fixes
-it: `.exhaustive(10_000)` draws ten thousand contiguous deques.
+it: `.thorough` draws ten thousand contiguous deques.
 
 The weaker general version also has a number. Over a 1 024-case space (subsets of `0..<10`),
 a `.standard` 1 000-trial run covered **636 cases, 62%** — 388 unreached, and none of them
 reported as unreached. Enumeration's contribution there is the denominator, not the
 coverage.
+
+## When to reach for a space — and when not to
+
+**This section exists because it was missing, and its absence was the defect.** Everything
+below the fold documents how the machinery works and why it was built; nothing said when a
+reader should use it. Four slices and two follow-ups shipped with the applicability
+condition left implicit — which is a cousin of the pattern this repo keeps recording, a
+capability presented without the circumstances that make it apply.
+
+The sharpest form of the rule was not written here first. It came from someone reading this
+note and summarising it back:
+
+> Enumeration pays where the interesting configurations are **defined** rather than
+> **constructed**.
+
+That is the test. The four conditions below are it in specific forms, roughly in order of
+how strongly they indicate.
+
+**1. The configuration is describable but not reachable.** A generator arrives at states
+through a construction path. If the state you care about is off that path it is reached
+with probability *zero*, not merely rarely, and no budget touches it — `Deque(array)`
+produced 1 000 contiguous buffers and no wrapped one because the head only moves when you
+`prepend`. Ask: *can I describe the case without being able to build it the generator's
+way?* If yes, define a space.
+
+**2. The defect belongs to the subject, not the input.** `LyingCount` misreports its count
+at exactly one length; no input drawn from a single carrier can expose that. Ask: *does
+varying the input, at a fixed subject, explore the thing I am worried about?* If not, vary
+the subject — `checkEveryCarrier`.
+
+**3. The law is conditional and its antecedent is rare.** This is the only condition where
+enumeration changes what you can *say* rather than what you cover: over a complete walk,
+zero applications means the antecedent cannot arise, so a vacuous pass becomes a fact about
+the subject. Ask: *does the property contain a `guard … else { return true }`?*
+
+**4. The law is quantified over a small carrier.** Eight values cubed is 512 triples —
+cheaper than choosing a budget, and it removes the question rather than answering it with a
+number. Ask: *is the input space finite and small enough to walk?*
+
+### Three reasons not to
+
+Adoption depends on these more than on the four above, and a note that argues one side for
+three hundred lines is not being honest about the other.
+
+- **The construction path and the space coincide.** Then a walk buys a denominator and
+  nothing else. That is worth something, and it is not worth restructuring a test for.
+- **The space is large and uniformly interesting.** Sampling is cheaper and loses nothing.
+  Bounding a domain *in order to* walk it makes the test narrower, not stronger.
+- **You want to be surprised.** This is the real limit of the whole approach, and it cuts
+  against everything else here: **a walk can only surprise you inside a space you already
+  described.** Random generation can surprise you *about* the space — it reaches inputs you
+  did not think to characterise. Those are different capabilities, and enumeration does not
+  subsume sampling.
+
+### Expect to find nothing
+
+The `Deque` walk found no defect. 107 layouts, 59 of them wrapped, every law passing.
+
+That is the normal outcome and it is not a failure: it converted *"the kit cannot tell"*
+into *"correct across every layout"*. But a reader who reaches for a space expecting a bug
+and gets a clean run will conclude the feature does not work. The value is the change in
+what the result **means**, and on most days that is all the value there is.
 
 ## What the kit should enumerate — derived from our laws, not Apple's
 
