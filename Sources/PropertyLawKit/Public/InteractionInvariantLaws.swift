@@ -132,30 +132,96 @@ where
         length: length,
         statefulGuards: statefulGuards
     )
-    return await PerLawDriver.run(
-        protocolLaw: "InteractionInvariant.invariantHoldsAfterEachStep",
-        tier: .strict,
+    return await checkInvariantHoldsAfterEachStep(
+        invariant: invariant,
+        initialState: initialState,
+        reducer: reducer,
+        source: .sampling(sequenceGen),
+        options: options
+    )
+}
+
+/// Check an interaction invariant over **every action sequence** up to a length.
+///
+/// The walked counterpart to the sampled entry above. Model-based testing is
+/// quantified over sequences, and a bounded prefix of that space is walkable:
+/// four actions to length four is 341 sequences, so the run checks them rather
+/// than drawing a thousand and hoping.
+///
+/// What this buys over sampling is chiefly **minimality**. A sampled run finds a
+/// reachable violation readily — it draws long sequences and long sequences
+/// contain the path — and then reports the whole sixteen-action draw. The walk
+/// reports the shortest sequence that reaches the bad state, which is usually
+/// two or three actions and is the difference between a counterexample you read
+/// and one you decode.
+///
+/// `statefulGuards` are deliberately absent. A guard exists to stop a *random*
+/// draw producing an illegal sequence; filtering a walked space would break the
+/// closed-form indexing its coverage denominator depends on. Model illegal
+/// transitions in the reducer, or narrow the alphabet.
+@discardableResult
+public func checkInteractionInvariantPropertyLaws<
+    Invariant: InteractionInvariant & Sendable,
+    Action: CaseIterable & Sendable
+>(
+    for invariant: Invariant.Type = Invariant.self,
+    initialState: Invariant.State,
+    reducer: @escaping @Sendable (Invariant.State, Action) -> Invariant.State,
+    overEverySequenceUpTo maxLength: Int,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult]
+where
+    Invariant.State: Sendable,
+    Action.AllCases: Sendable & RandomAccessCollection {
+    let alphabet = Every.elements("action", in: Array(Action.allCases))
+    let space = Every.sequences("actions", of: alphabet, upTo: maxLength)
+    return try await runPropertyLawSuite(options: options) {
+        [
+            await checkInvariantHoldsAfterEachStep(
+                invariant: invariant,
+                initialState: initialState,
+                reducer: reducer,
+                source: .enumerated(space),
+                options: options
+            )
+        ]
+    }
+}
+
+/// The per-step law over either traversal. One body, so a walked run cannot
+/// check something different from a sampled one.
+private func checkInvariantHoldsAfterEachStep<
+    Invariant: InteractionInvariant & Sendable,
+    Action: Sendable
+>(
+    invariant: Invariant.Type,
+    initialState: Invariant.State,
+    reducer: @escaping @Sendable (Invariant.State, Action) -> Invariant.State,
+    source: InputSource<[Action]>,
+    options: LawCheckOptions
+) async -> CheckResult
+where Invariant.State: Sendable {
+    await runUnaryLaw(
+        "InteractionInvariant.invariantHoldsAfterEachStep",
+        source: source,
         options: options,
-        check: LawCheck(
-            sample: { rng in sequenceGen.run(using: &rng) },
-            property: { actions in
-                var state = initialState
+        property: { actions in
+            var state = initialState
+            if !Invariant.invariantHolds(in: state) { return false }
+            for action in actions {
+                state = reducer(state, action)
                 if !Invariant.invariantHolds(in: state) { return false }
-                for action in actions {
-                    state = reducer(state, action)
-                    if !Invariant.invariantHolds(in: state) { return false }
-                }
-                return true
-            },
-            formatCounterexample: { actions, _ in
-                formatInvariantViolation(
-                    of: Invariant.self,
-                    initialState: initialState,
-                    reducer: reducer,
-                    actions: actions
-                )
             }
-        )
+            return true
+        },
+        formatCounterexample: { actions, _ in
+            formatInvariantViolation(
+                of: Invariant.self,
+                initialState: initialState,
+                reducer: reducer,
+                actions: actions
+            )
+        }
     )
 }
 
