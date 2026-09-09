@@ -48,71 +48,114 @@ coverage.
 
 ## When to reach for a space — and when not to
 
-**This section exists because it was missing, and its absence was the defect.** Everything
-below the fold documents how the machinery works and why it was built; nothing said when a
-reader should use it. Four slices and two follow-ups shipped with the applicability
-condition left implicit — which is a cousin of the pattern this repo keeps recording, a
-capability presented without the circumstances that make it apply.
+**Rewritten after measurement, and the first version was wrong in a way worth keeping on
+record.** It listed four conditions in a confident order and three reasons not to, all
+reasoned from the machinery rather than from evidence, because at the time there was none.
+Two of the three objections turned out to be artifacts of a half-built implementation, and
+the ranking of the four conditions was backwards. The corrections are in §"What the first
+draft got wrong"; this section is what the measurements actually support.
 
-The sharpest form of the rule was not written here first. It came from someone reading this
-note and summarising it back:
+The organising test still holds, and did not originate here — it came from someone reading
+this note and summarising it back:
 
 > Enumeration pays where the interesting configurations are **defined** rather than
 > **constructed**.
 
-That is the test. The four conditions below are it in specific forms, roughly in order of
-how strongly they indicate.
+What measurement added is that *defined rather than constructed* splits into two very
+different payoffs, and only one of them is about catching bugs.
 
-**1. The configuration is describable but not reachable.** A generator arrives at states
-through a construction path. If the state you care about is off that path it is reached
-with probability *zero*, not merely rarely, and no budget touches it — `Deque(array)`
-produced 1 000 contiguous buffers and no wrapped one because the head only moves when you
-`prepend`. Ask: *can I describe the case without being able to build it the generator's
-way?* If yes, define a space.
+### The dividing line: is the law conditional?
 
-**2. The defect belongs to the subject, not the input.** `LyingCount` misreports its count
-at exactly one length; no input drawn from a single carrier can expose that. Ask: *does
-varying the input, at a fixed subject, explore the thing I am worried about?* If not, vary
-the subject — `checkEveryCarrier`.
+**Measured twice, and the two results point opposite ways.**
 
-**3. The law is conditional and its antecedent is rare.** This is the only condition where
-enumeration changes what you can *say* rather than what you cover: over a complete walk,
-zero applications means the antecedent cannot arise, so a vacuous pass becomes a fact about
-the subject. Ask: *does the property contain a `guard … else { return true }`?*
+**An unconditional law over a reachable state — sampling misses nothing.** A reducer whose
+`withdraw` skips its balance check while frozen, over four actions: sampling at the default
+`0...16` length found it on **50 of 50 seeds**. What it *reported* was a median of **13
+moves**; the walk reported `[freeze, withdraw]`, the two that prove it. The payoff is
+minimality — roughly a 6.5× reduction in what a reader has to decode — and nothing at all in
+detection.
 
-**4. The law is quantified over a small carrier.** Eight values cubed is 512 triples —
-cheaper than choosing a budget, and it removes the question rather than answering it with a
-number. Ask: *is the input space finite and small enough to walk?*
+**A conditional law whose antecedent is rare — sampling misses the bug entirely.**
+`Equatable.transitivity` says nothing until three values satisfy `x == y && y == z`. Against
+a genuinely non-transitive `==`, at `.standard`, across 20 seeds:
 
-### Three reasons not to
+| generator | caught |
+|---|---|
+| `0...3` — the hand-narrowed one in the planted-bug suite | 20/20 |
+| `0...200` — the one anyone would write | **0/20** |
 
-Adoption depends on these more than on the four above, and a note that argues one side for
-three hundred lines is not being honest about the other.
+No budget fixes that: at a 100-value domain the chain fired **0 times in 1 000 trials**. The
+walk catches it at every carrier width and is *faster* than the sampled run that misses,
+because smallest-first reaches the witness long before it would consider eight million
+triples.
 
-- **The construction path and the space coincide.** Then a walk buys a denominator and
-  nothing else. That is worth something, and it is not worth restructuring a test for.
-- **The space is large and uniformly interesting.** Sampling is cheaper and loses nothing.
-  Bounding a domain *in order to* walk it makes the test narrower, not stronger.
-- **You want to be surprised.** This is the real limit of the whole approach, and it cuts
-  against everything else here: **a walk can only surprise you inside a space you already
-  described.** Random generation can surprise you *about* the space — it reaches inputs you
-  did not think to characterise. Those are different capabilities, and enumeration does not
-  subsume sampling.
+So the first question is not *is my domain bounded?* but **does this law have an
+antecedent?** If it does and the antecedent is rare, a walk is the difference between
+testing and not testing. If it does not, a walk buys a better counterexample and a
+denominator.
 
-### Expect to find nothing
+### The four conditions, reordered by what they were worth
 
-The `Deque` walk found no defect. 107 layouts, 59 of them wrapped, every law passing.
+1. **The law is conditional and its antecedent is rare.** The only condition measured to
+   change *detection*. Ask: *does the property read `!(antecedent) || consequent`, or guard
+   and return true?* Then ask how often that antecedent can actually fire. A narrow
+   generator hand-tuned until it does is the manual version of this fix — paid for once per
+   law, with nothing to say whether it worked.
+2. **The configuration is describable but not reachable.** `Deque(array)` produced 1 000
+   contiguous buffers and no wrapped one, because the head only moves when you `prepend`.
+   Probability zero, not rare. Ask: *can I describe the case without being able to build it
+   the generator's way?*
+3. **The defect belongs to the subject, not the input.** `LyingCount` misreports its count
+   at one length; no input drawn from a single carrier exposes that. Ask: *does varying the
+   input, at a fixed subject, explore what I am worried about?* If not, vary the subject.
+4. **The law is quantified over a small carrier.** Eight values cubed is 512 triples,
+   cheaper than choosing a budget. The weakest of the four: it makes a run tidier without
+   making it stronger, unless one of the three above also applies.
 
-That is the normal outcome and it is not a failure: it converted *"the kit cannot tell"*
-into *"correct across every layout"*. But a reader who reaches for a space expecting a bug
-and gets a clean run will conclude the feature does not work. The value is the change in
-what the result **means**, and on most days that is all the value there is.
+### Two reasons not to, down from three
+
+- **The construction path and the space coincide, and the law is unconditional.** A walk
+  then buys a denominator and a shorter counterexample. Both are worth something; neither is
+  worth restructuring a test for.
+- **The domain admits no description worth walking.** `Int`, strings, anything recursive
+  without a depth cap. Random draws reach values nobody would have enumerated, which is why
+  sampling remains the default for most code.
+
+**The third objection is withdrawn.** It said a walk only surprises you inside a space you
+described, while random generation can surprise you *about* the space — and that is very
+nearly backwards. This note's own opening argument is that **a generator is bounded by a
+description too**: `Gen.int(in: 0...10)` never yields `Int.min`, `Deque(array)` never wraps.
+Random draws do not escape a described boundary, they escape an *unexamined* one, and the
+space's boundary is the one you can inspect and be knowingly wrong about. What survives is
+the second bullet above, which is about size rather than surprise.
+
+**The "large space" objection is gone too**, and was stale when written: `.sampledFromSpace`
+draws from a space while keeping the index, so a space too large to walk still shrinks toward
+its smallest case and still reports a denominator.
+
+### Expect to find nothing — usually, and now we know when
+
+The `Deque` walk found no defect across 107 layouts, and the action-sequence walk found
+nothing sampling had not already found. Those are the normal outcomes and they are not
+failures: the first converted *"the kit cannot tell"* into *"correct across every layout"*.
+
+The exception is condition 1. Where a law is conditional and its antecedent is rare, expect a
+walk to find something — because the sampled run was very likely not testing the law at all.
+That is the one case where a green sampled suite and a green walked suite are not making the
+same claim.
 
 ## What the kit should enumerate — derived from our laws, not Apple's
 
 Apple's four combinators exist because their subject is `Collection` index arithmetic. Ours
 is 39 protocols, and the spaces that pay are different ones. This list is what the menu
 should be; only the first two have `StdlibUnittest` ancestors.
+
+**All four now ship, and the two that arrived late are the two that changed the
+conclusion.** Slice 1 built triples, ranges and subsets, and stopped — which left the menu
+half-built while the design note read as though it were complete. Sequences came later and
+measured *minimality*; equivalence-class pairs came last and measured *detection*, which is
+the result §"When to reach for a space" is now organised around. The gap between "the note
+proposed four" and "the kit shipped three" went unnoticed for the whole of the first arc.
 
 **Every triple of a small carrier.** `Semigroup.combineAssociativity`
 (`SemigroupLaws.swift:43`) is a `runTernaryLaw` over three independent random draws. An
@@ -443,5 +486,9 @@ a justification that looks like reasoning and is actually deference.
 | row-major ordering, because it "matches what Apple's nesting produces naturally" | worthless as a justification once fidelity is not a goal, and it overstated diagonal's cost. Both are proxies for summed size. |
 | the four combinators to build are Apple's four | `everyPermutation` earns nothing here; every triple, every equivalence-class pair, and every action sequence are worth more and have no ancestor. |
 | `withSome(maxSamples:)` is a needed fallback | it is a weaker duplicate of a `Generator`. Dropped. |
+| the four applicability conditions, in the order first written | backwards. Condition 4 (a small carrier) led; condition 1 (a conditional law with a rare antecedent) came third and is the only one measured to change **detection** — sampling missed a non-transitive `==` on 20 of 20 seeds at a realistic domain. |
+| "you want to be surprised" is the real limit of the approach | nearly backwards. A generator is bounded by a description too, which is this note's own opening argument. Random escapes an *unexamined* boundary, not a described one. Withdrawn; what survives is that some domains admit no description worth walking. |
+| a space too large to walk sends you back to a plain `Generator` | stale when written. `.sampledFromSpace` keeps the index, so a large space still shrinks toward its smallest case and still reports a denominator. |
+| "expect to find nothing" as a general expectation | true for unconditional laws, measured twice. False for the one category the note itself named: a conditional law whose antecedent is rare was not being tested at all. |
 | diagonal ordering was load-bearing (first spike) | the spike's control was built so both orderings returned the same cell, and demonstrated nothing. Caught and redone; the second spike discriminates. |
 | index-shrinking on a bridged space works for free (first spike) | the spike supplied its own value-level shrinker, so it proved the kit's shrinker works, not the claim. That mis-scoped test is what surfaced the `LawCheck.shrink` finding. |
