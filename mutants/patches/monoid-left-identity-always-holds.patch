@@ -1,9 +1,9 @@
 diff --git a/Sources/PropertyLawKit/Public/MonoidLaws.swift b/Sources/PropertyLawKit/Public/MonoidLaws.swift
-index 6cd7812..b372dd7 100644
+index e3cf313..d86ccc2 100644
 --- a/Sources/PropertyLawKit/Public/MonoidLaws.swift
 +++ b/Sources/PropertyLawKit/Public/MonoidLaws.swift
-@@ -54,7 +54,7 @@ private func checkCombineLeftIdentity<
-         generator: generator,
+@@ -80,7 +80,7 @@ private func checkCombineLeftIdentity<
+         source: source,
          options: options,
          property: { sample in
 -            Value.combine(Value.identity, sample) == sample

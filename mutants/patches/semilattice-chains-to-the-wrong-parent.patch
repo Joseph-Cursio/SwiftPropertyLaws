@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/SemilatticeLaws.swift b/Sources/PropertyLawKit/Public/SemilatticeLaws.swift
+index 8cdf9db..f96b30d 100644
+--- a/Sources/PropertyLawKit/Public/SemilatticeLaws.swift
++++ b/Sources/PropertyLawKit/Public/SemilatticeLaws.swift
+@@ -59,7 +59,7 @@ func checkSemilatticePropertyLaws<Value: Semilattice & Equatable & Sendable>(
+         var results: [CheckResult] = []
+         if laws == .all {
+             results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+-                try await checkCommutativeMonoidPropertyLaws(from: source, options: $0, laws: .all)
++                try await checkMonoidPropertyLaws(from: source, options: $0, laws: .all)
+             })
+         }
+         results.append(await checkCombineIdempotence(source: source, options: options))

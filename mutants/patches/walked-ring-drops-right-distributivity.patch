@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/RingLaws.swift b/Sources/PropertyLawKit/Public/RingLaws.swift
+index 2017fb4..78704ed 100644
+--- a/Sources/PropertyLawKit/Public/RingLaws.swift
++++ b/Sources/PropertyLawKit/Public/RingLaws.swift
+@@ -70,7 +70,7 @@ func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
+             await checkMultiplyLeftIdentity(source: source, options: options),
+             await checkMultiplyRightIdentity(source: source, options: options),
+             await checkLeftDistributivity(source: source, options: options),
+-            await checkRightDistributivity(source: source, options: options)
++            await checkLeftDistributivity(source: source, options: options)
+         ]
+     }
+ }

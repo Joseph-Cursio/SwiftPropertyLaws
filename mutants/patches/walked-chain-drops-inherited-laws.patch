@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/GroupLaws.swift b/Sources/PropertyLawKit/Public/GroupLaws.swift
+index 48fd658..876e66e 100644
+--- a/Sources/PropertyLawKit/Public/GroupLaws.swift
++++ b/Sources/PropertyLawKit/Public/GroupLaws.swift
+@@ -58,7 +58,7 @@ func checkGroupPropertyLaws<Value: Group & Equatable & Sendable>(
+ ) async throws -> [CheckResult] {
+     try await runPropertyLawSuite(options: options) {
+         var results: [CheckResult] = []
+-        if laws == .all {
++        if laws == .ownOnly {
+             results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                 try await checkMonoidPropertyLaws(from: source, options: $0, laws: .all)
+             })

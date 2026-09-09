@@ -29,19 +29,48 @@ public func checkRingPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
+    try await checkRingPropertyLaws(from: .sampling(generator), options: options)
+}
+
+/// The same laws over **every case** of a bounded carrier.
+///
+/// This is the shape the algebraic laws want. `Ring`'s laws are
+/// universally quantified over two or three values of one carrier, so a carrier
+/// small enough to enumerate turns "held for 1 000 random triples" into "holds",
+/// with no budget to choose and no combination left unreached. An eight-element
+/// carrier is 512 triples — a walk, not a sample.
+///
+/// `options.budget` is ignored; a walk's size is a property of the carrier.
+/// Cap an oversized carrier explicitly with `Enumeration.prefix(_:)`, and the
+/// result reports the shortfall rather than claiming completeness.
+@discardableResult
+public func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
+    for type: Value.Type = Value.self,
+    overEvery carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkRingPropertyLaws(from: .enumerated(carrier), options: options)
+}
+
+/// One assembler, two sources — so a walked suite can never run a different set
+/// of laws from the sampled one.
+func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
+    from source: InputSource<Value>,
+    options: LawCheckOptions
+) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         [
-            await checkAddAssociativity(generator: generator, options: options),
-            await checkAddCommutativity(generator: generator, options: options),
-            await checkAddLeftIdentity(generator: generator, options: options),
-            await checkAddRightIdentity(generator: generator, options: options),
-            await checkAddLeftInverse(generator: generator, options: options),
-            await checkAddRightInverse(generator: generator, options: options),
-            await checkMultiplyAssociativity(generator: generator, options: options),
-            await checkMultiplyLeftIdentity(generator: generator, options: options),
-            await checkMultiplyRightIdentity(generator: generator, options: options),
-            await checkLeftDistributivity(generator: generator, options: options),
-            await checkRightDistributivity(generator: generator, options: options)
+            await checkAddAssociativity(source: source, options: options),
+            await checkAddCommutativity(source: source, options: options),
+            await checkAddLeftIdentity(source: source, options: options),
+            await checkAddRightIdentity(source: source, options: options),
+            await checkAddLeftInverse(source: source, options: options),
+            await checkAddRightInverse(source: source, options: options),
+            await checkMultiplyAssociativity(source: source, options: options),
+            await checkMultiplyLeftIdentity(source: source, options: options),
+            await checkMultiplyRightIdentity(source: source, options: options),
+            await checkLeftDistributivity(source: source, options: options),
+            await checkRightDistributivity(source: source, options: options)
         ]
     }
 }
@@ -49,15 +78,14 @@ public func checkRingPropertyLaws<
 // MARK: - Additive abelian group
 
 private func checkAddAssociativity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runTernaryLaw(
         "Ring.addAssociativity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             Value.add(Value.add(first, second), third)
@@ -73,15 +101,14 @@ private func checkAddAssociativity<
 }
 
 private func checkAddCommutativity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runBinaryLaw(
         "Ring.addCommutativity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second in
             Value.add(first, second) == Value.add(second, first)
@@ -95,15 +122,14 @@ private func checkAddCommutativity<
 }
 
 private func checkAddLeftIdentity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "Ring.addLeftIdentity",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in Value.add(Value.zero, sample) == sample },
         formatCounterexample: { sample, _ in
@@ -113,15 +139,14 @@ private func checkAddLeftIdentity<
 }
 
 private func checkAddRightIdentity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "Ring.addRightIdentity",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in Value.add(sample, Value.zero) == sample },
         formatCounterexample: { sample, _ in
@@ -131,15 +156,14 @@ private func checkAddRightIdentity<
 }
 
 private func checkAddLeftInverse<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "Ring.addLeftInverse",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in Value.add(Value.negate(sample), sample) == Value.zero },
         formatCounterexample: { sample, _ in
@@ -150,15 +174,14 @@ private func checkAddLeftInverse<
 }
 
 private func checkAddRightInverse<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "Ring.addRightInverse",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in Value.add(sample, Value.negate(sample)) == Value.zero },
         formatCounterexample: { sample, _ in
@@ -171,15 +194,14 @@ private func checkAddRightInverse<
 // MARK: - Multiplicative monoid
 
 private func checkMultiplyAssociativity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runTernaryLaw(
         "Ring.multiplyAssociativity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             Value.multiply(Value.multiply(first, second), third)
@@ -196,15 +218,14 @@ private func checkMultiplyAssociativity<
 }
 
 private func checkMultiplyLeftIdentity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "Ring.multiplyLeftIdentity",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in Value.multiply(Value.one, sample) == sample },
         formatCounterexample: { sample, _ in
@@ -215,15 +236,14 @@ private func checkMultiplyLeftIdentity<
 }
 
 private func checkMultiplyRightIdentity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runUnaryLaw(
         "Ring.multiplyRightIdentity",
-        generator: generator,
+        source: source,
         options: options,
         property: { sample in Value.multiply(sample, Value.one) == sample },
         formatCounterexample: { sample, _ in
@@ -236,15 +256,14 @@ private func checkMultiplyRightIdentity<
 // MARK: - Distributivity (the cross-structure laws)
 
 private func checkLeftDistributivity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runTernaryLaw(
         "Ring.leftDistributivity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             Value.multiply(first, Value.add(second, third))
@@ -261,15 +280,14 @@ private func checkLeftDistributivity<
 }
 
 private func checkRightDistributivity<
-    Value: Ring & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Ring & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runTernaryLaw(
         "Ring.rightDistributivity",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second, third in
             Value.multiply(Value.add(first, second), third)

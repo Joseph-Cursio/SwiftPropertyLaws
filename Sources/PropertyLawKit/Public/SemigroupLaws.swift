@@ -25,23 +25,51 @@ public func checkSemigroupPropertyLaws<
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
+    try await checkSemigroupPropertyLaws(from: .sampling(generator), options: options)
+}
+
+/// The same laws over **every case** of a bounded carrier.
+///
+/// This is the shape the algebraic laws want. `Semigroup`'s laws are
+/// universally quantified over two or three values of one carrier, so a carrier
+/// small enough to enumerate turns "held for 1 000 random triples" into "holds",
+/// with no budget to choose and no combination left unreached. An eight-element
+/// carrier is 512 triples — a walk, not a sample.
+///
+/// `options.budget` is ignored; a walk's size is a property of the carrier.
+/// Cap an oversized carrier explicitly with `Enumeration.prefix(_:)`, and the
+/// result reports the shortfall rather than claiming completeness.
+@discardableResult
+public func checkSemigroupPropertyLaws<Value: Semigroup & Equatable & Sendable>(
+    for type: Value.Type = Value.self,
+    overEvery carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions()
+) async throws -> [CheckResult] {
+    try await checkSemigroupPropertyLaws(from: .enumerated(carrier), options: options)
+}
+
+/// One assembler, two sources — so a walked suite can never run a different set
+/// of laws from the sampled one.
+func checkSemigroupPropertyLaws<Value: Semigroup & Equatable & Sendable>(
+    from source: InputSource<Value>,
+    options: LawCheckOptions
+) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         [
-            await checkCombineAssociativity(generator: generator, options: options)
+            await checkCombineAssociativity(source: source, options: options)
         ]
     }
 }
 
 private func checkCombineAssociativity<
-    Value: Semigroup & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: Semigroup & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runTernaryLaw(
         "Semigroup.combineAssociativity",
-        generator: generator,
+        source: source,
         options: options,
         property: { one, two, three in
             let leftGrouped = Value.combine(Value.combine(one, two), three)
