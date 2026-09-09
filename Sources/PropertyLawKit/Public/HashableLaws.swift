@@ -35,21 +35,58 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable, Shrinker: Send
             })
         }
         results.append(contentsOf: [
-            await checkEqualityConsistency(generator: generator, options: options),
-            await checkStabilityWithinProcess(generator: generator, options: options, coverage: coverage),
+            await checkEqualityConsistency(source: .sampling(generator), options: options),
+            await checkStabilityWithinProcess(source: .sampling(generator), options: options, coverage: coverage),
             await checkDistribution(generator: generator, options: options, coverage: coverage)
         ])
         return results
     }
 }
 
-private func checkEqualityConsistency<Value: Hashable & Sendable, Shrinker: SendableSequenceType>(
-    generator: Generator<Value, Shrinker>,
+
+/// The Hashable laws over **every case** of a bounded carrier.
+///
+/// `Hashable.equalityConsistency` is conditional on `x == y`, and that
+/// antecedent is rare under a realistic generator: measured on a 100-value
+/// domain it fired 4 times in 1 000 trials, and the inherited
+/// `Equatable.transitivity` chain fired not at all. Walking a carrier makes
+/// every pair and triple of it present by construction.
+///
+/// **`Hashable.distribution` is deliberately not run here, and that is the one
+/// place a walked suite checks less than its sampled twin.** It asks what
+/// fraction of a *budget* produced distinct hash values, which is a statistic
+/// about draws; over a walk the same question has an exact answer that this
+/// entry does not compute. `walkedHashableOmitsOnlyTheDistributionLaw` pins the
+/// difference so it stays a decision rather than a drift.
+@discardableResult
+public func checkHashablePropertyLaws<Value: Hashable & Sendable>(
+    for type: Value.Type = Value.self,
+    overEvery carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions(),
+    laws: LawSelection = .all
+) async throws -> [CheckResult] {
+    try await runPropertyLawSuite(options: options) {
+        var results: [CheckResult] = []
+        if laws == .all {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkEquatablePropertyLaws(from: .enumerated(carrier), options: $0)
+            })
+        }
+        results.append(contentsOf: [
+            await checkEqualityConsistency(source: .enumerated(carrier), options: options),
+            await checkStabilityWithinProcess(source: .enumerated(carrier), options: options, coverage: nil)
+        ])
+        return results
+    }
+}
+
+private func checkEqualityConsistency<Value: Hashable & Sendable>(
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runBinaryLaw(
         "Hashable.equalityConsistency",
-        generator: generator,
+        source: source,
         options: options,
         property: { first, second in
             !(first == second) || (first.hashValue == second.hashValue)
@@ -61,8 +98,8 @@ private func checkEqualityConsistency<Value: Hashable & Sendable, Shrinker: Send
     )
 }
 
-private func checkStabilityWithinProcess<Value: Hashable & Sendable, Shrinker: SendableSequenceType>(
-    generator: Generator<Value, Shrinker>,
+private func checkStabilityWithinProcess<Value: Hashable & Sendable>(
+    source: InputSource<Value>,
     options: LawCheckOptions,
     coverage: AnyCoverageClassifier<Value>?
 ) async -> CheckResult {
@@ -75,7 +112,7 @@ private func checkStabilityWithinProcess<Value: Hashable & Sendable, Shrinker: S
     return await runUnaryLaw(
         "Hashable.stabilityWithinProcess",
         tier: .conventional,
-        generator: generator,
+        source: source,
         options: options,
         observation: PerLawDriver.Observation(classify: classify),
         property: { sample in sample.hashValue == sample.hashValue },
