@@ -24,32 +24,58 @@ public func checkCommutativeMonoidPropertyLaws<
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
 ) async throws -> [CheckResult] {
+    try await checkCommutativeMonoidPropertyLaws(from: .sampling(generator), options: options, laws: laws)
+}
+
+/// The same laws over **every case** of a bounded carrier.
+///
+/// This is the shape the algebraic laws want. `CommutativeMonoid`'s laws are
+/// universally quantified over two or three values of one carrier, so a carrier
+/// small enough to enumerate turns "held for 1 000 random triples" into "holds",
+/// with no budget to choose and no combination left unreached. An eight-element
+/// carrier is 512 triples — a walk, not a sample.
+///
+/// `options.budget` is ignored; a walk's size is a property of the carrier.
+/// Cap an oversized carrier explicitly with `Enumeration.prefix(_:)`, and the
+/// result reports the shortfall rather than claiming completeness.
+@discardableResult
+public func checkCommutativeMonoidPropertyLaws<Value: CommutativeMonoid & Equatable & Sendable>(
+    for type: Value.Type = Value.self,
+    overEvery carrier: Enumeration<Value>,
+    options: LawCheckOptions = LawCheckOptions(),
+    laws: LawSelection = .all
+) async throws -> [CheckResult] {
+    try await checkCommutativeMonoidPropertyLaws(from: .enumerated(carrier), options: options, laws: laws)
+}
+
+/// One assembler, two sources — so a walked suite can never run a different set
+/// of laws from the sampled one.
+func checkCommutativeMonoidPropertyLaws<Value: CommutativeMonoid & Equatable & Sendable>(
+    from source: InputSource<Value>,
+    options: LawCheckOptions,
+    laws: LawSelection
+) async throws -> [CheckResult] {
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
             results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
-                try await checkMonoidPropertyLaws(
-                    for: type,
-                    using: generator,
-                    options: $0
-                )
+                try await checkMonoidPropertyLaws(from: source, options: $0, laws: .all)
             })
         }
-        results.append(await checkCombineCommutativity(generator: generator, options: options))
+        results.append(await checkCombineCommutativity(source: source, options: options))
         return results
     }
 }
 
 private func checkCombineCommutativity<
-    Value: CommutativeMonoid & Equatable & Sendable,
-    Shrinker: SendableSequenceType
+    Value: CommutativeMonoid & Equatable & Sendable
 >(
-    generator: Generator<Value, Shrinker>,
+    source: InputSource<Value>,
     options: LawCheckOptions
 ) async -> CheckResult {
     await runBinaryLaw(
         "CommutativeMonoid.combineCommutativity",
-        generator: generator,
+        source: source,
         options: options,
         property: { one, two in
             Value.combine(one, two) == Value.combine(two, one)
