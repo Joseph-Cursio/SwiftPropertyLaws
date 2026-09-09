@@ -129,6 +129,30 @@
       "expected": "killed",
       "test": "ringWalkCoversEveryLaw",
       "label": "Ring runs left-distributivity twice and right-distributivity never. The result count is still eleven, which is why the test asserts law names rather than a count."
+    },
+    {
+      "id": "layout-space-never-prepends",
+      "patch": "patches/layout-space-never-prepends.patch",
+      "shape": "space-sampling",
+      "expected": "killed",
+      "test": "layoutSpaceReachesWrappedBuffers",
+      "label": "DequeLayouts builds every arrangement by appending, so the head never moves and all 107 layouts are contiguous \u2014 the space still enumerates, still reports its size, and closes exactly nothing."
+    },
+    {
+      "id": "layout-space-loses-its-size-ordering",
+      "patch": "patches/layout-space-loses-its-size-ordering.patch",
+      "shape": "space-sampling",
+      "expected": "killed",
+      "test": "layoutSpaceIsSmallestFirst",
+      "label": "DequeLayouts drops its size function, so arrangements come out in construction order (capacity-major) rather than smallest-deque-first, and a failure is no longer reported at the smallest deque exhibiting it."
+    },
+    {
+      "id": "bridge-draws-from-a-truncated-range",
+      "patch": "patches/bridge-draws-from-a-truncated-range.patch",
+      "shape": "space-sampling",
+      "expected": "killed",
+      "test": "theBridgeReachesMostOfASmallSpace",
+      "label": "Enumeration.generator draws only from the first four cases of any space, so the bridge silently samples a corner while every law it drives still passes."
     }
   ]
 }

@@ -1,0 +1,15 @@
+diff --git a/Sources/PropertyLawCollections/DequeLayouts.swift b/Sources/PropertyLawCollections/DequeLayouts.swift
+index 1dc8bad..e1fb522 100644
+--- a/Sources/PropertyLawCollections/DequeLayouts.swift
++++ b/Sources/PropertyLawCollections/DequeLayouts.swift
+@@ -50,8 +50,8 @@ public enum DequeLayouts {
+     private static func layout(capacity: Int, prepended: Int, total: Int) -> Deque<Int> {
+         var deque = Deque<Int>()
+         deque.reserveCapacity(capacity)
+-        for value in stride(from: prepended - 1, through: 0, by: -1) {
+-            deque.prepend(value)
++        for value in 0 ..< prepended {
++            deque.append(value)
+         }
+         for value in prepended ..< total {
+             deque.append(value)

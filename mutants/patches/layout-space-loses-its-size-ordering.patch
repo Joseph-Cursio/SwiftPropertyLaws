@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawCollections/DequeLayouts.swift b/Sources/PropertyLawCollections/DequeLayouts.swift
+index 1dc8bad..388b307 100644
+--- a/Sources/PropertyLawCollections/DequeLayouts.swift
++++ b/Sources/PropertyLawCollections/DequeLayouts.swift
+@@ -41,7 +41,7 @@ public enum DequeLayouts {
+                 }
+             }
+         }
+-        return Every.elements(label, in: built, size: { $0.count })
++        return Every.elements(label, in: built)
+     }
+ 
+     /// Build one arrangement. `prepend` walks the head backwards through the

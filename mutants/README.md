@@ -40,6 +40,9 @@ Requires a clean working tree.
 | `walked-chain-drops-inherited-laws` | algebraic-walk | killed | `groupWalkChainsInherited` |
 | `semilattice-chains-to-the-wrong-parent` | algebraic-walk | killed | `semilatticeWalkChainsWholeCluster` |
 | `walked-ring-drops-right-distributivity` | algebraic-walk | killed | `ringWalkCoversEveryLaw` |
+| `layout-space-never-prepends` | space-sampling | killed | `layoutSpaceReachesWrappedBuffers` |
+| `layout-space-loses-its-size-ordering` | space-sampling | killed | `layoutSpaceIsSmallestFirst` |
+| `bridge-draws-from-a-truncated-range` | space-sampling | killed | `theBridgeReachesMostOfASmallSpace` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -86,3 +89,13 @@ exposing a law arm that no test pinned, and driving the fix.
 
 1. Make the buggy edit; 2. `git diff -- <file> > mutants/patches/<id>.patch`;
 3. `git checkout -- <file>`; 4. add an entry to `manifest.json`.
+
+**`space-sampling` is a fourth shape, and it guards a claim no law can make.**
+A space's value is that it reaches configurations a construction-path generator
+never produces — and nothing about a passing law says whether that happened.
+`layout-space-never-prepends` is the sharpest of the corpus for that reason:
+`DequeLayouts` still enumerates 107 arrangements, still reports its size, still
+drives every `Deque` law to a pass — and builds every one of them by appending,
+so the head never moves and not one is wrapped. It closes exactly nothing while
+looking identical to the version that closes the gap. Only a test that measures
+the wrapped fraction can tell them apart.
