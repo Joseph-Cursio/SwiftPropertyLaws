@@ -4,6 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**Sampling a bounded space without discarding what it knows (2026-09-08).** `Enumeration.generator` erases the index at its `.map`, and with it both things the space could have told you: a failure is the first drawn rather than the smallest, and the run cannot say what fraction it saw. Neither is repairable in the bridge — the kit's shrinker is value-level and no driver threads a `Generator`, deliberately — so `.sampledFromSpace` is a **third `InputSource` case**, not a fix to the second.
+
+Keeping the index inside the driver recovers both: a failure shrinks toward index 0, which is the smallest case because spaces are ordered smallest-first, and the run counts distinct cases against a denominator it knows. **The index never reaches the law** — property closures still receive a bare value, which is the whole reason this is a source rather than a generator. Measured against the bridge, same space and law: the bridge reports whatever came up at **0 shrink steps**; this reports `subset=[0, 1, 2]`, the minimal witness.
+
+**Coverage counts distinct combinations, and both halves of that were needed.** Counting *draws* would let 1 000 draws over a 64-case space report `casesRun: 1000, spaceSize: 64`, so `isComplete` (`casesRun >= spaceSize`) answers `true` for a run that may have missed cases. Counting *positions* rather than tuples would let a ternary law that drew all 32 carrier values claim complete coverage having seen a few hundred of 32 768 triples. **The second was in the first implementation** and was caught while writing the tests, not by them. The denominator is now `fullCount ^ arity`, or `nil` when that overflows — a space too large to count has no denominator worth printing, and `nil` already means "this run does not know its input space".
+
+Surface: `checkSampledCases(of:law:…)` beside `checkEveryCase`, and a `sampling:` entry beside `overEvery:` on the six algebraic suites and the three strict-weak-ordering ones. `overEvery:` walks and ignores the budget; `sampling:` draws and the budget decides how many. Both delegate to the same assembler, so neither can drift.
+
+**This does not retire the bridge.** The forty-odd suites that take only a `Generator` still need it; the sampled source is better wherever a law can take an `InputSource`.
+
+Mutation-tested: 3 mutants in the `space-sampling` shape, **and one survived the first run** — the corpus doing its job. `sampled-coverage-counts-draws-not-cases`' killer test drew 50 times from a 1 024-case space and asserted `casesRun <= 50`, which **both counting rules satisfy**, because 50 draws into a large space almost never collide. Over-sampling a small space is the only arrangement where the rules differ, so the test now draws 500 times from 16 cases. 27 mutants total, 27 killed after the fix.
+
+1073 tests; swiftlint exits 0, violations 10 → 9.
+
+**Both open issues from the enumeration arc are now closed.** `TrialBudget.exhaustive` became `.thorough`, and the bridge's concessions are closed wherever a law can take an `InputSource`.
+
 **`TrialBudget.exhaustive` is now `.thorough` (2026-09-08).** The old name claimed a property of the *input space* — everything was tried — and delivered a property of the *loop*: ten thousand random draws, nothing exhausted. **This was the kit's own instance of the defect this file keeps recording**, a default presented as a guarantee, sitting in the public API since v1.
 
 **The prose was the evidence.** Three files carried doc comments whose only job was to walk the name back — `SpaceCoverage`, `DequeLayouts` and `SyntaxGenerators` between them spent a paragraph and five references explaining that the identifier did not mean what it said. When three files apologise for a name, the name is wrong. Those passages are deleted or restated positively.
