@@ -1,12 +1,28 @@
-/// The stdlib raw types memberwise and `RawRepresentable` derivation know how
-/// to generate, and the generator expression each one maps to.
-///
-/// Split out of `DerivationStrategy.swift` when that file passed SwiftLint's
-/// 400-line ceiling — the same move that produced `TodoReason.swift`. This is
-/// the table half of the strategist: adding support for a new raw type is a
-/// change here and nowhere else, and it is the file to open when asking "why
-/// didn't `Foo` derive?"
+// The stdlib raw types memberwise and `RawRepresentable` derivation know how
+// to generate, and the generator expression each one maps to.
+//
+// Split out of `DerivationStrategy.swift` when that file passed SwiftLint's
+// 400-line ceiling — the same move that produced `TodoReason.swift`. This is
+// the table half of the strategist: adding support for a new raw type is a
+// change here and nowhere else, and it is the file to open when asking "why
+// didn't `Foo` derive?"
 
+// `SwiftProjectLint`'s `parallel-list-drift` reports this enum against
+// `MinimalCodableValue`, which holds these fourteen names and three more — `null`, `array`,
+// `dictionary`. It is not drift, and the three it "lacks" are the reason. That enum is the tree
+// `MinimalEncoder` produces, so its roster is fixed by `SingleValueEncodingContainer`'s overload
+// set plus `encodeNil` and the two container shapes. This table is the stdlib types a derived
+// generator can be *spelled* for. The fourteen agree because both are Swift's `Codable` scalars;
+// the three do not carry over because none of them is a Swift type at all — `null` is the absence
+// of a value, and an array or a dictionary is a container shape, so no `RawRepresentable.RawValue`
+// and no memberwise member could ever be one.
+//
+// Recorded rather than suppressed silently: the rule is right that two lists agreeing on fourteen
+// names did not reach that overlap by chance, and wrong only about what the agreement means.
+// `SwiftProjectLint#190` is the general form. The directive sits above the doc comment because
+// `disable:next` skips comment lines to find the declaration, while SwiftLint's
+// `orphaned_doc_comment` requires the `///` block to touch it.
+// swiftprojectlint:disable:next parallel-list-drift
 /// Recognized stdlib raw types for `RawRepresentable` derivation. Each
 /// case maps to a generator the emitter can spell out inline.
 public enum RawType: String, Sendable, Equatable, CaseIterable {
