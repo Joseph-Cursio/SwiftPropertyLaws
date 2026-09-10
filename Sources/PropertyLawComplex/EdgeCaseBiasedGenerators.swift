@@ -83,7 +83,15 @@ public extension Gen where Value == Complex<Double> {
             //
             // Revisit if a law is ever found failing on the finite path: that
             // would make the filler load-bearing and this trade wrong.
+            //
+            // The directive is what makes the paragraph above machine-readable. It was written
+            // for a reader hitting the warning, and a sweep has no way to tell a decision from an
+            // unread finding — so the corpus re-asked this question on every run for months while
+            // the answer sat four lines up. Suppressing it does not hide the reasoning; it is
+            // right here, and the revisit condition is the expiry date on it.
+            // swiftprojectlint:disable:next non-injected-nondeterminism
             let real = Double.random(in: -1_000_000.0 ... 1_000_000.0)
+            // swiftprojectlint:disable:next non-injected-nondeterminism
             let imag = Double.random(in: -1_000_000.0 ... 1_000_000.0)
             return Complex(real, imag)
         }
