@@ -20,6 +20,60 @@ public struct EnumerationBucket: Sendable, Hashable {
         self.start = start
         self.count = count
     }
+
+    /// The half-open range of indices this run holds.
+    public var indices: Range<Int> { start ..< (start + count) }
+
+    /// The bucket in `buckets` holding `index`, or `nil` when none does.
+    ///
+    /// **Total, and that is the point of it being here rather than inside
+    /// ``Enumeration``.** The search is over `[EnumerationBucket]` and an `Int`; it has
+    /// nothing to do with an element type, and welding it to the generic meant it could
+    /// only ever be exercised through whatever bucket layouts the `Every.*` constructors
+    /// happen to produce — never an empty array, never a layout with a one-case bucket
+    /// between two large ones, never a gap. A free function over the two things it
+    /// actually reads can be quantified over every layout instead.
+    ///
+    /// Answers `nil` rather than trapping, so the caller names its own boundary policy at
+    /// the call site: ``Enumeration/bucket(containing:)`` keeps its precondition, because
+    /// an out-of-range index there is a programmer error and a space that answered anyway
+    /// would report a failing case as minimal when it is not.
+    ///
+    /// Binary search rather than a scan because `subsets(of: 20)` has 21 buckets over a
+    /// million cases and ``Enumeration/size(of:)`` is called once per walked case.
+    /// ``EnumerationBucket`` makes no claim that `buckets` is well formed — the layout
+    /// invariant is `Enumeration.init`'s to enforce — so this is stated over *sorted*
+    /// starts alone, which is the weakest precondition the search needs.
+    public static func containing(_ index: Int, in buckets: [EnumerationBucket]) -> EnumerationBucket? {
+        guard buckets.isEmpty == false else { return nil }
+        var low = 0
+        var high = buckets.count - 1
+        // The interval must shrink on every iteration, and `(low + high + 1) / 2` is what
+        // guarantees it: with `high == low + 1` the midpoint rounds *up*, so `low = middle`
+        // advances. Round down instead and that step leaves the interval unchanged forever.
+        //
+        // Bounding the loop makes that a **checked** claim rather than an emergent one, and the
+        // failure it converts is the worst kind to test for. Measured both ways against the
+        // rounded-down midpoint: with this cap the suite crashes here and reports a failure;
+        // without it the suite **hangs**, and a hanging test reports nothing at all.
+        //
+        // Removing the cap on its own is therefore a surviving mutant, correctly — with the
+        // midpoint right the loop always converges and the cap never fires. It is defended by
+        // the pair, not by a mutant of its own, and `theCapIsNotTighterThanTheSearchNeeds`
+        // guards the other direction.
+        var remainingSteps = Int.bitWidth - buckets.count.leadingZeroBitCount + 1
+        while low < high {
+            precondition(
+                remainingSteps > 0,
+                "EnumerationBucket.containing: search did not converge over \(buckets.count) buckets"
+            )
+            remainingSteps -= 1
+            let middle = (low + high + 1) / 2
+            if buckets[middle].start <= index { low = middle } else { high = middle - 1 }
+        }
+        let candidate = buckets[low]
+        return candidate.indices.contains(index) ? candidate : nil
+    }
 }
 
 /// A bounded input space that can be walked in full, smallest case first.
@@ -139,17 +193,20 @@ public struct Enumeration<Element: Sendable>: Sendable {
 
     public var indices: Range<Int> { 0 ..< count }
 
-    /// The bucket holding `index`, by binary search — `buckets` is ascending
-    /// and contiguous, so its `start`s are sorted.
+    /// The bucket holding `index` — `buckets` is ascending and contiguous, so the search
+    /// in ``EnumerationBucket/containing(_:in:)`` applies.
+    ///
+    /// The kernel answers `nil` for an index no bucket holds; here that cannot happen for
+    /// an index the precondition admits, because `init` has established that the buckets
+    /// tile `0 ..< count` with no gap. The `nil` arm is therefore unreachable and traps
+    /// rather than being given a fallback — a space that answered anyway would report a
+    /// failing case as minimal when it is not.
     func bucket(containing index: Int) -> EnumerationBucket {
         precondition(indices.contains(index), "Enumeration: index \(index) outside 0 ..< \(count)")
-        var low = 0
-        var high = buckets.count - 1
-        while low < high {
-            let middle = (low + high + 1) / 2
-            if buckets[middle].start <= index { low = middle } else { high = middle - 1 }
+        guard let bucket = EnumerationBucket.containing(index, in: buckets) else {
+            preconditionFailure("Enumeration: no bucket holds in-range index \(index)")
         }
-        return buckets[low]
+        return bucket
     }
 
     /// The first `maxCases` cases — the smallest ones, given the ordering
