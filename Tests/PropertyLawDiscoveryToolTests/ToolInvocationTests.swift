@@ -57,10 +57,49 @@ struct ToolInvocationTests {
         }
     }
 
-    @Test func missingValueAfterFlagThrows() {
+    /// Every flag that consumes a value must reject being the last argument.
+    ///
+    /// `requireValue(after:arguments:at:)` is one three-line bounds check shared by five
+    /// flags, and before this only two of the five reached it in a test — `--target` here
+    /// and `--advisory-min` below. The other three were covered by the shape of the
+    /// `switch`, not by anything asserted, so a sixth value-taking flag added without a
+    /// `requireValue` call would have subscripted past the end of argv and trapped, with no
+    /// test to say so.
+    ///
+    /// Parameterised over the flags rather than written out, because the drift this guards
+    /// is a flag being *added*: a new `case` that forgets the guard has to be listed here to
+    /// be considered, and a reader adding one sees the list.
+    @Test(arguments: ["--target", "--output", "--scaffold-out", "--advisory-min", "--extra-import"])
+    func aValueFlagAsTheLastArgumentThrowsMissingValue(flag: String) {
         #expect(throws: InvocationError.self) {
-            _ = try ToolInvocation(arguments: ["--target"])
+            _ = try ToolInvocation(arguments: [flag])
         }
+        // And after a complete invocation, so the failure is the trailing flag rather than
+        // anything missing earlier.
+        #expect(throws: InvocationError.self) {
+            _ = try ToolInvocation(arguments: [
+                "--target", "MyModule", "--output", "/tmp/out.swift",
+                "--source-files", "/a.swift", flag
+            ])
+        }
+    }
+
+    /// The control. Without it the law above passes against a parser that rejects every one
+    /// of those flags outright.
+    @Test func aValueFlagFollowedByAValueIsAccepted() throws {
+        let invocation = try ToolInvocation(arguments: [
+            "--target", "MyModule",
+            "--output", "/tmp/out.swift",
+            "--scaffold-out", "/tmp/scaffold.swift",
+            "--advisory-min", "low",
+            "--extra-import", "PropertyLawSyntax",
+            "--source-files", "/a.swift"
+        ])
+        #expect(invocation.target == "MyModule")
+        #expect(invocation.outputPath == "/tmp/out.swift")
+        #expect(invocation.scaffoldOutputPath == "/tmp/scaffold.swift")
+        #expect(invocation.advisoryMinConfidence == .low)
+        #expect(invocation.extraImports == ["PropertyLawSyntax"])
     }
 
     // MARK: - PRD §5.4 advisory flags (M4)
