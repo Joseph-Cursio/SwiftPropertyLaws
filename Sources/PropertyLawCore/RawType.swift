@@ -19,10 +19,15 @@
 //
 // Recorded rather than suppressed silently: the rule is right that two lists agreeing on fourteen
 // names did not reach that overlap by chance, and wrong only about what the agreement means.
-// `SwiftProjectLint#190` is the general form. The directive sits above the doc comment because
-// `disable:next` skips comment lines to find the declaration, while SwiftLint's
-// `orphaned_doc_comment` requires the `///` block to touch it.
-// swiftprojectlint:disable:next parallel-list-drift
+// `SwiftProjectLint#190` is the general form.
+//
+// The `swiftprojectlint:disable:next parallel-list-drift` directive this paragraph used to
+// carry is retired as of SwiftProjectLint#227, which taught the rule the distinction directly:
+// `MinimalCodableValue` spells its cases `bool(Bool)`, `int(Int)`, `int8(Int8)` — the case names
+// ARE their payload types, so it is a tagged union over Swift's scalars rather than a vocabulary
+// anybody chose, and an overlap with a table of type names is guaranteed rather than evidence.
+// The explanation above stays because it is why the fourteen agree; the suppression is gone
+// because the rule no longer needs telling.
 /// Recognized stdlib raw types for `RawRepresentable` derivation. Each
 /// case maps to a generator the emitter can spell out inline.
 public enum RawType: String, Sendable, Equatable, CaseIterable {
