@@ -151,6 +151,83 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
             + ")"
     }
 
+    /// v4.6 — a **hostile** generator expression for the `String` raw type, or `nil` for every
+    /// other case. Where ``edgeBiasedGeneratorExpression`` is tuned for *structural* string laws,
+    /// this one is tuned for **totality**: the law that a function returns or throws for every
+    /// input its type admits, and never traps.
+    ///
+    /// ## Two laws over `String` want different draws, and that is the whole point
+    ///
+    /// A generator tuned for coverage of the **type** is silently mistuned for coverage of the
+    /// **law**. `edgeBiasedGeneratorExpression` exists because an idempotence law needed a
+    /// *repetition* witness — `strippingHeadingMarkers` changed 0 of 3 920 values under the plain
+    /// generator. Its token list is therefore YAML and Markdown markers, and it is correct for
+    /// that purpose.
+    ///
+    /// **Measured on a totality law it is wrong for.** Six real trap classes planted in
+    /// `WikilinkParser.parse`, 100 trials each
+    /// (`SwiftInferProperties/docs/measurements/totality-generator-reach.md`):
+    ///
+    /// | trap fires on | edge-biased | hostile |
+    /// |---|---|---|
+    /// | empty input | caught | caught |
+    /// | a newline | caught | caught |
+    /// | a tab | caught | caught |
+    /// | any non-ASCII scalar | **missed** | caught |
+    /// | a `[[` delimiter | **missed** | caught |
+    /// | length > 64 | **missed** | caught |
+    ///
+    /// **3 of 6 against 6 of 6, and the correct implementation passes under both** — a generator
+    /// that failed everything would also score 6 of 6 and be worthless.
+    ///
+    /// The worst miss was the delimiter: `WikilinkParser` exists to parse `[[…]]`, so its real
+    /// trap bugs live in bracket handling, and the edge-biased generator cannot produce a single
+    /// bracket. And the three it caught were caught by coincidence — `""`, `"\n"` and `"\t"` are
+    /// in ``stringEdgeCases`` because that list was curated for heading and sequence markers, not
+    /// for totality. A different curation with equal claim to the name would have scored zero.
+    ///
+    /// ## Why this is a sibling rather than a wider `stringEdgeCases`
+    ///
+    /// Widening that list would re-tune a generator that is currently correct for its own law and
+    /// move every idempotence golden with it. The laws are different, so the generators are.
+    ///
+    /// ## The three arms are the three classes the measurement found unreachable
+    ///
+    /// Delimiters and escapes, because a parser's traps live where its structure does; Latin-1,
+    /// because the ASCII baseline never leaves ASCII; and a long ASCII draw, because a length
+    /// assumption is invisible to a generator capped near 16. The alphanumeric baseline is kept
+    /// so the run still spends most of its trials on ordinary input.
+    public var hostileGeneratorExpression: String? {
+        guard self == .string else { return nil }
+        let hostile = RawType.hostileTokens
+            .map(RawType.swiftStringLiteral)
+            .joined(separator: ", ")
+        let token = "Gen<String?>.element(of: [\(hostile)] as [String]).map { $0! }"
+        return "Gen.frequency("
+            + "(3.0, Gen<Character>.letterOrNumber.string(of: 0...8)), "
+            + "(3.0, \(token)), "
+            + "(2.0, \(token).map { $0 + $0 }), "
+            + "(1.0, Gen<Character>.latin1.string(of: 0...24)), "
+            + "(1.0, Gen<Character>.ascii.string(of: 0...120))"
+            + ")"
+    }
+
+    /// Tokens a **parser** is most likely to trap on: the delimiters that carry structure, the
+    /// escapes that carry meaning, and the empty and whitespace boundaries.
+    ///
+    /// Deliberately *general* rather than fitted to the subject that exposed the gap. The
+    /// measurement used `WikilinkParser`, whose delimiter is `[[`, and a list containing only
+    /// `[[` would score 6 of 6 on it and nothing on the next parser. Every parser has delimiters;
+    /// no curated list contains all of them, so this covers the common families and the two
+    /// unbounded arms — Latin-1 and length — carry what a list cannot.
+    static let hostileTokens: [String] = [
+        "", " ", "\n", "\t",
+        "[", "]", "[[", "]]", "[[a]]", "[[a|b]]",
+        "{", "}", "<", ">", "(", ")",
+        "\"", "'", "\\", "|", "&", ";", "%", "$",
+        "\u{0}", "\u{7F}"
+    ]
+
     /// Curated **tokens** mixed with random strings, and composed rather than only drawn whole:
     /// empty / whitespace / newline boundaries plus the YAML and Markdown markers
     /// (`-`, `- `, leading-space `-`, `#`, `# `) that dominate real string-structural bugs.
