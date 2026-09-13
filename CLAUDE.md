@@ -4,6 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**A second String generator, because two laws over `String` want different draws (2026-09-13).** `RawType.hostileGeneratorExpression` joins `edgeBiasedGeneratorExpression`, and the reason it is a sibling rather than a wider `stringEdgeCases` is measured.
+
+**A generator tuned for coverage of the TYPE is silently mistuned for coverage of the LAW.** The edge-biased one exists because `strippingHeadingMarkers` needed a *repetition* witness — 0 of 3 920 values changed without it — so its tokens are YAML and Markdown markers. Pointed at a **totality** law (a function returns or throws for every input, never traps) it under-reaches. Six real trap classes planted in `WikilinkParser.parse`, 100 trials each:
+
+| trap fires on | edge-biased | hostile |
+|---|---|---|
+| empty / newline / tab | caught | caught |
+| any non-ASCII scalar | **missed** | caught |
+| a `[[` delimiter | **missed** | caught |
+| length > 64 | **missed** | caught |
+
+**3 of 6 against 6 of 6, and the correct implementation passes under both** — a generator that failed everything would also score 6 of 6 and be worthless, so the control row is load-bearing. The worst miss is the delimiter: `WikilinkParser` exists to parse `[[…]]`, so its trap bugs live in bracket handling and the edge-biased generator cannot produce a single bracket. The three it caught were caught by coincidence — `""`, `"\n"`, `"\t"` are in `stringEdgeCases` because that list was curated for heading markers, and a different curation with equal claim to the name scores zero.
+
+**Widening `stringEdgeCases` was the wrong fix** and is recorded as declined: it feeds every string law, it is correct for its own, and moving it moves every idempotence golden.
+
+**The distribution tests are the load-bearing ones, and a mutation proved it.** An expression that compiles, contains every token and never draws one would satisfy every string assertion — so the three classes are asserted by *running* the generator. The first delimiter test asserted `"["` and **survived deletion of the token arm**, because `Gen<Character>.ascii` draws over `0...127` and emits a lone bracket by chance. It now asserts `"[[a|b]]"`, which only the curated list produces — and a structured delimiter is what the law is about, since a parser traps on `[[a|b]]` rather than on one `[`.
+
+Tokens are deliberately general rather than fitted to the subject that exposed the gap: a list holding only `[[` would score 6 of 6 on `WikilinkParser` and nothing on the next parser. The two unbounded arms, Latin-1 and length, carry what no list can.
+
+1123 tests; swiftlint unchanged at 9 warnings.
+
+
 **The enumeration menu completed, and the measurement that reversed the conclusion (2026-09-08).** The design note proposed four spaces; Slice 1 shipped three and the note then read as though it were complete. The two that arrived late are the two that mattered.
 
 **`Every.sequences(_:of:upTo:)`** — the one the note singled out as having no `StdlibUnittest` ancestor, because a sequence of actions is what model-based testing quantifies over. A capability gap, not a convenience one: `product` gives fixed arity and variable-length sequences are a sum of products. Closed-form like the others; the bucket gives the length, the offset within it is that length's digits in base `|A|`. `checkInteractionInvariantPropertyLaws(overEverySequenceUpTo:)` is the walked entry, routed through the same per-step law body. `statefulGuards` are deliberately absent — a guard keeps a *random* draw legal, and filtering a walked space would break the closed-form indexing its denominator depends on.
