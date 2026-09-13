@@ -108,9 +108,28 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     /// a property check over a string-processing function never sees the
     /// whitespace / newline / punctuation inputs that falsify structural
     /// string logic (YAML `- ` markers, indentation, trimming) — the check
-    /// then false-passes. This mixes the alphanumeric baseline (weight 3)
-    /// with curated structural edge strings (weight 2) via `Gen.frequency`,
-    /// so those counterexamples become reachable.
+    /// then false-passes. This mixes the alphanumeric baseline with curated structural tokens
+    /// via `Gen.frequency`, so those counterexamples become reachable.
+    ///
+    /// ## The tokens are composed, not only drawn whole
+    ///
+    /// A first version offered each token as a complete value — `"#"` or `"- "` or nothing else —
+    /// and that is not enough for the largest class of law this generator exists to serve.
+    /// **An idempotence or involution law over a structural string function is falsified by the
+    /// structure appearing TWICE**, and a catalogue of whole strings supplies each structure
+    /// exactly once.
+    ///
+    /// Measured on `EditorFormatter.strippingHeadingMarkers` (SwiftPropertyLaws#42): its law is
+    /// false — the strip is `^`-anchored, so `"# ## Title"` loses one marker run per application
+    /// — and over the whole-string generator's entire reachable domain, 13 tokens plus every
+    /// alphanumeric string of length 0–2, **the function changed 0 of 3 920 values.** Not rarely
+    /// falsified: unfalsifiable, at any budget.
+    ///
+    /// So a token is also offered doubled (`$0 + $0`) and suffixed with a short alphanumeric
+    /// filler. `"# "` doubled is `"# # "`, which the stripper takes to `"# "` and then to `""` —
+    /// the witness class, reached by a mechanism rather than by adding the witness. The doubled
+    /// arm carries the heaviest weight of the three token arms because repetition is the shape
+    /// the whole-string version could not reach at all.
     ///
     /// Intended for the *top-level* carrier of a String property. Struct
     /// members keep `generatorExpression` (the plain form), so memberwise
@@ -122,18 +141,27 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         let edges = RawType.stringEdgeCases
             .map(RawType.swiftStringLiteral)
             .joined(separator: ", ")
+        let token = "Gen<String?>.element(of: [\(edges)] as [String]).map { $0! }"
+        let filler = "Gen<Character>.letterOrNumber.string(of: 0...4)"
         return "Gen.frequency("
             + "(3.0, Gen<Character>.letterOrNumber.string(of: 0...8)), "
-            + "(2.0, Gen<String?>.element(of: [\(edges)] as [String]).map { $0! })"
+            + "(1.0, \(token)), "
+            + "(3.0, \(token).map { $0 + $0 }), "
+            + "(1.0, zip(\(token), \(filler)).map { $0 + $1 })"
             + ")"
     }
 
-    /// Curated whole-string edge values injected alongside random strings:
-    /// empty / whitespace / newline boundaries plus the YAML/markup tokens
-    /// (`-`, `- `, leading-space `-`, multi-line) that dominate real
-    /// string-structural bugs.
+    /// Curated **tokens** mixed with random strings, and composed rather than only drawn whole:
+    /// empty / whitespace / newline boundaries plus the YAML and Markdown markers
+    /// (`-`, `- `, leading-space `-`, `#`, `# `) that dominate real string-structural bugs.
+    ///
+    /// `"# "` joined `"-"`/`"- "` late, and its absence was a gap rather than a judgement. The
+    /// list already carried four YAML sequence forms and the ATX marker only in its
+    /// *non-triggering* spelling: a bare `"#"` does not match `^#{1,6}[ \t]+`, so a heading
+    /// stripper is the identity on it. One markup family had its space form and the other did
+    /// not.
     static let stringEdgeCases: [String] = [
-        "", " ", "  ", "\n", "\t", "-", "- ", "  -", "- x", "a\n- b", ":", "#", "/"
+        "", " ", "  ", "\n", "\t", "-", "- ", "  -", "- x", "a\n- b", ":", "#", "# ", "/"
     ]
 
     /// Render `value` as a Swift double-quoted string literal, escaping the
