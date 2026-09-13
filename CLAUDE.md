@@ -4,6 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**And v4.6.0 shipped with a latent bug the new tokens exposed (2026-09-13).** `swiftStringLiteral` escaped `\`, `"`, `\n` and `\t` — the four a hand-written token actually contains — and for as long as every entry in `stringEdgeCases` was typeable that was sufficient. `hostileTokens` added `\u{0}` and `\u{7F}`, because a parser trapping on NUL is exactly what a totality law is for, and those were written into the generated `.swift` file **as raw bytes**.
+
+**No test saw it, and the reason generalises.** Every assertion on that function compared *strings*, and a NUL inside a Swift string compares equal to itself perfectly well. It was found by reading the emitted file's bytes (`b'\x00' in source`). The guard added with the fix asserts on the **scalars of the emitted expression**, which is the only form in which the defect is visible — the same shape as `EmittedExpressionCompilesTests`, which exists because a string-to-string codegen test can have both sides wrong together.
+
+Non-printables now escape to `\u{…}` uniformly. **NUL is deliberately not given its own `\0` arm** — that spelling is equally valid Swift, and one rule covering every non-printable is one thing to get right rather than a list to keep in step with the token set. `hexadecimal(_:)` is hand-rolled because `String(format:)` lives in Foundation and `PropertyLawCore` is a dependency-free leaf.
+
+1117 tests; swiftlint unchanged at 9.
+
 **A second String generator, because two laws over `String` want different draws (2026-09-13).** `RawType.hostileGeneratorExpression` joins `edgeBiasedGeneratorExpression`, and the reason it is a sibling rather than a wider `stringEdgeCases` is measured.
 
 **A generator tuned for coverage of the TYPE is silently mistuned for coverage of the LAW.** The edge-biased one exists because `strippingHeadingMarkers` needed a *repetition* witness — 0 of 3 920 values changed without it — so its tokens are YAML and Markdown markers. Pointed at a **totality** law (a function returns or throws for every input, never traps) it under-reaches. Six real trap classes planted in `WikilinkParser.parse`, 100 trials each:

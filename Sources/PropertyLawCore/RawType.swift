@@ -241,8 +241,34 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         "", " ", "  ", "\n", "\t", "-", "- ", "  -", "- x", "a\n- b", ":", "#", "# ", "/"
     ]
 
-    /// Render `value` as a Swift double-quoted string literal, escaping the
-    /// characters that would otherwise break the emitted source.
+    /// Uppercase hex without `String(format:)`, which lives in Foundation —
+    /// **`PropertyLawCore` is a dependency-free leaf and stays one.**
+    static func hexadecimal(_ value: UInt32) -> String {
+        guard value != 0 else { return "0" }
+        let digits = Array("0123456789ABCDEF")
+        var remaining = value
+        var out = ""
+        while remaining > 0 {
+            out.insert(digits[Int(remaining % 16)], at: out.startIndex)
+            remaining /= 16
+        }
+        return out
+    }
+
+    /// Render `value` as a Swift double-quoted string literal, escaping the characters that
+    /// would otherwise break the emitted source.
+    ///
+    /// **Non-printable scalars are escaped as `\u{…}`, and that arm was missing.** The four
+    /// explicit cases below are the ones hand-written Swift actually contains, and for as long as
+    /// every token in this file was typeable they were sufficient. `hostileTokens` introduced
+    /// `\u{0}` and `\u{7F}` — a parser trapping on NUL is exactly the kind of bug a totality law
+    /// is for — and those were written into the generated file as **raw bytes**: a literal NUL in
+    /// a `.swift` source file.
+    ///
+    /// Caught by reading the emitted bytes rather than by any test, which is the lesson worth
+    /// keeping: every assertion on this function compared *strings*, and a NUL inside a Swift
+    /// string compares equal to itself perfectly well. `EmittedFileParsesTests`-style checks and
+    /// the round-trip test added alongside this are what make the escape observable.
     static func swiftStringLiteral(_ value: String) -> String {
         var out = "\""
         for character in value {
@@ -251,7 +277,20 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
             case "\"": out += "\\\""
             case "\n": out += "\\n"
             case "\t": out += "\\t"
-            default: out.append(character)
+            case "\r": out += "\\r"
+            default:
+                // A scalar Swift source cannot carry literally — control codes, DEL, and the
+                // other non-printables — becomes its escape rather than its byte. NUL is
+                // deliberately NOT given its own `\0` arm: `\u{0}` is equally valid Swift, and
+                // one rule covering every non-printable is one thing to get right rather than a
+                // list to keep in step with the token set.
+                if let scalar = character.unicodeScalars.first,
+                   character.unicodeScalars.count == 1,
+                   scalar.properties.generalCategory == .control || scalar.value == 0x7F {
+                    out += "\\u{\(Self.hexadecimal(scalar.value))}"
+                } else {
+                    out.append(character)
+                }
             }
         }
         out += "\""

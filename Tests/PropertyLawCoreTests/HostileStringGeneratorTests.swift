@@ -108,6 +108,40 @@ struct HostileStringGeneratorTests {
         #expect(edge.contains("[[") == false, "the structural generator must stay bracket-free")
     }
 
+    // MARK: - The emitted source must be source
+
+    /// **The bug this catches shipped in v4.6.0 and no assertion in this file saw it.**
+    /// `hostileTokens` carries `\u{0}` and `\u{7F}` — a parser trapping on NUL is exactly what a
+    /// totality law is for — and `swiftStringLiteral` escaped only `\`, `"`, `\n` and `\t`, so
+    /// those went into the generated `.swift` file as **raw bytes**.
+    ///
+    /// Every existing test compared strings, and a NUL inside a Swift string compares equal to
+    /// itself perfectly well. It was found by reading the emitted file's bytes. So this asserts
+    /// on the *scalars of the emitted expression*, which is the only form in which the defect is
+    /// visible.
+    @Test func theEmittedExpressionCarriesNoRawControlBytes() throws {
+        let expression = try #require(RawType.string.hostileGeneratorExpression)
+        let offenders = expression.unicodeScalars.filter {
+            $0.properties.generalCategory == .control || $0.value == 0x7F
+        }
+        #expect(offenders.isEmpty, "generated source carries raw control bytes: \(offenders)")
+    }
+
+    @Test("a non-printable scalar is escaped rather than emitted", arguments: [
+        ("\u{0}", "\\u{0}"), ("\u{7F}", "\\u{7F}"), ("\u{1}", "\\u{1}"), ("\u{1B}", "\\u{1B}")
+    ])
+    func nonPrintablesAreEscaped(raw: String, escaped: String) {
+        #expect(RawType.swiftStringLiteral(raw) == "\"\(escaped)\"")
+    }
+
+    /// The four escapes hand-written Swift actually contains must not have moved.
+    @Test func theOrdinaryEscapesAreUnchanged() {
+        #expect(RawType.swiftStringLiteral("\n") == "\"\\n\"")
+        #expect(RawType.swiftStringLiteral("\t") == "\"\\t\"")
+        #expect(RawType.swiftStringLiteral("a\"b\\c") == "\"a\\\"b\\\\c\"")
+        #expect(RawType.swiftStringLiteral("[[a|b]]") == "\"[[a|b]]\"")
+    }
+
     /// The plain form feeds memberwise derivation and must not move.
     @Test func thePlainGeneratorIsUnchanged() {
         #expect(RawType.string.generatorExpression == "Gen<Character>.letterOrNumber.string(of: 0...8)")
