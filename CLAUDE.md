@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**Two typealiases that were blocking a quarter of a subject's generators (2026-09-13).** `knownTypeAlias` gained `unichar → UInt16` and `CGFloat → Double`.
+
+**`unichar` is spelled all-lowercase because it comes from Objective-C**, which is exactly why it does not read as a typealias and was never recognised. Measured downstream: **four of ten generator-blocked stubs on one subject**, every one a character predicate in a Markdown lexer, each emitting `unichar.gen()` and a deliberate compile error.
+
+**`CGFloat` is verified rather than assumed.** Unlike `Float64` the alias is conditional on word size, so a `Double` argument was compiled into a `CGFloat` parameter and a `(Double) -> Bool` closure used to drive a `CGFloat`-consuming function — SE-0307 makes the conversion implicit both ways.
+
+**The downstream finding is the larger one and belongs here too**: `Gen<Data>.data()` has existed since v3.11.0 and `DerivationStrategist.composedGenerator` has been `public` since v3.3.0, and SwiftInferProperties' emitter never called either — it asked `RawType` and then emitted a `.todo`. The consumer fix took its generator-blocked stubs 10 → 6 with no new generator written. **A kit capability nothing asks for is indistinguishable from a missing one**, and only a consumer-side census tells them apart.
+
+1119 tests; swiftlint unchanged at 9.
+
+
 **And v4.6.0 shipped with a latent bug the new tokens exposed (2026-09-13).** `swiftStringLiteral` escaped `\`, `"`, `\n` and `\t` — the four a hand-written token actually contains — and for as long as every entry in `stringEdgeCases` was typeable that was sufficient. `hostileTokens` added `\u{0}` and `\u{7F}`, because a parser trapping on NUL is exactly what a totality law is for, and those were written into the generated `.swift` file **as raw bytes**.
 
 **No test saw it, and the reason generalises.** Every assertion on that function compared *strings*, and a NUL inside a Swift string compares equal to itself perfectly well. It was found by reading the emitted file's bytes (`b'\x00' in source`). The guard added with the fix asserts on the **scalars of the emitted expression**, which is the only form in which the defect is visible — the same shape as `EmittedExpressionCompilesTests`, which exists because a string-to-string codegen test can have both sides wrong together.

@@ -102,6 +102,36 @@ struct KnownValueTypeDerivationTests {
 
     // MARK: - Known stdlib/Foundation typealiases
 
+    /// `unichar` is Foundation's UTF-16 code unit, and it is `UInt16`.
+    ///
+    /// **It is spelled all-lowercase because it comes from Objective-C**, which is exactly why it
+    /// does not read as a typealias and was never recognised. Measured downstream as *four of ten*
+    /// generator-blocked stubs on a single subject — every one a character predicate in a Markdown
+    /// lexer, each emitting `unichar.gen()` and a deliberate compile error.
+    @Test func unicharResolvesToUInt16() {
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: "unichar")
+                == "Gen<UInt16>.uint16()"
+        )
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: "unichar?")
+                == "Gen<UInt16>.uint16().optional"
+        )
+    }
+
+    /// `CGFloat` is `Double` on every 64-bit Apple platform, and SE-0307 makes the conversion
+    /// implicit in both directions — so a `Gen<Double>` satisfies a `CGFloat` parameter.
+    ///
+    /// **Verified by compiling it rather than assumed**, because unlike `Float64` this alias is
+    /// conditional on word size: a `Double` argument was passed into a `CGFloat` parameter, and a
+    /// `(Double) -> Bool` closure was used to drive a `CGFloat`-consuming function.
+    @Test func cgFloatResolvesToDouble() {
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: "CGFloat")
+                == "Gen<Double>.double(in: -1_000_000...1_000_000)"
+        )
+    }
+
     @Test func timeIntervalResolvesToDouble() {
         #expect(
             DerivationStrategist.memberGenerator(forTypeName: "TimeInterval")

@@ -196,10 +196,23 @@ extension DerivationStrategist {
     /// separately, from the scanned source.
     private static func knownTypeAlias(_ text: String) -> String? {
         switch text {
-        case "TimeInterval", "NSTimeInterval", "Float64":
+        // `CGFloat` is `Double` on every 64-bit Apple platform, and SE-0307 makes the conversion
+        // implicit in both directions — verified by compiling a `Double` argument into a
+        // `CGFloat` parameter rather than assumed, because the alias is conditional on word size
+        // in a way `Float64` is not.
+        case "TimeInterval", "NSTimeInterval", "Float64", "CGFloat":
             return "Double"
+
         case "Float32":
             return "Float"
+
+        // Foundation's UTF-16 code unit. Spelled all-lowercase because it comes from Objective-C,
+        // which is exactly why it does not look like a typealias and was never recognised —
+        // measured as four of ten generator-blocked stubs on one subject, every one a character
+        // predicate in a Markdown lexer.
+        case "unichar":
+            return "UInt16"
+
         default:
             return nil
         }
