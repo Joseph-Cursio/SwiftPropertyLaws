@@ -159,6 +159,7 @@ let package = Package(
             name: "PropertyLawSyntaxSupportTests",
             dependencies: [
                 "PropertyLawSyntaxSupport",
+                "PropertyLawCore",
                 .product(name: "SwiftParser", package: "swift-syntax")
             ]
         ),
@@ -204,6 +205,7 @@ let package = Package(
                 "PropertyLawMacro",
                 "PropertyLawMacroImpl",
                 "PropertyLawKit",
+                "PropertyLawCore",
                 .product(name: "PropertyBased", package: "swift-property-based"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax")
@@ -250,6 +252,7 @@ let package = Package(
             name: "PropertyLawDiscoveryToolTests",
             dependencies: [
                 "PropertyLawDiscoveryTool",
+                "PropertyLawCore",
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax")
             ]
