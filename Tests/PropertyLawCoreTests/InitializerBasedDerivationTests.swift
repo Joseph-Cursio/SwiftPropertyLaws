@@ -138,7 +138,7 @@ struct InitializerBasedDerivationTests {
             return
         }
         #expect(reason.contains("user `init"))
-        #expect(reason.contains("resolve to a recognized generator"))
+        #expect(reason.contains("`init(widget:)` takes `widget: Widget`, which resolves to no generator"))
     }
 
     @Test func arityOverLimitIsSkipped() {
