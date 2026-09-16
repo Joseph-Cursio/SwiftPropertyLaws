@@ -62,6 +62,23 @@ struct ResolutionFailureTests {
         #expect(reason.contains("Inner"))
     }
 
+    /// The owner's own reason must point at the member that failed. It used to
+    /// check members against the stdlib table only, so a custom member that
+    /// *resolved* was named instead — here, `good` rather than `bad`.
+    @Test("the owner's reason names the member that did not resolve")
+    func ownerReasonNamesUnresolvedMember() {
+        let owner = structShape("Owner", [("good", "Good"), ("bad", "Bad")])
+        let good = structShape("Good", [("n", "Int")])
+        let bad = structShape("Bad", hasUserInit: true)
+        let resolver = GeneratorResolver(types: [owner, good, bad])
+        guard case .noStrategy(let reason) = resolver.resolutionFailure(forTypeName: "Owner") else {
+            Issue.record("expected .noStrategy for Owner")
+            return
+        }
+        #expect(reason.contains("`bad: Bad` resolves to no generator"))
+        #expect(!reason.contains("`good: Good`"))
+    }
+
     @Test("two distinct types sharing a name are reported ambiguous")
     func ambiguousName() {
         let resolver = GeneratorResolver(types: [

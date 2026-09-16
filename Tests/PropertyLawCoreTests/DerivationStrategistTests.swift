@@ -212,8 +212,7 @@ struct DerivationStrategistTests {
             Issue.record("expected .todo")
             return
         }
-        #expect(reason.contains("Widget"))
-        #expect(reason.contains("no recognized stdlib raw type"))
+        #expect(reason.contains("`widget: Widget` resolves to no generator"))
     }
 
     @Test func structWithUserInitFallsThrough() {
