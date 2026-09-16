@@ -43,6 +43,10 @@ public final class GeneratorResolver {
     private let aliases: [String: String]
     private var memo: [String: DerivationStrategist.ComposedGenerator?] = [:]
 
+    /// Why each name that resolved to `nil` did so. Written wherever `resolve`
+    /// or `derive` gives up, so it is exactly as path-independent as `memo`.
+    private var failures: [String: ResolutionFailure] = [:]
+
     /// Helper `func`s built during resolution, keyed by type name.
     ///
     /// Recursive generators cannot be inlined, and the plan tree that carries
@@ -154,6 +158,15 @@ public final class GeneratorResolver {
     /// collisions rather than wonder why a type stayed `.todo`.
     public var ambiguousTypeNames: Set<String> { ambiguousNames }
 
+    /// Why `typeName` has no generator, or `nil` when it has one.
+    ///
+    /// Resolves the name first if nothing has asked yet, so the answer does not
+    /// depend on what the caller happened to derive beforehand.
+    public func resolutionFailure(forTypeName typeName: String) -> ResolutionFailure? {
+        guard resolve(typeName, visiting: []) == nil else { return nil }
+        return failures[typeName]
+    }
+
     /// Resolve closure for `DerivationStrategist.strategy(for:resolve:)` and
     /// `composedGenerator(forTypeName:resolve:)`: maps a bare custom-type
     /// spelling to its generator, recursing through the universe.
@@ -192,6 +205,7 @@ public final class GeneratorResolver {
         // it from whichever namesake happened to be scanned first.
         if ambiguousNames.contains(name) {
             memo[name] = DerivationStrategist.ComposedGenerator?.none
+            failures[name] = .ambiguous
             return nil
         }
 
@@ -201,14 +215,22 @@ public final class GeneratorResolver {
                 self.resolve(inner, visiting: visiting.union([name]))
             }
             memo[name] = result
+            if result == nil { failures[name] = .aliasUnresolved(underlying: underlying) }
             return result
         }
         guard let shape = shapesByName[name] ?? unambiguousLeafMatch(for: name) else {
-            return nil   // external / unknown / ambiguous leaf
+            // Deliberately not memoized, as before; the failure is cheap to
+            // recompute and recording it keeps the two maps' readings aligned.
+            let isAmbiguousLeaf = !name.contains(".") && ambiguousLeafNames.contains(name)
+            failures[name] = isAmbiguousLeaf ? .ambiguous : .notInUniverse
+            return nil
         }
 
         let result = derive(shape, visiting: visiting)
         memo[name] = result
+        // `derive` records under the shape's own name; a leaf reference
+        // (`Counted` for `BitSet.Counted`) is asked about under the spelling used.
+        if result == nil, let failure = failures[shape.name] { failures[name] = failure }
         return result
     }
 
@@ -231,7 +253,10 @@ public final class GeneratorResolver {
         let strategy = DerivationStrategist.strategy(for: shape) { inner in
             self.resolve(inner, visiting: nextVisiting)
         }
-        if case .todo = strategy { return nil }
+        if case .todo(let reason) = strategy {
+            failures[shape.name] = .noStrategy(reason: reason)
+            return nil
+        }
         let expression = GeneratorExpressionEmitter.expression(
             typeName: shape.name,
             strategy: strategy
@@ -248,6 +273,7 @@ public final class GeneratorResolver {
             ) else {
                 // Recursion with no wrapper to terminate it (a bare `indirect
                 // enum` payload). Unchanged behaviour: stay `.todo`.
+                failures[shape.name] = .unterminatedRecursion
                 return nil
             }
             recursiveDeclarations[shape.name] = declaration
