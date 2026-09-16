@@ -42,7 +42,11 @@ public enum MemberwiseEmitter {
         typeName: String,
         arguments: [(label: String?, expression: String)]
     ) -> String {
-        precondition(!arguments.isEmpty, "emitter requires ≥1 argument")
+        // Zero arguments: a stateless type's only value, drawn every time.
+        // See `DerivationStrategist.statelessStrategy`.
+        if arguments.isEmpty {
+            return "Gen.always(\(typeName)())"
+        }
         precondition(
             arguments.count <= DerivationStrategist.memberwiseMemberLimit,
             "emitter supports up to \(DerivationStrategist.memberwiseMemberLimit) arguments"

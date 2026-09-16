@@ -73,9 +73,15 @@ struct TodoCategoryTests {
         #expect(category == "non-struct (class/actor/enum-payload)")
     }
 
-    @Test("an empty struct keeps its own bucket")
+    /// A memberless struct with no `init` derives (`Gen.always(Subject())`), so
+    /// the bucket holds only those whose declared `init`s rule out `Subject()`.
+    /// Its reason also says "user `init`", so the arm must precede that one.
+    @Test("a memberless struct with no callable init() keeps its own bucket")
     func noStoredPropertiesCategory() {
-        #expect(reason(for: structShape([])) == "no visible stored properties")
+        let category = reason(for: structShape([], hasUserInit: true, initializers: [
+            InitializerSignature(parameters: [InitializerParameter(label: "x", typeName: "Unknown")])
+        ]))
+        #expect(category == "no stored properties, no callable init()")
     }
 
     @Test("a user init keeps its own bucket")

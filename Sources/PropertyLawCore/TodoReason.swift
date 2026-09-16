@@ -101,9 +101,15 @@ extension DerivationStrategist {
         let prefix = "Cannot derive a generator for `\(shape.name)`: "
         let suffix = " Provide `static func gen() -> Generator<\(shape.name), "
             + "some SendableSequenceType>`."
+        // Reached only when `statelessStrategy` declined, which for a declared
+        // memberless struct means its `init`s rule out `T()`. The phrase "no
+        // stored properties" is the discovery tool's category needle.
         if shape.storedMembers.isEmpty {
-            return prefix + "the type's primary declaration has no stored "
-                + "properties visible to the macro." + suffix
+            return prefix + "the type has no stored properties, so `\(shape.name)()` "
+                + "would be its only value — but its primary declaration declares "
+                + "a user `init(...)` and none is a callable, non-failable, "
+                + "non-throwing `init()`, so there is no `\(shape.name)()` to call."
+                + suffix
         }
         if shape.hasUserInit {
             return userInitTodoReason(for: shape, emissionSite: emissionSite)

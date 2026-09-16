@@ -134,6 +134,25 @@ struct EmittedExpressionCompilesTests {
         #expect(emitted.contains("Point(x: $0.0, y: $0.1)"))
     }
 
+    /// A struct with no stored properties — `.initializerBased(arguments: [])`.
+    private struct Stateless: Sendable, Equatable {
+        var name: String { "stateless" }
+    }
+
+    private static let statelessGenerator = Gen.always(Stateless())
+
+    @Test("the stateless expression compiles, runs, and matches the emitter")
+    func statelessExpressionCompilesAndMatches() {
+        var generator = Self.rng
+        let value: Stateless = Self.statelessGenerator.run(using: &generator)
+        #expect(value == Stateless())
+
+        #expect(
+            GeneratorExpressionEmitter.expression(typeName: "Stateless", strategy: .initializerBased(arguments: []))
+                == "Gen.always(Stateless())"
+        )
+    }
+
     /// A `.caseIterable` expression is most often interpolated into a
     /// *composed* position — one member of a `zip(…).map { … }` for an
     /// enclosing struct — and that is where the old spelling actually surfaced.
