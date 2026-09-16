@@ -134,18 +134,22 @@ struct ExtensionOnlyAndSendableTests {
         #expect(reason.contains("enum") == false)
     }
 
-    /// A struct genuinely declared here with an empty body is a different fact
-    /// and keeps the original message.
-    @Test("a declared but memberless struct keeps its own diagnostic")
-    func declaredMemberlessStructUnchanged() {
-        let map = scan(["S.swift": "public struct Empty: Equatable, Sendable {}"])
-        guard let entry = map.entries.first(where: { $0.typeName == "Empty" }),
-              case .todo(let reason) = entry.derivationStrategy else {
-            Issue.record("expected a .todo entry")
+    /// A struct genuinely declared here with an empty body is a different fact:
+    /// it has an `init()` and one value, so it derives, where the extension-only
+    /// shape above — empty for want of information — must not.
+    @Test("a declared but memberless struct derives, an extended one does not")
+    func declaredMemberlessStructDerives() {
+        let map = scan(["S.swift": """
+        public struct Empty: Equatable, Sendable {}
+        extension SomeForeignType: Equatable {}
+        """])
+        let empty = map.entries.first(where: { $0.typeName == "Empty" })
+        #expect(empty?.derivationStrategy == .initializerBased(arguments: []))
+        let foreign = map.entries.first(where: { $0.typeName == "SomeForeignType" })
+        guard case .todo = foreign?.derivationStrategy else {
+            Issue.record("an extension-only type must not derive `SomeForeignType()`")
             return
         }
-        #expect(reason.contains("no stored properties visible"))
-        #expect(reason.contains("only extends the type") == false)
     }
 
     @Test("hasPrimaryDeclaration reflects what the scanner saw")

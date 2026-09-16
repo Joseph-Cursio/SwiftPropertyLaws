@@ -4,6 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**A struct with no stored properties now derives as `Gen.always(T())` (2026-09-16, issue #48).** SwiftInferProperties' corpus census counted **490 memberless structs** at `.todo` across 19 repositories — stateless registrars and strategy objects. `memberwiseStrategy` had declined them as "pathological", which conflated two cases: a constant generator on a type *with* state samples one value from a large space (why `isDeclined` still refuses a zero-parameter or capacity-only init), while a type with no stored state has exactly one value, so the constant is the whole domain.
+
+**Carried as `.initializerBased(arguments: [])`, not a new case** — it is an initializer lift with zero arguments, and SwiftInferProperties switches exhaustively over `DerivationStrategy` in two places.
+
+**The admission condition is the risk, and it forced a fix one layer down first.** `MemberBlockInspector` skipped every binding with an accessor block, so `var count: Int { didSet {…} }` vanished from the shape while the synthesized init still took it; tuple-pattern bindings vanished the same way. An empty member list therefore did not mean stateless, and `T()` would not compile (checked with `swiftc -typecheck`). That was already a live bug for the memberwise path, which emitted a call missing the observed argument. Beyond that, admission requires a scanned primary declaration (an extension-only shape's `kind` is a default and may be an enum), `kind == .struct` (a class inherits its superclass's designated inits, and a superclass is indistinguishable from a protocol in the inheritance clause), and either no `init` in the body or a callable, non-failable, non-throwing `init()`. **The 174 classes and 270 namespace enums in the census are deliberately not admitted.** Defaulted-parameter inits are not admitted either — the shape records no defaults.
+
+Mutation-tested: 8 mutants across the guards, 8 killed. **Not done, and offered separately in the issue:** `GeneratorResolver.derive` still discards the `.todo` reason (`if case .todo = strategy { return nil }`), so a consumer must re-infer why a nested type did not resolve.
+
+1134 tests; swiftlint unchanged at 9.
+
 **Two typealiases that were blocking a quarter of a subject's generators (2026-09-13).** `knownTypeAlias` gained `unichar → UInt16` and `CGFloat → Double`.
 
 **`unichar` is spelled all-lowercase because it comes from Objective-C**, which is exactly why it does not read as a typealias and was never recognised. Measured downstream: **four of ten generator-blocked stubs on one subject**, every one a character predicate in a Markdown lexer, each emitting `unichar.gen()` and a deliberate compile error.

@@ -46,17 +46,16 @@ struct DerivationStrategistTests {
     }
 
     @Test func caseIterableStructDoesNotDeriveAsCaseIterable() {
-        // CaseIterable is meaningless on a struct; falls through to .todo.
+        // CaseIterable is meaningless on a struct. This memberless fixture now
+        // derives as a stateless type (`Gen.always(Foo())`), which is fine — the
+        // claim under test is only that `.caseIterable` is never chosen for it.
         let shape = TypeShape(
             name: "Foo",
             kind: .struct,
             inheritedTypes: ["CaseIterable"],
             hasUserGen: false
         )
-        guard case .todo = DerivationStrategist.strategy(for: shape) else {
-            Issue.record("expected .todo for CaseIterable struct")
-            return
-        }
+        #expect(DerivationStrategist.strategy(for: shape) != .caseIterable)
     }
 
     // MARK: - Strategy C: RawRepresentable enums
@@ -108,15 +107,16 @@ struct DerivationStrategistTests {
 
     // MARK: - Strategy D: .todo fallback
 
-    @Test func emptyStructFallsThroughToTodo() {
-        // `TypeShape.storedMembers` defaults to `[]`. A struct with no
-        // visible stored properties has nothing to compose memberwise —
-        // strategist falls through to `.todo` with an explanation.
+    @Test func emptyStructWithOnlyArgumentInitsFallsThroughToTodo() {
+        // A struct with no stored properties derives as `Gen.always(T())` —
+        // unless its declared inits suppress `init()`. Then there is nothing to
+        // call, and the strategist says so. See `StatelessDerivationTests`.
         let shape = TypeShape(
             name: "Coordinate",
             kind: .struct,
             inheritedTypes: ["Equatable", "Hashable"],
-            hasUserGen: false
+            hasUserGen: false,
+            hasUserInit: true
         )
         guard case .todo(let reason) = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected .todo")
@@ -124,6 +124,7 @@ struct DerivationStrategistTests {
         }
         #expect(reason.contains("Coordinate"))
         #expect(reason.contains("no stored properties"))
+        #expect(reason.contains("no `Coordinate()` to call"))
     }
 
     // MARK: - Strategy 3: memberwise-Arbitrary (PRD §5.7)

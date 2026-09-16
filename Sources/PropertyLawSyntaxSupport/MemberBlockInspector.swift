@@ -15,29 +15,71 @@ public enum MemberBlockInspector {
 
     /// Stored properties declared in `memberBlock`, in source order.
     /// Returns only `let`/`var` declarations with explicit type
-    /// annotations and no accessor block (`{ get/set }` style computed
-    /// properties are skipped). Multi-binding lines like `let x: Int, y: Int`
-    /// produce one entry per binding.
+    /// annotations; computed properties (`{ get/set }` or a bare getter body)
+    /// are skipped. Multi-binding lines like `let x: Int, y: Int` produce one
+    /// entry per binding, and a tuple pattern `let (x, y): (Int, Int)` one
+    /// entry per element.
+    ///
+    /// **An observed property is stored, and is recorded.** `var count: Int
+    /// { didSet { … } }` carries an accessor block, and an earlier reading
+    /// skipped every binding that did — so the property vanished from the
+    /// shape while the synthesized memberwise initializer still took it. The
+    /// memberwise strategy then emitted `Observed()` for a type whose only
+    /// initializer is `Observed(count:)`, and an empty member list reads as a
+    /// stateless type, which a no-argument generator would construct the same
+    /// broken way. Checked with `swiftc -typecheck` on 2026-09-16: *"missing
+    /// argument for parameter 'count' in call"*. Tuple patterns were dropped
+    /// the same way and fail the same way.
     public static func storedMembers(in memberBlock: MemberBlockSyntax) -> [StoredMember] {
         var result: [StoredMember] = []
         for member in memberBlock.members {
             guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { continue }
             guard !isStaticOrClass(varDecl) else { continue }
             for binding in varDecl.bindings {
-                if binding.accessorBlock != nil { continue }
-                guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self) else {
+                if let accessorBlock = binding.accessorBlock, !isObserversOnly(accessorBlock) {
                     continue
                 }
                 guard let typeAnnotation = binding.typeAnnotation else { continue }
-                let typeName = typeAnnotation.type.trimmedDescription
-                result.append(StoredMember(
-                    name: identifier.identifier.text,
-                    typeName: typeName,
-                    accessLevel: accessLevel(of: varDecl)
-                ))
+                for (name, typeName) in namedTypes(of: binding.pattern, annotated: typeAnnotation.type) {
+                    result.append(StoredMember(
+                        name: name,
+                        typeName: typeName,
+                        accessLevel: accessLevel(of: varDecl)
+                    ))
+                }
             }
         }
         return result
+    }
+
+    /// `willSet` / `didSet` only — the accessor block of a stored property.
+    /// A bare getter body, or any `get` / `set` / `_read` / `_modify` accessor,
+    /// makes the property computed.
+    private static func isObserversOnly(_ accessorBlock: AccessorBlockSyntax) -> Bool {
+        guard case .accessors(let accessors) = accessorBlock.accessors else { return false }
+        return accessors.allSatisfy { accessor in
+            accessor.accessorSpecifier.tokenKind == .keyword(.willSet)
+                || accessor.accessorSpecifier.tokenKind == .keyword(.didSet)
+        }
+    }
+
+    /// The `(name, type)` pairs a binding pattern declares against its type
+    /// annotation. A tuple pattern pairs element-wise with a tuple type of the
+    /// same arity, recursively; a part that doesn't line up (a wildcard, a
+    /// mismatched arity) contributes nothing rather than a guessed pairing.
+    private static func namedTypes(
+        of pattern: PatternSyntax,
+        annotated type: TypeSyntax
+    ) -> [(name: String, typeName: String)] {
+        if let identifier = pattern.as(IdentifierPatternSyntax.self) {
+            return [(identifier.identifier.text, type.trimmedDescription)]
+        }
+        guard let tuplePattern = pattern.as(TuplePatternSyntax.self),
+              let tupleType = type.as(TupleTypeSyntax.self),
+              tuplePattern.elements.count == tupleType.elements.count else { return [] }
+        return zip(tuplePattern.elements, tupleType.elements).flatMap { patternElement, typeElement in
+            namedTypes(of: patternElement.pattern, annotated: typeElement.type)
+        }
     }
 
     /// True when the type's primary declaration body contains any `init`.

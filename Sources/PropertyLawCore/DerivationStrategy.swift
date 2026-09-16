@@ -35,6 +35,12 @@ public enum DerivationStrategy: Sendable, Equatable {
     /// emitter instead composes per-argument generators and lifts through
     /// that init: `zip(...).map { Type(label0: $0.0, ...) }`, honoring each
     /// argument's call label (or omitting it for an unlabeled `_` parameter).
+    ///
+    /// An **empty** argument list is a struct with no stored properties and a
+    /// callable `init()` (see `statelessStrategy`), emitted as
+    /// `Gen.always(T())`. Carried by this case rather than a new one because
+    /// it is exactly an initializer lift with zero arguments — and a new case
+    /// would break every downstream exhaustive `switch` over this enum.
     case initializerBased(arguments: [InitArgument])
 
     /// Tier 4 — an enum whose every case's associated values all resolve to
@@ -169,6 +175,9 @@ public enum DerivationStrategist {
         ) {
             return initBased
         }
+        if let stateless = statelessStrategy(for: shape, emissionSite: emissionSite) {
+            return stateless
+        }
         // **Case enumeration BEFORE `rawRepresentable`, and this order is
         // load-bearing.**
         //
@@ -225,8 +234,8 @@ public enum DerivationStrategist {
     /// Applies only to structs (no class/actor support yet — both can
     /// have non-memberwise inits or reference semantics that complicate
     /// the contract). Falls through when:
-    /// - The type has no stored members (would produce `Gen.always(Self())`,
-    ///   pathological for property-based testing).
+    /// - The type has no stored members — `statelessStrategy` handles those,
+    ///   as `Gen.always(T())`.
     /// - The type declares any user `init` in its primary body (Swift
     ///   suppresses the synthesized memberwise init in that case).
     /// - Any member's type doesn't resolve to a recognized `RawType`.

@@ -214,7 +214,7 @@ struct PropertyLawDiscoveryTool {
     private static let categoryTable: [(needle: String, category: String)] = [
         ("only extends the type", "declaration not in this target"),
         ("structs only", "non-struct (class/actor/enum-payload)"),
-        ("no stored properties", "no visible stored properties"),
+        ("no stored properties", "no stored properties, no callable init()"),
         ("every initializer the type declares is",
          "access-restricted initializer (private/fileprivate)"),
         ("user `init", "user-defined init"),
