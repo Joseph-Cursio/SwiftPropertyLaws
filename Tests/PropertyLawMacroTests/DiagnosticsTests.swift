@@ -161,10 +161,13 @@ struct DiagnosticsTests {
                 DiagnosticSpec(
                     message: """
                         Cannot derive a generator for `Doc`: stored property \
-                        `widget: Widget` has no recognized stdlib raw type \
-                        (memberwise derivation supports Int/String/Bool/Double/Float \
-                        and the fixed-width integer family). Provide `static func \
-                        gen() -> Generator<Doc, some SendableSequenceType>`.
+                        `widget: Widget` resolves to no generator — `Widget` is not \
+                        a recognized stdlib type (memberwise derivation supports \
+                        Int/String/Bool/Double/Float, the fixed-width integer family, \
+                        Character, and Date, plus optionals, arrays, sets, and \
+                        dictionaries of those), and no generator could be derived for \
+                        it from the types in scope. Provide `static func gen() -> \
+                        Generator<Doc, some SendableSequenceType>`.
                         """,
                     line: 1,
                     column: 1,

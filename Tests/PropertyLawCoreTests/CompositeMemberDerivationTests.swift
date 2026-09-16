@@ -186,8 +186,7 @@ struct CompositeMemberDerivationTests {
             Issue.record("expected .todo for unresolved composite member")
             return
         }
-        #expect(reason.contains("[Widget]"))
-        #expect(reason.contains("no recognized stdlib raw type"))
+        #expect(reason.contains("`links: [Widget]` resolves to no generator"))
     }
 
     // MARK: - Emitter end-to-end

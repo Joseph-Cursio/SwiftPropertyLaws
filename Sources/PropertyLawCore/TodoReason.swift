@@ -30,7 +30,7 @@ extension DerivationStrategist {
         case .enum:
             return enumTodoReason(for: shape, resolve: resolve)
         case .struct:
-            return structTodoReason(for: shape, emissionSite: emissionSite)
+            return structTodoReason(for: shape, emissionSite: emissionSite, resolve: resolve)
         case .class, .actor:
             return "Cannot derive a generator for `\(shape.name)`: memberwise "
                 + "derivation supports structs only (class/actor reference "
@@ -96,7 +96,8 @@ extension DerivationStrategist {
     /// `gen()` or restructure the type.
     private static func structTodoReason(
         for shape: TypeShape,
-        emissionSite: EmissionSite
+        emissionSite: EmissionSite,
+        resolve: CustomTypeResolver
     ) -> String {
         let prefix = "Cannot derive a generator for `\(shape.name)`: "
         let suffix = " Provide `static func gen() -> Generator<\(shape.name), "
@@ -125,15 +126,24 @@ extension DerivationStrategist {
             .firstBlockingMemberwiseDerivation(from: emissionSite) {
             return memberAccessTodoReason(for: shape, blocked: blocked, emissionSite: emissionSite)
         }
-        if let unknown = shape.storedMembers.first(where: {
+        // **Consults `resolve`, the same rule `enumTodoReason` follows.** This
+        // arm used to test members against the stdlib table alone, so under the
+        // discovery plugin's whole-module resolver it named the first *custom*
+        // member — which may well have resolved — rather than the one that did
+        // not, and called it a missing "stdlib raw type" either way. A reader
+        // then inspected a type that was fine.
+        if let unresolved = shape.storedMembers.first(where: {
             RawType(typeName: $0.typeName) == nil
-                && memberGenerator(forTypeName: $0.typeName) == nil
+                && composedGenerator(forTypeName: $0.typeName, resolve: resolve) == nil
         }) {
-            return prefix + "stored property `\(unknown.name): "
-                + "\(unknown.typeName)` has no recognized stdlib raw type "
+            return prefix + "stored property `\(unresolved.name): "
+                + "\(unresolved.typeName)` resolves to no generator — "
+                + "`\(unresolved.typeName)` is not a recognized stdlib type "
                 + "(memberwise derivation supports Int/String/Bool/Double/"
                 + "Float, the fixed-width integer family, Character, and Date, "
-                + "plus optionals, arrays, sets, and dictionaries of those)." + suffix
+                + "plus optionals, arrays, sets, and dictionaries of those), "
+                + "and no generator could be derived for it from the types in "
+                + "scope." + suffix
         }
         return prefix + "memberwise derivation didn't apply." + suffix
     }

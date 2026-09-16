@@ -183,7 +183,7 @@ struct AccessLevelDerivationTests {
             return
         }
         #expect(reason.contains("`secret`"))
-        #expect(!reason.contains("no recognized stdlib raw type"))
+        #expect(!reason.contains("resolves to no generator"))
     }
 
     // MARK: - The access model itself
