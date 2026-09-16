@@ -113,7 +113,7 @@ extension DerivationStrategist {
                 + suffix
         }
         if shape.hasUserInit {
-            return userInitTodoReason(for: shape, emissionSite: emissionSite)
+            return userInitTodoReason(for: shape, emissionSite: emissionSite, resolve: resolve)
         }
         if shape.storedMembers.count > memberwiseMemberLimit {
             return prefix + "the type has \(shape.storedMembers.count) stored "
@@ -152,7 +152,8 @@ extension DerivationStrategist {
     /// access arms took it past the function-body-length lint.
     private static func userInitTodoReason(
         for shape: TypeShape,
-        emissionSite: EmissionSite
+        emissionSite: EmissionSite,
+        resolve: CustomTypeResolver
     ) -> String {
         let prefix = "Cannot derive a generator for `\(shape.name)`: "
         let gen = " Provide `static func gen() -> Generator<\(shape.name), "
@@ -173,10 +174,35 @@ extension DerivationStrategist {
                 + "`static func gen() -> Generator<\(shape.name), "
                 + "some SendableSequenceType>`."
         }
+        // The initializers `initializerBasedStrategy` actually tried, in the
+        // order it tried them — so the parameter named is the one that stopped
+        // the first candidate, not merely some parameter that fails in isolation.
+        let candidates = shape.initializers.filter {
+            !isDeclined($0, in: shape, from: emissionSite)
+        }
+        for initializer in candidates {
+            if let unresolved = initializer.parameters.first(where: {
+                composedGenerator(forTypeName: $0.typeName, resolve: resolve) == nil
+            }) {
+                return prefix + "no user `init(...)` derives — "
+                    + "`\(signature(of: initializer))` takes "
+                    + "`\(unresolved.label ?? "_"): \(unresolved.typeName)`, which "
+                    + "resolves to no generator." + gen
+            }
+        }
+        // Every initializer was declined before its parameters were consulted,
+        // so a sentence about parameter types would point at types that are fine.
         return prefix + "the type's user `init(...)` declarations don't "
-            + "support derivation — no non-failable, non-throwing "
-            + "initializer (with 1–\(memberwiseMemberLimit) parameters) has "
-            + "all parameter types resolve to a recognized generator." + gen
+            + "support derivation — each is failable, throwing, "
+            + "access-restricted, parameterless, over "
+            + "\(memberwiseMemberLimit) parameters, or unsafe to call with "
+            + "independently drawn arguments (a capacity hint, a "
+            + "private-storage label, or a stated precondition)." + gen
+    }
+
+    /// `init(registry:_:)` — the spelling a reader searches the source for.
+    private static func signature(of initializer: InitializerSignature) -> String {
+        "init(" + initializer.parameters.map { ($0.label ?? "_") + ":" }.joined() + ")"
     }
 
     /// The restricted-stored-property branch, split out for the same reason.

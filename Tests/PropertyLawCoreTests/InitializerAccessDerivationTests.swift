@@ -121,8 +121,8 @@ struct InitializerAccessDerivationTests {
     }
 
     /// When only *some* initializers are restricted the failure is something
-    /// else, and the catch-all message is the honest one.
-    @Test("a mixed set falls back to the general initializer reason")
+    /// else: here the reachable initializer's parameter does not resolve.
+    @Test("a mixed set reports the reachable initializer's unresolved parameter")
     func mixedSetUsesGeneralReason() {
         let subject = shape([
             initializer(["a"], .private),
@@ -136,7 +136,7 @@ struct InitializerAccessDerivationTests {
             return
         }
         #expect(reason.contains("every initializer the type declares is") == false)
-        #expect(reason.contains("don't support derivation"))
+        #expect(reason.contains("`init(x:)` takes `x: Unresolvable`, which resolves to no generator"))
     }
 
     /// `takesPrivateStorage` and this rule catch different things and both
