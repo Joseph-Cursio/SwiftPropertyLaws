@@ -112,6 +112,49 @@ extension DerivationStrategist {
         return leafGenerator(forTypeName: text, resolve: resolve)
     }
 
+    /// The innermost spelling inside `typeName` that resolves to no generator —
+    /// `Widget` for `[String: [Widget]]` — or `nil` when the whole spelling
+    /// resolves. A bare leaf that fails is its own answer.
+    ///
+    /// **`composedGenerator` stays the judge of what resolves**; this only walks
+    /// the same decomposition to find where it stopped. If a composite form is
+    /// added there and not to `componentTypeNames`, the answer degrades to the
+    /// whole spelling — less specific, never wrong.
+    static func firstUnresolvedLeaf(
+        inTypeName typeName: String,
+        resolve: CustomTypeResolver
+    ) -> String? {
+        let text = trimmed(typeName)
+        guard composedGenerator(forTypeName: text, resolve: resolve) == nil else { return nil }
+        for component in componentTypeNames(of: text) {
+            if let leaf = firstUnresolvedLeaf(inTypeName: component, resolve: resolve) {
+                return leaf
+            }
+        }
+        return text
+    }
+
+    /// The type spellings a composite is built from, in the order
+    /// `composedGenerator` resolves them; empty for a leaf.
+    private static func componentTypeNames(of text: String) -> [String] {
+        if text.hasSuffix("?") { return [String(text.dropLast())] }
+        if text.hasPrefix("["), text.hasSuffix("]") {
+            let body = String(text.dropFirst().dropLast())
+            if let colon = topLevelSeparatorIndex(in: body, separator: ":") {
+                return [String(body[..<colon]), String(body[body.index(after: colon)...])]
+            }
+            return [body]
+        }
+        for name in ["Optional", "Array", "ArraySlice", "Set"] {
+            if let inner = genericArgument(of: text, named: name) { return [inner] }
+        }
+        if let inner = genericArgument(of: text, named: "Dictionary"),
+           let comma = topLevelSeparatorIndex(in: inner, separator: ",") {
+            return [String(inner[..<comma]), String(inner[inner.index(after: comma)...])]
+        }
+        return []
+    }
+
     /// Recurse into `inner`, then wrap its plan in the given collection node
     /// (`.optional` / `.array` / `.set`).
     private static func wrap(

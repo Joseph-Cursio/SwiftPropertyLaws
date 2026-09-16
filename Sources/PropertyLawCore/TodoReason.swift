@@ -82,8 +82,8 @@ extension DerivationStrategist {
             for value in enumCase.associatedValues
             where composedGenerator(forTypeName: value.typeName, resolve: resolve) == nil {
                 return prefix + "case `\(enumCase.name)` has an associated value "
-                    + "of type `\(value.typeName)`, which resolves to no generator."
-                    + gen
+                    + "of type `\(value.typeName)`, which resolves to no generator"
+                    + leafClause(for: value.typeName, resolve: resolve) + "." + gen
             }
         }
         return prefix + "the enum's cases could not be enumerated, and it is "
@@ -136,9 +136,14 @@ extension DerivationStrategist {
             RawType(typeName: $0.typeName) == nil
                 && composedGenerator(forTypeName: $0.typeName, resolve: resolve) == nil
         }) {
+            // Name the leaf, not the composite: `[String: [Widget]]` is fine
+            // around a `Widget` that is not.
+            let leaf = firstUnresolvedLeaf(inTypeName: unresolved.typeName, resolve: resolve)
+                ?? unresolved.typeName
+            let within = leaf == unresolved.typeName ? "" : ", inside `\(unresolved.typeName)`,"
             return prefix + "stored property `\(unresolved.name): "
                 + "\(unresolved.typeName)` resolves to no generator — "
-                + "`\(unresolved.typeName)` is not a recognized stdlib type "
+                + "`\(leaf)`\(within) is not a recognized stdlib type "
                 + "(memberwise derivation supports Int/String/Bool/Double/"
                 + "Float, the fixed-width integer family, Character, and Date, "
                 + "plus optionals, arrays, sets, and dictionaries of those), "
@@ -187,7 +192,8 @@ extension DerivationStrategist {
                 return prefix + "no user `init(...)` derives — "
                     + "`\(signature(of: initializer))` takes "
                     + "`\(unresolved.label ?? "_"): \(unresolved.typeName)`, which "
-                    + "resolves to no generator." + gen
+                    + "resolves to no generator"
+                    + leafClause(for: unresolved.typeName, resolve: resolve) + "." + gen
             }
         }
         // Every initializer was declined before its parameters were consulted,
@@ -198,6 +204,14 @@ extension DerivationStrategist {
             + "\(memberwiseMemberLimit) parameters, or unsafe to call with "
             + "independently drawn arguments (a capacity hint, a "
             + "private-storage label, or a stated precondition)." + gen
+    }
+
+    /// ` because `Widget` does not` when a composite failed on an inner leaf;
+    /// empty when the spelling is itself the leaf, so a bare type reads as before.
+    private static func leafClause(for typeName: String, resolve: CustomTypeResolver) -> String {
+        guard let leaf = firstUnresolvedLeaf(inTypeName: typeName, resolve: resolve),
+              leaf != typeName else { return "" }
+        return " because `\(leaf)` does not"
     }
 
     /// `init(registry:_:)` — the spelling a reader searches the source for.
