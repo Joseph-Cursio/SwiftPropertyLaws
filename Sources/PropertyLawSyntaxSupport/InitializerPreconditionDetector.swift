@@ -80,7 +80,7 @@ public enum InitializerPreconditionDetector {
         return containsSelfInitCall(Syntax(body))
     }
 
-    private static func containsSelfInitCall(_ node: Syntax) -> Bool {
+    static func containsSelfInitCall(_ node: Syntax) -> Bool {
         if let call = node.as(FunctionCallExprSyntax.self),
            let member = call.calledExpression.as(MemberAccessExprSyntax.self),
            member.declName.baseName.text == "init" {
@@ -92,7 +92,7 @@ public enum InitializerPreconditionDetector {
         return false
     }
 
-    private static func containsPreconditionCall(_ node: Syntax) -> Bool {
+    static func containsPreconditionCall(_ node: Syntax) -> Bool {
         if let call = node.as(FunctionCallExprSyntax.self),
            let callee = call.calledExpression.as(DeclReferenceExprSyntax.self),
            preconditionFunctions.contains(callee.baseName.text) {
