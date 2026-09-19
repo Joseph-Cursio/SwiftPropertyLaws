@@ -184,7 +184,7 @@ enum RoundTripSuggester {
     /// Sort: per-type scopes first (alphabetical by type name), then
     /// module scope, then forward-name asc, then backward-name asc.
     /// Same lex-order pattern as `AdvisorySuggester` for consistency.
-    private static func compare(
+    static func compare(
         _ lhs: RoundTripSuggestion,
         _ rhs: RoundTripSuggestion
     ) -> Bool {

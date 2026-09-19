@@ -136,7 +136,7 @@ extension DerivationStrategist {
 
     /// The type spellings a composite is built from, in the order
     /// `composedGenerator` resolves them; empty for a leaf.
-    private static func componentTypeNames(of text: String) -> [String] {
+    static func componentTypeNames(of text: String) -> [String] {
         if text.hasSuffix("?") { return [String(text.dropLast())] }
         if text.hasPrefix("["), text.hasSuffix("]") {
             let body = String(text.dropFirst().dropLast())
@@ -326,7 +326,7 @@ extension DerivationStrategist {
     }
 
     /// Stdlib-only whitespace trim (avoids a Foundation dependency).
-    private static func trimmed(_ value: String) -> String {
+    static func trimmed(_ value: String) -> String {
         var sub = Substring(value)
         while let first = sub.first, first == " " || first == "\t" || first == "\n" {
             sub = sub.dropFirst()

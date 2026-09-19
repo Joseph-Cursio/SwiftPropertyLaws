@@ -57,7 +57,7 @@ enum SendableProtocols {
 
     /// `@unchecked Sendable` and `any Sendable` reduce to `Sendable`; generic
     /// arguments and whitespace are dropped so `Foo<Bar>` compares as `Foo`.
-    private static func normalized(_ name: String) -> String {
+    static func normalized(_ name: String) -> String {
         var text = name
         for prefix in ["@unchecked ", "@retroactive ", "any ", "some "] {
             while text.hasPrefix(prefix) { text.removeFirst(prefix.count) }
