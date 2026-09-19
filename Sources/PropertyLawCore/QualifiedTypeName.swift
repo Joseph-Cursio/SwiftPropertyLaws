@@ -38,7 +38,7 @@ public enum QualifiedTypeName {
         return out
     }
 
-    private static func isIdentifierSafe(_ character: Character) -> Bool {
+    static func isIdentifierSafe(_ character: Character) -> Bool {
         character == "_" || character.isLetter || character.isNumber
     }
 }

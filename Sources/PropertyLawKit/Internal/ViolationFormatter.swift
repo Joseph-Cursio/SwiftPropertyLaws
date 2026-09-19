@@ -78,7 +78,7 @@ internal enum ViolationFormatter {
     /// Render up to a small cap of near-miss entries. Skipped entirely when
     /// `nearMisses == nil` (the law doesn't track them) and rendered as a
     /// "no near-misses" line when the kit tracked but found none.
-    private static func nearMissLines(_ nearMisses: [String]?) -> [String]? {
+    static func nearMissLines(_ nearMisses: [String]?) -> [String]? {
         guard let nearMisses else { return nil }
         if nearMisses.isEmpty {
             return ["  Near-misses: none."]
@@ -112,7 +112,7 @@ internal enum ViolationFormatter {
         return ["  Coverage: classes=\(classes), boundaries=\(boundaries)"]
     }
 
-    private static func formatBuckets(_ buckets: [String: Int]) -> String {
+    static func formatBuckets(_ buckets: [String: Int]) -> String {
         if buckets.isEmpty { return "{}" }
         // Sorted by key for stable output across runs.
         let parts = buckets
