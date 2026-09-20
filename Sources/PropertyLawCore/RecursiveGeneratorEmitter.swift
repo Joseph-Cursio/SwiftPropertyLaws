@@ -154,7 +154,7 @@ public enum RecursiveGeneratorEmitter {
     }
 
     /// Re-indent a rendered expression to sit under `return ` inside the func.
-    private static func indented(_ expression: String) -> String {
+    static func indented(_ expression: String) -> String {
         expression
             .split(separator: "\n", omittingEmptySubsequences: false)
             .enumerated()

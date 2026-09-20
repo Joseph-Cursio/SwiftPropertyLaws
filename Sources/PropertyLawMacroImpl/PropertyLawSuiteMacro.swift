@@ -138,7 +138,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
         /// method. Misses extension-defined `gen()` (the macro can't see
         /// siblings) — users who want to override a derivable type's
         /// auto-generator must put `gen()` in the type's primary body.
-        private static func hasGenMethod(in memberBlock: MemberBlockSyntax) -> Bool {
+        static func hasGenMethod(in memberBlock: MemberBlockSyntax) -> Bool {
             for member in memberBlock.members {
                 guard let funcDecl = member.decl.as(FunctionDeclSyntax.self) else { continue }
                 guard funcDecl.name.text == "gen" else { continue }

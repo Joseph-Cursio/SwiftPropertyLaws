@@ -39,7 +39,7 @@ enum RoundTripFinder {
     /// Build a `FunctionSignature` from a `FunctionDeclSyntax`. Returns
     /// nil for declarations M5 deliberately skips (currently: any
     /// generic function — type-binding inference is out of scope).
-    private static func signature(from funcDecl: FunctionDeclSyntax) -> FunctionSignature? {
+    static func signature(from funcDecl: FunctionDeclSyntax) -> FunctionSignature? {
         if funcDecl.genericParameterClause != nil { return nil }
 
         let isStatic = funcDecl.modifiers.contains { mod in

@@ -55,7 +55,7 @@ public enum MemberBlockInspector {
     /// `willSet` / `didSet` only — the accessor block of a stored property.
     /// A bare getter body, or any `get` / `set` / `_read` / `_modify` accessor,
     /// makes the property computed.
-    private static func isObserversOnly(_ accessorBlock: AccessorBlockSyntax) -> Bool {
+    static func isObserversOnly(_ accessorBlock: AccessorBlockSyntax) -> Bool {
         guard case .accessors(let accessors) = accessorBlock.accessors else { return false }
         return accessors.allSatisfy { accessor in
             accessor.accessorSpecifier.tokenKind == .keyword(.willSet)
@@ -195,7 +195,7 @@ public enum MemberBlockInspector {
         return .implicit
     }
 
-    private static func isStaticOrClass(_ decl: VariableDeclSyntax) -> Bool {
+    static func isStaticOrClass(_ decl: VariableDeclSyntax) -> Bool {
         decl.modifiers.contains { mod in
             mod.name.tokenKind == .keyword(.static) || mod.name.tokenKind == .keyword(.class)
         }
