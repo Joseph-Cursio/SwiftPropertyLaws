@@ -68,7 +68,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
     /// One of the four type-decl shapes a peer macro can attach to. Bundles
     /// the type name + inheritance clause + member-block info so the rest
     /// of the expansion is kind-agnostic.
-    private struct TargetDecl {
+    struct TargetDecl {
         let name: String
         let kind: TypeShape.Kind
         let inheritanceClause: InheritanceClauseSyntax?
