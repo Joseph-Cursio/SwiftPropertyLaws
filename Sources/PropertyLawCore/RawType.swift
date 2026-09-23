@@ -137,6 +137,13 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     /// `swift-property-based` 1.2.x (`Gen.frequency` / `Gen.element`); the
     /// consumer inlines it into a stub that imports `PropertyBased`.
     public var edgeBiasedGeneratorExpression: String? {
+        edgeBiasedGeneratorExpression(subjectTokens: [])
+    }
+
+    /// v4.8 — ``edgeBiasedGeneratorExpression`` with the **subject's own** string literals mixed
+    /// into its alphanumeric baseline. `subjectTokens: []` is byte-identical to the property.
+    /// See ``subjectBaseline(_:)`` for what the tokens are for and why they go where they go.
+    public func edgeBiasedGeneratorExpression(subjectTokens: [String]) -> String? {
         guard self == .string else { return nil }
         let edges = RawType.stringEdgeCases
             .map(RawType.swiftStringLiteral)
@@ -144,7 +151,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         let token = "Gen<String?>.element(of: [\(edges)] as [String]).map { $0! }"
         let filler = "Gen<Character>.letterOrNumber.string(of: 0...4)"
         return "Gen.frequency("
-            + "(3.0, Gen<Character>.letterOrNumber.string(of: 0...8)), "
+            + "(3.0, \(RawType.subjectBaseline(subjectTokens))), "
             + "(1.0, \(token)), "
             + "(3.0, \(token).map { $0 + $0 }), "
             + "(1.0, zip(\(token), \(filler)).map { $0 + $1 })"
@@ -198,18 +205,60 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     /// assumption is invisible to a generator capped near 16. The alphanumeric baseline is kept
     /// so the run still spends most of its trials on ordinary input.
     public var hostileGeneratorExpression: String? {
+        hostileGeneratorExpression(subjectTokens: [])
+    }
+
+    /// v4.8 — ``hostileGeneratorExpression`` with the **subject's own** string literals mixed into
+    /// its alphanumeric baseline. `subjectTokens: []` is byte-identical to the property.
+    public func hostileGeneratorExpression(subjectTokens: [String]) -> String? {
         guard self == .string else { return nil }
         let hostile = RawType.hostileTokens
             .map(RawType.swiftStringLiteral)
             .joined(separator: ", ")
         let token = "Gen<String?>.element(of: [\(hostile)] as [String]).map { $0! }"
         return "Gen.frequency("
-            + "(3.0, Gen<Character>.letterOrNumber.string(of: 0...8)), "
+            + "(3.0, \(RawType.subjectBaseline(subjectTokens))), "
             + "(3.0, \(token)), "
             + "(2.0, \(token).map { $0 + $0 }), "
             + "(1.0, Gen<Character>.latin1.string(of: 0...24)), "
             + "(1.0, Gen<Character>.ascii.string(of: 0...120))"
             + ")"
+    }
+
+    /// Most subject tokens a generator takes; a caller's longer list is truncated, not rejected.
+    static let subjectTokenCap = 16
+
+    /// The alphanumeric baseline arm, mixed with the SUBJECT's own string literals when there are any.
+    ///
+    /// ## What the curated lists cannot know
+    ///
+    /// ``stringEdgeCases`` and ``hostileTokens`` are tuned per LAW; neither knows the function under
+    /// test. A parser's traps live in its own delimiters and an escaper's false laws in its own
+    /// entities, and those are the string literals in its body. **Measured by SwiftInferProperties
+    /// (`docs/plans/subject-literal-generation-scope.md`, `docs/measurements/funnel-mutation-check.md`
+    /// §8):** mixing them in refuted 7 of 52 passing behaviour laws — all false laws a narrow
+    /// generator hid (`&` → `&amp;` → `&amp;amp;`) — and, over 83 totality laws, hung one on a REAL
+    /// defect: a Markdown block parser that looped forever on its own `"#"`, freezing the app it
+    /// ships in on 29 of its bundled documents.
+    ///
+    /// ## Why the baseline arm, and not the token list
+    ///
+    /// Adding subject tokens to the curated list would dilute every curated token's share of draws,
+    /// including the doubled `"# "` the edge-biased generator exists to reach. Replacing the
+    /// baseline arm with *baseline, a subject token alone, a subject token embedded in random text*
+    /// takes its share only from alphanumerics — and is **exactly the configuration that was
+    /// measured**, so the numbers above are this code's. With no tokens it is the original arm,
+    /// byte for byte.
+    static func subjectBaseline(_ subjectTokens: [String]) -> String {
+        let baseline = "Gen<Character>.letterOrNumber.string(of: 0...8)"
+        var seen: Set<String> = []
+        let tokens = subjectTokens.filter { !$0.isEmpty && seen.insert($0).inserted }.prefix(subjectTokenCap)
+        guard !tokens.isEmpty else { return baseline }
+        let literals = tokens.map(RawType.swiftStringLiteral).joined(separator: ", ")
+        let subject = "Gen<String?>.element(of: [\(literals)] as [String]).map { $0! }"
+        let short = "Gen<Character>.letterOrNumber.string(of: 0...4)"
+        let embedded = "zip(zip(\(short), \(subject)).map { $0 + $1 }, \(short)).map { $0 + $1 }"
+        return "Gen.frequency((2.0, \(baseline)), (1.0, \(subject)), (1.0, \(embedded)))"
     }
 
     /// Tokens a **parser** is most likely to trap on: the delimiters that carry structure, the
