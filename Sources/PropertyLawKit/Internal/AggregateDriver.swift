@@ -42,18 +42,10 @@ internal enum AggregateDriver {
         check: @Sendable (inout Xoshiro, Int) async throws -> Outcome
     ) async -> CheckResult {
         let environment = Environment.current(backend: options.backend)
-        if let skip = LawSuppressionPolicy.match(
-            protocolLaw: protocolLaw,
-            kind: .skip,
-            in: options.suppressions
+        if let early = CheckPreflight.earlyResult(
+            protocolLaw: protocolLaw, tier: tier, options: options, environment: environment
         ) {
-            return LawSuppressionPolicy.suppressedResult(
-                protocolLaw: protocolLaw,
-                tier: tier,
-                seed: options.seed,
-                environment: environment,
-                reason: skip.reason
-            )
+            return early
         }
         var rng = options.seed?.makeXoshiro() ?? Xoshiro()
         let initialSeed = Seed(xoshiro: rng)
