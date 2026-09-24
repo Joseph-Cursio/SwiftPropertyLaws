@@ -31,13 +31,38 @@ extension DerivationStrategist {
             return enumTodoReason(for: shape, resolve: resolve)
         case .struct:
             return structTodoReason(for: shape, emissionSite: emissionSite, resolve: resolve)
-        case .class, .actor:
+        case .class:
+            return classTodoReason(for: shape, emissionSite: emissionSite, resolve: resolve)
+        case .actor:
             return "Cannot derive a generator for `\(shape.name)`: memberwise "
                 + "derivation supports structs only (class/actor reference "
                 + "semantics complicate the synthesized-init contract). "
                 + "Provide `static func gen() -> Generator<\(shape.name), "
                 + "some SendableSequenceType>`."
         }
+    }
+
+    /// A class derives only through an initializer, and only when it declares `Sendable` — so the
+    /// reason names whichever of those two failed, rather than refusing it for being a class.
+    private static func classTodoReason(
+        for shape: TypeShape,
+        emissionSite: EmissionSite,
+        resolve: CustomTypeResolver
+    ) -> String {
+        let prefix = "Cannot derive a generator for `\(shape.name)`: "
+        let suffix = " Provide `static func gen() -> Generator<\(shape.name), "
+            + "some SendableSequenceType>`."
+        guard shape.isSendableClass else {
+            return prefix + "the class is not `Sendable`, and a property check's inputs must be "
+                + "(`PropertyBackend.check` requires `Input: Sendable`). A class that is safe to "
+                + "share can declare `Sendable` or `@unchecked Sendable`, and then derives "
+                + "through its initializer." + suffix
+        }
+        if shape.hasUserInit {
+            return userInitTodoReason(for: shape, emissionSite: emissionSite, resolve: resolve)
+        }
+        return prefix + "a class has no synthesized memberwise initializer, and this one "
+            + "declares no initializer the generator could call." + suffix
     }
 
     /// **Every enum that failed to derive used to be reported the same way**:

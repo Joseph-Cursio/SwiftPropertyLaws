@@ -68,9 +68,19 @@ struct TodoCategoryTests {
     @Test("a non-struct keeps its own bucket")
     func nonStructCategory() {
         let category = reason(for: TypeShape(
-            name: "Subject", kind: .class, inheritedTypes: ["Equatable"], hasUserGen: false
+            name: "Subject", kind: .actor, inheritedTypes: ["Equatable"], hasUserGen: false
         ))
         #expect(category == "non-struct (class/actor/enum-payload)")
+    }
+
+    /// A class is no longer refused for being a class (4.9.0): it derives through an initializer
+    /// when it declares `Sendable`, so one that does not gets a bucket naming that instead.
+    @Test("a class that is not Sendable gets its own bucket")
+    func nonSendableClassCategory() {
+        let category = reason(for: TypeShape(
+            name: "Subject", kind: .class, inheritedTypes: ["Equatable"], hasUserGen: false
+        ))
+        #expect(category == "class not Sendable (a check's inputs must be)")
     }
 
     /// A memberless struct with no `init` derives (`Gen.always(Subject())`), so

@@ -226,4 +226,24 @@ struct KnownValueTypeDerivationTests {
             return
         }
     }
+    /// `Substring` is a `String` slice, and a generator for it is the `String` generator mapped.
+    /// It was reported as *not among the scanned types* — a claim that it is somebody's own type
+    /// — on SwiftInferProperties' seventh corpus census, blocking 5 stub markers on one subject.
+    @Test("a Substring member derives from the String generator")
+    func substringMemberDerives() {
+        let shape = TypeShape(
+            name: "Token",
+            kind: .struct,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            storedMembers: [StoredMember(name: "text", typeName: "Substring")]
+        )
+        guard case .memberwiseArbitrary(let members) = DerivationStrategist.strategy(for: shape) else {
+            Issue.record("expected memberwise derivation")
+            return
+        }
+        #expect(members.first?.generatorExpression
+            == "Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }")
+        #expect(members.allSatisfy { $0.requiredImports.isEmpty })
+    }
 }
