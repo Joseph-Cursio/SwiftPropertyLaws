@@ -315,7 +315,11 @@ extension DerivationStrategist {
         resolve: CustomTypeResolver = { _ in nil },
         emissionSite: EmissionSite = .separateFile
     ) -> DerivationStrategy? {
-        guard shape.kind == .struct else { return nil }
+        // A class that declares `Sendable` derives the same way: every draw calls the initializer,
+        // so each trial gets a fresh instance. `Sendable` is the condition because
+        // `PropertyBackend.check` requires `Input: Sendable` — a generator for any other class
+        // could be written and never used. See `TypeShape.isSendableClass`.
+        guard shape.kind == .struct || shape.isSendableClass else { return nil }
         for initializer in shape.initializers {
             guard !isDeclined(initializer, in: shape, from: emissionSite) else { continue }
             var arguments: [InitArgument] = []

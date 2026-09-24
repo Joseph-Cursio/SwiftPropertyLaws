@@ -214,6 +214,8 @@ struct PropertyLawDiscoveryTool {
     private static let categoryTable: [(needle: String, category: String)] = [
         ("only extends the type", "declaration not in this target"),
         ("structs only", "non-struct (class/actor/enum-payload)"),
+        ("the class is not `Sendable`", "class not Sendable (a check's inputs must be)"),
+        ("no synthesized memberwise initializer", "class with no callable initializer"),
         ("no stored properties", "no stored properties, no callable init()"),
         ("every initializer the type declares is",
          "access-restricted initializer (private/fileprivate)"),

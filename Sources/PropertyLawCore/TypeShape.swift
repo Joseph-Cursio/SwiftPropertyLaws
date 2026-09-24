@@ -118,3 +118,20 @@ public struct TypeShape: Sendable, Equatable {
         self.enumCases = enumCases
     }
 }
+
+extension TypeShape {
+    /// A class whose inheritance clause names `Sendable`, bare or `@unchecked` — the one kind of
+    /// class a derived generator may produce, since `PropertyBackend.check` requires
+    /// `Input: Sendable`. Matched as a whole type name, so `NotSendableMarker` does not count.
+    /// Actors are excluded on purpose: calling into one needs `await`.
+    public var isSendableClass: Bool {
+        guard kind == .class else { return false }
+        // Whitespace-split rather than trimmed: `PropertyLawCore` imports no Foundation, and the
+        // spelling is `Sendable` or `@unchecked Sendable` with arbitrary spacing between words.
+        return inheritedTypes.contains { (entry: String) -> Bool in
+            let words = entry.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
+            let bare = words.first == "@unchecked" ? Array(words.dropFirst()) : words
+            return bare == ["Sendable"] || bare == ["Swift.Sendable"]
+        }
+    }
+}

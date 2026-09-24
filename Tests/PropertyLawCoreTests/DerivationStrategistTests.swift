@@ -256,9 +256,9 @@ struct DerivationStrategistTests {
     }
 
     @Test func classWithRawMembersFallsThroughMemberwise() {
-        // Classes are intentionally excluded from memberwise derivation —
-        // reference-semantic init contracts complicate the synthesized-init
-        // story enough that v1 punts.
+        // A class has no synthesized memberwise init, so memberwise never applies. It derives only
+        // through an initializer, and only when it declares `Sendable` (4.9.0); this one does
+        // neither, and the reason names the condition rather than refusing it for being a class.
         let shape = TypeShape(
             name: "Box",
             kind: .class,
@@ -270,7 +270,7 @@ struct DerivationStrategistTests {
             Issue.record("expected .todo for class kind")
             return
         }
-        #expect(reason.contains("structs only"))
+        #expect(reason.contains("not `Sendable`"))
     }
 
     @Test func actorWithRawMembersFallsThroughMemberwise() {
