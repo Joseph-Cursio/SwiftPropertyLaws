@@ -75,4 +75,57 @@ struct BudgetTests {
         #expect(TrialBudget.exhaustive(500) == .custom(trials: 500),
                 "the old spelling was always .custom under another name")
     }
+    // MARK: - A budget below one trial checks nothing
+
+    /// The failure a law check reports for this budget, or `nil` if it did not fail.
+    private func refusal(for budget: TrialBudget) async -> CheckResult? {
+        do {
+            _ = try await checkEquatablePropertyLaws(
+                for: Int.self,
+                using: TestGen.smallInt(),
+                options: LawCheckOptions(budget: budget, enforcement: .strict)
+            )
+        } catch let violation as PropertyLawViolation {
+            return violation.results.first
+        } catch {}
+        return nil
+    }
+
+    /// `.custom(trials: 0)` used to run nothing and report a pass: a green result that checked
+    /// nothing, which is the exact thing the kit's coverage reporting exists to prevent.
+    @Test func aZeroBudgetFailsRatherThanPassingEmpty() async throws {
+        let result = try #require(await refusal(for: .custom(trials: 0)))
+        #expect(result.trials == 0)
+        guard case .failed(let reason) = result.outcome else {
+            Issue.record("expected a failed outcome, got \(result.outcome)")
+            return
+        }
+        #expect(reason.contains("0 trials"), "the refusal must name the budget it refused: \(reason)")
+    }
+
+    /// A negative count used to crash the backend's `for _ in 0..<trials` with a range error — found
+    /// by a `measure-non-negativity` law SwiftInferProperties proposed for `trialCount`.
+    @Test func aNegativeBudgetFailsRatherThanTrapping() async throws {
+        let result = try #require(await refusal(for: .custom(trials: -3)))
+        guard case .failed(let reason) = result.outcome else {
+            Issue.record("expected a failed outcome, got \(result.outcome)")
+            return
+        }
+        #expect(reason.contains("-3 trials"))
+    }
+
+    /// Called directly, the backend reports zero trials run instead of trapping.
+    @Test func theBackendToleratesANegativeCount() async {
+        let result = await SwiftPropertyBasedBackend().check(
+            trials: -1,
+            seed: nil,
+            sample: { rng in Int.random(in: 0 ... 9, using: &rng) },
+            property: { _ in true }
+        )
+        guard case .passed(let trialsRun, _) = result else {
+            Issue.record("expected an empty pass, got \(result)")
+            return
+        }
+        #expect(trialsRun == 0)
+    }
 }

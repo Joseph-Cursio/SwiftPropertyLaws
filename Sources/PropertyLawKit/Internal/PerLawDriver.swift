@@ -75,18 +75,10 @@ package enum PerLawDriver {
         observation: Observation<Input> = Observation()
     ) async -> CheckResult {
         let environment = Environment.current(backend: options.backend)
-        if let skip = LawSuppressionPolicy.match(
-            protocolLaw: protocolLaw,
-            kind: .skip,
-            in: options.suppressions
+        if let early = CheckPreflight.earlyResult(
+            protocolLaw: protocolLaw, tier: tier, options: options, environment: environment
         ) {
-            return LawSuppressionPolicy.suppressedResult(
-                protocolLaw: protocolLaw,
-                tier: tier,
-                seed: options.seed,
-                environment: environment,
-                reason: skip.reason
-            )
+            return early
         }
         let coverageAccumulator: CoverageAccumulator? = observation.classify == nil
             ? nil

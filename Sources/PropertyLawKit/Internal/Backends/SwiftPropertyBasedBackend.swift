@@ -20,7 +20,10 @@ public struct SwiftPropertyBasedBackend: PropertyBackend {
         var rng = seed?.makeXoshiro() ?? Xoshiro()
         let initialSeed = Seed(xoshiro: rng)
         var ranTrials = 0
-        for _ in 0..<trials {
+        // `max` because a negative count is a caller's mistake, not a reason to trap: the law
+        // drivers refuse such a budget with a named failure (`CheckPreflight`), and a direct caller
+        // gets an empty run it can see in `trialsRun`.
+        for _ in 0..<max(trials, 0) {
             ranTrials += 1
             let input = sample(&rng)
             do {
