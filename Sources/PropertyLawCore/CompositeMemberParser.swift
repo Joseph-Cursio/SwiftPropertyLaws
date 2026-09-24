@@ -291,6 +291,10 @@ extension DerivationStrategist {
         // swift.org corpus; `Character` was here and its scalar sibling was not.
         case "Unicode.Scalar", "UnicodeScalar":
             return ComposedGenerator(expression: "Gen<Unicode.Scalar>.unicodeScalar()")
+        // A `String` slice, drawn as the `String` generator mapped — reported as *not among the
+        // scanned types* on SwiftInferProperties' seventh corpus census, as if it were a user type.
+        case "Substring":
+            return ComposedGenerator(expression: RawType.string.generatorExpression + ".map { Substring($0) }")
         default:
             return nil
         }
