@@ -129,7 +129,7 @@ enum AdvisorySuggester {
     /// would be suggested for the same type, drop Equatable — Hashable
     /// and Comparable both subsume it in the stdlib hierarchy, so a user
     /// adopting either gets Equatable for free.
-    private static func applyHierarchyDedupe(_ suggestions: [Suggestion]) -> [Suggestion] {
+    static func applyHierarchyDedupe(_ suggestions: [Suggestion]) -> [Suggestion] {
         let suggestedByType = Dictionary(grouping: suggestions, by: \.typeName)
         var result: [Suggestion] = []
         for (_, group) in suggestedByType {
