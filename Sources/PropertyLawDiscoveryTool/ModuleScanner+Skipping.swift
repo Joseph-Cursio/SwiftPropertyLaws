@@ -81,7 +81,7 @@ extension ModuleScanner {
     /// Verified against the compiler on 2026-08-08 with a two-target package:
     /// a `public struct` fails the cross-module `Sendable` requirement and a
     /// `package struct` satisfies it, so the rule stops at `public` / `open`.
-    private static func requiresExplicitSendable(_ aggregate: TypeAggregate) -> Bool {
+    static func requiresExplicitSendable(_ aggregate: TypeAggregate) -> Bool {
         aggregate.accessLevel == .public || aggregate.accessLevel == .open
     }
 
@@ -101,7 +101,7 @@ extension ModuleScanner {
     /// scan cannot see. Such a type is reported as skipped when its suite would
     /// have compiled. That direction costs coverage; the other emits a file
     /// that doesn't build, taking the whole test target with it.
-    private static func declaresSendable(
+    static func declaresSendable(
         _ aggregate: TypeAggregate,
         _ sendableProtocols: Set<String>
     ) -> Bool {
