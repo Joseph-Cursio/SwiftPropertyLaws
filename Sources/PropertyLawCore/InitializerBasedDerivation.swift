@@ -255,6 +255,24 @@ extension DerivationStrategist {
         "startIndex", "endIndex", "offset", "position"
     ]
 
+    /// Whether this is an `ExpressibleByUnicodeScalarLiteral`, `…ExtendedGraphemeClusterLiteral` or
+    /// `…StringLiteral` requirement: one parameter labelled `unicodeScalarLiteral`,
+    /// `extendedGraphemeClusterLiteral` or `stringLiteral`.
+    ///
+    /// **The compiler calls these with source text, and implementations lean on that.** `BigUInt`'s
+    /// is `BigUInt(String(value), radix: 10)!`, documented *"the cluster must consist of a decimal
+    /// digit"*: drawn from `Gen<Unicode.Scalar>.unicodeScalar()` it force-unwraps `nil` on nearly every
+    /// trial. Measured on BigInt (SwiftInferProperties `mutation-check-new-subjects.md`): 9 sampled
+    /// baselines and 14 census stubs trapped this way, while the funnel's 19 repositories derive
+    /// through such an initializer zero times. Integer, float and boolean literal initializers are
+    /// kept — they take a value of the type, not text, and accept any of them in practice.
+    static func isTextLiteralInitializer(_ initializer: InitializerSignature) -> Bool {
+        guard initializer.parameters.count == 1, let label = initializer.parameters.first?.label else {
+            return false
+        }
+        return ["unicodeScalarLiteral", "extendedGraphemeClusterLiteral", "stringLiteral"].contains(label)
+    }
+
     /// Every reason to pass over an initializer before trying to resolve its parameters.
     ///
     /// Extracted 2026-08-02 when the precondition gates took `initializerBasedStrategy` past
@@ -293,6 +311,10 @@ extension DerivationStrategist {
         // suite on `assert(offset >= 0)`. See `InitializerPreconditionDetector` for why this
         // declines instead of trying to satisfy the condition.
         if initializer.assertsPrecondition { return true }
+        // A text-literal initializer is the compiler's to call with source text, so its domain is
+        // the literals a programmer writes, not every value of its parameter type — see
+        // `isTextLiteralInitializer`.
+        if isTextLiteralInitializer(initializer) { return true }
         // A delegating initializer inherits its target's precondition. `_HeapNode`'s
         // `init(offset:)` asserts nothing and forwards to `init(offset:level:)`, which
         // asserts `offset >= 0` — a body-only check calls it clean and the suite still
