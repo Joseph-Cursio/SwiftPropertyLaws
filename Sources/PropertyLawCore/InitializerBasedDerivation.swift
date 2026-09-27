@@ -342,25 +342,16 @@ extension DerivationStrategist {
         // `PropertyBackend.check` requires `Input: Sendable` — a generator for any other class
         // could be written and never used. See `TypeShape.isSendableClass`.
         guard shape.kind == .struct || shape.isSendableClass else { return nil }
-        for initializer in shape.initializers {
-            guard !isDeclined(initializer, in: shape, from: emissionSite) else { continue }
-            var arguments: [InitArgument] = []
-            var allResolved = true
-            for parameter in initializer.parameters {
-                guard let resolved = composedGenerator(forTypeName: parameter.typeName, resolve: resolve) else {
-                    allResolved = false
-                    break
-                }
-                let composed = narrowedByLabel(resolved, label: parameter.label, typeName: parameter.typeName)
-                arguments.append(InitArgument(
-                    label: parameter.label,
-                    generatorExpression: composed.expression,
-                    requiredImports: composed.requiredImports
-                ))
+        for (index, initializer) in shape.initializers.enumerated() {
+            guard !isDeclined(initializer, in: shape, from: emissionSite),
+                  let arguments = derivedArguments(initializer, resolve: resolve) else { continue }
+            let later = shape.initializers.dropFirst(index + 1)
+            if let collection = collectionAlternative(to: initializer, among: later),
+               !isDeclined(collection, in: shape, from: emissionSite),
+               let collectionArguments = derivedArguments(collection, resolve: resolve) {
+                return .initializerBased(arguments: collectionArguments)
             }
-            if allResolved {
-                return .initializerBased(arguments: arguments)
-            }
+            return .initializerBased(arguments: arguments)
         }
         return nil
     }
