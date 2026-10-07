@@ -27,10 +27,10 @@ struct StrideableLawsTests {
         let firstStrideableIndex = laws.firstIndex { $0.hasPrefix("Strideable.") }
         #expect(firstStrideableIndex != nil)
         let inheritedLaws = laws[..<firstStrideableIndex!]
-        // Inherited block must contain Equatable's four + Comparable's four.
+        // Inherited block must contain Equatable's four + Comparable's five.
         #expect(inheritedLaws.contains { $0.hasPrefix("Equatable.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Comparable.") })
-        #expect(inheritedLaws.count == 8)
+        #expect(inheritedLaws.count == 9)
     }
 
     @Test func ownOnlySkipsInheritedSuites() async throws {

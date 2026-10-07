@@ -184,6 +184,7 @@ Floating-point `NaN` is the canonical intentional violation; types containing `F
 
 | Protocol Law | Tier | Description |
 |---|---|---|
+| Irreflexivity | Strict | `!(x < x)` — `<` is a *strict* order, so a `<` written as `<=` fails. Stated over one value because the two-value laws see that bug only when both draws are equal |
 | Antisymmetry | Strict | `x <= y` and `y <= x` implies `x == y` |
 | Transitivity | Strict | `x <= y` and `y <= z` implies `x <= z` |
 | Totality | Conventional | `x <= y` or `y <= x` for all `x`, `y` (relaxed for `Float`/`Double` because of `NaN`) |

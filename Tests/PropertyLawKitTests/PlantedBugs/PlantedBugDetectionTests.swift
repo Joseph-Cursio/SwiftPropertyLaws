@@ -216,6 +216,53 @@ struct PlantedBugDetectionTests {
         }
     }
 
+    @Test func detectsNonStrictLessThan() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkComparablePropertyLaws(
+                for: NonStrictLessThan.self,
+                using: Gen<NonStrictLessThan>.nonStrictLessThan(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(
+            laws.contains("Comparable.irreflexivity"),
+            "expected irreflexivity in violation set; got: \(laws)"
+        )
+    }
+
+    /// The control that makes the law load-bearing: at a realistic width, a `<`
+    /// written as `<=` is seen by irreflexivity **and nothing else**. The other
+    /// Comparable laws and the inherited Equatable ones all pass it, because they
+    /// see it only when two independent draws are equal. Seeded, because that
+    /// does happen about once in a thousand runs.
+    ///
+    /// The seed has to be well mixed. The `(1, 2, 3, 4)` used elsewhere in these
+    /// tests makes xoshiro's first outputs tiny, so trial one draws
+    /// `-1 000 000` twice — an equal pair, which is exactly what this control
+    /// must not be handed.
+    @Test func irreflexivityIsTheOnlyLawThatSeesANonStrictLessThan() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkComparablePropertyLaws(
+                for: NonStrictLessThan.self,
+                using: Gen<NonStrictLessThan>.nonStrictLessThan(),
+                options: LawCheckOptions(
+                    budget: .standard,
+                    seed: Seed(
+                        stateA: 0x9E37_79B9_7F4A_7C15,
+                        stateB: 0xBF58_476D_1CE4_E5B9,
+                        stateC: 0x94D0_49BB_1331_11EB,
+                        stateD: 0x2545_F491_4F6C_DD1D
+                    )
+                )
+            )
+        }
+        // A sub-Strict failure would not be in this list; it would fail the test
+        // through the issue the kit records for it, so silence covers that too.
+        #expect(violation?.results.map(\.protocolLaw) == ["Comparable.irreflexivity"])
+    }
+
     @Test func detectsCyclicOrderTransitivity() async throws {
         let violation = await #expect(throws: PropertyLawViolation.self) {
             try await checkComparablePropertyLaws(

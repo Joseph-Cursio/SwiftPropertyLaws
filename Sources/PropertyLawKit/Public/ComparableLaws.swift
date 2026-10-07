@@ -6,8 +6,8 @@ import PropertyBased
 /// §4.3 inheritance semantics; `.ownOnly` skips it.
 ///
 /// Returned-array order: Equatable laws (when `.all`) then Comparable laws —
-/// `antisymmetry` (Strict), `transitivity` (Strict), `totality` (Conventional),
-/// `operatorConsistency` (Strict).
+/// `irreflexivity` (Strict), `antisymmetry` (Strict), `transitivity` (Strict),
+/// `totality` (Conventional), `operatorConsistency` (Strict).
 @discardableResult
 public func checkComparablePropertyLaws<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(
     for type: Value.Type = Value.self,
@@ -27,6 +27,7 @@ public func checkComparablePropertyLaws<Value: Comparable & Sendable, Shrinker: 
             })
         }
         results.append(contentsOf: [
+            await checkIrreflexivity(generator: generator, options: options),
             await checkAntisymmetry(generator: generator, options: options),
             await checkTransitivity(generator: generator, options: options),
             await checkTotality(generator: generator, options: options),
@@ -34,6 +35,31 @@ public func checkComparablePropertyLaws<Value: Comparable & Sendable, Shrinker: 
         ])
         return results
     }
+}
+
+// `Comparable` requires `<` to be a strict total order, so `a < a` is always
+// false. The other laws here cannot see a `<` written as `<=`: they are all
+// stated over *two* values, and that bug shows only when the two are equal —
+// which two independent draws from a realistic generator almost never are.
+// Measured at ±1 000 000 over 1 000 trials, every other law passes it on
+// essentially every seed. Stated over one value, it fails on the first trial.
+//
+// Holds for IEEE-754 floats too: `NaN < NaN` is false, like every comparison
+// with NaN, so no `allowNaN` gate is needed.
+private func checkIrreflexivity<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(
+    generator: Generator<Value, Shrinker>,
+    options: LawCheckOptions
+) async -> CheckResult {
+    await runUnaryLaw(
+        "Comparable.irreflexivity",
+        generator: generator,
+        options: options,
+        property: { sample in !(sample < sample) },
+        formatCounterexample: { sample, _ in
+            "x = \(sample); x < x evaluated to true, but `<` must be a strict order "
+                + "(is it implemented as `<=`?)"
+        }
+    )
 }
 
 private func checkAntisymmetry<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(

@@ -40,7 +40,7 @@ Each is a real production bug class. None is caught by `swift build`.
 |---|---|
 | `Equatable` | reflexivity, symmetry, transitivity, negation consistency |
 | `Hashable` | hash/equality consistency, stability within a process, distribution |
-| `Comparable` | antisymmetry, transitivity, totality, operator consistency |
+| `Comparable` | irreflexivity, antisymmetry, transitivity, totality, operator consistency |
 | `Strideable` | distance round-trip, advance round-trip, zero-advance identity, self-distance is zero |
 | `Codable` | round-trip fidelity (`.strict` / `.semantic` / `.partial` modes) |
 | `RawRepresentable` | `T(rawValue: x.rawValue) == x` round-trip |

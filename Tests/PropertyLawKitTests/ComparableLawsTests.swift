@@ -48,7 +48,24 @@ struct ComparableLawsTests {
             laws: .ownOnly
         )
         #expect(results.allSatisfy { $0.protocolLaw.hasPrefix("Comparable.") })
-        #expect(results.count == 4)
+        #expect(results.count == 5)
+    }
+
+    /// Irreflexivity is stated as `!(x < x)`, not as `x <= x`. The two agree for
+    /// every type whose `<=` is derived from `<`, and disagree for NaN, whose `<=`
+    /// is IEEE-754's and false — so the second spelling would fail every `Double`.
+    @Test func irreflexivityHoldsForNaN() async throws {
+        let results = try await checkComparablePropertyLaws(
+            for: Double.self,
+            using: Gen<Double>.doubleWithNaN(),
+            options: LawCheckOptions(
+                budget: .standard,
+                suppressions: [.skip(.comparable(.totality), reason: "NaN is unordered")]
+            ),
+            laws: .ownOnly
+        )
+        let irreflexivity = try #require(results.first { $0.protocolLaw == "Comparable.irreflexivity" })
+        #expect(irreflexivity.isViolation == false)
     }
 
     @Test func tiersAreReportedAsDocumented() async throws {
@@ -59,6 +76,7 @@ struct ComparableLawsTests {
             laws: .ownOnly
         )
         let tiersByLaw = Dictionary(uniqueKeysWithValues: results.map { ($0.protocolLaw, $0.tier) })
+        #expect(tiersByLaw["Comparable.irreflexivity"] == .strict)
         #expect(tiersByLaw["Comparable.antisymmetry"] == .strict)
         #expect(tiersByLaw["Comparable.transitivity"] == .strict)
         #expect(tiersByLaw["Comparable.totality"] == .conventional)
