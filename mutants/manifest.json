@@ -35,6 +35,22 @@
       "label": "Equatable.symmetry always returns true \u2014 an asymmetric == is no longer caught. Killable only after adding SymmetryOnlyEquatable (a `>=` violator that breaks symmetry alone) + detectsSymmetryOnlyEquality, which pins the symmetry law specifically."
     },
     {
+      "id": "comparable-irreflexivity-always-holds",
+      "patch": "patches/comparable-irreflexivity-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsNonStrictLessThan",
+      "label": "Comparable.irreflexivity always returns true \u2014 a `<` written as `<=` is no longer caught. No other Comparable law stands in: at the violator's \u00b11 000 000 they see it only when two draws are equal."
+    },
+    {
+      "id": "comparable-irreflexivity-stated-as-reflexive-lte",
+      "patch": "patches/comparable-irreflexivity-stated-as-reflexive-lte.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "irreflexivityHoldsForNaN",
+      "label": "Comparable.irreflexivity restated as `x <= x`. Equivalent whenever `<=` is derived from `<`, so it still catches the planted violator \u2014 but NaN's `<=` is IEEE-754's and false, so it fails every Double."
+    },
+    {
       "id": "product-orders-row-major",
       "patch": "patches/product-orders-row-major.patch",
       "shape": "enumeration-machinery",

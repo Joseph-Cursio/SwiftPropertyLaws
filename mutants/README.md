@@ -28,6 +28,8 @@ Requires a clean working tree.
 | `equatable-transitivity-always-holds` | law-detection | killed | `detectsNonTransitiveEquality` |
 | `monoid-left-identity-always-holds` | law-detection | killed | `detectsBadLeftIdentity` |
 | `equatable-symmetry-always-holds` | law-detection | killed | `detectsSymmetryOnlyEquality` |
+| `comparable-irreflexivity-always-holds` | law-detection | killed | `detectsNonStrictLessThan` |
+| `comparable-irreflexivity-stated-as-reflexive-lte` | law-detection | killed | `irreflexivityHoldsForNaN` |
 | `product-orders-row-major` | enumeration-machinery | killed | `productWalkMatchesABruteForceSummedSizeOrdering` |
 | `prefix-forgets-full-count` | enumeration-machinery | killed | `prefixTruncatesButRemembersTheFullSpace` |
 | `walk-does-not-stop-at-first-failure` | enumeration-machinery | killed | `aWalkStopsAtTheFirstFailure` |
@@ -52,6 +54,13 @@ Requires a clean working tree.
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
 test that demanded it be caught goes red. All four verified killed.
+
+`comparable-irreflexivity-always-holds` is the same shape, and
+`comparable-irreflexivity-stated-as-reflexive-lte` is a variant worth having: it
+does not blind the law but **restates** it, as `x <= x`. That spelling is
+equivalent whenever `<=` is derived from `<`, so it still catches the planted
+violator — and still breaks the law, because NaN's `<=` is IEEE-754's and false,
+so it fails every `Double`. Only a test over NaN tells the two spellings apart.
 
 **The `enumeration-machinery` shape is different, and deliberately so.** A law
 mutant asks *does the suite still catch this bug?* A machinery mutant asks *does
