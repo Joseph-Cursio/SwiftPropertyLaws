@@ -101,7 +101,7 @@ private func checkAntisymmetry<Value: Comparable & Sendable>(
     options: LawCheckOptions
 ) async -> CheckResult {
     let applications = Applications()
-    return await reportingApplications(applications, of: await runBinaryLaw(
+    return await reportingApplications(applications, of: await runEqualValueBinaryLaw(
         "Comparable.antisymmetry",
         source: source,
         options: options,

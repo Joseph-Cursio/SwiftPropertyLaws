@@ -17,7 +17,7 @@ struct RareAntecedentTests {
     /// `==` is "within 1", which is reflexive and symmetric and **not
     /// transitive**: `0 == 1` and `1 == 2`, but `0 != 2`. A real bug shape, and
     /// the kit's own planted-bug suite drives it with a hand-narrowed `0...3`.
-    private struct Rounding: Equatable, Sendable, CustomStringConvertible {
+    struct Rounding: Equatable, Sendable, CustomStringConvertible {
         let raw: Int
         static func == (lhs: Rounding, rhs: Rounding) -> Bool { abs(lhs.raw - rhs.raw) <= 1 }
         var description: String { "R(\(raw))" }
@@ -226,7 +226,7 @@ struct RareAntecedentTests {
 
     /// An ordering by absolute value, which is antisymmetry's bug exactly: `5`
     /// and `-5` are each `<=` the other, and are not equal.
-    private struct AbsoluteOrder: Comparable, Sendable, CustomStringConvertible {
+    struct AbsoluteOrder: Comparable, Sendable, CustomStringConvertible {
         let cents: Int
         static func < (lhs: AbsoluteOrder, rhs: AbsoluteOrder) -> Bool { abs(lhs.cents) < abs(rhs.cents) }
         var description: String { "A(\(cents))" }
@@ -261,7 +261,7 @@ struct RareAntecedentTests {
 
     /// `==` compares whole dollars while the synthesized hash uses every cent —
     /// the classic `Hashable` bug: `Set` will hold `$(250)` and `$(299)` both.
-    private struct DollarMoney: Hashable, Sendable, CustomStringConvertible {
+    struct DollarMoney: Hashable, Sendable, CustomStringConvertible {
         let cents: Int
         static func == (lhs: DollarMoney, rhs: DollarMoney) -> Bool { lhs.cents / 100 == rhs.cents / 100 }
         var description: String { "$(\(cents))" }

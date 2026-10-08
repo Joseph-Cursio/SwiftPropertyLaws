@@ -84,7 +84,7 @@ private func checkEqualityConsistency<Value: Hashable & Sendable>(
     options: LawCheckOptions
 ) async -> CheckResult {
     let applications = Applications()
-    return await reportingApplications(applications, of: await runBinaryLaw(
+    return await reportingApplications(applications, of: await runEqualValueBinaryLaw(
         "Hashable.equalityConsistency",
         source: source,
         options: options,
