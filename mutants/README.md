@@ -59,6 +59,8 @@ Requires a clean working tree.
 | `cancellation-law-ignores-promptness` | virtual-time | killed | `cancellationLawRejectsASleepThatIgnoresCancellation` |
 | `run-leaves-sleepers-parked` | virtual-time | killed | `aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds` |
 | `nested-run-is-not-refused` | virtual-time | killed | `aRunInsideARunIsRefused` |
+| `collector-drops-allow-nan` | inherited-options | killed | `allowNaNPropagatesToInheritedFloatingPointSuite` |
+| `binary-float-rebuild-drops-allow-nan` | inherited-options | killed | `allowNaNPropagatesToInheritedFloatingPointSuite` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -151,3 +153,21 @@ holds. Only the test that reads the documented order notices.
 the failure". Virtual time keeps advancing while anything sleeps, so without that
 check a sleep that ignores cancellation is woken later, sees a prefix of the
 source, and passes.
+
+**`inherited-options` guards what a parent suite is handed, not what it
+checks.** Under `laws: .all` a suite runs its parent's laws with the caller's
+options rebased: only `enforcement` should change. `collector-drops-allow-nan`
+resets `allowNaN` in `collectingInheritedLaws`. It *survived* every test until
+`checkBinaryFloatingPointPropertyLaws` stopped rebuilding its own options from
+the outer `allowNaN`, because that rebuild put back the very field the
+collector had dropped, and it is the only chain where the field matters.
+`binary-float-rebuild-drops-allow-nan` brings back the call-site rebuild without
+`allowNaN`. Both are killed by the same test, which asserts that the five
+NaN-domain laws are present.
+
+The removed rebuild also dropped `expectedReplayEnvironment` and
+`replayRelaxation`. Reinstated exactly as it was, that mutant survives, and
+this corpus deliberately does not include it. `runPropertyLawSuite` validates
+the caller's full options before any inherited law runs, so the inner suite can
+only re-check what has already passed. No test through the public API can see
+that drop.

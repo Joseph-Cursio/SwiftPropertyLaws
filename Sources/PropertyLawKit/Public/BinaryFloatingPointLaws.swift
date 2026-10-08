@@ -24,21 +24,13 @@ public func checkBinaryFloatingPointPropertyLaws<
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { rebased in
-                // Forward allowNaN into the inherited FloatingPoint check; the standard
-                // helper does not carry this field, so rebuild here to preserve behaviour.
-                let withNaN = LawCheckOptions(
-                    budget: rebased.budget,
-                    enforcement: rebased.enforcement,
-                    seed: rebased.seed,
-                    suppressions: rebased.suppressions,
-                    backend: rebased.backend,
-                    allowNaN: options.allowNaN
-                )
-                return try await checkFloatingPointPropertyLaws(
+            // `allowNaN` gates five of the inherited laws and arrives through the
+            // collector's copy, like every other field — no rebuild here.
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+                try await checkFloatingPointPropertyLaws(
                     for: type,
                     using: generator,
-                    options: withNaN
+                    options: $0
                 )
             })
         }
