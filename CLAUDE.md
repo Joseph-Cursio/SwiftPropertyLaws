@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Noted, not fixed:** `collectingInheritedLaws` ends in `catch { return [] }`, so a non-violation error from an inherited suite deletes that suite's laws from the results instead of surfacing. Today nothing reaches it, for the same reason as above: the only such error is `ReplayEnvironmentMismatch`, and the outer check raises it first. It is still the silent-drop shape, and it becomes live the moment any inherited suite can throw something the outer one cannot.
 
-1 174 tests outside `PropertyLawAsyncTests`; swiftlint unchanged at 9.
+1196 tests, `PropertyLawAsyncTests` included now that it no longer hangs; swiftlint unchanged at 9.
 
 **`PropertyLawAsyncTests` hung under load, and the clock the timed laws trusted was the cause (2026-10-08).** On a loaded machine the target started `TimedAsyncLawsTests` and never finished. There was no ✘ line and no summary, so it looked like a crash. **It was not a crash.** A sampled run showed every thread parked in the kernel, and the process sat at **0% CPU for 6 and 10 minutes** on the two loaded runs that were watched. Every task was suspended and nothing would ever wake one. A hung process does not exit by itself, so whatever ended the runs first reported came from outside it.
 
