@@ -219,6 +219,94 @@
       "label": "The sampled-from-space path drops its index shrinker, so it reports the first failure drawn rather than the smallest \u2014 which is exactly the concession the plain generator bridge makes, and the reason this path exists."
     },
     {
+      "id": "scheduler-wakes-sleepers-before-quiescence",
+      "patch": "patches/scheduler-wakes-sleepers-before-quiescence.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSourceSlowToReachItsSleepIsWaitedFor",
+      "label": "The virtual-time scheduler runs one job and then wakes the next sleeper, so time moves while work is still runnable \u2014 TestClock's defect re-planted, and the reason the timed laws hung."
+    },
+    {
+      "id": "hook-diverts-nothing",
+      "patch": "patches/hook-diverts-nothing.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSourceSlowToReachItsSleepIsWaitedFor",
+      "label": "The global enqueue hook passes every job to the runtime, so the run's tasks escape to the cooperative pool and an empty queue stops meaning quiescence \u2014 the capture an executor preference would have offered, since debounce's own Task {} does not inherit one."
+    },
+    {
+      "id": "virtual-clock-wakes-the-latest-sleeper",
+      "patch": "patches/virtual-clock-wakes-the-latest-sleeper.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "sleepersWakeInDeadlineOrderThenRegistrationOrder",
+      "label": "VirtualClock wakes the sleeper with the latest deadline first, so time runs backwards between wakes."
+    },
+    {
+      "id": "virtual-clock-breaks-ties-by-latest-registration",
+      "patch": "patches/virtual-clock-breaks-ties-by-latest-registration.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "sleepersWakeInDeadlineOrderThenRegistrationOrder",
+      "label": "Sleepers sharing a deadline wake newest-first. Still deterministic, so no determinism law notices \u2014 only the documented order does."
+    },
+    {
+      "id": "cancelled-sleep-waits-out-its-deadline",
+      "patch": "patches/cancelled-sleep-waits-out-its-deadline.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "cancellationWakesASleeperWithoutMovingTime",
+      "label": "Cancelling a registered sleep only records the ticket, so the sleeper wakes normally at its deadline and a cancelled task costs virtual time."
+    },
+    {
+      "id": "horizon-is-ignored",
+      "patch": "patches/horizon-is-ignored.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aRunThatWouldPassItsHorizonFailsInsteadOfAdvancing",
+      "label": "The run's horizon is never checked, so a pipeline that will not settle is simulated onward instead of reported."
+    },
+    {
+      "id": "hook-replaces-a-foreign-hook",
+      "patch": "patches/hook-replaces-a-foreign-hook.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "refusesAHookItDidNotInstall",
+      "label": "acquire() overwrites a global enqueue hook someone else installed (withMainSerialExecutor, say), silently changing their scheduling."
+    },
+    {
+      "id": "hook-removed-while-runs-remain",
+      "patch": "patches/hook-removed-while-runs-remain.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "installsOnceAndRemovesWithTheLastRun",
+      "label": "release() removes the hook on every call rather than with the last run, so one finishing run strips the hook from every other run still active."
+    },
+    {
+      "id": "cancellation-law-ignores-promptness",
+      "patch": "patches/cancellation-law-ignores-promptness.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "cancellationLawRejectsASleepThatIgnoresCancellation",
+      "label": "cancellationCeasesEmission checks only the prefix. Virtual time keeps advancing, so a sleep that ignores cancellation is woken later, sees a prefix and passes \u2014 the check that replaced 'a hang is the failure' is gone."
+    },
+    {
+      "id": "run-leaves-sleepers-parked",
+      "patch": "patches/run-leaves-sleepers-parked.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds",
+      "label": "A run that finishes returns without waking sleepers its body left behind, so those tasks stay parked on a clock nobody will advance again."
+    },
+    {
+      "id": "nested-run-is-not-refused",
+      "patch": "patches/nested-run-is-not-refused.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aRunInsideARunIsRefused",
+      "label": "runInVirtualTime no longer refuses a call from inside a run, so the outer body is resumed from the inner run's thread, escapes its scheduler, and the outer run reports a deadlock that is not one."
+    },
+    {
       "id": "collector-drops-allow-nan",
       "patch": "patches/collector-drops-allow-nan.patch",
       "shape": "inherited-options",

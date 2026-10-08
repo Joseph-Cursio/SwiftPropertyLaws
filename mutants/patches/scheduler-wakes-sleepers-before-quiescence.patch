@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
+index 547e66e..70163b2 100644
+--- a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
++++ b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
+@@ -171,7 +171,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
+ 
+     /// Run every queued job, and every job those enqueue, until none remain.
+     private func drain() {
+-        while let job = dequeue() {
++        if let job = dequeue() {
+             job.runSynchronously(on: asUnownedSerialExecutor())
+         }
+     }
