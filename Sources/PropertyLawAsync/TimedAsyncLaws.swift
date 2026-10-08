@@ -1,5 +1,4 @@
 import AsyncAlgorithms
-import Clocks
 import PropertyBased
 import PropertyLawKit
 
@@ -7,26 +6,40 @@ import PropertyLawKit
 ///
 /// Time-parameterized combinators (`debounce` here; `throttle` when its API
 /// stabilizes upstream) are nondeterministic against wall clocks but fully
-/// deterministic against an injected `TestClock`: virtual time advances only
-/// when the law says so, which is the whole trick. The generated carrier is
-/// again the source array; per-element *gaps* and the debounce *interval*
-/// are derived deterministically from position and count, so a seeded run
-/// replays exactly.
+/// deterministic against a ``VirtualClock`` run by ``runInVirtualTime(horizon:_:)``:
+/// virtual time advances only when every task in the pipeline is blocked,
+/// which is the whole trick. The generated carrier is again the source
+/// array; per-element *gaps* and the debounce *interval* are derived
+/// deterministically from position and count, so a seeded run replays
+/// exactly.
+///
+/// **These laws first ran on swift-clocks' `TestClock`, and hung.** Its
+/// `advance` cannot see when the tasks under test have settled, so it
+/// yields a fixed number of times — about a millisecond of wall time — and
+/// moves on. A sleeper that reached `clock.sleep` after that registered
+/// against the advanced `now` and was never woken: measured, a source that
+/// spent 1 ms on the CPU before each sleep hung every time, which is what
+/// a loaded machine does to it. The scheduler drains its own queue instead,
+/// so "settled" is a fact rather than a wait.
 ///
 /// - `debounceOutputIsSubsequenceOfInput` — debounce may drop, never
 ///   invent or reorder: output is a (not necessarily contiguous)
 ///   subsequence of input.
 /// - `debounceEmitsFinalElement` — the last input element always surfaces
 ///   once quiescence passes (non-empty input).
-/// - `debounceIsDeterministicUnderTestClock` — two runs over fresh
-///   `TestClock`s produce identical output. This is the load-bearing law
-///   for the workplan's effect story: *async + injected clock ⇒
-///   deterministic*, the refinement SwiftEffectInference's annotation
-///   route will name.
+/// - `debounceIsDeterministicUnderTestClock` — two runs over fresh virtual
+///   clocks produce identical output. This is the load-bearing law for the
+///   workplan's effect story: *async + injected clock ⇒ deterministic*, the
+///   refinement SwiftEffectInference's annotation route will name — and the
+///   `TestClock` hang is the evidence that the injected clock is not enough
+///   on its own: the scheduler has to know when the tasks are quiet. The
+///   name predates ``VirtualClock`` and is kept because it is public API and
+///   an emitted law string.
 /// - `cancellationCeasesEmission` — cancelling the consuming task stops
 ///   the pipeline promptly (cancellation propagates through
 ///   `clock.sleep`), and everything observed before the cancel is a
-///   prefix of the source.
+///   prefix of the source. "Promptly" means *no virtual time passes*
+///   between the cancel and the consumer finishing.
 public enum TimedAsyncLaw: String, Sendable, Hashable, CaseIterable {
     case debounceOutputIsSubsequenceOfInput
     case debounceEmitsFinalElement
@@ -97,17 +110,64 @@ func derivedGaps(count: Int) -> [Swift.Duration] {
 
 let debounceInterval: Swift.Duration = .milliseconds(10)
 
-/// Run the sample through debounce under a fresh TestClock, advancing
-/// virtual time far past the last event plus quiescence.
+/// Run the sample through debounce in virtual time.
+///
+/// The horizon is the slack the laws allow for quiescence: the last element
+/// arrives at the sum of the gaps and debounce owes it one interval later.
+/// A pipeline that still needs a sleeper past two intervals has stopped
+/// settling, and fails as `horizonExceeded` rather than running on.
 func debouncedOutput<Element: Sendable>(of sample: [Element]) async throws -> [Element] {
-    let clock = TestClock()
-    let source = TimedSource(clock: clock, gaps: derivedGaps(count: sample.count), elements: sample)
-    let consumer = Task {
-        try await collect(source.debounce(for: debounceInterval, clock: clock))
+    let gaps = derivedGaps(count: sample.count)
+    let horizon = gaps.reduce(Swift.Duration.zero, +) + debounceInterval + debounceInterval
+    return try await runInVirtualTime(horizon: horizon) { clock in
+        try await collect(
+            TimedSource(clock: clock, gaps: gaps, elements: sample)
+                .debounce(for: debounceInterval, clock: clock)
+        )
     }
-    let total = derivedGaps(count: sample.count).reduce(Swift.Duration.zero, +)
-    await clock.advance(by: total + debounceInterval + debounceInterval)
-    return try await consumer.value
+}
+
+/// The `cancellationCeasesEmission` property: consume `sample` from a timed
+/// source, cancel the consumer at half the total time, and ask whether it
+/// stopped without virtual time passing and saw only a prefix.
+///
+/// Under `TestClock` a sleep that ignored cancellation showed up as a hang,
+/// because nothing advanced the clock after the cancel. Virtual time keeps
+/// advancing while anything is asleep, so such a sleep would be woken later
+/// and the consumer would finish — the instant it finishes at is what tells
+/// the two apart. `sourceClock` lets a test hand the source a clock that
+/// does ignore cancellation, to show the law notices.
+func cancellationCeasesEmission<Element: Equatable & Sendable, SourceClock: Clock & Sendable>(
+    of sample: [Element],
+    sourceClock: @escaping @Sendable (VirtualClock) -> SourceClock
+) async throws -> Bool where SourceClock.Duration == Swift.Duration {
+    let gaps = derivedGaps(count: sample.count)
+    let half = gaps.reduce(Swift.Duration.zero, +) / 2
+    let (seen, stoppedPromptly) = try await runInVirtualTime { clock in
+        let source = TimedSource(clock: sourceClock(clock), gaps: gaps, elements: sample)
+        let consumer = Task { () -> [Element] in
+            var seen: [Element] = []
+            do {
+                for try await element in source { seen.append(element) }
+            } catch {
+                // CancellationError propagating from clock.sleep is the
+                // expected exit path.
+            }
+            return seen
+        }
+        try await clock.sleep(for: half)
+        consumer.cancel()
+        let cancelledAt = clock.now
+        let seen = await consumer.value
+        return (seen, clock.now == cancelledAt)
+    }
+    return stoppedPromptly && seen == Array(sample.prefix(seen.count))
+}
+
+/// The run's own failure — a deadlock or a passed horizon — when there was
+/// one, so the counterexample says why rather than only that.
+private func thrownSuffix(_ error: ErrorBox?) -> String {
+    error.map { " (\($0.message))" } ?? ""
 }
 
 func isSubsequence<Element: Equatable>(_ candidate: [Element], of source: [Element]) -> Bool {
@@ -137,9 +197,9 @@ private func checkDebounceSubsequence<
         property: { sample in
             isSubsequence(try await debouncedOutput(of: sample), of: sample)
         },
-        formatCounterexample: { sample, _ in
+        formatCounterexample: { sample, error in
             "source = \(sample); debounce emitted elements that are not a "
-                + "subsequence of the input"
+                + "subsequence of the input" + thrownSuffix(error)
         }
     )
 }
@@ -159,9 +219,9 @@ private func checkDebounceFinalElement<
             guard sample.isEmpty == false else { return true }
             return try await debouncedOutput(of: sample).last == sample.last
         },
-        formatCounterexample: { sample, _ in
+        formatCounterexample: { sample, error in
             "source = \(sample); debounce did not surface the final element "
-                + "after quiescence"
+                + "after quiescence" + thrownSuffix(error)
         }
     )
 }
@@ -178,15 +238,16 @@ private func checkDebounceDeterminism<
         generator: generator,
         options: options,
         property: { sample in
-            // The Phase 4 headline: with the clock injected, the async
-            // pipeline is a pure function of (elements, gaps, interval).
+            // The Phase 4 headline: with the clock injected and time moved
+            // only at quiescence, the async pipeline is a pure function of
+            // (elements, gaps, interval).
             let first = try await debouncedOutput(of: sample)
             let second = try await debouncedOutput(of: sample)
             return first == second
         },
-        formatCounterexample: { sample, _ in
-            "source = \(sample); two debounce runs under fresh TestClocks "
-                + "produced different outputs"
+        formatCounterexample: { sample, error in
+            "source = \(sample); two debounce runs under fresh virtual clocks "
+                + "produced different outputs" + thrownSuffix(error)
         }
     )
 }
@@ -203,35 +264,11 @@ private func checkCancellationCeasesEmission<
         generator: generator,
         options: options,
         property: { sample in
-            let clock = TestClock()
-            let source = TimedSource(
-                clock: clock,
-                gaps: derivedGaps(count: sample.count),
-                elements: sample
-            )
-            let consumer = Task { () -> [Element] in
-                var seen: [Element] = []
-                do {
-                    for try await element in source { seen.append(element) }
-                } catch {
-                    // CancellationError propagating from clock.sleep is the
-                    // expected exit path.
-                }
-                return seen
-            }
-            let total = derivedGaps(count: sample.count).reduce(Swift.Duration.zero, +)
-            let half = total / 2
-            await clock.advance(by: half)
-            consumer.cancel()
-            // The task must complete (cancellation propagates through the
-            // clock sleep — a hang here is the failure), and what it saw
-            // must be a prefix of the source.
-            let seen = await consumer.value
-            return seen == Array(sample.prefix(seen.count))
+            try await cancellationCeasesEmission(of: sample) { $0 }
         },
-        formatCounterexample: { sample, _ in
+        formatCounterexample: { sample, error in
             "source = \(sample); cancelled consumer observed non-prefix "
-                + "elements or failed to stop"
+                + "elements or needed virtual time to stop" + thrownSuffix(error)
         }
     )
 }
