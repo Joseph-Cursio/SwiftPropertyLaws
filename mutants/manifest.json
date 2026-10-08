@@ -217,6 +217,22 @@
       "expected": "killed",
       "test": "samplingKeepsMinimalityWhereTheBridgeLosesIt",
       "label": "The sampled-from-space path drops its index shrinker, so it reports the first failure drawn rather than the smallest \u2014 which is exactly the concession the plain generator bridge makes, and the reason this path exists."
+    },
+    {
+      "id": "collector-drops-allow-nan",
+      "patch": "patches/collector-drops-allow-nan.patch",
+      "shape": "inherited-options",
+      "expected": "killed",
+      "test": "allowNaNPropagatesToInheritedFloatingPointSuite",
+      "label": "collectingInheritedLaws resets allowNaN while rebasing, so a caller's allowNaN: true never reaches an inherited FloatingPoint suite and its five NaN-domain laws silently do not run. Survived every test until BinaryFloatingPoint stopped re-reading allowNaN from the outer options."
+    },
+    {
+      "id": "binary-float-rebuild-drops-allow-nan",
+      "patch": "patches/binary-float-rebuild-drops-allow-nan.patch",
+      "shape": "inherited-options",
+      "expected": "killed",
+      "test": "allowNaNPropagatesToInheritedFloatingPointSuite",
+      "label": "checkBinaryFloatingPointPropertyLaws rebuilds the rebased options field by field instead of passing them through, and the rebuild leaves out allowNaN \u2014 the shape of the rebuild that was removed, with the one field a test can see."
     }
   ]
 }
