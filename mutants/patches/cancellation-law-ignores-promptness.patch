@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawAsync/TimedAsyncLaws.swift b/Sources/PropertyLawAsync/TimedAsyncLaws.swift
+index 656c0b6..cb8a0d0 100644
+--- a/Sources/PropertyLawAsync/TimedAsyncLaws.swift
++++ b/Sources/PropertyLawAsync/TimedAsyncLaws.swift
+@@ -161,7 +161,7 @@ func cancellationCeasesEmission<Element: Equatable & Sendable, SourceClock: Cloc
+         let seen = await consumer.value
+         return (seen, clock.now == cancelledAt)
+     }
+-    return stoppedPromptly && seen == Array(sample.prefix(seen.count))
++    return seen == Array(sample.prefix(seen.count))
+ }
+ 
+ /// The run's own failure — a deadlock or a passed horizon — when there was

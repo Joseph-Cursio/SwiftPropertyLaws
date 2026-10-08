@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawAsync/GlobalEnqueueHook.swift b/Sources/PropertyLawAsync/GlobalEnqueueHook.swift
+index 2c4e052..8a40558 100644
+--- a/Sources/PropertyLawAsync/GlobalEnqueueHook.swift
++++ b/Sources/PropertyLawAsync/GlobalEnqueueHook.swift
+@@ -84,7 +84,7 @@ final class GlobalEnqueueHook: @unchecked Sendable {
+         activeRuns -= 1
+         // Only take out what this put in: a hook installed over this one
+         // belongs to someone else, who will restore the slot themselves.
+-        if activeRuns == 0, let slot, Self.bits(of: slot) == installedBits {
++        if let slot, Self.bits(of: slot) == installedBits {
+             slot.pointee = nil
+         }
+     }

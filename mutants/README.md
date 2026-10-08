@@ -48,6 +48,19 @@ Requires a clean working tree.
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
+| `scheduler-wakes-sleepers-before-quiescence` | virtual-time | killed | `aSourceSlowToReachItsSleepIsWaitedFor` |
+| `hook-diverts-nothing` | virtual-time | killed | `aSourceSlowToReachItsSleepIsWaitedFor` |
+| `virtual-clock-wakes-the-latest-sleeper` | virtual-time | killed | `sleepersWakeInDeadlineOrderThenRegistrationOrder` |
+| `virtual-clock-breaks-ties-by-latest-registration` | virtual-time | killed | `sleepersWakeInDeadlineOrderThenRegistrationOrder` |
+| `cancelled-sleep-waits-out-its-deadline` | virtual-time | killed | `cancellationWakesASleeperWithoutMovingTime` |
+| `horizon-is-ignored` | virtual-time | killed | `aRunThatWouldPassItsHorizonFailsInsteadOfAdvancing` |
+| `hook-replaces-a-foreign-hook` | virtual-time | killed | `refusesAHookItDidNotInstall` |
+| `hook-removed-while-runs-remain` | virtual-time | killed | `installsOnceAndRemovesWithTheLastRun` |
+| `cancellation-law-ignores-promptness` | virtual-time | killed | `cancellationLawRejectsASleepThatIgnoresCancellation` |
+| `run-leaves-sleepers-parked` | virtual-time | killed | `aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds` |
+| `nested-run-is-not-refused` | virtual-time | killed | `aRunInsideARunIsRefused` |
+| `collector-drops-allow-nan` | inherited-options | killed | `allowNaNPropagatesToInheritedFloatingPointSuite` |
+| `binary-float-rebuild-drops-allow-nan` | inherited-options | killed | `allowNaNPropagatesToInheritedFloatingPointSuite` |
 | `nonfatal-violation-records-as-error` | enforcement-reporting | killed | `subStrictViolationUnderDefaultIsAWarningNotAFailure` |
 | `nonfatal-violation-is-silent` | enforcement-reporting | killed | `subStrictViolationUnderDefaultIsAWarningNotAFailure` |
 | `default-enforcement-escalates-every-tier` | enforcement-reporting | killed | `unstableHasherDoesNotThrowByDefault` |
@@ -127,6 +140,42 @@ times the trials it asked for. **A deprecation that changes behaviour rather
 than only its spelling is the classic migration hazard**, and it is invisible to
 every law — they all still pass, just slower. Only a test that reads the shim's
 result can see it.
+
+**`virtual-time` guards the scheduler the timed laws stand on.** Each mutant leaves
+`runInVirtualTime` working well enough to drive a simple pipeline. What it takes
+away is one of the guarantees that make the timed laws mean anything.
+`scheduler-wakes-sleepers-before-quiescence` re-plants the defect that hung
+`PropertyLawAsyncTests` under `TestClock`: time moves while a job is still
+runnable. `hook-diverts-nothing` is the capture failure an executor preference
+would have had, since `debounce`'s own `Task {}` does not inherit one. Both are
+killed by the same test, a source that burns 2 ms of CPU before each sleep, which
+stands in for a descheduled thread on a loaded machine. Neither mutant hangs. The
+scheduler reports each as a deadlock, which is the other half of the fix.
+`virtual-clock-breaks-ties-by-latest-registration` is the one no law could catch.
+Newest-first is as deterministic as oldest-first, so the determinism law still
+holds. Only the test that reads the documented order notices.
+`cancellation-law-ignores-promptness` guards the check that replaced "a hang is
+the failure". Virtual time keeps advancing while anything sleeps, so without that
+check a sleep that ignores cancellation is woken later, sees a prefix of the
+source, and passes.
+
+**`inherited-options` guards what a parent suite is handed, not what it
+checks.** Under `laws: .all` a suite runs its parent's laws with the caller's
+options rebased: only `enforcement` should change. `collector-drops-allow-nan`
+resets `allowNaN` in `collectingInheritedLaws`. It *survived* every test until
+`checkBinaryFloatingPointPropertyLaws` stopped rebuilding its own options from
+the outer `allowNaN`, because that rebuild put back the very field the
+collector had dropped, and it is the only chain where the field matters.
+`binary-float-rebuild-drops-allow-nan` brings back the call-site rebuild without
+`allowNaN`. Both are killed by the same test, which asserts that the five
+NaN-domain laws are present.
+
+The removed rebuild also dropped `expectedReplayEnvironment` and
+`replayRelaxation`. Reinstated exactly as it was, that mutant survives, and
+this corpus deliberately does not include it. `runPropertyLawSuite` validates
+the caller's full options before any inherited law runs, so the inner suite can
+only re-check what has already passed. No test through the public API can see
+that drop.
 
 **`enforcement-reporting` guards what a check *says* when it does not throw.**
 Under `.default` a sub-Strict violation is recorded as a Swift Testing warning,
