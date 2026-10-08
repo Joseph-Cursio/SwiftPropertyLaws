@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
+index 62d39de..ee95de5 100644
+--- a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
++++ b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
+@@ -31,7 +31,6 @@ func runInVirtualTime<Value: Sendable>(
+     // From inside a run, the outer body would be resumed from the inner
+     // run's thread, escape the outer scheduler, and leave it reporting a
+     // deadlock that is not one. Refused instead.
+-    guard VirtualTimeScheduler.current == nil else { throw VirtualTimeError.nestedRun }
+     return try await withCheckedThrowingContinuation { continuation in
+         // A thread of its own rather than a cooperative one: the run loop
+         // blocks for the whole run, and a blocked pool thread is one the rest

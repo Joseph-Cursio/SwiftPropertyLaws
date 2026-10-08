@@ -28,7 +28,11 @@ func runInVirtualTime<Value: Sendable>(
     horizon: Duration? = nil,
     _ body: @escaping @Sendable (VirtualClock) async throws -> Value
 ) async throws -> Value {
-    try await withCheckedThrowingContinuation { continuation in
+    // From inside a run, the outer body would be resumed from the inner
+    // run's thread, escape the outer scheduler, and leave it reporting a
+    // deadlock that is not one. Refused instead.
+    guard VirtualTimeScheduler.current == nil else { throw VirtualTimeError.nestedRun }
+    return try await withCheckedThrowingContinuation { continuation in
         // A thread of its own rather than a cooperative one: the run loop
         // blocks for the whole run, and a blocked pool thread is one the rest
         // of the process cannot use.
@@ -51,6 +55,8 @@ enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
     /// Another global enqueue hook was installed — `withMainSerialExecutor`,
     /// for one — so this run cannot see its own tasks.
     case foreignHookInstalled
+    /// `runInVirtualTime` was called from inside a run. Runs do not nest.
+    case nestedRun
 
     var description: String {
         switch self {
@@ -66,6 +72,9 @@ enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
         case .foreignHookInstalled:
             return "another global enqueue hook is installed (is this running "
                 + "inside withMainSerialExecutor?); virtual time cannot share it"
+        case .nestedRun:
+            return "runInVirtualTime was called from inside a virtual-time run; "
+                + "runs do not nest"
         }
     }
 }

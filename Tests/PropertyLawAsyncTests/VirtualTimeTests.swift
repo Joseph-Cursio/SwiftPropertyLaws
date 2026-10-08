@@ -107,6 +107,14 @@ struct VirtualTimeTests {
         #expect(throws: CancellationError.self) { try outcome.get() }
     }
 
+    @Test func aRunInsideARunIsRefused() async {
+        await #expect(throws: VirtualTimeError.nestedRun) {
+            try await runInVirtualTime { _ in
+                try await runInVirtualTime { _ in 1 }
+            }
+        }
+    }
+
     /// A cancel can reach the timeline before the sleep it targets has
     /// registered — the handler runs at once for a task cancelled on entry,
     /// and from another thread it can simply arrive first. The ticket it

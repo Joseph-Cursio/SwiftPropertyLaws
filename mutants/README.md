@@ -58,6 +58,7 @@ Requires a clean working tree.
 | `hook-removed-while-runs-remain` | virtual-time | killed | `installsOnceAndRemovesWithTheLastRun` |
 | `cancellation-law-ignores-promptness` | virtual-time | killed | `cancellationLawRejectsASleepThatIgnoresCancellation` |
 | `run-leaves-sleepers-parked` | virtual-time | killed | `aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds` |
+| `nested-run-is-not-refused` | virtual-time | killed | `aRunInsideARunIsRefused` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection

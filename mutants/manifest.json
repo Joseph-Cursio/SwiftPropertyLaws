@@ -297,6 +297,14 @@
       "expected": "killed",
       "test": "aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds",
       "label": "A run that finishes returns without waking sleepers its body left behind, so those tasks stay parked on a clock nobody will advance again."
+    },
+    {
+      "id": "nested-run-is-not-refused",
+      "patch": "patches/nested-run-is-not-refused.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aRunInsideARunIsRefused",
+      "label": "runInVirtualTime no longer refuses a call from inside a run, so the outer body is resumed from the inner run's thread, escapes its scheduler, and the outer run reports a deadlock that is not one."
     }
   ]
 }
