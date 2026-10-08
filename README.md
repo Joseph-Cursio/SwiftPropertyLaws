@@ -176,11 +176,13 @@ Idempotent: re-running with no source changes produces byte-identical output. Su
 
 Not every law is universally true in idiomatic Swift. `Hashable` allows hash collisions; `Comparable` on `Float`/`Double` fails for `NaN`; `Codable` round-trips are intentionally lossy in many real schemas. The kit classifies every law:
 
-| Tier | Default behavior on violation |
+| Tier | Behavior on violation under `EnforcementMode.default` |
 |---|---|
-| **Strict** | Test fails. Reflexivity, symmetry, transitivity, count consistency, etc. |
-| **Conventional** | Reported as failed, but doesn't throw under `EnforcementMode.default`. Pass `.strict` to escalate. |
-| **Heuristic** | Informational only. Never fails. Distribution sanity, etc. |
+| **Strict** | Throws, so the test fails. Reflexivity, symmetry, transitivity, count consistency, etc. |
+| **Conventional** | Doesn't throw. Returned as a `.failed` result and recorded as a Swift Testing **warning**: the run prints it, the test passes. |
+| **Heuristic** | Same as Conventional. Distribution sanity, etc. |
+
+Pass `enforcement: .strict` and every tier throws. Warning severity needs Swift 6.3 or later; on an older toolchain Swift Testing records the violation as an error, which marks the test failed even though nothing throws.
 
 PRD §4.2 has the full tier-per-law table.
 

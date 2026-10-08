@@ -321,6 +321,46 @@
       "expected": "killed",
       "test": "allowNaNPropagatesToInheritedFloatingPointSuite",
       "label": "checkBinaryFloatingPointPropertyLaws rebuilds the rebased options field by field instead of passing them through, and the rebuild leaves out allowNaN \u2014 the shape of the rebuild that was removed, with the one field a test can see."
+    },
+    {
+      "id": "nonfatal-violation-records-as-error",
+      "patch": "patches/nonfatal-violation-records-as-error.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "subStrictViolationUnderDefaultIsAWarningNotAFailure",
+      "label": "A sub-Strict violation under `.default` is recorded at error severity, so it fails the test it was meant only to warn about \u2014 the shipped behaviour before 2026-10-07, which a bare `withKnownIssue` could not tell from a warning."
+    },
+    {
+      "id": "nonfatal-violation-is-silent",
+      "patch": "patches/nonfatal-violation-is-silent.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "subStrictViolationUnderDefaultIsAWarningNotAFailure",
+      "label": "A sub-Strict violation under `.default` is neither thrown nor recorded \u2014 the A5 defect, where a lossy codec read as a pass."
+    },
+    {
+      "id": "default-enforcement-escalates-every-tier",
+      "patch": "patches/default-enforcement-escalates-every-tier.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "unstableHasherDoesNotThrowByDefault",
+      "label": "`throwIfViolations` escalates every tier under `.default`, so `.default` behaves as `.strict`. Against the original suite every test named for not throwing by default passed, absorbing the throw as a known issue."
+    },
+    {
+      "id": "suppressed-violation-is-reported",
+      "patch": "patches/suppressed-violation-is-reported.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "suppressedAndExpectedViolationsStayQuiet",
+      "label": "Suppressed and expected-violation results are recorded as warnings, re-surfacing explicit policy (PRD \u00a74.7). Survives the original guard once the severity is a warning, because a warning does not fail a test."
+    },
+    {
+      "id": "strict-violation-is-also-recorded",
+      "patch": "patches/strict-violation-is-also-recorded.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "aStrictViolationIsThrownRatherThanMerelyRecorded",
+      "label": "A Strict violation is thrown and also recorded as a warning, so it is reported twice. Survives the original guard once the severity is a warning."
     }
   ]
 }

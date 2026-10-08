@@ -125,19 +125,21 @@ struct StrictWeakOrderingLawsTests {
         let compare: @Sendable (Int, Int) -> Bool = { $0 < $1 }
 
         var sampled: [CheckResult] = []
-        await withKnownIssue("a constant generator cannot produce two distinct values") {
+        let sampledWarnings = try await recordedWarnings {
             sampled = try await checkComparatorDiscriminates(
                 over: Gen<Int>.int(in: 0...0), by: compare, distinct: { $0 != $1 }, options: sanity)
         }
+        #expect(lawsReported(in: sampledWarnings) == ["StrictWeakOrdering.discrimination"])
         let sampledText = sampled.first?.counterexample ?? ""
         #expect(sampledText.contains("the generator never produced"), "\(sampledText)")
         #expect(sampledText.contains("Widen the generator"))
 
         var walked: [CheckResult] = []
-        await withKnownIssue("a one-element carrier holds no two distinct values") {
+        let walkedWarnings = try await recordedWarnings {
             walked = try await checkComparatorDiscriminates(
                 overEvery: Every.elements("only", in: [42]), by: compare, distinct: { $0 != $1 })
         }
+        #expect(lawsReported(in: walkedWarnings) == ["StrictWeakOrdering.discrimination"])
         let walkedText = walked.first?.counterexample ?? ""
         #expect(walkedText.contains("The walk was complete"), "\(walkedText)")
         #expect(walkedText.contains("property of the carrier"))
@@ -203,15 +205,15 @@ struct StrictWeakOrderingLawsTests {
         try await checkStrictWeakOrderingLaws(overEvery: declSpace(), by: byLineOnly)
 
         // Reports — distinct declarations on one line are unordered. A Conventional
-        // violation surfaces as a recorded issue rather than a throw, and
-        // `withKnownIssue` fails if nothing is recorded, so this block IS the assertion.
+        // violation surfaces as a recorded warning rather than a throw.
         var results: [CheckResult] = []
-        await withKnownIssue("discrimination fails at Conventional tier, by design") {
+        let warnings = try await recordedWarnings {
             results = try await checkComparatorDiscriminates(
                 overEvery: declSpace(), by: byLineOnly, distinct: { $0 != $1 })
         }
         #expect(failed(results, "StrictWeakOrdering.discrimination"),
                 "the line-only comparator must fail discrimination")
+        #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.discrimination"])
     }
 
     /// The other half of that: a comparator with deliberate equivalence classes
@@ -244,12 +246,13 @@ struct StrictWeakOrderingLawsTests {
             .map { Tagged(key: $0, tag: $1) }
 
         var results: [CheckResult] = []
-        await withKnownIssue("congruence fails at Conventional tier, by design") {
+        let warnings = try await recordedWarnings {
             results = try await checkComparatorIsCongruent(
                 over: generator, by: { $0.tag < $1.tag }, options: sanity)
         }
         #expect(failed(results, "StrictWeakOrdering.congruence"),
                 "a comparator reading a field `==` ignores must fail congruence")
+        #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.congruence"])
     }
 
     // MARK: - The vacuity guard
@@ -267,7 +270,7 @@ struct StrictWeakOrderingLawsTests {
     func discriminationOnConstantGeneratorIsVacuous() async throws {
         let constant = Gen<Int>.int(in: 7...7).map { Decl(line: $0, column: 0) }
         var results: [CheckResult] = []
-        await withKnownIssue("vacuity is reported at Conventional tier") {
+        let warnings = try await recordedWarnings {
             results = try await checkComparatorDiscriminates(
                 over: constant,
                 by: { $0.line < $1.line },
@@ -276,6 +279,7 @@ struct StrictWeakOrderingLawsTests {
         }
         #expect(failed(results, "StrictWeakOrdering.discrimination"),
                 "a generator that cannot produce two distinct values must not pass")
+        #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.discrimination"])
         let text = results.first.map { String(describing: $0.outcome) } ?? ""
         #expect(text.contains("vacuous"), "the failure must say why: \(text)")
     }
@@ -300,12 +304,13 @@ struct StrictWeakOrderingLawsTests {
         // any ordinary value type the generator will not produce one.
         let allDistinct = Gen<Int>.int(in: 0...1_000_000).map { Decl(line: 0, column: $0) }
         var results: [CheckResult] = []
-        await withKnownIssue("vacuity is reported at Conventional tier") {
+        let warnings = try await recordedWarnings {
             results = try await checkComparatorIsCongruent(
                 over: allDistinct, by: { $0.column < $1.column }, options: sanity)
         }
         #expect(failed(results, "StrictWeakOrdering.congruence"),
                 "a generator with no equal pairs must not pass congruence")
+        #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.congruence"])
     }
 
 }
