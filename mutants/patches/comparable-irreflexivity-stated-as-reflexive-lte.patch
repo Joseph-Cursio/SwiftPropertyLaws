@@ -1,10 +1,10 @@
 diff --git a/Sources/PropertyLawKit/Public/ComparableLaws.swift b/Sources/PropertyLawKit/Public/ComparableLaws.swift
-index 9878472..821e7b6 100644
+index 28904ec..5bfd5b5 100644
 --- a/Sources/PropertyLawKit/Public/ComparableLaws.swift
 +++ b/Sources/PropertyLawKit/Public/ComparableLaws.swift
-@@ -54,7 +54,7 @@ private func checkIrreflexivity<Value: Comparable & Sendable, Shrinker: Sendable
+@@ -82,7 +82,7 @@ private func checkIrreflexivity<Value: Comparable & Sendable>(
          "Comparable.irreflexivity",
-         generator: generator,
+         source: source,
          options: options,
 -        property: { sample in !(sample < sample) },
 +        property: { sample in sample <= sample },
