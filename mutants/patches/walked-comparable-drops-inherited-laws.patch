@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/ComparableLaws.swift b/Sources/PropertyLawKit/Public/ComparableLaws.swift
+index 5c2f1ba..2c350b7 100644
+--- a/Sources/PropertyLawKit/Public/ComparableLaws.swift
++++ b/Sources/PropertyLawKit/Public/ComparableLaws.swift
+@@ -37,7 +37,7 @@ public func checkComparablePropertyLaws<Value: Comparable & Sendable>(
+     options: LawCheckOptions = LawCheckOptions(),
+     laws: LawSelection = .all
+ ) async throws -> [CheckResult] {
+-    try await checkComparablePropertyLaws(from: .enumerated(carrier), options: options, laws: laws)
++    try await checkComparablePropertyLaws(from: .enumerated(carrier), options: options, laws: .ownOnly)
+ }
+ 
+ /// One assembler, two sources — so a walked suite cannot run a different set of

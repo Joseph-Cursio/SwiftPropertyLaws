@@ -1,0 +1,15 @@
+diff --git a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+index 0bd7c34..5aae625 100644
+--- a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
++++ b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+@@ -172,8 +172,8 @@ enum DrawPoolDriver {
+         ) {
+             return early
+         }
+-        var rng = options.seed?.makeXoshiro() ?? Xoshiro()
+-        let initialSeed = Seed(xoshiro: rng)
++        var rng = Xoshiro()
++        let initialSeed = options.seed ?? Seed(xoshiro: rng)
+         let walk = await loop(&rng, options.budget.trialCount)
+         var result = CheckResult(
+             protocolLaw: identity.protocolLaw,

@@ -46,6 +46,13 @@ public struct LawCheckOptions: Sendable {
     /// generator if your value type is floating-point.
     public var allowNaN: Bool
 
+    /// How `Hashable.equalityConsistency`, `Equatable.transitivity` and
+    /// `Comparable.antisymmetry` pair their draws. Default `.independent`;
+    /// `.everyPairOfDraws` compares every draw of the budget with every other,
+    /// which finds equal values a wide generator otherwise never pairs up. See
+    /// ``EqualValuePairing``.
+    public var equalValuePairing: EqualValuePairing
+
     public init(
         budget: TrialBudget = .standard,
         enforcement: EnforcementMode = .default,
@@ -54,7 +61,8 @@ public struct LawCheckOptions: Sendable {
         backend: any PropertyBackend = SwiftPropertyBasedBackend(),
         expectedReplayEnvironment: Environment? = nil,
         replayRelaxation: EnvironmentRelaxation = .exact,
-        allowNaN: Bool = false
+        allowNaN: Bool = false,
+        equalValuePairing: EqualValuePairing = .independent
     ) {
         self.budget = budget
         self.enforcement = enforcement
@@ -64,5 +72,6 @@ public struct LawCheckOptions: Sendable {
         self.expectedReplayEnvironment = expectedReplayEnvironment
         self.replayRelaxation = replayRelaxation
         self.allowNaN = allowNaN
+        self.equalValuePairing = equalValuePairing
     }
 }

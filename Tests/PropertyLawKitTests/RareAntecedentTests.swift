@@ -17,7 +17,7 @@ struct RareAntecedentTests {
     /// `==` is "within 1", which is reflexive and symmetric and **not
     /// transitive**: `0 == 1` and `1 == 2`, but `0 != 2`. A real bug shape, and
     /// the kit's own planted-bug suite drives it with a hand-narrowed `0...3`.
-    private struct Rounding: Equatable, Sendable, CustomStringConvertible {
+    struct Rounding: Equatable, Sendable, CustomStringConvertible {
         let raw: Int
         static func == (lhs: Rounding, rhs: Rounding) -> Bool { abs(lhs.raw - rhs.raw) <= 1 }
         var description: String { "R(\(raw))" }
@@ -173,5 +173,149 @@ struct RareAntecedentTests {
             "Applied: never — the antecedent did not fire, so this pass tested nothing."))
         #expect(rendered(applications: 37).contains("Applied: 37 of 1000."))
         #expect(!rendered(applications: nil).contains("Applied:"))
+    }
+
+    // MARK: - Comparable's conditional laws
+
+    /// A well-mixed seed per index. Hand-written states like `(n, 2, 3, 4)` make
+    /// xoshiro's first outputs tiny, so the first two draws of a wide range are
+    /// often both its lower bound — an equal pair, which is the very thing these
+    /// tests count.
+    static func mixedSeed(_ index: UInt64) -> Seed {
+        var state = index &* 0x9E37_79B9_7F4A_7C15
+        func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var mixed = state
+            mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+            return mixed ^ (mixed >> 31)
+        }
+        return Seed(stateA: next(), stateB: next(), stateC: next(), stateD: next())
+    }
+
+    /// Antisymmetry and transitivity are Comparable's conditional laws, and now
+    /// count like the equality ones. Antisymmetry's antecedent is two values the
+    /// order calls equivalent, which for `Int` means two equal draws: a wide
+    /// domain applies it to nothing, a narrow one constantly.
+    @Test func comparableConditionalLawsReportHowOftenTheyApplied() async throws {
+        let wide = try await checkComparablePropertyLaws(
+            using: Gen<Int>.int(in: -1_000_000 ... 1_000_000),
+            options: LawCheckOptions(budget: .standard, seed: Self.mixedSeed(0)),
+            laws: .ownOnly)
+        let antisymmetry = try #require(wide.first { $0.protocolLaw == "Comparable.antisymmetry" })
+        #expect(!antisymmetry.isViolation, "the verdict is unchanged — this is reported, not enforced")
+        #expect(antisymmetry.applications == 0, "and it applied to nothing")
+
+        let narrow = try await checkComparablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ... 3),
+            options: LawCheckOptions(budget: .standard),
+            laws: .ownOnly)
+        let applied = try #require(narrow.first { $0.protocolLaw == "Comparable.antisymmetry" }?.applications)
+        // Two equal draws from four values: P = 1/4, so about 250 of 1 000.
+        #expect(applied > 100, "a narrow domain applies it constantly; got \(applied)")
+
+        // Transitivity's antecedent is common — one triple in six arrives
+        // already ordered `x <= y <= z` — but it is conditional, so it counts.
+        let transitivity = try #require(wide.first { $0.protocolLaw == "Comparable.transitivity" })
+        #expect((transitivity.applications ?? 0) > 0)
+        for law in ["Comparable.irreflexivity", "Comparable.totality", "Comparable.operatorConsistency"] {
+            let result = try #require(wide.first { $0.protocolLaw == law })
+            #expect(result.applications == nil, "\(law) is unconditional, so it is not asked")
+        }
+    }
+
+    /// An ordering by absolute value, which is antisymmetry's bug exactly: `5`
+    /// and `-5` are each `<=` the other, and are not equal.
+    struct AbsoluteOrder: Comparable, Sendable, CustomStringConvertible {
+        let cents: Int
+        static func < (lhs: AbsoluteOrder, rhs: AbsoluteOrder) -> Bool { abs(lhs.cents) < abs(rhs.cents) }
+        var description: String { "A(\(cents))" }
+    }
+
+    /// Walked, the pair exists by construction, and smallest-first ordering means
+    /// the report is `±1` rather than whichever pair a sample stumbled on.
+    @Test func walkingCatchesAnAbsoluteValueOrdering() async throws {
+        let carrier = Every.elements(
+            "a", in: (-3 ... 3).map(AbsoluteOrder.init(cents:)), size: { abs($0.cents) })
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkComparablePropertyLaws(overEvery: carrier)
+        }
+        #expect(violation?.results.map(\.protocolLaw) == ["Comparable.antisymmetry"])
+        let counterexample = violation?.results.first?.counterexample ?? ""
+        #expect(counterexample.contains("A(-1)") && counterexample.contains("A(1)"),
+                "expected the smallest refuting pair; got \(counterexample)")
+    }
+
+    /// One assembler serves both entries, so they cannot disagree about which
+    /// laws run — including the inherited `Equatable` chain.
+    @Test func walkedComparableRunsTheSameLawsAsSampled() async throws {
+        let walked = try await checkComparablePropertyLaws(overEvery: Every.elements("n", in: 0 ..< 8))
+        let sampled = try await checkComparablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ..< 8), options: LawCheckOptions(budget: .sanity))
+        #expect(walked.map(\.protocolLaw) == sampled.map(\.protocolLaw))
+        #expect(walked.allSatisfy { !$0.isViolation }, "a correct Comparable clears the carrier")
+        #expect(walked.allSatisfy { $0.coverage?.isComplete == true }, "and says it covered all of it")
+    }
+
+    // MARK: - Generator range (the README's "Laws that need equal values")
+
+    /// `==` compares whole dollars while the synthesized hash uses every cent —
+    /// the classic `Hashable` bug: `Set` will hold `$(250)` and `$(299)` both.
+    struct DollarMoney: Hashable, Sendable, CustomStringConvertible {
+        let cents: Int
+        static func == (lhs: DollarMoney, rhs: DollarMoney) -> Bool { lhs.cents / 100 == rhs.cents / 100 }
+        var description: String { "$(\(cents))" }
+    }
+
+    /// Of twenty well-mixed seeds at `.standard`, how many runs threw. Callers
+    /// pass `.ownOnly` because the inherited `Equatable` laws hold for both
+    /// fixtures and would only double the cost.
+    private func seedsCaught(_ run: (LawCheckOptions) async throws -> Void) async -> Int {
+        var caught = 0
+        for index in UInt64(0) ..< 20 {
+            do {
+                try await run(LawCheckOptions(budget: .standard, seed: Self.mixedSeed(index)))
+            } catch is PropertyLawViolation {
+                caught += 1
+            } catch {}
+        }
+        return caught
+    }
+
+    /// Measured over 100 seeds: ±1 000 000 catches it in about 7 runs of 100, and
+    /// any range a few hundred cents wide in every run. The bound on `wide` is
+    /// loose on purpose — what it pins is that a wide range mostly misses.
+    @Test func aDollarEqualityIsCaughtFromANarrowRangeAndMostlyMissedFromAWideOne() async {
+        func check(_ range: ClosedRange<Int>) async -> Int {
+            await seedsCaught { options in
+                _ = try await checkHashablePropertyLaws(
+                    using: Gen<Int>.int(in: range).map(DollarMoney.init(cents:)), options: options, laws: .ownOnly)
+            }
+        }
+        let wide = await check(-1_000_000 ... 1_000_000)
+        let narrow = await check(0 ... 299)
+        #expect(narrow == 20)
+        #expect(wide <= 5, "a wide range should mostly miss it; caught \(wide) of 20")
+
+        // The README's walked example: seven values this `==` calls equal.
+        await #expect(throws: PropertyLawViolation.self) {
+            try await checkHashablePropertyLaws(
+                overEvery: Every.elements("m", in: (-3 ... 3).map(DollarMoney.init(cents:))))
+        }
+    }
+
+    /// Narrowing has to keep the refuting pair reachable. An ordering by absolute
+    /// value fails only on a pair like `5` and `-5`, so `0 ... 299` — the range
+    /// that catches the dollar bug every time — cannot catch this one at all.
+    @Test func narrowingMustKeepTheRefutingPairReachable() async {
+        func check(_ range: ClosedRange<Int>) async -> Int {
+            await seedsCaught { options in
+                _ = try await checkComparablePropertyLaws(
+                    using: Gen<Int>.int(in: range).map(AbsoluteOrder.init(cents:)), options: options, laws: .ownOnly)
+            }
+        }
+        #expect(await check(-50 ... 50) == 20, "symmetric and narrow: caught every run")
+        #expect(await check(-1_000_000 ... 1_000_000) == 0, "wide: two draws never share an absolute value")
+        #expect(await check(0 ... 299) == 0, "one-sided: no pair the order confuses exists to draw")
     }
 }

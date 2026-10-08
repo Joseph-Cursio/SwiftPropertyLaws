@@ -60,6 +60,14 @@ public struct CheckResult: Sendable, Hashable {
     /// ``SpaceCoverage``: surface the fact, do not fabricate a verdict.
     public internal(set) var applications: Int?
 
+    /// How a law that pooled its draws paired them (``EqualValuePairing``).
+    ///
+    /// `nil` — every result whose trials drew their own values — means the law
+    /// did not pool. When it did, `trials` counts **draws** rather than
+    /// property evaluations, because a pool of 1 000 draws makes 499 500 pairs
+    /// and `applications` counts among the pairs.
+    public internal(set) var pairedDraws: PairedDraws?
+
     public init(
         protocolLaw: String,
         tier: StrictnessTier,
@@ -72,7 +80,8 @@ public struct CheckResult: Sendable, Hashable {
         shrunkFrom: String? = nil,
         shrinkSteps: Int = 0,
         coverage: SpaceCoverage? = nil,
-        applications: Int? = nil
+        applications: Int? = nil,
+        pairedDraws: PairedDraws? = nil
     ) {
         self.protocolLaw = protocolLaw
         self.tier = tier
@@ -86,6 +95,7 @@ public struct CheckResult: Sendable, Hashable {
         self.shrinkSteps = shrinkSteps
         self.coverage = coverage
         self.applications = applications
+        self.pairedDraws = pairedDraws
     }
 
     public var isViolation: Bool {
@@ -102,6 +112,19 @@ public struct CheckResult: Sendable, Hashable {
         case .passed, .suppressed:
             return nil
         }
+    }
+}
+
+/// The extent of a pooled run: how many values it drew, and how many pairs of
+/// them it compared. A failing run stops at the draw that completed the
+/// refuting pair, so both describe how far it got.
+public struct PairedDraws: Sendable, Hashable {
+    public let draws: Int
+    public let pairs: Int
+
+    public init(draws: Int, pairs: Int) {
+        self.draws = draws
+        self.pairs = pairs
     }
 }
 

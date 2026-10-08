@@ -76,3 +76,28 @@ extension Gen where Value == CyclicOrder {
         Gen<Int>.int(in: 0...2).map { CyclicOrder(bucket: $0) }
     }
 }
+
+/// Violates Comparable.irreflexivity: `<` is written as `<=`, so `x < x` holds.
+/// `==` is synthesized and correct.
+///
+/// Every other Comparable law is stated over two values and sees this bug only
+/// when the two are equal — which, at the width the generator below draws from,
+/// two independent draws essentially never are. So this is the violator that
+/// shows the unary law is needed rather than redundant.
+struct NonStrictLessThan: Comparable, Sendable, CustomStringConvertible {
+    let cents: Int
+
+    static func < (lhs: NonStrictLessThan, rhs: NonStrictLessThan) -> Bool {
+        lhs.cents <= rhs.cents
+    }
+
+    var description: String { "NSL(\(cents))" }
+}
+
+extension Gen where Value == NonStrictLessThan {
+    /// Deliberately wide, ±1 000 000 — a realistic money range, and wide enough
+    /// that an equal pair turns up about once per thousand runs of 1 000 trials.
+    static func nonStrictLessThan() -> Generator<NonStrictLessThan, some SendableSequenceType> {
+        Gen<Int>.int(in: -1_000_000 ... 1_000_000).map { NonStrictLessThan(cents: $0) }
+    }
+}

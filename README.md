@@ -40,7 +40,7 @@ Each is a real production bug class. None is caught by `swift build`.
 |---|---|
 | `Equatable` | reflexivity, symmetry, transitivity, negation consistency |
 | `Hashable` | hash/equality consistency, stability within a process, distribution |
-| `Comparable` | antisymmetry, transitivity, totality, operator consistency |
+| `Comparable` | irreflexivity, antisymmetry, transitivity, totality, operator consistency |
 | `Strideable` | distance round-trip, advance round-trip, zero-advance identity, self-distance is zero |
 | `Codable` | round-trip fidelity (`.strict` / `.semantic` / `.partial` modes) |
 | `RawRepresentable` | `T(rawValue: x.rawValue) == x` round-trip |
@@ -185,6 +185,73 @@ Not every law is universally true in idiomatic Swift. `Hashable` allows hash col
 Pass `enforcement: .strict` and every tier throws. Warning severity needs Swift 6.3 or later; on an older toolchain Swift Testing records the violation as an error, which marks the test failed even though nothing throws.
 
 PRD §4.2 has the full tier-per-law table.
+
+## Laws that need equal values
+
+Three laws only test anything when the values a trial draws are equal:
+
+| Law | Tests something only when |
+|---|---|
+| `Hashable.equalityConsistency` | `x == y` |
+| `Equatable.transitivity` | `x == y` and `y == z` |
+| `Comparable.antisymmetry` | `x <= y` and `y <= x` |
+
+On every other trial they pass without checking anything. A trial draws its values independently, so the wider the generator, the rarer equal values get. Take a type whose `==` compares whole dollars while the synthesized `hash(into:)` uses every cent:
+
+```swift
+struct Money: Hashable {
+    let cents: Int
+    static func == (lhs: Money, rhs: Money) -> Bool {
+        lhs.cents / 100 == rhs.cents / 100
+    }
+}
+```
+
+`Money(cents: 250) == Money(cents: 299)`, but the two hash differently, so a `Set<Money>` can hold both. An ordering by `abs(cents)` has the same problem with antisymmetry: `5` and `-5` are each `<=` the other but aren't equal. How often the default 1 000 trials catch each bug, measured over 100 seeds:
+
+| `Gen<Int>.int(in: …).map(Money.init(cents:))` | dollar `==` caught | `abs` ordering caught |
+|---|---|---|
+| `-1_000_000 ... 1_000_000` | 7% | 0% |
+| `-10_000 ... 10_000` | 100% | 6% |
+| `-150 ... 150` | 100% | 95% |
+| `0 ... 299` | 100% | 0% |
+
+What to do:
+
+- **Narrow the generator** until equal values turn up often, and keep the values that break the law within range. `0 ... 299` catches the dollar bug, usually on the first trial, but can never catch the `abs` bug, because it has no negative values. Keep the wide generator too: it's what reaches the rest of the domain.
+- **Or walk a small set of values.** `checkEquatablePropertyLaws(overEvery:)`, `checkHashablePropertyLaws(overEvery:)` and `checkComparablePropertyLaws(overEvery:)` test every pair and triple of an explicit list, so the equal values are there by construction:
+
+  ```swift
+  try await checkHashablePropertyLaws(
+      overEvery: Every.elements("money", in: (-3 ... 3).map(Money.init(cents:)))
+  )
+  ```
+
+- **Or compare every pair of the draws.** By default each trial draws its own values. With `equalValuePairing: .everyPairOfDraws`, these three laws compare every value the budget drew with every other one, so they find the equal values that were drawn but never landed in the same trial:
+
+  ```swift
+  try await checkHashablePropertyLaws(
+      using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(Money.init(cents:)),
+      options: LawCheckOptions(equalValuePairing: .everyPairOfDraws)
+  )
+  ```
+
+  It finds both bugs without your knowing where the equal values are. Measured at `.standard` over 200 seeds:
+
+  | Bug, range | default | `.everyPairOfDraws` | `.recentDraws(window: 32)` |
+  |---|---|---|---|
+  | dollar `==`, `-1_000_000 ... 1_000_000` | 5% | 100% | 74% |
+  | `abs` ordering, `-10_000 ... 10_000` | 8% | 100% | 84% |
+  | `abs` ordering, `-1_000_000 ... 1_000_000` | 0% | 20% | 2% |
+  | non-transitive `==`, `-10_000 ... 10_000` | 0% | 86% | 2% |
+
+  The cost grows with the square of the budget: 1 000 draws make 499 500 comparisons, and 10 000 draws make 50 million. It's cheap when `==` is cheap or when generating values is the expensive part. It's expensive when `==` does real work. For a type whose `==` sorts 100 elements, the Hashable suite at `.standard` takes 218 s of CPU instead of 3 s. Use it at `.sanity` or `.standard`. Where that's too slow, use `.recentDraws(window: 32)`, which compares each draw with the 32 before it at linear cost. It keeps most of the gain for `equalityConsistency` and `antisymmetry`, but little for `transitivity`, which needs two equal pairs that share a value.
+
+  When pooled, a result's `trials` counts draws, `pairedDraws` reports how many pairs were compared, and `applications` counts among those pairs. The seed replays the same pool.
+
+- **Check `applications`.** Each of these laws reports on its `CheckResult` how many trials its condition held in. `0` means it passed without testing anything.
+
+The kit can't build the equal pairs itself. Without knowing the type, the only value it can make that equals `x` is `x` itself, or a copy of it, and an identical pair can't break any of these laws. The one law that pairing `x` with itself does test is `Comparable.irreflexivity` (`!(x < x)`), which the kit checks directly, so a `<` written as `<=` is caught at any range.
 
 ## Suppressions
 

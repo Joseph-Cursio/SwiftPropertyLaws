@@ -49,6 +49,9 @@ internal enum ViolationFormatter {
     /// draws it made; a walk over an `Enumeration` knows its denominator and
     /// says so, which is the distinction `SpaceCoverage` exists to preserve.
     private static func extentDescription(_ result: CheckResult) -> String {
+        if let pooled = result.pairedDraws {
+            return "\(pooled.draws) draws, \(pooled.pairs) pairs compared"
+        }
         guard let coverage = result.coverage else { return "\(result.trials) trials" }
         if result.isViolation {
             return "failed at case \(coverage.casesRun) of \(coverage.spaceSize)"
@@ -101,6 +104,10 @@ internal enum ViolationFormatter {
         guard let applications = result.applications else { return nil }
         guard applications > 0 else {
             return "  Applied: never — the antecedent did not fire, so this pass tested nothing."
+        }
+        // Pooled, the count is among pairs (or the chains they form), not trials.
+        if let pooled = result.pairedDraws {
+            return "  Applied: \(applications) times among \(pooled.pairs) pairs."
         }
         return "  Applied: \(applications) of \(result.trials)."
     }

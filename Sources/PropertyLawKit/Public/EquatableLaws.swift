@@ -129,7 +129,7 @@ private func checkTransitivity<Value: Equatable & Sendable>(
     shrink: (@Sendable (Value) -> [Value])?
 ) async -> CheckResult {
     let applications = Applications()
-    return await reportingApplications(applications, of: await runTernaryLaw(
+    return await reportingApplications(applications, of: await runEqualityChainLaw(
         "Equatable.transitivity",
         source: source,
         options: options,

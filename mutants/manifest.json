@@ -219,6 +219,118 @@
       "label": "The sampled-from-space path drops its index shrinker, so it reports the first failure drawn rather than the smallest \u2014 which is exactly the concession the plain generator bridge makes, and the reason this path exists."
     },
     {
+      "id": "comparable-irreflexivity-always-holds",
+      "patch": "patches/comparable-irreflexivity-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsNonStrictLessThan",
+      "label": "Comparable.irreflexivity always returns true \u2014 a `<` written as `<=` is no longer caught. No other Comparable law stands in: at the violator's \u00b11 000 000 they see it only when two draws are equal."
+    },
+    {
+      "id": "comparable-irreflexivity-stated-as-reflexive-lte",
+      "patch": "patches/comparable-irreflexivity-stated-as-reflexive-lte.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "irreflexivityHoldsForNaN",
+      "label": "Comparable.irreflexivity restated as `x <= x`. Equivalent whenever `<=` is derived from `<`, so it still catches the planted violator \u2014 but NaN's `<=` is IEEE-754's and false, so it fails every Double."
+    },
+    {
+      "id": "comparable-antisymmetry-never-counts",
+      "patch": "patches/comparable-antisymmetry-never-counts.patch",
+      "shape": "rare-antecedent",
+      "expected": "killed",
+      "test": "comparableConditionalLawsReportHowOftenTheyApplied",
+      "label": "Comparable.antisymmetry stops recording its applications, so a run that applied the law constantly reports that it never did \u2014 the count goes on saying zero whatever the generator, and every verdict is unchanged."
+    },
+    {
+      "id": "walked-comparable-drops-inherited-laws",
+      "patch": "patches/walked-comparable-drops-inherited-laws.patch",
+      "shape": "rare-antecedent",
+      "expected": "killed",
+      "test": "walkedComparableRunsTheSameLawsAsSampled",
+      "label": "The walked Comparable entry ignores `laws:` and runs `.ownOnly`, so the inherited Equatable chain \u2014 whose transitivity needs equal values exactly as antisymmetry does \u2014 is silently not walked."
+    },
+    {
+      "id": "pool-compares-only-the-previous-draw",
+      "patch": "patches/pool-compares-only-the-previous-draw.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "thePoolReportsDrawsAndPairs",
+      "label": "A pooled pair law compares each draw with the one before it only, whatever the lookback: 999 pairs from 1 000 draws instead of 499 500, so the pool finds almost none of the collisions it exists for while every result still says it pooled."
+    },
+    {
+      "id": "chain-walk-skips-an-earlier-middle",
+      "patch": "patches/chain-walk-skips-an-earlier-middle.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "aChainIsFoundWhicheverMemberIsDrawnLast",
+      "label": "The chain walk examines only chains whose middle is the newest draw, so a chain completed by an END drawn last (through a middle drawn earlier) is never tested."
+    },
+    {
+      "id": "chain-walk-skips-the-newest-middle",
+      "patch": "patches/chain-walk-skips-the-newest-middle.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "aChainIsFoundWhicheverMemberIsDrawnLast",
+      "label": "The chain walk examines only chains through an earlier middle, so two earlier draws that the newest draw links (and that do not link each other) are never tested as a chain."
+    },
+    {
+      "id": "pooled-failure-is-not-shrunk",
+      "patch": "patches/pooled-failure-is-not-shrunk.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "aPooledFailureShrinks",
+      "label": "A pooled failure skips the minimizer, so the counterexample is whichever pair the pool met first rather than the smallest the law's shrinker reaches."
+    },
+    {
+      "id": "pooled-trials-count-pairs",
+      "patch": "patches/pooled-trials-count-pairs.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "thePoolReportsDrawsAndPairs",
+      "label": "A pooled result reports pairs compared as its trials, so `trials` stops meaning draws and a .standard run claims 499 500 of them."
+    },
+    {
+      "id": "pooled-run-ignores-the-seed",
+      "patch": "patches/pooled-run-ignores-the-seed.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "theSeedReplaysThePool",
+      "label": "The pool is drawn from a fresh RNG rather than the caller's seed, while the result still reports a seed \u2014 a replay handle that redraws a different pool."
+    },
+    {
+      "id": "every-binary-law-pools",
+      "patch": "patches/every-binary-law-pools.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "onlyTheThreeLawsThatNeedEqualValuesPool",
+      "label": "Every two-value law pools when the option is set, not just the two that need equal values \u2014 quadratic cost on symmetry, totality and operator consistency, which gain nothing from it."
+    },
+    {
+      "id": "inherited-laws-drop-the-pairing",
+      "patch": "patches/inherited-laws-drop-the-pairing.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "onlyTheThreeLawsThatNeedEqualValuesPool",
+      "label": "The inherited-suite rebase resets the pairing, so `checkHashablePropertyLaws(.all)` pools its own law but runs the inherited Equatable.transitivity independently \u2014 the caller's option silently stops at the protocol boundary."
+    },
+    {
+      "id": "default-pairing-pools",
+      "patch": "patches/default-pairing-pools.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "theDefaultDoesNotPool",
+      "label": "LawCheckOptions defaults to .everyPairOfDraws, making the quadratic path every caller's default."
+    },
+    {
+      "id": "formatter-counts-pooled-applications-against-trials",
+      "patch": "patches/formatter-counts-pooled-applications-against-trials.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "theFormatterSaysThePoolAndCountsAmongPairs",
+      "label": "The formatter renders a pooled application count against `trials` (draws), so 25 applications among 499 500 pairs read as `25 of 1000`."
+    },
+    {
       "id": "scheduler-wakes-sleepers-before-quiescence",
       "patch": "patches/scheduler-wakes-sleepers-before-quiescence.patch",
       "shape": "virtual-time",

@@ -28,6 +28,8 @@ Requires a clean working tree.
 | `equatable-transitivity-always-holds` | law-detection | killed | `detectsNonTransitiveEquality` |
 | `monoid-left-identity-always-holds` | law-detection | killed | `detectsBadLeftIdentity` |
 | `equatable-symmetry-always-holds` | law-detection | killed | `detectsSymmetryOnlyEquality` |
+| `comparable-irreflexivity-always-holds` | law-detection | killed | `detectsNonStrictLessThan` |
+| `comparable-irreflexivity-stated-as-reflexive-lte` | law-detection | killed | `irreflexivityHoldsForNaN` |
 | `product-orders-row-major` | enumeration-machinery | killed | `productWalkMatchesABruteForceSummedSizeOrdering` |
 | `prefix-forgets-full-count` | enumeration-machinery | killed | `prefixTruncatesButRemembersTheFullSpace` |
 | `walk-does-not-stop-at-first-failure` | enumeration-machinery | killed | `aWalkStopsAtTheFirstFailure` |
@@ -48,6 +50,18 @@ Requires a clean working tree.
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
+| `comparable-antisymmetry-never-counts` | rare-antecedent | killed | `comparableConditionalLawsReportHowOftenTheyApplied` |
+| `walked-comparable-drops-inherited-laws` | rare-antecedent | killed | `walkedComparableRunsTheSameLawsAsSampled` |
+| `pool-compares-only-the-previous-draw` | equal-value-pooling | killed | `thePoolReportsDrawsAndPairs` |
+| `chain-walk-skips-an-earlier-middle` | equal-value-pooling | killed | `aChainIsFoundWhicheverMemberIsDrawnLast` |
+| `chain-walk-skips-the-newest-middle` | equal-value-pooling | killed | `aChainIsFoundWhicheverMemberIsDrawnLast` |
+| `pooled-failure-is-not-shrunk` | equal-value-pooling | killed | `aPooledFailureShrinks` |
+| `pooled-trials-count-pairs` | equal-value-pooling | killed | `thePoolReportsDrawsAndPairs` |
+| `pooled-run-ignores-the-seed` | equal-value-pooling | killed | `theSeedReplaysThePool` |
+| `every-binary-law-pools` | equal-value-pooling | killed | `onlyTheThreeLawsThatNeedEqualValuesPool` |
+| `inherited-laws-drop-the-pairing` | equal-value-pooling | killed | `onlyTheThreeLawsThatNeedEqualValuesPool` |
+| `default-pairing-pools` | equal-value-pooling | killed | `theDefaultDoesNotPool` |
+| `formatter-counts-pooled-applications-against-trials` | equal-value-pooling | killed | `theFormatterSaysThePoolAndCountsAmongPairs` |
 | `scheduler-wakes-sleepers-before-quiescence` | virtual-time | killed | `aSourceSlowToReachItsSleepIsWaitedFor` |
 | `hook-diverts-nothing` | virtual-time | killed | `aSourceSlowToReachItsSleepIsWaitedFor` |
 | `virtual-clock-wakes-the-latest-sleeper` | virtual-time | killed | `sleepersWakeInDeadlineOrderThenRegistrationOrder` |
@@ -70,6 +84,13 @@ Requires a clean working tree.
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
 test that demanded it be caught goes red. All four verified killed.
+
+`comparable-irreflexivity-always-holds` is the same shape, and
+`comparable-irreflexivity-stated-as-reflexive-lte` is a variant worth having: it
+does not blind the law but **restates** it, as `x <= x`. That spelling is
+equivalent whenever `<=` is derived from `<`, so it still catches the planted
+violator — and still breaks the law, because NaN's `<=` is IEEE-754's and false,
+so it fails every `Double`. Only a test over NaN tells the two spellings apart.
 
 **The `enumeration-machinery` shape is different, and deliberately so.** A law
 mutant asks *does the suite still catch this bug?* A machinery mutant asks *does
@@ -140,6 +161,29 @@ times the trials it asked for. **A deprecation that changes behaviour rather
 than only its spelling is the classic migration hazard**, and it is invisible to
 every law — they all still pass, just slower. Only a test that reads the shim's
 result can see it.
+
+**`rare-antecedent` guards the two remedies for a law whose antecedent a wide
+generator does not reach**: the count that says the law never applied, and the
+walk that makes it apply. Neither mutant changes a verdict.
+`comparable-antisymmetry-never-counts` leaves the count at zero however often
+the law applied, which is worse than no count, because zero is the number that
+tells a reader to distrust the pass. `walked-comparable-drops-inherited-laws`
+walks Comparable's own laws and silently skips the inherited `Equatable` ones,
+whose transitivity needs equal values exactly as antisymmetry does.
+
+**`equal-value-pooling` guards an opt-in whose failure modes are cost and
+honesty more than verdicts.** Pooling exists to find the equal pairs a budget's
+draws already contain, and most of these mutants keep every planted bug in the
+fixtures caught or every correct type passing while breaking something else.
+`pool-compares-only-the-previous-draw` still pools, still reports a pool, and
+compares 999 pairs where it claims to compare 499 500. `every-binary-law-pools`
+and `default-pairing-pools` change no verdict at all — they make the quadratic
+path run where nobody asked for it, which only a test of *which laws pooled*
+can see. `pooled-run-ignores-the-seed` hands back a seed that redraws a
+different pool. The two chain mutants are the ones a detection rate would miss
+for a long time: each drops one of the two orders in which a chain's members
+can arrive, so a pool still finds most chains, and only a scripted draw order
+pins both.
 
 **`virtual-time` guards the scheduler the timed laws stand on.** Each mutant leaves
 `runInVirtualTime` working well enough to drive a simple pipeline. What it takes

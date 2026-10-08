@@ -1,0 +1,14 @@
+diff --git a/Sources/PropertyLawKit/Internal/ViolationFormatter.swift b/Sources/PropertyLawKit/Internal/ViolationFormatter.swift
+index b449785..7c123d3 100644
+--- a/Sources/PropertyLawKit/Internal/ViolationFormatter.swift
++++ b/Sources/PropertyLawKit/Internal/ViolationFormatter.swift
+@@ -106,9 +106,6 @@ internal enum ViolationFormatter {
+             return "  Applied: never — the antecedent did not fire, so this pass tested nothing."
+         }
+         // Pooled, the count is among pairs (or the chains they form), not trials.
+-        if let pooled = result.pairedDraws {
+-            return "  Applied: \(applications) times among \(pooled.pairs) pairs."
+-        }
+         return "  Applied: \(applications) of \(result.trials)."
+     }
+ 
