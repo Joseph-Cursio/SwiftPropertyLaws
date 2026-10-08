@@ -150,7 +150,13 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         let failure: VirtualTimeError
         while true {
             drain()
-            if let result = outcome.result { return result }
+            if let result = outcome.result {
+                // The body is done, but a task it started may still be asleep.
+                // Wake it with `CancellationError` rather than leave it parked
+                // on a clock nobody will advance again.
+                tearDown(root, timeline)
+                return result
+            }
             guard hook.isIntact else {
                 failure = .foreignHookInstalled
                 break
@@ -189,11 +195,11 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         return job
     }
 
-    /// Unwind a run that could not finish: cancel the body, wake every
-    /// sleeper with `CancellationError`, and let the tasks run out. Bounded,
-    /// because a task that ignores cancellation and sleeps again would keep
-    /// it going; whatever is left after the rounds is leaked, which a run
-    /// that has already failed can afford.
+    /// End a run so that none of it outlives the scheduler: cancel the body
+    /// (a no-op once it has returned), wake every sleeper with
+    /// `CancellationError`, and let the tasks run out. Bounded, because a
+    /// task that ignores cancellation and sleeps again would keep it going;
+    /// whatever is left after the rounds is leaked.
     private func tearDown(_ root: Task<Void, Never>, _ timeline: VirtualTimeline) {
         root.cancel()
         for _ in 0 ..< 8 {

@@ -289,6 +289,14 @@
       "expected": "killed",
       "test": "cancellationLawRejectsASleepThatIgnoresCancellation",
       "label": "cancellationCeasesEmission checks only the prefix. Virtual time keeps advancing, so a sleep that ignores cancellation is woken later, sees a prefix and passes \u2014 the check that replaced 'a hang is the failure' is gone."
+    },
+    {
+      "id": "run-leaves-sleepers-parked",
+      "patch": "patches/run-leaves-sleepers-parked.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds",
+      "label": "A run that finishes returns without waking sleepers its body left behind, so those tasks stay parked on a clock nobody will advance again."
     }
   ]
 }

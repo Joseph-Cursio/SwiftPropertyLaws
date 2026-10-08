@@ -85,6 +85,28 @@ struct VirtualTimeTests {
         #expect(now == .milliseconds(10))
     }
 
+    /// A body may return while a task it started is still asleep. Nothing
+    /// will advance the clock again, so the run wakes it on the way out
+    /// rather than leaving it parked on a continuation forever. Checked
+    /// without awaiting the task, so a regression fails instead of hanging.
+    @Test func aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds() async throws {
+        let left = LeftBehind()
+        let now = try await runInVirtualTime { clock in
+            Task {
+                do {
+                    try await clock.sleep(for: .seconds(1))
+                    left.record(.success(()))
+                } catch {
+                    left.record(.failure(error))
+                }
+            }
+            return clock.now.offset
+        }
+        #expect(now == .zero)
+        let outcome = try #require(left.outcome, "the sleeper was still parked after the run returned")
+        #expect(throws: CancellationError.self) { try outcome.get() }
+    }
+
     /// A cancel can reach the timeline before the sleep it targets has
     /// registered — the handler runs at once for a task cancelled on entry,
     /// and from another thread it can simply arrive first. The ticket it
@@ -262,6 +284,24 @@ private final class Flag: @unchecked Sendable {
     func set() {
         lock.lock()
         value = true
+        lock.unlock()
+    }
+}
+
+/// How a task started inside a run ended, recorded by the task itself.
+private final class LeftBehind: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: Result<Void, Error>?
+
+    var outcome: Result<Void, Error>? {
+        lock.lock()
+        defer { lock.unlock() }
+        return stored
+    }
+
+    func record(_ outcome: Result<Void, Error>) {
+        lock.lock()
+        stored = outcome
         lock.unlock()
     }
 }
