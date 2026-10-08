@@ -126,6 +126,46 @@ struct EqualValuePairingMeasurements {
         }
     }
 
+    // MARK: - The control: buy the same pairs with a bigger budget
+
+    /// For a law whose antecedent is one equal pair, detection depends on how
+    /// many pairs were compared and nothing else, so `.everyPairOfDraws` at 1 000
+    /// draws is `.custom(trials: 499_500)` drawn independently — the same 499 500
+    /// pairs. This is what the pool saves against simply raising the budget:
+    /// the second draw of every pair, and the per-trial overhead.
+    @Test func samePairsFromABiggerBudget() async {
+        print("\n| `Hashable.equalityConsistency` alone, debug CPU | 1 000 pairs | 499 500 pairs, pooled | "
+            + "499 500 pairs, independent |")
+        print("|---|---|---|---|")
+        await Self.samePairs("`Int`", Gen<Int>.int(in: -1_000_000 ... 1_000_000))
+        await Self.samePairs(
+            "`[Int]`, 100 random elements", Gen<Int>.int(in: -1_000_000 ... 1_000_000).array(of: 100))
+    }
+
+    private static func samePairs<Value: Hashable & Sendable, Shrinker: SendableSequenceType>(
+        _ name: String, _ generator: Generator<Value, Shrinker>
+    ) async {
+        func run(_ budget: TrialBudget, _ pairing: EqualValuePairing) async -> String {
+            let options = LawCheckOptions(
+                budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: pairing)
+            return await cpuTime {
+                _ = await runEqualValueBinaryLaw(
+                    "Hashable.equalityConsistency",
+                    source: .sampling(generator),
+                    options: options,
+                    property: { first, second in
+                        guard first == second else { return true }
+                        return first.hashValue == second.hashValue
+                    },
+                    formatCounterexample: { _, _, _ in "" })
+            }
+        }
+        let baseline = await run(.standard, .independent)
+        let pooled = await run(.standard, .everyPairOfDraws)
+        let raised = await run(.custom(trials: 499_500), .independent)
+        print("| \(name) | \(baseline) | \(pooled) | \(raised) |")
+    }
+
     // MARK: - Antisymmetry by sorting (measured, not shipped)
 
     /// The one law of the three with a cheaper route to its pairs. Sort the pool
