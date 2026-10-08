@@ -48,6 +48,11 @@ Requires a clean working tree.
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
+| `nonfatal-violation-records-as-error` | enforcement-reporting | killed | `subStrictViolationUnderDefaultIsAWarningNotAFailure` |
+| `nonfatal-violation-is-silent` | enforcement-reporting | killed | `subStrictViolationUnderDefaultIsAWarningNotAFailure` |
+| `default-enforcement-escalates-every-tier` | enforcement-reporting | killed | `unstableHasherDoesNotThrowByDefault` |
+| `suppressed-violation-is-reported` | enforcement-reporting | killed | `suppressedAndExpectedViolationsStayQuiet` |
+| `strict-violation-is-also-recorded` | enforcement-reporting | killed | `aStrictViolationIsThrownRatherThanMerelyRecorded` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -122,3 +127,17 @@ times the trials it asked for. **A deprecation that changes behaviour rather
 than only its spelling is the classic migration hazard**, and it is invisible to
 every law — they all still pass, just slower. Only a test that reads the shim's
 result can see it.
+
+**`enforcement-reporting` guards what a check *says* when it does not throw.**
+Under `.default` a sub-Strict violation is recorded as a Swift Testing warning,
+and both halves of that are a claim: recorded, and only a warning. The first
+mutant is the behaviour that shipped until 2026-10-07 — recorded at error
+severity, failing the test it meant only to warn about — and it was invisible to
+the suite then, because every test wrapped the violation in a bare
+`withKnownIssue`, which absorbs an error as readily as a warning. The killers
+now collect warnings through `recordedWarnings`, which lets errors and thrown
+errors through. `default-enforcement-escalates-every-tier` is the sharpest:
+against the original suite, all six tests whose purpose is "does not throw by
+default" passed it, each absorbing the throw as a known issue. The last two
+would survive a severity change made without its tests: a warning does not
+fail a test, so "nothing is recorded" has to be asserted rather than assumed.
