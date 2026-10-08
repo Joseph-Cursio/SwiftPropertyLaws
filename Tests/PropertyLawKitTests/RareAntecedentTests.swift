@@ -174,4 +174,53 @@ struct RareAntecedentTests {
         #expect(rendered(applications: 37).contains("Applied: 37 of 1000."))
         #expect(!rendered(applications: nil).contains("Applied:"))
     }
+
+    // MARK: - Comparable's conditional laws
+
+    /// A well-mixed seed per index. Hand-written states like `(n, 2, 3, 4)` make
+    /// xoshiro's first outputs tiny, so the first two draws of a wide range are
+    /// often both its lower bound — an equal pair, which is the very thing these
+    /// tests count.
+    static func mixedSeed(_ index: UInt64) -> Seed {
+        var state = index &* 0x9E37_79B9_7F4A_7C15
+        func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var mixed = state
+            mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+            return mixed ^ (mixed >> 31)
+        }
+        return Seed(stateA: next(), stateB: next(), stateC: next(), stateD: next())
+    }
+
+    /// Antisymmetry and transitivity are Comparable's conditional laws, and now
+    /// count like the equality ones. Antisymmetry's antecedent is two values the
+    /// order calls equivalent, which for `Int` means two equal draws: a wide
+    /// domain applies it to nothing, a narrow one constantly.
+    @Test func comparableConditionalLawsReportHowOftenTheyApplied() async throws {
+        let wide = try await checkComparablePropertyLaws(
+            using: Gen<Int>.int(in: -1_000_000 ... 1_000_000),
+            options: LawCheckOptions(budget: .standard, seed: Self.mixedSeed(0)),
+            laws: .ownOnly)
+        let antisymmetry = try #require(wide.first { $0.protocolLaw == "Comparable.antisymmetry" })
+        #expect(!antisymmetry.isViolation, "the verdict is unchanged — this is reported, not enforced")
+        #expect(antisymmetry.applications == 0, "and it applied to nothing")
+
+        let narrow = try await checkComparablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ... 3),
+            options: LawCheckOptions(budget: .standard),
+            laws: .ownOnly)
+        let applied = try #require(narrow.first { $0.protocolLaw == "Comparable.antisymmetry" }?.applications)
+        // Two equal draws from four values: P = 1/4, so about 250 of 1 000.
+        #expect(applied > 100, "a narrow domain applies it constantly; got \(applied)")
+
+        // Transitivity's antecedent is common — one triple in six arrives
+        // already ordered `x <= y <= z` — but it is conditional, so it counts.
+        let transitivity = try #require(wide.first { $0.protocolLaw == "Comparable.transitivity" })
+        #expect((transitivity.applications ?? 0) > 0)
+        for law in ["Comparable.irreflexivity", "Comparable.totality", "Comparable.operatorConsistency"] {
+            let result = try #require(wide.first { $0.protocolLaw == law })
+            #expect(result.applications == nil, "\(law) is unconditional, so it is not asked")
+        }
+    }
 }

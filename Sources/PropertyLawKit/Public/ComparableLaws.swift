@@ -62,39 +62,51 @@ private func checkIrreflexivity<Value: Comparable & Sendable, Shrinker: Sendable
     )
 }
 
+// Conditional on `x <= y && y <= x` — two values the order calls equivalent —
+// and so rare under a wide generator that the law can pass having applied to
+// nothing: an ordering by `abs(cents)` is antisymmetry's bug exactly, and at
+// ±1 000 000 two draws share an absolute value about once in a million pairs.
+// The count is reported, not enforced, for the reason `reportingApplications`
+// gives.
 private func checkAntisymmetry<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await runBinaryLaw(
+    let applications = Applications()
+    return await reportingApplications(applications, of: await runBinaryLaw(
         "Comparable.antisymmetry",
         generator: generator,
         options: options,
         property: { first, second in
-            !(first <= second && second <= first) || (first == second)
+            guard first <= second, second <= first else { return true }
+            applications.record()
+            return first == second
         },
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); x <= y and y <= x but x != y"
         }
-    )
+    ))
 }
 
 private func checkTransitivity<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(
     generator: Generator<Value, Shrinker>,
     options: LawCheckOptions
 ) async -> CheckResult {
-    await runTernaryLaw(
+    let applications = Applications()
+    return await reportingApplications(applications, of: await runTernaryLaw(
         "Comparable.transitivity",
         generator: generator,
         options: options,
         property: { first, second, third in
-            !(first <= second && second <= third) || (first <= third)
+            guard first <= second, second <= third else { return true }
+            applications.record()
+            return first <= third
         },
         formatCounterexample: { first, second, third, _ in
             "x = \(first), y = \(second), z = \(third); "
                 + "x <= y and y <= z but !(x <= z)"
         }
-    )
+    ))
 }
 
 private func checkTotality<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(
