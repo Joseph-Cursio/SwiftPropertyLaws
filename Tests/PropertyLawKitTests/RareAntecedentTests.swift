@@ -223,4 +223,37 @@ struct RareAntecedentTests {
             #expect(result.applications == nil, "\(law) is unconditional, so it is not asked")
         }
     }
+
+    /// An ordering by absolute value, which is antisymmetry's bug exactly: `5`
+    /// and `-5` are each `<=` the other, and are not equal.
+    private struct AbsoluteOrder: Comparable, Sendable, CustomStringConvertible {
+        let cents: Int
+        static func < (lhs: AbsoluteOrder, rhs: AbsoluteOrder) -> Bool { abs(lhs.cents) < abs(rhs.cents) }
+        var description: String { "A(\(cents))" }
+    }
+
+    /// Walked, the pair exists by construction, and smallest-first ordering means
+    /// the report is `±1` rather than whichever pair a sample stumbled on.
+    @Test func walkingCatchesAnAbsoluteValueOrdering() async throws {
+        let carrier = Every.elements(
+            "a", in: (-3 ... 3).map(AbsoluteOrder.init(cents:)), size: { abs($0.cents) })
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkComparablePropertyLaws(overEvery: carrier)
+        }
+        #expect(violation?.results.map(\.protocolLaw) == ["Comparable.antisymmetry"])
+        let counterexample = violation?.results.first?.counterexample ?? ""
+        #expect(counterexample.contains("A(-1)") && counterexample.contains("A(1)"),
+                "expected the smallest refuting pair; got \(counterexample)")
+    }
+
+    /// One assembler serves both entries, so they cannot disagree about which
+    /// laws run — including the inherited `Equatable` chain.
+    @Test func walkedComparableRunsTheSameLawsAsSampled() async throws {
+        let walked = try await checkComparablePropertyLaws(overEvery: Every.elements("n", in: 0 ..< 8))
+        let sampled = try await checkComparablePropertyLaws(
+            using: Gen<Int>.int(in: 0 ..< 8), options: LawCheckOptions(budget: .sanity))
+        #expect(walked.map(\.protocolLaw) == sampled.map(\.protocolLaw))
+        #expect(walked.allSatisfy { !$0.isViolation }, "a correct Comparable clears the carrier")
+        #expect(walked.allSatisfy { $0.coverage?.isComplete == true }, "and says it covered all of it")
+    }
 }
