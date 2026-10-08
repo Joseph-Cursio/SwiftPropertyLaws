@@ -44,20 +44,20 @@ struct InvariantFalsifiabilityTests {
         #expect(results.allSatisfy { $0.outcome == .passed })
     }
 
-    /// The law is Conventional, so a violation is *reported* rather than thrown.
-    /// `withKnownIssue` fails if nothing is recorded, so this test passing IS the assertion
-    /// that a vacuous invariant speaks up — the same shape `CodableLawsTests` uses for the
-    /// lossy codec.
+    /// The law is Conventional, so a violation is *reported* — as a warning — rather than thrown.
+    /// Asserting on the recorded warning is what proves a vacuous invariant speaks up; the same
+    /// shape `CodableLawsTests` uses for the lossy codec.
     @Test("An invariant that forbids nothing is reported")
     func vacuousInvariantIsCaught() async throws {
         var captured: [CheckResult] = []
-        await withKnownIssue("a vacuous invariant must surface, even though it does not fail the build") {
+        let warnings = try await recordedWarnings {
             captured = try await checkInvariantIsFalsifiable(
                 for: VacuousInvariant.self,
                 using: Self.stateGen(),
                 options: LawCheckOptions(budget: .standard)
             )
         }
+        #expect(lawsReported(in: warnings) == ["InteractionInvariant.isFalsifiable"])
         let result = try #require(captured.first)
         #expect(result.protocolLaw == "InteractionInvariant.isFalsifiable")
         #expect(result.tier == .conventional)

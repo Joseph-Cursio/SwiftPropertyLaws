@@ -76,22 +76,23 @@ struct CodableLawsTests {
         // swallowed a genuine round-trip failure and read as a pass. `.iso8601` drops the fractional
         // seconds, so this DTO cannot survive its own codec.
         //
-        // `withKnownIssue` fails if nothing is recorded, so this passing IS the assertion that the
-        // violation now speaks.
-        await withKnownIssue("a lossy codec must surface, even when it does not fail the test") {
-            let results = try await checkCodablePropertyLaws(
+        // The violation speaks as a warning: visible in the run, and the test still passes.
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkCodablePropertyLaws(
                 for: FileResponse.self,
                 using: Gen<FileResponse>.fileResponse(),
                 config: CodableLawConfig(codec: .iso8601),
                 options: LawCheckOptions(budget: .sanity)
             )
-
-            // It still does not throw — the tier semantics are intact — and it still reports the
-            // violation in its returned results for anyone who reads them.
-            #expect(results.count == 1)
-            #expect(results[0].isViolation)
-            #expect(results[0].tier == .conventional)
         }
+
+        // It does not throw — the tier semantics are intact — and it still reports the violation
+        // in its returned results for anyone who reads them.
+        #expect(results.count == 1)
+        #expect(results.first?.isViolation == true)
+        #expect(results.first?.tier == .conventional)
+        #expect(lawsReported(in: warnings) == ["Codable.roundTripFidelity[JSON(iso8601)]"])
     }
 
     @Test func lossyCodecStillFailsUnderStrict() async throws {
