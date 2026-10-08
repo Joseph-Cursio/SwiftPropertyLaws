@@ -4,6 +4,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**Every pair of the draws, for the laws that need equal values: built, measured, and shipped as an opt-in — not a default, not dropped (2026-10-07).** The entry below measured the strategy in simulation and declined to build it. It is now `LawCheckOptions.equalValuePairing`: `.independent` (default, unchanged), `.everyPairOfDraws`, and `.recentDraws(window:)`. Only `Hashable.equalityConsistency`, `Equatable.transitivity` and `Comparable.antisymmetry` read it. Walks ignore it, since they reach every pair already. The inherited chain carries it, because `collectingInheritedLaws` mutates a copy.
+
+**Detection through the kit, `.standard`, 200 well-mixed seeds:**
+
+| bug, range | independent | every pair | last 32 |
+|---|---|---|---|
+| dollar `==`, ±1 000 000 | 5% | **100%** | 74% |
+| dollar `==`, ±10 000 | 99% | 100% | 100% |
+| `abs` ordering, ±10 000 | 8% | **100%** | 84% |
+| `abs` ordering, ±1 000 000 | 0% | 20% | 2% |
+| "within 1" `==`, 0 … 200 | 4% | 100% | 100% |
+| "within 1" `==`, ±10 000 | 0% | **86%** | 2% |
+
+It agrees with the simulation to within a few points. **The window barely helps transitivity (2%)**, because a chain needs both of its links inside one window. For a law whose antecedent is one equal pair, detection depends on the number of pairs compared and nothing else, so `.everyPairOfDraws` at 1 000 draws buys the same detection as `.custom(trials: 499_500)`.
+
+**Cost: process CPU time, debug, the whole `checkHashablePropertyLaws` suite.** These are CPU time and not wall-clock because the machine was at a **load average of 400 on 8 cores**. The first wall-clock table read 4.2 s for 100 trials of a correct type, which was the scheduler's number, not the kit's. Those readings are discarded.
+
+| subject | tier | independent | every pair | last 32 |
+|---|---|---|---|---|
+| `Int` | `.standard` | 6 ms | 140 ms (23×) | 16 ms |
+| `Int` | `.thorough` | 73 ms | 13.1 s (180×) | 165 ms |
+| `[Int]`, 100 random elements | `.standard` | 1.0 s | 976 ms | 794 ms |
+| `[Int]`, 100 random elements | `.thorough` | 9.3 s | 29.3 s | 7.3 s |
+| `[Int]`, 100 elements differing in the last | `.standard` | 27 ms | 1.5 s (55×) | 121 ms |
+| `[Int]`, 100 elements differing in the last | `.thorough` | 277 ms | 115.9 s (420×) | 788 ms |
+| `Bag`, `==` sorts 100 elements | `.standard` | 2.9 s | **218 s (75×)** | 15.8 s |
+
+`Bag` at `.thorough` was not run. The `Int` row scales 94× from `.standard` to `.thorough`, as a quadratic should, so `Bag` extrapolates to about **six hours**. **The cost lands on whatever `==` the caller wrote.** Random arrays cost nothing extra, or even save time, because generation dominates and the pool draws once instead of twice per trial. A `==` that does real work pays n²/2 times.
+
+**The control, and the reason it is not dropped:** buying the same 499 500 pairs by raising the budget. Measured on `Hashable.equalityConsistency` alone:
+
+| | 1 000 pairs | 499 500 pooled | 499 500 independent |
+|---|---|---|---|
+| `Int` | 1 ms | 37 ms | 376 ms |
+| `[Int]`, 100 random elements | 100 ms | 103 ms | **49.0 s** |
+
+Pooling is **10× cheaper on `Int` and 475× cheaper on arrays** than "just raise the budget". For these laws only comparisons buy detection, and a raised budget spends most of its time generating values. It is also the only remedy that needs no knowledge of the bug's shape. Narrowing has to keep the refuting pair reachable (`0 … 299` can never catch the `abs` bug). Walking needs a carrier that contains the pair. Pooling at ±10 000 catches both bugs on every seed.
+
+**Why it is not the default.** The first two of the earlier entry's three objections stand. (1) The cost is quadratic, and it falls on the most-run suites: 23–75× at the default tier, 180–420× at `.thorough`, hours on an expensive `==`. A default that turns a 3-second suite into 4 minutes gets suppressed rather than acted on. That is the blast-radius argument `reportingApplications` already records for the vacuity guard. (2) It changes what `trials` and `applications` mean on three laws. Pooled, `trials` counts **draws**, `CheckResult.pairedDraws` carries `(draws, pairs)`, and `applications` counts pairs (or chains) whose antecedent held, rendered `Applied: 25 times among 499500 pairs.` **The third objection turned out not to be one.** The pool is drawn kit-side from one seeded stream, as `Hashable.distribution`'s is, so no backend contract was needed. Each new draw is compared with the earlier ones, so a failure stops at the draw that completed the pair, and the seed redraws exactly that prefix. Shrinking happens after the pair is found, with the law's own minimizer, and does not need the pool.
+
+**Transitivity is not cubic.** Every triple of 1 000 draws is a billion. `DrawPoolDriver.runChains` links equal pairs as it compares them and tests only the chains they form. Every other triple has a false antecedent and could not have failed. Each chain is examined once, at the draw of its latest member, in both orders of arrival. The two chain mutants exist because dropping either order still catches most chains.
+
+**Measured and recorded, not built: antisymmetry by sorting the pool.** Sort the pool by `<`, and values the order calls equivalent sit in contiguous runs. That finds every pair antisymmetry's antecedent can hold for in `n log n` comparisons. On the `abs` bug it agreed with every-pair **on all 400 seeded runs** (100% / 20%, 0 disagreements), and it cost 48 ms → 3 ms at `.standard` and **3.2 s → 12 ms at `.thorough`**. It is not built for two reasons. Its completeness rests on `<` being a strict weak ordering, and `Comparable` has no incomparability-transitivity law to flag one that is not. It also gives up stopping at the completing draw, because it needs the whole pool first. It is the thing to build if anyone runs `.everyPairOfDraws` on `Comparable` at `.thorough`. **The two equality laws have no such trick.** `==` has no order to sort by, and bucketing by hash would assume the very consistency `equalityConsistency` tests.
+
+**Which to reach for:** `.everyPairOfDraws` at `.sanity` and `.standard`, or at any tier when generation is expensive. `.recentDraws(window:)` where every pair costs too much: it is linear (`Bag` `.standard` 15.8 s against 218 s) and keeps most of the gain on the two pair laws, but not on transitivity. The README's "Laws that need equal values" section says this to users.
+
+The measurements are `EqualValuePairingMeasurements` and `EqualValuePairingDetection`, gated behind `PROPERTYLAW_MEASURE=1`. Run one suite at a time, because the cost suite reads process CPU time. `EqualValuePairingTests` (14) pins the behaviour. Mutation-tested: **10 mutants in a new `equal-value-pooling` shape, 10 killed**, each by its named assertion. Most leave every verdict unchanged: the pool comparing neighbours only, pooling spreading to every binary law or to the default, a seed that redraws a different pool. 1 200 tests pass outside `PropertyLawAsyncTests`, four of them the gated measurements, which skip. swiftlint unchanged at 9.
+
 **`Comparable.irreflexivity`, and the laws that need equal values (2026-10-07).** Two gaps found verifying an essay example against `struct Money { let cents: Int }` drawn from ±1 000 000.
 
 **A `<` written as `<=` passed every Comparable law.** The suite never said `!(x < x)` — the strict-weak-ordering suite has had that law for supplied comparators all along. Every other Comparable law takes two values and sees this bug only when both draws are equal, about once in a thousand runs at that width. The new law is **Strict and unary**, and it is spelled `!(x < x)`, not `x <= x`: the two agree whenever `<=` is derived from `<`, and NaN's `<=` is IEEE-754's, so the second spelling fails every `Double` (`irreflexivityHoldsForNaN`). A seeded control asserts irreflexivity is the *only* law that sees the violator. **That seed had to be well mixed**: the `(1, 2, 3, 4)` used throughout the tests makes xoshiro's first outputs tiny, so trial one drew `-1 000 000` twice and handed the control the equal pair it must not get. `RareAntecedentTests.mixedSeed(_:)` exists for that reason.
@@ -29,7 +77,7 @@ The last row is the trap in the usual advice: narrowing has to keep the refuting
 | non-transitive "within 1", ±10 000 | 0% | 0% | 84% |
 | `<` as `<=`, ±1 000 000 | 0% | **100%** | 18% |
 
-**Pairing `x` with itself catches exactly one bug, and it is irreflexivity's** — an identical pair cannot break any of the conditional laws, so self-pairing *is* the new law and nothing more. A Codable round-trip of a lossless codec gives the same identical pair. The generator's shrinker is `internal` to swift-property-based (`Generator._shrinker`), so the kit cannot reach it, and it moves toward simpler values rather than equal ones anyway. **Testing every pair of the budget's draws is the one strategy that works**, by birthday collision, and it is not built: it is quadratic on the most-run laws in the kit (500 000 comparisons at `.standard`, 50 million at `.thorough`), it changes what `trials` and `applications` mean, and it needs a sequential-pool contract with the backend for replay and shrinking. **The same "large behavioural change that deserves its own decision" as the vacuity guard below** — and even pooled, size-two classes over a realistic domain stay mostly unseen (20%) and transitivity chains over ±1 000 000 not at all.
+**Pairing `x` with itself catches exactly one bug, and it is irreflexivity's** — an identical pair cannot break any of the conditional laws, so self-pairing *is* the new law and nothing more. A Codable round-trip of a lossless codec gives the same identical pair. The generator's shrinker is `internal` to swift-property-based (`Generator._shrinker`), so the kit cannot reach it, and it moves toward simpler values rather than equal ones anyway. **Testing every pair of the budget's draws is the one strategy that works**, by birthday collision, and it is not built: it is quadratic on the most-run laws in the kit (500 000 comparisons at `.standard`, 50 million at `.thorough`), it changes what `trials` and `applications` mean, and it needs a sequential-pool contract with the backend for replay and shrinking. **The same "large behavioural change that deserves its own decision" as the vacuity guard below** — and even pooled, size-two classes over a realistic domain stay mostly unseen (20%) and transitivity chains over ±1 000 000 not at all. *(Since built as an opt-in, `LawCheckOptions.equalValuePairing`; the entry above has the decision and the measurements.)*
 
 **Shipped instead, beside the law:** Comparable's two conditional laws report `applications` like the equality ones (antisymmetry applied **0** times at ±1 000 000 on the pinned seed), and `checkComparablePropertyLaws(overEvery:)` joins Equatable's and Hashable's walked entries — walking `-3 … 3` reports `A(-1), A(1)`. One assembler serves both entries.
 

@@ -225,6 +225,28 @@ What to do:
   )
   ```
 
+- **Or compare every pair of the draws.** By default each trial draws its own values. With `equalValuePairing: .everyPairOfDraws`, these three laws compare every value the budget drew with every other one, so they find the equal values that were drawn but never landed in the same trial:
+
+  ```swift
+  try await checkHashablePropertyLaws(
+      using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(Money.init(cents:)),
+      options: LawCheckOptions(equalValuePairing: .everyPairOfDraws)
+  )
+  ```
+
+  It finds both bugs without your knowing where the equal values are. Measured at `.standard` over 200 seeds:
+
+  | Bug, range | default | `.everyPairOfDraws` | `.recentDraws(window: 32)` |
+  |---|---|---|---|
+  | dollar `==`, `-1_000_000 ... 1_000_000` | 5% | 100% | 74% |
+  | `abs` ordering, `-10_000 ... 10_000` | 8% | 100% | 84% |
+  | `abs` ordering, `-1_000_000 ... 1_000_000` | 0% | 20% | 2% |
+  | non-transitive `==`, `-10_000 ... 10_000` | 0% | 86% | 2% |
+
+  The cost grows with the square of the budget: 1 000 draws make 499 500 comparisons, and 10 000 draws make 50 million. It's cheap when `==` is cheap or when generating values is the expensive part. It's expensive when `==` does real work. For a type whose `==` sorts 100 elements, the Hashable suite at `.standard` takes 218 s of CPU instead of 3 s. Use it at `.sanity` or `.standard`. Where that's too slow, use `.recentDraws(window: 32)`, which compares each draw with the 32 before it at linear cost. It keeps most of the gain for `equalityConsistency` and `antisymmetry`, but little for `transitivity`, which needs two equal pairs that share a value.
+
+  When pooled, a result's `trials` counts draws, `pairedDraws` reports how many pairs were compared, and `applications` counts among those pairs. The seed replays the same pool.
+
 - **Check `applications`.** Each of these laws reports on its `CheckResult` how many trials its condition held in. `0` means it passed without testing anything.
 
 The kit can't build the equal pairs itself. Without knowing the type, the only value it can make that equals `x` is `x` itself, or a copy of it, and an identical pair can't break any of these laws. The one law that pairing `x` with itself does test is `Comparable.irreflexivity` (`!(x < x)`), which the kit checks directly, so a `<` written as `<=` is caught at any range.
