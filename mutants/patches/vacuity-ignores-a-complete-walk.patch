@@ -1,11 +1,11 @@
 diff --git a/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift b/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift
-index 60d3575..fad185a 100644
+index 783fea2..093719a 100644
 --- a/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift
 +++ b/Sources/PropertyLawKit/Public/StrictWeakOrderingVacuity.swift
-@@ -40,7 +40,7 @@ func requiringApplicableCases(
-     needing description: String
- ) -> CheckResult {
-     guard case .passed = result.outcome, applications.recorded == 0 else { return result }
+@@ -51,7 +51,7 @@ func requiringApplicableCases(
+     guard case .passed = result.outcome, applications.recorded == 0 else {
+         return result.reporting(applications: applications.recorded)
+     }
 -    let complete = result.coverage?.isComplete ?? false
 +    let complete = false
      let counterexample = complete
