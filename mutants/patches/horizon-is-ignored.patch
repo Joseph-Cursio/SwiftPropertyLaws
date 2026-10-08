@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
+index 547e66e..ca43ccc 100644
+--- a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
++++ b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
+@@ -159,7 +159,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
+                 failure = .deadlock(stuckAt: timeline.now.offset)
+                 break
+             }
+-            if let horizon, next.offset > horizon {
++            if let horizon, next.offset > horizon, false {
+                 failure = .horizonExceeded(horizon: horizon, nextDeadline: next.offset)
+                 break
+             }

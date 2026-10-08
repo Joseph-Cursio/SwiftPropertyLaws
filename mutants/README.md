@@ -48,6 +48,15 @@ Requires a clean working tree.
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
+| `scheduler-wakes-sleepers-before-quiescence` | virtual-time | killed | `aSourceSlowToReachItsSleepIsWaitedFor` |
+| `hook-diverts-nothing` | virtual-time | killed | `aSourceSlowToReachItsSleepIsWaitedFor` |
+| `virtual-clock-wakes-the-latest-sleeper` | virtual-time | killed | `sleepersWakeInDeadlineOrderThenRegistrationOrder` |
+| `virtual-clock-breaks-ties-by-latest-registration` | virtual-time | killed | `sleepersWakeInDeadlineOrderThenRegistrationOrder` |
+| `cancelled-sleep-waits-out-its-deadline` | virtual-time | killed | `cancellationWakesASleeperWithoutMovingTime` |
+| `horizon-is-ignored` | virtual-time | killed | `aRunThatWouldPassItsHorizonFailsInsteadOfAdvancing` |
+| `hook-replaces-a-foreign-hook` | virtual-time | killed | `refusesAHookItDidNotInstall` |
+| `hook-removed-while-runs-remain` | virtual-time | killed | `installsOnceAndRemovesWithTheLastRun` |
+| `cancellation-law-ignores-promptness` | virtual-time | killed | `cancellationLawRejectsASleepThatIgnoresCancellation` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -122,3 +131,21 @@ times the trials it asked for. **A deprecation that changes behaviour rather
 than only its spelling is the classic migration hazard**, and it is invisible to
 every law — they all still pass, just slower. Only a test that reads the shim's
 result can see it.
+
+**`virtual-time` guards the scheduler the timed laws stand on.** Each mutant leaves
+`runInVirtualTime` working well enough to drive a simple pipeline. What it takes
+away is one of the guarantees that make the timed laws mean anything.
+`scheduler-wakes-sleepers-before-quiescence` re-plants the defect that hung
+`PropertyLawAsyncTests` under `TestClock`: time moves while a job is still
+runnable. `hook-diverts-nothing` is the capture failure an executor preference
+would have had, since `debounce`'s own `Task {}` does not inherit one. Both are
+killed by the same test, a source that burns 2 ms of CPU before each sleep, which
+stands in for a descheduled thread on a loaded machine. Neither mutant hangs. The
+scheduler reports each as a deadlock, which is the other half of the fix.
+`virtual-clock-breaks-ties-by-latest-registration` is the one no law could catch.
+Newest-first is as deterministic as oldest-first, so the determinism law still
+holds. Only the test that reads the documented order notices.
+`cancellation-law-ignores-promptness` guards the check that replaced "a hang is
+the failure". Virtual time keeps advancing while anything sleeps, so without that
+check a sleep that ignores cancellation is woken later, sees a prefix of the
+source, and passes.
