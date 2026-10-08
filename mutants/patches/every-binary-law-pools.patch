@@ -1,0 +1,19 @@
+diff --git a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
+index 3c5ee0d..cb68b89 100644
+--- a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
++++ b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
+@@ -122,6 +122,14 @@ package func runBinaryLaw<Value: Sendable>(
+     formatCounterexample: @escaping @Sendable (Value, Value, ErrorBox?) -> String,
+     shrink: (@Sendable (Value) -> [Value])? = nil
+ ) async -> CheckResult {
++    if case .sampled(let sample) = source, let lookback = options.equalValuePairing.lookback {
++        return await DrawPoolDriver.runPairs(
++            DrawPoolDriver.Identity(protocolLaw: protocolLaw, tier: tier),
++            options: options,
++            lookback: lookback,
++            check: DrawPoolDriver.PairCheck(
++                sample: sample, property: property, formatCounterexample: formatCounterexample, shrink: shrink))
++    }
+     switch source {
+     case .sampled(let sample):
+         return await PerLawDriver.run(

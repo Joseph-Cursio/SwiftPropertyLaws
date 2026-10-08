@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+index 0bd7c34..34fc9db 100644
+--- a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
++++ b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+@@ -46,7 +46,7 @@ enum DrawPoolDriver {
+             var pairs = 0
+             for _ in 0 ..< budget {
+                 let draw = check.sample(&rng)
+-                for earlier in pool[max(0, pool.count - lookback)...] {
++                for earlier in pool[max(0, pool.count - 1)...] {
+                     pairs += 1
+                     do {
+                         if try await check.property(earlier, draw) { continue }

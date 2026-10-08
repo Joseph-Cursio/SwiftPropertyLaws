@@ -52,6 +52,16 @@ Requires a clean working tree.
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
 | `comparable-antisymmetry-never-counts` | rare-antecedent | killed | `comparableConditionalLawsReportHowOftenTheyApplied` |
 | `walked-comparable-drops-inherited-laws` | rare-antecedent | killed | `walkedComparableRunsTheSameLawsAsSampled` |
+| `pool-compares-only-the-previous-draw` | equal-value-pooling | killed | `thePoolReportsDrawsAndPairs` |
+| `chain-walk-skips-an-earlier-middle` | equal-value-pooling | killed | `aChainIsFoundWhicheverMemberIsDrawnLast` |
+| `chain-walk-skips-the-newest-middle` | equal-value-pooling | killed | `aChainIsFoundWhicheverMemberIsDrawnLast` |
+| `pooled-failure-is-not-shrunk` | equal-value-pooling | killed | `aPooledFailureShrinks` |
+| `pooled-trials-count-pairs` | equal-value-pooling | killed | `thePoolReportsDrawsAndPairs` |
+| `pooled-run-ignores-the-seed` | equal-value-pooling | killed | `theSeedReplaysThePool` |
+| `every-binary-law-pools` | equal-value-pooling | killed | `onlyTheThreeLawsThatNeedEqualValuesPool` |
+| `inherited-laws-drop-the-pairing` | equal-value-pooling | killed | `onlyTheThreeLawsThatNeedEqualValuesPool` |
+| `default-pairing-pools` | equal-value-pooling | killed | `theDefaultDoesNotPool` |
+| `formatter-counts-pooled-applications-against-trials` | equal-value-pooling | killed | `theFormatterSaysThePoolAndCountsAmongPairs` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -142,3 +152,17 @@ the law applied, which is worse than no count, because zero is the number that
 tells a reader to distrust the pass. `walked-comparable-drops-inherited-laws`
 walks Comparable's own laws and silently skips the inherited `Equatable` ones,
 whose transitivity needs equal values exactly as antisymmetry does.
+
+**`equal-value-pooling` guards an opt-in whose failure modes are cost and
+honesty more than verdicts.** Pooling exists to find the equal pairs a budget's
+draws already contain, and most of these mutants keep every planted bug in the
+fixtures caught or every correct type passing while breaking something else.
+`pool-compares-only-the-previous-draw` still pools, still reports a pool, and
+compares 999 pairs where it claims to compare 499 500. `every-binary-law-pools`
+and `default-pairing-pools` change no verdict at all — they make the quadratic
+path run where nobody asked for it, which only a test of *which laws pooled*
+can see. `pooled-run-ignores-the-seed` hands back a seed that redraws a
+different pool. The two chain mutants are the ones a detection rate would miss
+for a long time: each drops one of the two orders in which a chain's members
+can arrive, so a pool still finds most chains, and only a scripted draw order
+pins both.
