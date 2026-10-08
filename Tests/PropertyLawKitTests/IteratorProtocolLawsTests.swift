@@ -50,17 +50,19 @@ struct IteratorPropertyLawsTests {
         // Both laws are Conventional; default enforcement reports violations as `.failed` results
         // but does not throw.
         //
-        // The `withKnownIssue` is the point. "Reports" now means something: the violation surfaces
-        // as a non-fatal Testing issue as well as a `.failed` result. Before that, this test passed
-        // on *silence* — the kit knew the law was broken and said nothing, and nothing here would
-        // have noticed if the `.failed` result had gone missing too.
-        await withKnownIssue("a Conventional violation is visible, by design — it just does not throw") {
-            let results = try await checkIteratorProtocolPropertyLaws(
+        // The recorded warning is the point. "Reports" means something: the violation surfaces as a
+        // Testing warning as well as a `.failed` result. Before that, this test passed on *silence*
+        // — the kit knew the law was broken and said nothing, and nothing here would have noticed if
+        // the `.failed` result had gone missing too.
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkIteratorProtocolPropertyLaws(
                 for: ResumingAfterNilSequence.self,
                 using: Gen<ResumingAfterNilSequence>.resumingAfterNil(),
                 options: LawCheckOptions(budget: .sanity)
             )
-            #expect(results.contains { $0.isViolation && $0.tier == .conventional })
         }
+        #expect(results.contains { $0.isViolation && $0.tier == .conventional })
+        #expect(lawsReported(in: warnings) == ["IteratorProtocol.terminationStability"])
     }
 }

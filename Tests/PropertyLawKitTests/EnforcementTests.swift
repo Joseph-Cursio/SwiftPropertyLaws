@@ -16,7 +16,7 @@ struct EnforcementTests {
         #expect(EnforcementMode.strict.shouldThrow(for: .heuristic))
     }
 
-    // MARK: - A Conventional violation must be visible, even though it does not throw
+    // MARK: - A sub-Strict violation must be visible, without failing the test
 
     private func failure(tier: StrictnessTier) -> CheckResult {
         CheckResult(
@@ -29,21 +29,24 @@ struct EnforcementTests {
         )
     }
 
-    @Test func conventionalViolationUnderDefaultIsRecordedRatherThanSwallowed() throws {
+    @Test(arguments: [StrictnessTier.conventional, .heuristic])
+    func subStrictViolationUnderDefaultIsAWarningNotAFailure(tier: StrictnessTier) async throws {
         // The A5 bug. `.default` does not *throw* on a Conventional violation — correct, that is the
         // tier's whole purpose. But not-throwing had been implemented as not-saying-anything, and
         // every `checkXxx…` entry point is `@discardableResult`, so a lossy codec that cannot
         // round-trip its own dates was reported as a pass. Silence was never the tier's meaning;
         // not failing the build was.
         //
-        // `withKnownIssue` is the assertion: it *fails* if no issue is recorded inside it, so this
-        // passing is proof the violation now speaks.
-        withKnownIssue("the Conventional violation must surface as a non-fatal issue") {
-            try PropertyLawViolation.throwIfViolations(
-                in: [failure(tier: .conventional)],
-                enforcement: .default
-            )
+        // And the fix for silence was itself half wrong: it recorded at `Issue.record`'s default
+        // `.error` severity, which marks the test failed. This test used to assert with a bare
+        // `withKnownIssue`, which absorbs an error as readily as a warning, so it passed either way.
+        // `recordedWarnings` collects warnings only — an error-severity issue fails this test, and
+        // so does silence, because then the count is zero.
+        let warnings = try await recordedWarnings {
+            try PropertyLawViolation.throwIfViolations(in: [failure(tier: tier)], enforcement: .default)
         }
+        #expect(lawsReported(in: warnings) == ["Codable.roundTripFidelity[JSON]"])
+        #expect(warnings.first?.contains("\(tier.rawValue) tier") == true)
     }
 
     @Test func strictViolationUnderDefaultStillThrows() {
@@ -56,24 +59,29 @@ struct EnforcementTests {
         }
     }
 
-    @Test func aStrictViolationIsThrownRatherThanMerelyRecorded() throws {
+    @Test func aStrictViolationIsThrownRatherThanMerelyRecorded() async throws {
         // Guards the obvious over-correction: a Strict violation must not be *downgraded* into a
-        // non-fatal issue. If it were recorded instead of thrown, this test would fail on the
-        // unexpected issue rather than on the missing throw — so it pins both halves.
-        do {
-            try PropertyLawViolation.throwIfViolations(
-                in: [failure(tier: .strict)],
-                enforcement: .default
-            )
-            Issue.record("expected a Strict violation to throw")
-        } catch is PropertyLawViolation {
-            // Expected, and no non-fatal issue was recorded on the way out.
+        // warning, nor reported twice — thrown *and* recorded. A recorded warning does not fail a
+        // test, so the second half needs the explicit empty-count assertion; the missing throw
+        // fails on its own.
+        let warnings = try await recordedWarnings {
+            do {
+                try PropertyLawViolation.throwIfViolations(
+                    in: [failure(tier: .strict)],
+                    enforcement: .default
+                )
+                Issue.record("expected a Strict violation to throw")
+            } catch is PropertyLawViolation {
+                // Expected.
+            }
         }
+        #expect(warnings.isEmpty, "a thrown Strict violation was also recorded: \(warnings)")
     }
 
-    @Test func suppressedAndExpectedViolationsStayQuiet() throws {
+    @Test func suppressedAndExpectedViolationsStayQuiet() async throws {
         // Explicit policy — someone wrote down that this law does not hold, and why. Re-surfacing
-        // them would make the suppression mechanism useless (PRD §4.7). No issue may be recorded.
+        // them would make the suppression mechanism useless (PRD §4.7). No issue may be recorded —
+        // and since a warning would not fail this test, that is asserted rather than assumed.
         let suppressed = CheckResult(
             protocolLaw: "Codable.roundTripFidelity[JSON]",
             tier: .conventional,
@@ -91,10 +99,13 @@ struct EnforcementTests {
             outcome: .expectedViolation(reason: "documented", counterexample: "x")
         )
 
-        try PropertyLawViolation.throwIfViolations(in: [suppressed, expected], enforcement: .default)
+        let warnings = try await recordedWarnings {
+            try PropertyLawViolation.throwIfViolations(in: [suppressed, expected], enforcement: .default)
+        }
+        #expect(warnings.isEmpty, "explicit policy was re-surfaced: \(warnings)")
     }
 
-    @Test func aPassingResultRecordsNothing() throws {
+    @Test func aPassingResultRecordsNothing() async throws {
         let passed = CheckResult(
             protocolLaw: "Equatable.reflexivity",
             tier: .conventional,
@@ -104,7 +115,10 @@ struct EnforcementTests {
             outcome: .passed
         )
 
-        try PropertyLawViolation.throwIfViolations(in: [passed], enforcement: .default)
+        let warnings = try await recordedWarnings {
+            try PropertyLawViolation.throwIfViolations(in: [passed], enforcement: .default)
+        }
+        #expect(warnings.isEmpty, "a passing result was reported: \(warnings)")
     }
 
     @Test func violationFormatterIncludesPRDDisclaimer() {

@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Model/PropertyLawViolation.swift b/Sources/PropertyLawKit/Model/PropertyLawViolation.swift
+index f2c080f..32dcdcb 100644
+--- a/Sources/PropertyLawKit/Model/PropertyLawViolation.swift
++++ b/Sources/PropertyLawKit/Model/PropertyLawViolation.swift
+@@ -48,7 +48,7 @@ public struct PropertyLawViolation: Error, Sendable, CustomStringConvertible {
+         var escalating: [CheckResult] = []
+ 
+         for result in results where result.isViolation {
+-            if enforcement.shouldThrow(for: result.tier) {
++            if enforcement.shouldThrow(for: .strict) {
+                 escalating.append(result)
+             } else {
+                 recordNonFatal(result)

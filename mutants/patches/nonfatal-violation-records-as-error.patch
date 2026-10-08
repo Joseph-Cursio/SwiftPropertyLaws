@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Model/PropertyLawViolation.swift b/Sources/PropertyLawKit/Model/PropertyLawViolation.swift
+index f2c080f..d758343 100644
+--- a/Sources/PropertyLawKit/Model/PropertyLawViolation.swift
++++ b/Sources/PropertyLawKit/Model/PropertyLawViolation.swift
+@@ -72,7 +72,7 @@ public struct PropertyLawViolation: Error, Sendable, CustomStringConvertible {
+ 
+             \(ViolationFormatter.format(result))
+             """,
+-            severity: .warning
++            severity: .error
+         )
+         #else
+         Issue.record(
