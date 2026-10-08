@@ -256,4 +256,66 @@ struct RareAntecedentTests {
         #expect(walked.allSatisfy { !$0.isViolation }, "a correct Comparable clears the carrier")
         #expect(walked.allSatisfy { $0.coverage?.isComplete == true }, "and says it covered all of it")
     }
+
+    // MARK: - Generator range (the README's "Laws that need equal values")
+
+    /// `==` compares whole dollars while the synthesized hash uses every cent —
+    /// the classic `Hashable` bug: `Set` will hold `$(250)` and `$(299)` both.
+    private struct DollarMoney: Hashable, Sendable, CustomStringConvertible {
+        let cents: Int
+        static func == (lhs: DollarMoney, rhs: DollarMoney) -> Bool { lhs.cents / 100 == rhs.cents / 100 }
+        var description: String { "$(\(cents))" }
+    }
+
+    /// Of twenty well-mixed seeds at `.standard`, how many runs threw. Callers
+    /// pass `.ownOnly` because the inherited `Equatable` laws hold for both
+    /// fixtures and would only double the cost.
+    private func seedsCaught(_ run: (LawCheckOptions) async throws -> Void) async -> Int {
+        var caught = 0
+        for index in UInt64(0) ..< 20 {
+            do {
+                try await run(LawCheckOptions(budget: .standard, seed: Self.mixedSeed(index)))
+            } catch is PropertyLawViolation {
+                caught += 1
+            } catch {}
+        }
+        return caught
+    }
+
+    /// Measured over 100 seeds: ±1 000 000 catches it in about 7 runs of 100, and
+    /// any range a few hundred cents wide in every run. The bound on `wide` is
+    /// loose on purpose — what it pins is that a wide range mostly misses.
+    @Test func aDollarEqualityIsCaughtFromANarrowRangeAndMostlyMissedFromAWideOne() async {
+        func check(_ range: ClosedRange<Int>) async -> Int {
+            await seedsCaught { options in
+                _ = try await checkHashablePropertyLaws(
+                    using: Gen<Int>.int(in: range).map(DollarMoney.init(cents:)), options: options, laws: .ownOnly)
+            }
+        }
+        let wide = await check(-1_000_000 ... 1_000_000)
+        let narrow = await check(0 ... 299)
+        #expect(narrow == 20)
+        #expect(wide <= 5, "a wide range should mostly miss it; caught \(wide) of 20")
+
+        // The README's walked example: seven values this `==` calls equal.
+        await #expect(throws: PropertyLawViolation.self) {
+            try await checkHashablePropertyLaws(
+                overEvery: Every.elements("m", in: (-3 ... 3).map(DollarMoney.init(cents:))))
+        }
+    }
+
+    /// Narrowing has to keep the refuting pair reachable. An ordering by absolute
+    /// value fails only on a pair like `5` and `-5`, so `0 ... 299` — the range
+    /// that catches the dollar bug every time — cannot catch this one at all.
+    @Test func narrowingMustKeepTheRefutingPairReachable() async {
+        func check(_ range: ClosedRange<Int>) async -> Int {
+            await seedsCaught { options in
+                _ = try await checkComparablePropertyLaws(
+                    using: Gen<Int>.int(in: range).map(AbsoluteOrder.init(cents:)), options: options, laws: .ownOnly)
+            }
+        }
+        #expect(await check(-50 ... 50) == 20, "symmetric and narrow: caught every run")
+        #expect(await check(-1_000_000 ... 1_000_000) == 0, "wide: two draws never share an absolute value")
+        #expect(await check(0 ... 299) == 0, "one-sided: no pair the order confuses exists to draw")
+    }
 }

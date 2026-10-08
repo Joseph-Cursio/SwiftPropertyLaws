@@ -184,6 +184,51 @@ Not every law is universally true in idiomatic Swift. `Hashable` allows hash col
 
 PRD §4.2 has the full tier-per-law table.
 
+## Laws that need equal values
+
+Three laws only test anything when the values a trial draws are equal:
+
+| Law | Tests something only when |
+|---|---|
+| `Hashable.equalityConsistency` | `x == y` |
+| `Equatable.transitivity` | `x == y` and `y == z` |
+| `Comparable.antisymmetry` | `x <= y` and `y <= x` |
+
+On every other trial they pass without checking anything. A trial draws its values independently, so the wider the generator, the rarer equal values get. Take a type whose `==` compares whole dollars while the synthesized `hash(into:)` uses every cent:
+
+```swift
+struct Money: Hashable {
+    let cents: Int
+    static func == (lhs: Money, rhs: Money) -> Bool {
+        lhs.cents / 100 == rhs.cents / 100
+    }
+}
+```
+
+`Money(cents: 250) == Money(cents: 299)`, but the two hash differently, so a `Set<Money>` can hold both. An ordering by `abs(cents)` has the same problem with antisymmetry: `5` and `-5` are each `<=` the other but aren't equal. How often the default 1 000 trials catch each bug, measured over 100 seeds:
+
+| `Gen<Int>.int(in: …).map(Money.init(cents:))` | dollar `==` caught | `abs` ordering caught |
+|---|---|---|
+| `-1_000_000 ... 1_000_000` | 7% | 0% |
+| `-10_000 ... 10_000` | 100% | 6% |
+| `-150 ... 150` | 100% | 95% |
+| `0 ... 299` | 100% | 0% |
+
+What to do:
+
+- **Narrow the generator** until equal values turn up often, and keep the values that break the law within range. `0 ... 299` catches the dollar bug, usually on the first trial, but can never catch the `abs` bug, because it has no negative values. Keep the wide generator too: it's what reaches the rest of the domain.
+- **Or walk a small set of values.** `checkEquatablePropertyLaws(overEvery:)`, `checkHashablePropertyLaws(overEvery:)` and `checkComparablePropertyLaws(overEvery:)` test every pair and triple of an explicit list, so the equal values are there by construction:
+
+  ```swift
+  try await checkHashablePropertyLaws(
+      overEvery: Every.elements("money", in: (-3 ... 3).map(Money.init(cents:)))
+  )
+  ```
+
+- **Check `applications`.** Each of these laws reports on its `CheckResult` how many trials its condition held in. `0` means it passed without testing anything.
+
+The kit can't build the equal pairs itself. Without knowing the type, the only value it can make that equals `x` is `x` itself, or a copy of it, and an identical pair can't break any of these laws. The one law that pairing `x` with itself does test is `Comparable.irreflexivity` (`!(x < x)`), which the kit checks directly, so a `<` written as `<=` is caught at any range.
+
 ## Suppressions
 
 When a law-check legitimately doesn't apply (`NaN` reflexivity on a `Float`-bearing type, intentional Codable lossiness, etc.) suppress at the call site:
