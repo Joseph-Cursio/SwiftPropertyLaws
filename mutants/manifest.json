@@ -233,6 +233,22 @@
       "expected": "killed",
       "test": "samplingKeepsMinimalityWhereTheBridgeLosesIt",
       "label": "The sampled-from-space path drops its index shrinker, so it reports the first failure drawn rather than the smallest \u2014 which is exactly the concession the plain generator bridge makes, and the reason this path exists."
+    },
+    {
+      "id": "comparable-antisymmetry-never-counts",
+      "patch": "patches/comparable-antisymmetry-never-counts.patch",
+      "shape": "rare-antecedent",
+      "expected": "killed",
+      "test": "comparableConditionalLawsReportHowOftenTheyApplied",
+      "label": "Comparable.antisymmetry stops recording its applications, so a run that applied the law constantly reports that it never did \u2014 the count goes on saying zero whatever the generator, and every verdict is unchanged."
+    },
+    {
+      "id": "walked-comparable-drops-inherited-laws",
+      "patch": "patches/walked-comparable-drops-inherited-laws.patch",
+      "shape": "rare-antecedent",
+      "expected": "killed",
+      "test": "walkedComparableRunsTheSameLawsAsSampled",
+      "label": "The walked Comparable entry ignores `laws:` and runs `.ownOnly`, so the inherited Equatable chain \u2014 whose transitivity needs equal values exactly as antisymmetry does \u2014 is silently not walked."
     }
   ]
 }

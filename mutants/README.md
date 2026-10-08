@@ -50,6 +50,8 @@ Requires a clean working tree.
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
+| `comparable-antisymmetry-never-counts` | rare-antecedent | killed | `comparableConditionalLawsReportHowOftenTheyApplied` |
+| `walked-comparable-drops-inherited-laws` | rare-antecedent | killed | `walkedComparableRunsTheSameLawsAsSampled` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -131,3 +133,12 @@ times the trials it asked for. **A deprecation that changes behaviour rather
 than only its spelling is the classic migration hazard**, and it is invisible to
 every law — they all still pass, just slower. Only a test that reads the shim's
 result can see it.
+
+**`rare-antecedent` guards the two remedies for a law whose antecedent a wide
+generator does not reach**: the count that says the law never applied, and the
+walk that makes it apply. Neither mutant changes a verdict.
+`comparable-antisymmetry-never-counts` leaves the count at zero however often
+the law applied, which is worse than no count, because zero is the number that
+tells a reader to distrust the pass. `walked-comparable-drops-inherited-laws`
+walks Comparable's own laws and silently skips the inherited `Equatable` ones,
+whose transitivity needs equal values exactly as antisymmetry does.
