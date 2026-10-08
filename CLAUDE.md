@@ -4,6 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**`checkBinaryFloatingPointPropertyLaws` stopped rebuilding its inherited options (2026-10-08).** The closure it handed `collectingInheritedLaws` rebuilt `LawCheckOptions` from six of its eight fields, dropping `expectedReplayEnvironment` and `replayRelaxation`. The comment above it said the collector "does not carry" `allowNaN`, which has been false since the collector started mutating a copy. It now passes the collector's options straight through, like every other call site. It was the last `LawCheckOptions(` rebuild in `Sources`.
+
+**The dropped pair was latent, not live, and the requested regression test cannot tell the difference.** `runPropertyLawSuite` validates the caller's *full* options before the assembler runs. `Environment.current(backend:)` depends only on `backend.identifier`, which never changes. So the inner suite could only re-check what the outer one had already passed. Under `laws: .all`, a deliberately mismatched `expectedReplayEnvironment` throws `ReplayEnvironmentMismatch` with or without the fix: the test was written and run against the unfixed code, and it passed. The only way to separate the two is a backend whose identifier changes between reads, which breaks `PropertyBackend`'s contract. That test was not added.
+
+**What the fix does change is coverage, and that was measured.** The rebuild read `allowNaN` from the *outer* options, so nothing exercised the collector's copy of that field. A collector that set `allowNaN = false` passed all 1 174 tests. Now `allowNaNPropagatesToInheritedFloatingPointSuite` reads it through the collector and catches that mutant. Two mutants in a new `inherited-options` shape, both killed. Reinstating the original code as a third mutant survives every test, which is exactly what "latent" means here.
+
+**Noted, not fixed:** `collectingInheritedLaws` ends in `catch { return [] }`, so a non-violation error from an inherited suite deletes that suite's laws from the results instead of surfacing. Today nothing reaches it, for the same reason as above: the only such error is `ReplayEnvironmentMismatch`, and the outer check raises it first. It is still the silent-drop shape, and it becomes live the moment any inherited suite can throw something the outer one cannot.
+
+1 174 tests outside `PropertyLawAsyncTests`; swiftlint unchanged at 9.
+
 **`GeneratorResolver` now says why a type has no generator (2026-09-16).** `resolutionFailure(forTypeName:)` returns a `ResolutionFailure` — `.notInUniverse`, `.ambiguous`, `.aliasUnresolved(underlying:)`, `.noStrategy(reason:)` or `.unterminatedRecursion` — one case per `nil` path in `resolve` / `derive`. `.noStrategy` carries the strategist's `.todo` sentence **verbatim**, which `derive` used to compute and discard with `if case .todo = strategy { return nil }`.
 
 **The cost of the discard was measured downstream**: SwiftInferProperties' missing-generator census (issue #48) had to reconstruct two of the `nil` paths and guess the third, and left **370 of 2 016 unresolved types (18.4%) unexplained** for that reason alone.
