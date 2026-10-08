@@ -4,6 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**`Comparable.irreflexivity`, and the laws that need equal values (2026-10-07).** Two gaps found verifying an essay example against `struct Money { let cents: Int }` drawn from ±1 000 000.
+
+**A `<` written as `<=` passed every Comparable law.** The suite never said `!(x < x)` — the strict-weak-ordering suite has had that law for supplied comparators all along. Every other Comparable law takes two values and sees this bug only when both draws are equal, about once in a thousand runs at that width. The new law is **Strict and unary**, and it is spelled `!(x < x)`, not `x <= x`: the two agree whenever `<=` is derived from `<`, and NaN's `<=` is IEEE-754's, so the second spelling fails every `Double` (`irreflexivityHoldsForNaN`). A seeded control asserts irreflexivity is the *only* law that sees the violator. **That seed had to be well mixed**: the `(1, 2, 3, 4)` used throughout the tests makes xoshiro's first outputs tiny, so trial one drew `-1 000 000` twice and handed the control the equal pair it must not get. `RareAntecedentTests.mixedSeed(_:)` exists for that reason.
+
+**Wide generators starve three conditional laws**: `Hashable.equalityConsistency`, `Equatable.transitivity`, `Comparable.antisymmetry`. Measured through the kit, 1 000 trials, 100 seeds:
+
+| `Gen<Int>.int(in: …)` | `==` on whole dollars, synthesized hash | ordering by `abs(cents)` |
+|---|---|---|
+| ±1 000 000 | 7% caught | 0% |
+| ±10 000 | 100% | 6% |
+| ±150 | 100% | 95% |
+| 0 … 299 | 100% | **0%** — no negatives, so no refuting pair exists to draw |
+
+The last row is the trap in the usual advice: narrowing has to keep the refuting pair reachable. The README now documents all of this (§"Laws that need equal values"), and `RareAntecedentTests` pins its table so the two cannot drift. **The `abs` bug is antisymmetry's, not totality's** — `x <= y || y <= x` holds for any `abs` ordering — and that matters because antisymmetry is Strict.
+
+**Asked whether the laws should construct related pairs instead; measured, and declined.** Simulated detection, 1 000 draws, 200 seeds:
+
+| bug, range | independent pairs (now) | `x` with itself | every pair of the 1 000 draws |
+|---|---|---|---|
+| dollar `==`, ±1 000 000 | 4% | 0% | 100% |
+| `abs` ordering, ±10 000 | 5% | 0% | 100% |
+| `abs` ordering, ±1 000 000 | 0% | 0% | 20% |
+| non-transitive "within 1", ±10 000 | 0% | 0% | 84% |
+| `<` as `<=`, ±1 000 000 | 0% | **100%** | 18% |
+
+**Pairing `x` with itself catches exactly one bug, and it is irreflexivity's** — an identical pair cannot break any of the conditional laws, so self-pairing *is* the new law and nothing more. A Codable round-trip of a lossless codec gives the same identical pair. The generator's shrinker is `internal` to swift-property-based (`Generator._shrinker`), so the kit cannot reach it, and it moves toward simpler values rather than equal ones anyway. **Testing every pair of the budget's draws is the one strategy that works**, by birthday collision, and it is not built: it is quadratic on the most-run laws in the kit (500 000 comparisons at `.standard`, 50 million at `.thorough`), it changes what `trials` and `applications` mean, and it needs a sequential-pool contract with the backend for replay and shrinking. **The same "large behavioural change that deserves its own decision" as the vacuity guard below** — and even pooled, size-two classes over a realistic domain stay mostly unseen (20%) and transitivity chains over ±1 000 000 not at all.
+
+**Shipped instead, beside the law:** Comparable's two conditional laws report `applications` like the equality ones (antisymmetry applied **0** times at ±1 000 000 on the pinned seed), and `checkComparablePropertyLaws(overEvery:)` joins Equatable's and Hashable's walked entries — walking `-3 … 3` reports `A(-1), A(1)`. One assembler serves both entries.
+
+Mutation-tested: 4 mutants, 4 killed — irreflexivity blinded, irreflexivity restated as `x <= x`, antisymmetry not counting, and the walked entry dropping the inherited chain (a new `rare-antecedent` shape for the last two; neither changes a verdict). 1 182 tests pass outside `PropertyLawAsyncTests`, which **hangs at `main` under Swift 6.4** before printing anything — every thread idle, main thread in the run loop — with or without the `SDKROOT` workaround; not caused by this change. swiftlint unchanged at 9.
+
 **`GeneratorResolver` now says why a type has no generator (2026-09-16).** `resolutionFailure(forTypeName:)` returns a `ResolutionFailure` — `.notInUniverse`, `.ambiguous`, `.aliasUnresolved(underlying:)`, `.noStrategy(reason:)` or `.unterminatedRecursion` — one case per `nil` path in `resolve` / `derive`. `.noStrategy` carries the strategist's `.todo` sentence **verbatim**, which `derive` used to compute and discard with `if case .todo = strategy { return nil }`.
 
 **The cost of the discard was measured downstream**: SwiftInferProperties' missing-generator census (issue #48) had to reconstruct two of the `nil` paths and guess the third, and left **370 of 2 016 unresolved types (18.4%) unexplained** for that reason alone.
