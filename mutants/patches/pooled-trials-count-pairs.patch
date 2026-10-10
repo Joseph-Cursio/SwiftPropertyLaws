@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+index 0bd7c34..1ad911d 100644
+--- a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
++++ b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+@@ -178,7 +178,7 @@ enum DrawPoolDriver {
+         var result = CheckResult(
+             protocolLaw: identity.protocolLaw,
+             tier: identity.tier,
+-            trials: walk.draws,
++            trials: walk.pairs,
+             seed: initialSeed,
+             environment: environment,
+             outcome: .passed,

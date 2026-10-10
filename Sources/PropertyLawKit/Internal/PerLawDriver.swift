@@ -199,7 +199,7 @@ package enum PerLawDriver {
 
     /// The outcome of shrinking: the minimal still-failing input, how many
     /// steps it took, and the error (if any) the minimal input threw.
-    private struct Minimized<Input: Sendable>: Sendable {
+    struct Minimized<Input: Sendable>: Sendable {
         let input: Input
         let steps: Int
         let error: ErrorBox?
@@ -211,7 +211,7 @@ package enum PerLawDriver {
     /// `cap` steps elapse. Deterministic: a pure function of
     /// `(start, shrink, property)`, so a stored seed that reproduces `start`
     /// also reproduces the minimal result.
-    private static func minimize<Input: Sendable>(
+    static func minimize<Input: Sendable>(
         _ start: Input,
         firstError: ErrorBox?,
         shrink: @Sendable (Input) -> [Input],

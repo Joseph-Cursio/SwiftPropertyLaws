@@ -1,0 +1,17 @@
+diff --git a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+index 0bd7c34..12fca14 100644
+--- a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
++++ b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+@@ -129,12 +129,6 @@ enum DrawPoolDriver {
+         linked: [[Int]]
+     ) -> [(Int, Int, Int)] {
+         var chains: [(Int, Int, Int)] = []
+-        for middle in neighbours {
+-            for end in linked[middle] {
+-                chains.append((end, middle, newest))
+-                chains.append((newest, middle, end))
+-            }
+-        }
+         for (position, first) in neighbours.enumerated() {
+             for second in neighbours[(position + 1)...] {
+                 chains.append((first, newest, second))

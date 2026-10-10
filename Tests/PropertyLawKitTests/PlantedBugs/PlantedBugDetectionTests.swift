@@ -102,25 +102,31 @@ struct PlantedBugDetectionTests {
     // MARK: - Conventional tier escalation via enforcement: .strict
 
     @Test func unstableHasherDoesNotThrowByDefault() async throws {
-        // The `withKnownIssue` acknowledges the non-fatal issue the kit now records for a
-        // Conventional violation under `.default`. Note what this test always *wanted* — "reported
-        // as a violation even in default mode" — and note that until the kit recorded an issue, the
-        // only place that report existed was a returned array nobody was obliged to read.
-        await withKnownIssue("the Conventional violation is visible now — it still does not throw") {
-            let results = try await checkHashablePropertyLaws(
+        // A Conventional violation under `.default` is recorded as a warning. Note what this test
+        // always *wanted* — "reported as a violation even in default mode" — and note that until the
+        // kit recorded one, the only place that report existed was a returned array nobody was
+        // obliged to read.
+        //
+        // This used to sit inside a bare `withKnownIssue`, which absorbs a thrown error as a known
+        // issue: the test named for not throwing could not see a throw, and the expectations inside
+        // the block could not fail. `recordedWarnings` lets both through.
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkHashablePropertyLaws(
                 for: UnstableHasher.self,
                 using: Gen<UnstableHasher>.unstableHasher(),
                 options: LawCheckOptions(budget: .sanity),
                 laws: .ownOnly
             )
-            let stability = results.first { $0.protocolLaw == "Hashable.stabilityWithinProcess" }
-            #expect(stability != nil)
-            #expect(
-                stability?.isViolation == true,
-                "expected stabilityWithinProcess to be reported as a violation even in default mode"
-            )
-            #expect(stability?.tier == .conventional)
         }
+        let stability = results.first { $0.protocolLaw == "Hashable.stabilityWithinProcess" }
+        #expect(stability != nil)
+        #expect(
+            stability?.isViolation == true,
+            "expected stabilityWithinProcess to be reported as a violation even in default mode"
+        )
+        #expect(stability?.tier == .conventional)
+        #expect(lawsReported(in: warnings) == ["Hashable.stabilityWithinProcess"])
     }
 
     @Test func unstableHasherThrowsUnderStrictEnforcement() async throws {
@@ -139,24 +145,26 @@ struct PlantedBugDetectionTests {
     // MARK: - Heuristic tier: distribution
 
     @Test func detectsDegenerateHashDistribution() async throws {
-        // Heuristic tier, so `.default` does not throw — but it does now *speak*, which is what the
-        // `withKnownIssue` acknowledges. A degenerate hasher that silently passes is the same defect
-        // class as the lossy codec, one tier down.
-        await withKnownIssue("the Heuristic violation is visible now — it still does not throw") {
-            let results = try await checkHashablePropertyLaws(
+        // Heuristic tier, so `.default` does not throw — but it does *speak*, as a warning. A
+        // degenerate hasher that silently passes is the same defect class as the lossy codec, one
+        // tier down.
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkHashablePropertyLaws(
                 for: DegenerateHasher.self,
                 using: Gen<DegenerateHasher>.degenerate(),
                 options: LawCheckOptions(budget: .sanity),
                 laws: .ownOnly
             )
-            let distribution = results.first { $0.protocolLaw == "Hashable.distribution" }
-            #expect(
-                distribution?.isViolation == true,
-                "expected DegenerateHasher to violate Hashable.distribution"
-            )
-            #expect(distribution?.tier == .heuristic)
-            #expect(distribution?.counterexample?.contains("unique hashValues") == true)
         }
+        let distribution = results.first { $0.protocolLaw == "Hashable.distribution" }
+        #expect(
+            distribution?.isViolation == true,
+            "expected DegenerateHasher to violate Hashable.distribution"
+        )
+        #expect(distribution?.tier == .heuristic)
+        #expect(distribution?.counterexample?.contains("unique hashValues") == true)
+        #expect(lawsReported(in: warnings) == ["Hashable.distribution"])
     }
 
     // MARK: - Inherited Equatable suite re-collection (laws: .all path)
@@ -197,10 +205,11 @@ struct PlantedBugDetectionTests {
 
     @Test func detectsOperatorConsistencyViolation() async throws {
         // `AlwaysLessThan` breaks a Strict law (which throws, as asserted) *and* a lower-tier one
-        // alongside it — and the lower-tier one is now recorded rather than dropped. Hence the
-        // `withKnownIssue`: the throw is the assertion, the issue is the new visibility.
-        await withKnownIssue("the sub-Strict violation alongside it is visible now") {
-            let violation = await #expect(throws: PropertyLawViolation.self) {
+        // alongside it — and the lower-tier one is recorded as a warning rather than dropped. The
+        // throw carries only what escalates; the warning carries only what does not.
+        var violation: PropertyLawViolation?
+        let warnings = await recordedWarnings {
+            violation = await #expect(throws: PropertyLawViolation.self) {
                 try await checkComparablePropertyLaws(
                     for: AlwaysLessThan.self,
                     using: Gen<AlwaysLessThan>.alwaysLessThan(),
@@ -208,12 +217,60 @@ struct PlantedBugDetectionTests {
                     laws: .ownOnly
                 )
             }
-            let laws = violation?.results.map(\.protocolLaw) ?? []
-            #expect(
-                laws.contains("Comparable.operatorConsistency"),
-                "expected operatorConsistency in violation set; got: \(laws)"
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(
+            laws.contains("Comparable.operatorConsistency"),
+            "expected operatorConsistency in violation set; got: \(laws)"
+        )
+        #expect(lawsReported(in: warnings) == ["Comparable.totality"])
+    }
+
+    @Test func detectsNonStrictLessThan() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkComparablePropertyLaws(
+                for: NonStrictLessThan.self,
+                using: Gen<NonStrictLessThan>.nonStrictLessThan(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
             )
         }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(
+            laws.contains("Comparable.irreflexivity"),
+            "expected irreflexivity in violation set; got: \(laws)"
+        )
+    }
+
+    /// The control that makes the law load-bearing: at a realistic width, a `<`
+    /// written as `<=` is seen by irreflexivity **and nothing else**. The other
+    /// Comparable laws and the inherited Equatable ones all pass it, because they
+    /// see it only when two independent draws are equal. Seeded, because that
+    /// does happen about once in a thousand runs.
+    ///
+    /// The seed has to be well mixed. The `(1, 2, 3, 4)` used elsewhere in these
+    /// tests makes xoshiro's first outputs tiny, so trial one draws
+    /// `-1 000 000` twice — an equal pair, which is exactly what this control
+    /// must not be handed.
+    @Test func irreflexivityIsTheOnlyLawThatSeesANonStrictLessThan() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkComparablePropertyLaws(
+                for: NonStrictLessThan.self,
+                using: Gen<NonStrictLessThan>.nonStrictLessThan(),
+                options: LawCheckOptions(
+                    budget: .standard,
+                    seed: Seed(
+                        stateA: 0x9E37_79B9_7F4A_7C15,
+                        stateB: 0xBF58_476D_1CE4_E5B9,
+                        stateC: 0x94D0_49BB_1331_11EB,
+                        stateD: 0x2545_F491_4F6C_DD1D
+                    )
+                )
+            )
+        }
+        // A sub-Strict failure would not be in this list; it would fail the test
+        // through the issue the kit records for it, so silence covers that too.
+        #expect(violation?.results.map(\.protocolLaw) == ["Comparable.irreflexivity"])
     }
 
     @Test func detectsCyclicOrderTransitivity() async throws {

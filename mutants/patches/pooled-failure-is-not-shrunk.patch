@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+index 0bd7c34..d3f4c52 100644
+--- a/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
++++ b/Sources/PropertyLawKit/Internal/DrawPoolDriver.swift
+@@ -186,7 +186,7 @@ enum DrawPoolDriver {
+         )
+         if let failure = walk.failure {
+             var minimal = PerLawDriver.Minimized(input: failure.input, steps: 0, error: failure.error)
+-            if let shrink = verdict.shrink {
++            if let shrink = verdict.shrink, false {
+                 minimal = await PerLawDriver.minimize(
+                     failure.input, firstError: failure.error, shrink: shrink, property: verdict.property)
+             }

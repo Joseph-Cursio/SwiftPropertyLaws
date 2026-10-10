@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/ComparableLaws.swift b/Sources/PropertyLawKit/Public/ComparableLaws.swift
+index 28904ec..5bfd5b5 100644
+--- a/Sources/PropertyLawKit/Public/ComparableLaws.swift
++++ b/Sources/PropertyLawKit/Public/ComparableLaws.swift
+@@ -82,7 +82,7 @@ private func checkIrreflexivity<Value: Comparable & Sendable>(
+         "Comparable.irreflexivity",
+         source: source,
+         options: options,
+-        property: { sample in !(sample < sample) },
++        property: { sample in sample <= sample },
+         formatCounterexample: { sample, _ in
+             "x = \(sample); x < x evaluated to true, but `<` must be a strict order "
+                 + "(is it implemented as `<=`?)"

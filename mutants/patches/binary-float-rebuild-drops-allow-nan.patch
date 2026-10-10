@@ -1,0 +1,19 @@
+diff --git a/Sources/PropertyLawKit/Public/BinaryFloatingPointLaws.swift b/Sources/PropertyLawKit/Public/BinaryFloatingPointLaws.swift
+index 2a46f0f..dce4045 100644
+--- a/Sources/PropertyLawKit/Public/BinaryFloatingPointLaws.swift
++++ b/Sources/PropertyLawKit/Public/BinaryFloatingPointLaws.swift
+@@ -30,7 +30,13 @@ public func checkBinaryFloatingPointPropertyLaws<
+                 try await checkFloatingPointPropertyLaws(
+                     for: type,
+                     using: generator,
+-                    options: $0
++                    options: LawCheckOptions(
++                        budget: $0.budget,
++                        enforcement: $0.enforcement,
++                        seed: $0.seed,
++                        suppressions: $0.suppressions,
++                        backend: $0.backend
++                    )
+                 )
+             })
+         }

@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawAsync/VirtualClock.swift b/Sources/PropertyLawAsync/VirtualClock.swift
+index 51342c0..8fee7fc 100644
+--- a/Sources/PropertyLawAsync/VirtualClock.swift
++++ b/Sources/PropertyLawAsync/VirtualClock.swift
+@@ -121,7 +121,7 @@ final class VirtualTimeline: @unchecked Sendable {
+ 
+     func cancel(_ ticket: Int) {
+         lock.lock()
+-        guard let index = sleepers.firstIndex(where: { $0.ticket == ticket }) else {
++        guard let index = sleepers.firstIndex(where: { $0.ticket == ticket }), false else {
+             cancelledTickets.insert(ticket)
+             lock.unlock()
+             return

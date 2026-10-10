@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Model/LawCheckOptions.swift b/Sources/PropertyLawKit/Model/LawCheckOptions.swift
+index f1bdfbd..9ee1aa6 100644
+--- a/Sources/PropertyLawKit/Model/LawCheckOptions.swift
++++ b/Sources/PropertyLawKit/Model/LawCheckOptions.swift
+@@ -62,7 +62,7 @@ public struct LawCheckOptions: Sendable {
+         expectedReplayEnvironment: Environment? = nil,
+         replayRelaxation: EnvironmentRelaxation = .exact,
+         allowNaN: Bool = false,
+-        equalValuePairing: EqualValuePairing = .independent
++        equalValuePairing: EqualValuePairing = .everyPairOfDraws
+     ) {
+         self.budget = budget
+         self.enforcement = enforcement

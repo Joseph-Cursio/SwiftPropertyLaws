@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawAsync/GlobalEnqueueHook.swift b/Sources/PropertyLawAsync/GlobalEnqueueHook.swift
+index 2c4e052..339b68b 100644
+--- a/Sources/PropertyLawAsync/GlobalEnqueueHook.swift
++++ b/Sources/PropertyLawAsync/GlobalEnqueueHook.swift
+@@ -65,7 +65,7 @@ final class GlobalEnqueueHook: @unchecked Sendable {
+         if activeRuns == 0 {
+             guard slot.pointee == nil else { throw VirtualTimeError.foreignHookInstalled }
+             slot.pointee = { job, original in
+-                if let scheduler = VirtualTimeScheduler.current {
++                if let scheduler = VirtualTimeScheduler.current, false {
+                     scheduler.schedule(job)
+                 } else {
+                     original(job)

@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Public/ComparableLaws.swift b/Sources/PropertyLawKit/Public/ComparableLaws.swift
+index 5c2f1ba..1155e12 100644
+--- a/Sources/PropertyLawKit/Public/ComparableLaws.swift
++++ b/Sources/PropertyLawKit/Public/ComparableLaws.swift
+@@ -107,7 +107,6 @@ private func checkAntisymmetry<Value: Comparable & Sendable>(
+         options: options,
+         property: { first, second in
+             guard first <= second, second <= first else { return true }
+-            applications.record()
+             return first == second
+         },
+         formatCounterexample: { first, second, _ in

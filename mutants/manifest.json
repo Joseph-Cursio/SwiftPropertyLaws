@@ -217,6 +217,262 @@
       "expected": "killed",
       "test": "samplingKeepsMinimalityWhereTheBridgeLosesIt",
       "label": "The sampled-from-space path drops its index shrinker, so it reports the first failure drawn rather than the smallest \u2014 which is exactly the concession the plain generator bridge makes, and the reason this path exists."
+    },
+    {
+      "id": "comparable-irreflexivity-always-holds",
+      "patch": "patches/comparable-irreflexivity-always-holds.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "detectsNonStrictLessThan",
+      "label": "Comparable.irreflexivity always returns true \u2014 a `<` written as `<=` is no longer caught. No other Comparable law stands in: at the violator's \u00b11 000 000 they see it only when two draws are equal."
+    },
+    {
+      "id": "comparable-irreflexivity-stated-as-reflexive-lte",
+      "patch": "patches/comparable-irreflexivity-stated-as-reflexive-lte.patch",
+      "shape": "law-detection",
+      "expected": "killed",
+      "test": "irreflexivityHoldsForNaN",
+      "label": "Comparable.irreflexivity restated as `x <= x`. Equivalent whenever `<=` is derived from `<`, so it still catches the planted violator \u2014 but NaN's `<=` is IEEE-754's and false, so it fails every Double."
+    },
+    {
+      "id": "comparable-antisymmetry-never-counts",
+      "patch": "patches/comparable-antisymmetry-never-counts.patch",
+      "shape": "rare-antecedent",
+      "expected": "killed",
+      "test": "comparableConditionalLawsReportHowOftenTheyApplied",
+      "label": "Comparable.antisymmetry stops recording its applications, so a run that applied the law constantly reports that it never did \u2014 the count goes on saying zero whatever the generator, and every verdict is unchanged."
+    },
+    {
+      "id": "walked-comparable-drops-inherited-laws",
+      "patch": "patches/walked-comparable-drops-inherited-laws.patch",
+      "shape": "rare-antecedent",
+      "expected": "killed",
+      "test": "walkedComparableRunsTheSameLawsAsSampled",
+      "label": "The walked Comparable entry ignores `laws:` and runs `.ownOnly`, so the inherited Equatable chain \u2014 whose transitivity needs equal values exactly as antisymmetry does \u2014 is silently not walked."
+    },
+    {
+      "id": "pool-compares-only-the-previous-draw",
+      "patch": "patches/pool-compares-only-the-previous-draw.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "thePoolReportsDrawsAndPairs",
+      "label": "A pooled pair law compares each draw with the one before it only, whatever the lookback: 999 pairs from 1 000 draws instead of 499 500, so the pool finds almost none of the collisions it exists for while every result still says it pooled."
+    },
+    {
+      "id": "chain-walk-skips-an-earlier-middle",
+      "patch": "patches/chain-walk-skips-an-earlier-middle.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "aChainIsFoundWhicheverMemberIsDrawnLast",
+      "label": "The chain walk examines only chains whose middle is the newest draw, so a chain completed by an END drawn last (through a middle drawn earlier) is never tested."
+    },
+    {
+      "id": "chain-walk-skips-the-newest-middle",
+      "patch": "patches/chain-walk-skips-the-newest-middle.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "aChainIsFoundWhicheverMemberIsDrawnLast",
+      "label": "The chain walk examines only chains through an earlier middle, so two earlier draws that the newest draw links (and that do not link each other) are never tested as a chain."
+    },
+    {
+      "id": "pooled-failure-is-not-shrunk",
+      "patch": "patches/pooled-failure-is-not-shrunk.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "aPooledFailureShrinks",
+      "label": "A pooled failure skips the minimizer, so the counterexample is whichever pair the pool met first rather than the smallest the law's shrinker reaches."
+    },
+    {
+      "id": "pooled-trials-count-pairs",
+      "patch": "patches/pooled-trials-count-pairs.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "thePoolReportsDrawsAndPairs",
+      "label": "A pooled result reports pairs compared as its trials, so `trials` stops meaning draws and a .standard run claims 499 500 of them."
+    },
+    {
+      "id": "pooled-run-ignores-the-seed",
+      "patch": "patches/pooled-run-ignores-the-seed.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "theSeedReplaysThePool",
+      "label": "The pool is drawn from a fresh RNG rather than the caller's seed, while the result still reports a seed \u2014 a replay handle that redraws a different pool."
+    },
+    {
+      "id": "every-binary-law-pools",
+      "patch": "patches/every-binary-law-pools.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "onlyTheThreeLawsThatNeedEqualValuesPool",
+      "label": "Every two-value law pools when the option is set, not just the two that need equal values \u2014 quadratic cost on symmetry, totality and operator consistency, which gain nothing from it."
+    },
+    {
+      "id": "inherited-laws-drop-the-pairing",
+      "patch": "patches/inherited-laws-drop-the-pairing.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "onlyTheThreeLawsThatNeedEqualValuesPool",
+      "label": "The inherited-suite rebase resets the pairing, so `checkHashablePropertyLaws(.all)` pools its own law but runs the inherited Equatable.transitivity independently \u2014 the caller's option silently stops at the protocol boundary."
+    },
+    {
+      "id": "default-pairing-pools",
+      "patch": "patches/default-pairing-pools.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "theDefaultDoesNotPool",
+      "label": "LawCheckOptions defaults to .everyPairOfDraws, making the quadratic path every caller's default."
+    },
+    {
+      "id": "formatter-counts-pooled-applications-against-trials",
+      "patch": "patches/formatter-counts-pooled-applications-against-trials.patch",
+      "shape": "equal-value-pooling",
+      "expected": "killed",
+      "test": "theFormatterSaysThePoolAndCountsAmongPairs",
+      "label": "The formatter renders a pooled application count against `trials` (draws), so 25 applications among 499 500 pairs read as `25 of 1000`."
+    },
+    {
+      "id": "scheduler-wakes-sleepers-before-quiescence",
+      "patch": "patches/scheduler-wakes-sleepers-before-quiescence.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSourceSlowToReachItsSleepIsWaitedFor",
+      "label": "The virtual-time scheduler runs one job and then wakes the next sleeper, so time moves while work is still runnable \u2014 TestClock's defect re-planted, and the reason the timed laws hung."
+    },
+    {
+      "id": "hook-diverts-nothing",
+      "patch": "patches/hook-diverts-nothing.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSourceSlowToReachItsSleepIsWaitedFor",
+      "label": "The global enqueue hook passes every job to the runtime, so the run's tasks escape to the cooperative pool and an empty queue stops meaning quiescence \u2014 the capture an executor preference would have offered, since debounce's own Task {} does not inherit one."
+    },
+    {
+      "id": "virtual-clock-wakes-the-latest-sleeper",
+      "patch": "patches/virtual-clock-wakes-the-latest-sleeper.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "sleepersWakeInDeadlineOrderThenRegistrationOrder",
+      "label": "VirtualClock wakes the sleeper with the latest deadline first, so time runs backwards between wakes."
+    },
+    {
+      "id": "virtual-clock-breaks-ties-by-latest-registration",
+      "patch": "patches/virtual-clock-breaks-ties-by-latest-registration.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "sleepersWakeInDeadlineOrderThenRegistrationOrder",
+      "label": "Sleepers sharing a deadline wake newest-first. Still deterministic, so no determinism law notices \u2014 only the documented order does."
+    },
+    {
+      "id": "cancelled-sleep-waits-out-its-deadline",
+      "patch": "patches/cancelled-sleep-waits-out-its-deadline.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "cancellationWakesASleeperWithoutMovingTime",
+      "label": "Cancelling a registered sleep only records the ticket, so the sleeper wakes normally at its deadline and a cancelled task costs virtual time."
+    },
+    {
+      "id": "horizon-is-ignored",
+      "patch": "patches/horizon-is-ignored.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aRunThatWouldPassItsHorizonFailsInsteadOfAdvancing",
+      "label": "The run's horizon is never checked, so a pipeline that will not settle is simulated onward instead of reported."
+    },
+    {
+      "id": "hook-replaces-a-foreign-hook",
+      "patch": "patches/hook-replaces-a-foreign-hook.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "refusesAHookItDidNotInstall",
+      "label": "acquire() overwrites a global enqueue hook someone else installed (withMainSerialExecutor, say), silently changing their scheduling."
+    },
+    {
+      "id": "hook-removed-while-runs-remain",
+      "patch": "patches/hook-removed-while-runs-remain.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "installsOnceAndRemovesWithTheLastRun",
+      "label": "release() removes the hook on every call rather than with the last run, so one finishing run strips the hook from every other run still active."
+    },
+    {
+      "id": "cancellation-law-ignores-promptness",
+      "patch": "patches/cancellation-law-ignores-promptness.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "cancellationLawRejectsASleepThatIgnoresCancellation",
+      "label": "cancellationCeasesEmission checks only the prefix. Virtual time keeps advancing, so a sleep that ignores cancellation is woken later, sees a prefix and passes \u2014 the check that replaced 'a hang is the failure' is gone."
+    },
+    {
+      "id": "run-leaves-sleepers-parked",
+      "patch": "patches/run-leaves-sleepers-parked.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aSleeperTheBodyLeftBehindIsWokenWhenTheRunEnds",
+      "label": "A run that finishes returns without waking sleepers its body left behind, so those tasks stay parked on a clock nobody will advance again."
+    },
+    {
+      "id": "nested-run-is-not-refused",
+      "patch": "patches/nested-run-is-not-refused.patch",
+      "shape": "virtual-time",
+      "expected": "killed",
+      "test": "aRunInsideARunIsRefused",
+      "label": "runInVirtualTime no longer refuses a call from inside a run, so the outer body is resumed from the inner run's thread, escapes its scheduler, and the outer run reports a deadlock that is not one."
+    },
+    {
+      "id": "collector-drops-allow-nan",
+      "patch": "patches/collector-drops-allow-nan.patch",
+      "shape": "inherited-options",
+      "expected": "killed",
+      "test": "allowNaNPropagatesToInheritedFloatingPointSuite",
+      "label": "collectingInheritedLaws resets allowNaN while rebasing, so a caller's allowNaN: true never reaches an inherited FloatingPoint suite and its five NaN-domain laws silently do not run. Survived every test until BinaryFloatingPoint stopped re-reading allowNaN from the outer options."
+    },
+    {
+      "id": "binary-float-rebuild-drops-allow-nan",
+      "patch": "patches/binary-float-rebuild-drops-allow-nan.patch",
+      "shape": "inherited-options",
+      "expected": "killed",
+      "test": "allowNaNPropagatesToInheritedFloatingPointSuite",
+      "label": "checkBinaryFloatingPointPropertyLaws rebuilds the rebased options field by field instead of passing them through, and the rebuild leaves out allowNaN \u2014 the shape of the rebuild that was removed, with the one field a test can see."
+    },
+    {
+      "id": "nonfatal-violation-records-as-error",
+      "patch": "patches/nonfatal-violation-records-as-error.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "subStrictViolationUnderDefaultIsAWarningNotAFailure",
+      "label": "A sub-Strict violation under `.default` is recorded at error severity, so it fails the test it was meant only to warn about \u2014 the shipped behaviour before 2026-10-07, which a bare `withKnownIssue` could not tell from a warning."
+    },
+    {
+      "id": "nonfatal-violation-is-silent",
+      "patch": "patches/nonfatal-violation-is-silent.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "subStrictViolationUnderDefaultIsAWarningNotAFailure",
+      "label": "A sub-Strict violation under `.default` is neither thrown nor recorded \u2014 the A5 defect, where a lossy codec read as a pass."
+    },
+    {
+      "id": "default-enforcement-escalates-every-tier",
+      "patch": "patches/default-enforcement-escalates-every-tier.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "unstableHasherDoesNotThrowByDefault",
+      "label": "`throwIfViolations` escalates every tier under `.default`, so `.default` behaves as `.strict`. Against the original suite every test named for not throwing by default passed, absorbing the throw as a known issue."
+    },
+    {
+      "id": "suppressed-violation-is-reported",
+      "patch": "patches/suppressed-violation-is-reported.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "suppressedAndExpectedViolationsStayQuiet",
+      "label": "Suppressed and expected-violation results are recorded as warnings, re-surfacing explicit policy (PRD \u00a74.7). Survives the original guard once the severity is a warning, because a warning does not fail a test."
+    },
+    {
+      "id": "strict-violation-is-also-recorded",
+      "patch": "patches/strict-violation-is-also-recorded.patch",
+      "shape": "enforcement-reporting",
+      "expected": "killed",
+      "test": "aStrictViolationIsThrownRatherThanMerelyRecorded",
+      "label": "A Strict violation is thrown and also recorded as a warning, so it is reported twice. Survives the original guard once the severity is a warning."
     }
   ]
 }

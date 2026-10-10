@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift b/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift
+index aaa396c..c9add67 100644
+--- a/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift
++++ b/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift
+@@ -30,6 +30,7 @@ func collectingInheritedLaws(
+     // Only `enforcement` is meant to change here; that is what "rebasing" means.
+     var inheritedOptions = options
+     inheritedOptions.enforcement = .default
++    inheritedOptions.allowNaN = false
+     do {
+         return try await check(inheritedOptions)
+     } catch let violation as PropertyLawViolation {

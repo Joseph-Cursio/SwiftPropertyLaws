@@ -91,7 +91,7 @@ public enum HashableLaw: String, Sendable, Hashable, CaseIterable {
 }
 
 public enum ComparableLaw: String, Sendable, Hashable, CaseIterable {
-    case antisymmetry, transitivity, totality, operatorConsistency
+    case irreflexivity, antisymmetry, transitivity, totality, operatorConsistency
 }
 
 public enum CodableLaw: String, Sendable, Hashable, CaseIterable {

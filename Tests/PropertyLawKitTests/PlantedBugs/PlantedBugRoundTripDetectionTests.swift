@@ -107,17 +107,20 @@ struct PlantedBugRoundTripDetectionTests {
 
     @Test func ephemeralIDDoesNotThrowByDefault() async throws {
         // Conventional-tier violation: warns but doesn't throw at default enforcement. The comment
-        // said "warns" long before the kit actually did — the warning went nowhere. It is a recorded
-        // Testing issue now, which is what `withKnownIssue` is acknowledging.
-        await withKnownIssue("the Conventional violation is visible now — it still does not throw") {
-            let results = try await checkIdentifiablePropertyLaws(
+        // said "warns" long before the kit actually did — the warning went nowhere, and then for a
+        // while it was an error that failed the test. It is a Testing warning now, and
+        // `recordedWarnings` lets a throw through, so "doesn't throw" is checked rather than assumed.
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkIdentifiablePropertyLaws(
                 for: EphemeralID.self,
                 using: Gen<EphemeralID>.ephemeralID(),
                 options: LawCheckOptions(budget: .sanity)
             )
-            #expect(results.contains { $0.isViolation })
-            #expect(results.contains { $0.protocolLaw == "Identifiable.idStability" })
         }
+        #expect(results.contains { $0.isViolation })
+        #expect(results.contains { $0.protocolLaw == "Identifiable.idStability" })
+        #expect(lawsReported(in: warnings) == ["Identifiable.idStability"])
     }
 
     @Test func ephemeralIDThrowsUnderStrictEnforcement() async throws {

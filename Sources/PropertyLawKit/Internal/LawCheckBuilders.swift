@@ -124,16 +124,6 @@ package func runBinaryLaw<Value: Sendable>(
 ) async -> CheckResult {
     switch source {
     case .sampled(let sample):
-        let tupleShrink: (@Sendable ((Value, Value)) -> [(Value, Value)])?
-        if let element = shrink {
-            tupleShrink = { (pair: (Value, Value)) -> [(Value, Value)] in
-                let first: [(Value, Value)] = element(pair.0).map { ($0, pair.1) }
-                let second: [(Value, Value)] = element(pair.1).map { (pair.0, $0) }
-                return first + second
-            }
-        } else {
-            tupleShrink = nil
-        }
         return await PerLawDriver.run(
             protocolLaw: protocolLaw,
             tier: tier,
@@ -142,7 +132,7 @@ package func runBinaryLaw<Value: Sendable>(
                 sample: { rng in (sample(&rng), sample(&rng)) },
                 property: { try await property($0.0, $0.1) },
                 formatCounterexample: { formatCounterexample($0.0, $0.1, $1) },
-                shrink: tupleShrink
+                shrink: liftToPairShrinker(shrink)
             )
         )
     case .enumerated(let space):
@@ -225,9 +215,22 @@ package func runBinaryLaw<Value: Sendable, Shrinker: SendableSequenceType>(
 // Value)`. The waiver is scoped here rather than relaxing the project rule.
 // swiftlint:disable large_tuple
 
+/// Lift a per-element shrinker into a pair shrinker that shrinks one position
+/// at a time, holding the other fixed.
+func liftToPairShrinker<Value>(
+    _ element: (@Sendable (Value) -> [Value])?
+) -> (@Sendable ((Value, Value)) -> [(Value, Value)])? {
+    guard let element else { return nil }
+    return { (pair: (Value, Value)) -> [(Value, Value)] in
+        let first: [(Value, Value)] = element(pair.0).map { ($0, pair.1) }
+        let second: [(Value, Value)] = element(pair.1).map { (pair.0, $0) }
+        return first + second
+    }
+}
+
 /// Lift a per-element shrinker into a triple shrinker that shrinks one position
 /// at a time, holding the others fixed.
-private func liftToTripleShrinker<Value>(
+func liftToTripleShrinker<Value>(
     _ element: (@Sendable (Value) -> [Value])?
 ) -> (@Sendable ((Value, Value, Value)) -> [(Value, Value, Value)])? {
     guard let element else { return nil }
