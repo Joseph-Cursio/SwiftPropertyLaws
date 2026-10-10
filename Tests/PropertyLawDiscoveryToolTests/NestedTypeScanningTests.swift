@@ -179,7 +179,12 @@ struct NestedTypeScanningTests {
     /// The other half of the bargain. Swift resolves `let inner: Inner` inside
     /// `Outer` through lexical scope; a flat universe keyed on `Outer.Inner`
     /// does not, so qualifying the keys would have *cost* this derivation
-    /// without the resolver's leaf index.
+    /// unless the resolver reads `Outer`'s members from inside `Outer`.
+    ///
+    /// The scanner derives each entry's strategy itself, so that is the
+    /// scanner's job as much as the resolver's: it must pass
+    /// `resolve(within: shape.name)`, not `customTypeGenerator`, which reads at
+    /// module scope. A leaf index used to hide the difference.
     @Test("an unqualified member reference reaches the nested type")
     func unqualifiedMemberReferenceResolves() {
         let map = scan("""
@@ -201,12 +206,13 @@ struct NestedTypeScanningTests {
         #expect(members.first?.generatorExpression.contains("Outer.Inner(a:") == true)
     }
 
-    /// And the refusal half: two nested types sharing a leaf resolve to
-    /// neither, rather than to whichever was scanned first. Same rule the
-    /// full-name ambiguity check applies — qualifying the keys does not make
-    /// guessing safe, it only makes the guess look better informed.
-    @Test("an ambiguous leaf resolves to nothing")
-    func ambiguousLeafRefuses() {
+    /// And the refusal half: `User` is nested in neither `A` nor `B`, so its
+    /// `Kind` is not either of theirs — it names a type the scan does not
+    /// contain, and Swift would say the same. This once refused because the two
+    /// leaves *collided*; it now refuses because neither is in scope, which
+    /// is also what declines a single unrelated leaf (the next test).
+    @Test("a nested type outside the reference's scope is not reached")
+    func outOfScopeNestedTypesRefuse() {
         let map = scan("""
         public struct A: Sendable {
             public struct Kind: Equatable, Sendable { public let a: Int }
@@ -223,7 +229,31 @@ struct NestedTypeScanningTests {
             return
         }
         guard case .todo = user.derivationStrategy else {
-            Issue.record("expected .todo for an ambiguous leaf; got \(user.derivationStrategy)")
+            Issue.record("expected .todo for an out-of-scope name; got \(user.derivationStrategy)")
+            return
+        }
+    }
+
+    /// SwiftPropertyLaws#63, end to end. `Symbol` here is another module's
+    /// type; the only scanned `Symbol` is nested in an unrelated `Document`.
+    /// One candidate is still not a match, and building a `Document.Symbol` for
+    /// it would emit a call that does not compile.
+    @Test("a single unrelated nested namesake is not reached")
+    func singleOutOfScopeNamesakeRefuses() {
+        let map = scan("""
+        public struct Document: Sendable {
+            public struct Symbol: Equatable, Sendable { public let id: Int }
+        }
+        public struct Summary: Equatable, Sendable {
+            public let symbol: Symbol
+        }
+        """)
+        guard let summary = map.entries.first(where: { $0.typeName == "Summary" }) else {
+            Issue.record("Summary should be emitted")
+            return
+        }
+        guard case .todo = summary.derivationStrategy else {
+            Issue.record("expected .todo for another module's Symbol; got \(summary.derivationStrategy)")
             return
         }
     }

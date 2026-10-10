@@ -265,7 +265,7 @@ enum ModuleScanner {
                 provenances: aggregate.provenances.sorted(),
                 derivationStrategy: DerivationStrategist.strategy(
                     for: shape,
-                    resolve: resolver.customTypeGenerator
+                    resolve: resolver.resolve(within: shape.name)
                 ),
                 declaringModule: aggregate.declaringModule
             )

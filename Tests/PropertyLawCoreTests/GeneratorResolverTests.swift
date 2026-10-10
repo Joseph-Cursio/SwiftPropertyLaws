@@ -25,7 +25,7 @@ struct GeneratorResolverTests {
     private func strategy(for name: String, in universe: [TypeShape]) -> DerivationStrategy {
         let resolver = GeneratorResolver(types: universe)
         let shape = universe.first { $0.name == name }!
-        return DerivationStrategist.strategy(for: shape, resolve: resolver.customTypeGenerator)
+        return DerivationStrategist.strategy(for: shape, resolve: resolver.resolve(within: shape.name))
     }
 
     private func expression(for name: String, in universe: [TypeShape]) -> String {
@@ -161,7 +161,7 @@ struct GeneratorResolverTests {
     }
 
     private func strategyResolving(_ shape: TypeShape, with resolver: GeneratorResolver) -> DerivationStrategy {
-        DerivationStrategist.strategy(for: shape, resolve: resolver.customTypeGenerator)
+        DerivationStrategist.strategy(for: shape, resolve: resolver.resolve(within: shape.name))
     }
 
     // MARK: - Macro path (no resolver) is unchanged

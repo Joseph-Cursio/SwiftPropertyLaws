@@ -41,6 +41,28 @@ struct ScaffoldFileEmitterTests {
         #expect(scaffold.contains("1 type(s) partially derived"))
     }
 
+    /// A slot typed with a bare nested name is filled, not left as a hole: the
+    /// stub's members are read from inside the type that declares them.
+    @Test func fillsANestedMemberFromTheTypesOwnScope() throws {
+        let dir = try makeFixtureDir([
+            "Models.swift": """
+                struct Doc: Equatable {
+                    struct Meta: Equatable { let n: Int }
+                    let meta: Meta
+                    let widget: Widget
+                }
+                """
+        ])
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
+        let scaffold = try #require(ScaffoldFileEmitter.emit(map: map))
+
+        #expect(scaffold.contains("Doc.Meta(n: $0)"))
+        #expect(scaffold.contains("<#Generator<Meta>#>") == false)
+        #expect(scaffold.contains("<#Generator<Widget>#>"))
+    }
+
     @Test func returnsNilWhenNothingScaffoldable() throws {
         let dir = try makeFixtureDir([
             "Plain.swift": """

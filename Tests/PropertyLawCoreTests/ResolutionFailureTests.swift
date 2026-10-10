@@ -39,7 +39,7 @@ struct ResolutionFailureTests {
         let blocked = structShape("Blocked", [("handle", "SomeExternalHandle")])
         let resolver = GeneratorResolver(types: [blocked])
         guard case .todo(let expected) = DerivationStrategist.strategy(
-            for: blocked, resolve: resolver.customTypeGenerator
+            for: blocked, resolve: resolver.resolve(within: blocked.name)
         ) else {
             Issue.record("fixture should not derive")
             return
@@ -88,23 +88,41 @@ struct ResolutionFailureTests {
         #expect(resolver.resolutionFailure(forTypeName: "Kind") == .ambiguous)
     }
 
-    @Test("an ambiguous nested leaf is reported ambiguous, not missing")
-    func ambiguousLeaf() {
+    /// Two nested `Kind`s are not a collision anywhere Swift would look: inside
+    /// `Foo` the name is `Foo.Kind`, and at module scope it names neither. This
+    /// used to report `.ambiguous`, because a leaf index offered both.
+    @Test("a nested name is not in the universe at module scope, and resolves inside its parent")
+    func nestedNameIsScoped() {
         let resolver = GeneratorResolver(types: [
             structShape("Foo.Kind", [("a", "Int")]),
             structShape("Bar.Kind", [("b", "String")])
         ])
-        #expect(resolver.resolutionFailure(forTypeName: "Kind") == .ambiguous)
+        #expect(resolver.resolutionFailure(forTypeName: "Kind") == .notInUniverse)
+        #expect(resolver.resolutionFailure(forTypeName: "Kind", within: "Foo") == nil)
         #expect(resolver.resolutionFailure(forTypeName: "Foo.Kind") == nil)
     }
 
-    @Test("a leaf reference reports its qualified type's failure")
-    func leafSpellingCarriesFailure() {
-        let resolver = GeneratorResolver(types: [structShape("Outer.Inner", hasUserInit: true)])
-        guard case .noStrategy = resolver.resolutionFailure(forTypeName: "Inner") else {
-            Issue.record("expected .noStrategy under the leaf spelling")
+    /// The chain a reader follows: the owner's reason names its member as
+    /// written, and asking from the owner reaches the nested type's own reason.
+    @Test("a nested member's failure is found by asking from the owner")
+    func nestedMemberFailureIsScoped() {
+        let owner = structShape("Outer", [("inner", "Inner")])
+        let inner = structShape("Outer.Inner", hasUserInit: true)
+        let resolver = GeneratorResolver(types: [owner, inner])
+        guard case .noStrategy(let ownerReason) = resolver.resolutionFailure(forTypeName: "Outer") else {
+            Issue.record("expected .noStrategy for Outer")
             return
         }
+        #expect(ownerReason.contains("`inner: Inner` resolves to no generator"))
+        guard case .noStrategy = resolver.resolutionFailure(forTypeName: "Inner", within: "Outer") else {
+            Issue.record("expected Outer.Inner's own .noStrategy when asked from Outer")
+            return
+        }
+        #expect(
+            resolver.resolutionFailure(forTypeName: "Inner", within: "Outer")
+                == resolver.resolutionFailure(forTypeName: "Outer.Inner")
+        )
+        #expect(resolver.resolutionFailure(forTypeName: "Inner") == .notInUniverse)
     }
 
     @Test("an alias to an unresolvable type names the underlying spelling")

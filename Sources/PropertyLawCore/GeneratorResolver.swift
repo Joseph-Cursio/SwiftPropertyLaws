@@ -29,22 +29,18 @@ public final class GeneratorResolver {
     /// universe. Resolution refuses these — see `init(types:aliases:)`.
     private let ambiguousNames: Set<String>
 
-    /// Qualified shapes indexed by their last path component, so an
-    /// unqualified member reference (`let x: Counted`) can reach
-    /// `BitSet.Counted`. Excludes leaves that collide with each other or with a
-    /// top-level type of the same name.
-    private let shapesByLeafName: [String: TypeShape]
-
-    /// Leaf names carried by two or more distinct qualified shapes.
-    private let ambiguousLeafNames: Set<String>
-
     /// User-declared typealiases collected from the scanned source, mapping
     /// the alias name to its underlying type spelling (e.g. `UserID` → `Int`).
     private let aliases: [String: String]
+
+    /// Keyed by the name a spelling **found** — a shape's qualified name or an
+    /// alias's key — never by the spelling itself, because one spelling names
+    /// different types from different scopes: `Counted` is `BitSet.Counted`
+    /// inside `BitSet` and nothing at all outside it.
     private var memo: [String: DerivationStrategist.ComposedGenerator?] = [:]
 
-    /// Why each name that resolved to `nil` did so. Written wherever `resolve`
-    /// or `derive` gives up, so it is exactly as path-independent as `memo`.
+    /// Why each found name that derived to `nil` did so, keyed like `memo`.
+    /// A spelling that found nothing needs no entry: `lookup` says why again.
     private var failures: [String: ResolutionFailure] = [:]
 
     /// Helper `func`s built during resolution, keyed by type name.
@@ -97,7 +93,9 @@ public final class GeneratorResolver {
     /// Callers that scan nested types should record and reference them by
     /// qualified name (`Foo.Kind`). Qualified spellings need no support here —
     /// every emitter interpolates `typeName` verbatim, so `Foo.Kind(…)` and
-    /// `Gen.element(of: Foo.Kind.allCases)` already come out right.
+    /// `Gen.element(of: Foo.Kind.allCases)` already come out right. A bare
+    /// spelling *inside* a scanned type reaches its nested namesakes through
+    /// that type's scope; see `lookup(_:from:)`.
     ///
     /// Found by SwiftInferProperties' self-dogfood road test, where **eight**
     /// distinct types named `Kind` collapsed to one — and the survivor was an
@@ -114,42 +112,8 @@ public final class GeneratorResolver {
             }
             byName[shape.name] = shape
         }
-        // Leaf index, for the other half of the qualified-name bargain. Once a
-        // scanner records `BitSet.Counted`, a member written `let x: Counted`
-        // inside `BitSet` stops matching any key — Swift resolves that name
-        // through lexical scope, which a flat universe does not model. Without
-        // this index, qualifying names would *cost* derivations it was meant to
-        // gain.
-        //
-        // The ambiguity rule is the same one, applied to leaves: a leaf carried
-        // by two or more distinct shapes resolves to nothing rather than to
-        // whichever was scanned first. That is the `Kind` collision the header
-        // above describes, and qualifying the keys does not make guessing safe
-        // — it only makes the guess look better informed.
-        var byLeaf: [String: TypeShape] = [:]
-        var ambiguousLeaves: Set<String> = []
-        for shape in types {
-            guard let leaf = shape.name.split(separator: ".").last.map(String.init),
-                  leaf != shape.name else { continue }
-            if let existing = byLeaf[leaf] {
-                if existing != shape { ambiguousLeaves.insert(leaf) }
-                continue
-            }
-            byLeaf[leaf] = shape
-        }
-        // A top-level type always wins its own leaf — `struct Counted` and
-        // `Foo.Counted` in one module is not a collision to arbitrate, because
-        // an unqualified `Counted` in source means the top-level one everywhere
-        // except inside `Foo`. **That fall-out is guaranteed by lookup order,
-        // not by pruning the index**: `resolve` consults `shapesByName` first
-        // and only reaches the leaf map on a miss, so a leaf that shadows a
-        // top-level name is unreachable. An earlier version deleted those
-        // entries here; a mutant that removed the deletion changed nothing,
-        // which is how the line was found to be dead.
         self.shapesByName = byName
         self.ambiguousNames = ambiguous
-        self.shapesByLeafName = byLeaf
-        self.ambiguousLeafNames = ambiguousLeaves
         self.aliases = aliases
     }
 
@@ -161,24 +125,153 @@ public final class GeneratorResolver {
     /// Why `typeName` has no generator, or `nil` when it has one.
     ///
     /// Resolves the name first if nothing has asked yet, so the answer does not
-    /// depend on what the caller happened to derive beforehand.
+    /// depend on what the caller happened to derive beforehand. The name is
+    /// read at module scope, as `customTypeGenerator(forTypeName:)` reads it.
     public func resolutionFailure(forTypeName typeName: String) -> ResolutionFailure? {
-        guard resolve(typeName, visiting: []) == nil else { return nil }
-        return failures[typeName]
+        failure(for: typeName, from: nil)
+    }
+
+    /// Why `typeName`, written inside the type named `scope`, has no generator.
+    ///
+    /// The overload a `.noStrategy` reason needs: `Outer`'s reason names its
+    /// member as written — `` `inner: Inner` resolves to no generator `` — and
+    /// a bare `Inner` asked about at module scope is `.notInUniverse`, which is
+    /// true there and says nothing about why `Outer.Inner` failed. Ask from
+    /// `Outer` and the answer is `Outer.Inner`'s own.
+    public func resolutionFailure(forTypeName typeName: String, within scope: String) -> ResolutionFailure? {
+        failure(for: typeName, from: scope)
+    }
+
+    private func failure(for spelling: String, from scope: String?) -> ResolutionFailure? {
+        guard resolve(spelling, from: scope, visiting: []) == nil else { return nil }
+        switch lookup(spelling, from: scope) {
+        case .failed(let failure): return failure
+        case .alias(let key, _): return failures[key]
+        case .shape(let shape): return failures[shape.name]
+        }
     }
 
     /// Resolve closure for `DerivationStrategist.strategy(for:resolve:)` and
-    /// `composedGenerator(forTypeName:resolve:)`: maps a bare custom-type
-    /// spelling to its generator, recursing through the universe.
+    /// `composedGenerator(forTypeName:resolve:)`: maps a custom-type spelling
+    /// to its generator, recursing through the universe.
+    ///
+    /// The spelling is read **at module scope**, which is where the generated
+    /// code that uses the answer is written: `BitSet.Counted` resolves, a bare
+    /// `Counted` does not. To resolve a shape's *members*, pass
+    /// `resolve(within: shape.name)` instead — they were written inside it.
     public func customTypeGenerator(
         forTypeName name: String
     ) -> DerivationStrategist.ComposedGenerator? {
-        resolve(name, visiting: [])
+        resolve(name, from: nil, visiting: [])
+    }
+
+    /// The resolve closure for spellings written **inside** the type named
+    /// `scope`: a member or initializer parameter of that type, or anything in
+    /// a function declared on it. Lookup starts at `scope` and works outward,
+    /// so `Counted` written inside `BitSet` reaches `BitSet.Counted`.
+    ///
+    /// **This is the closure for `DerivationStrategist.strategy(for: shape,
+    /// resolve:)`.** Passing `customTypeGenerator` there reads the shape's
+    /// members at module scope, where a bare nested name means nothing; that
+    /// went unnoticed while a leaf index guessed on every miss, and the guess
+    /// is what SwiftPropertyLaws#63 removed.
+    ///
+    /// Not an overload of `customTypeGenerator`, deliberately: callers take that
+    /// one unapplied (`let resolve = resolver.customTypeGenerator`), and a
+    /// second overload would make every such reference ambiguous.
+    public func resolve(within scope: String) -> DerivationStrategist.CustomTypeResolver {
+        { name in self.resolve(name, from: scope, visiting: []) }
+    }
+
+    /// What one spelling refers to from one scope.
+    private enum Lookup {
+        case shape(TypeShape)
+        case alias(key: String, underlying: String)
+        case failed(ResolutionFailure)
+    }
+
+    /// What `spelling`, written inside the type named `scope`, refers to.
+    ///
+    /// **This is Swift's unqualified lookup, innermost scope first**: inside
+    /// `A.B` the spelling `X` means `A.B.X`, else `A.X`, else a top-level `X`.
+    /// `scope == nil` is module scope. A dotted spelling walks the same chain,
+    /// so `Inner.Kind` written inside `Outer` reaches `Outer.Inner.Kind`.
+    ///
+    /// **It replaced a leaf index**, which answered a bare `Counted` with the
+    /// one scanned type whose last component was `Counted`, wherever that type
+    /// was nested. The index existed for the lexical case — `let x: Counted`
+    /// inside `BitSet` means `BitSet.Counted`, which a flat universe cannot
+    /// otherwise model — but it could not tell that case from a bare name
+    /// meaning a type in **a module the scan does not contain**. SwiftAssist's
+    /// `SymbolSummary.init(from symbol: Symbol)` takes SwiftSourceKitClient's
+    /// `Symbol`; the only scanned `Symbol` was `XcodeDocument.Symbol`, nested in
+    /// an unrelated type, so the resolver built one of those and the emitted
+    /// call did not compile (SwiftPropertyLaws#63). The ambiguity rule could
+    /// not catch it: the imported type is never scanned, so the universe saw
+    /// one candidate. A name the scope chain does not reach is now
+    /// `.notInUniverse`, which is what it is.
+    ///
+    /// Two further defects went with the index. **A top-level namesake used to
+    /// shadow a nested type inside its own parent** — the index was consulted
+    /// only after the full-name map missed, so `let c: Counted` inside `BitSet`
+    /// built the top-level `Counted` whenever one existed, though Swift reads it
+    /// as `BitSet.Counted`. And **a self-referential nested type reached through
+    /// its leaf overflowed the stack**: the cycle guard compared the spelling
+    /// `Node` against the in-progress `Outer.Node`, never matched, and derived
+    /// again forever. Keying the guard on the name found closes that.
+    ///
+    /// Ambiguity is checked at each scope before moving outward, so a
+    /// collision at an inner scope is reported rather than skipped over — Swift
+    /// would stop there too.
+    private func lookup(_ spelling: String, from scope: String?) -> Lookup {
+        var enclosing = scope.map { $0.split(separator: ".").map(String.init) } ?? []
+        while true {
+            let candidate = (enclosing + [spelling]).joined(separator: ".")
+            if ambiguousNames.contains(candidate) { return .failed(.ambiguous) }
+            if let underlying = aliases[candidate] { return .alias(key: candidate, underlying: underlying) }
+            if let shape = shapesByName[candidate] { return .shape(shape) }
+            guard !enclosing.isEmpty else { return .failed(.notInUniverse) }
+            enclosing.removeLast()
+        }
     }
 
     private func resolve(
-        _ name: String,
+        _ spelling: String,
+        from scope: String?,
         visiting: Set<String>
+    ) -> DerivationStrategist.ComposedGenerator? {
+        switch lookup(spelling, from: scope) {
+        case .failed:
+            return nil
+
+        case .alias(let key, let underlying):
+            return memoized(key, visiting: visiting) {
+                // A user typealias → derive from its underlying type spelling,
+                // read where the alias was declared: `Account.ID = Handle`
+                // means whatever `Handle` means inside `Account`.
+                let declaringScope = key.split(separator: ".").dropLast().joined(separator: ".")
+                let result = DerivationStrategist.composedGenerator(forTypeName: underlying) { inner in
+                    self.resolve(
+                        inner,
+                        from: declaringScope.isEmpty ? nil : declaringScope,
+                        visiting: visiting.union([key])
+                    )
+                }
+                if result == nil { failures[key] = .aliasUnresolved(underlying: underlying) }
+                return result
+            }
+
+        case .shape(let shape):
+            return memoized(shape.name, visiting: visiting) { derive(shape, visiting: visiting) }
+        }
+    }
+
+    /// `compute`'s answer for the found `name`, at most once per resolver —
+    /// unless `name` is already being derived further up, which is a cycle.
+    private func memoized(
+        _ name: String,
+        visiting: Set<String>,
+        compute: () -> DerivationStrategist.ComposedGenerator?
     ) -> DerivationStrategist.ComposedGenerator? {
         if let cached = memo[name] { return cached }         // already fully resolved
 
@@ -200,46 +293,9 @@ public final class GeneratorResolver {
             )
         }
 
-        // Two or more distinct types share this bare name — see the initializer.
-        // Refusing keeps the referencing type at `.todo` instead of generating
-        // it from whichever namesake happened to be scanned first.
-        if ambiguousNames.contains(name) {
-            memo[name] = DerivationStrategist.ComposedGenerator?.none
-            failures[name] = .ambiguous
-            return nil
-        }
-
-        // A user typealias → derive from its underlying type spelling.
-        if let underlying = aliases[name] {
-            let result = DerivationStrategist.composedGenerator(forTypeName: underlying) { inner in
-                self.resolve(inner, visiting: visiting.union([name]))
-            }
-            memo[name] = result
-            if result == nil { failures[name] = .aliasUnresolved(underlying: underlying) }
-            return result
-        }
-        guard let shape = shapesByName[name] ?? unambiguousLeafMatch(for: name) else {
-            // Deliberately not memoized, as before; the failure is cheap to
-            // recompute and recording it keeps the two maps' readings aligned.
-            let isAmbiguousLeaf = !name.contains(".") && ambiguousLeafNames.contains(name)
-            failures[name] = isAmbiguousLeaf ? .ambiguous : .notInUniverse
-            return nil
-        }
-
-        let result = derive(shape, visiting: visiting)
+        let result = compute()
         memo[name] = result
-        // `derive` records under the shape's own name; a leaf reference
-        // (`Counted` for `BitSet.Counted`) is asked about under the spelling used.
-        if result == nil, let failure = failures[shape.name] { failures[name] = failure }
         return result
-    }
-
-    /// The nested type an unqualified reference names, when exactly one
-    /// qualified shape carries that leaf. Ambiguous leaves resolve to nothing,
-    /// matching the full-name rule.
-    private func unambiguousLeafMatch(for name: String) -> TypeShape? {
-        guard !name.contains("."), !ambiguousLeafNames.contains(name) else { return nil }
-        return shapesByLeafName[name]
     }
 
     private func derive(
@@ -250,8 +306,10 @@ public final class GeneratorResolver {
             return DerivationStrategist.ComposedGenerator(expression: "\(shape.name).gen()")
         }
         let nextVisiting = visiting.union([shape.name])
+        // Every spelling in the shape was written inside it, so it is read from
+        // the shape's own scope outward.
         let strategy = DerivationStrategist.strategy(for: shape) { inner in
-            self.resolve(inner, visiting: nextVisiting)
+            self.resolve(inner, from: shape.name, visiting: nextVisiting)
         }
         if case .todo(let reason) = strategy {
             failures[shape.name] = .noStrategy(reason: reason)
