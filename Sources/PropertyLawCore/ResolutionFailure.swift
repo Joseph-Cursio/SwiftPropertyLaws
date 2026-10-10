@@ -10,13 +10,15 @@
 ///
 /// Ask with `GeneratorResolver.resolutionFailure(forTypeName:)`.
 public enum ResolutionFailure: Sendable, Equatable {
-    /// No type of this name was in the universe the resolver was built over —
-    /// an external or stdlib type the scan did not include.
+    /// No type of this name is visible from where it was written — an external
+    /// or stdlib type the scan did not include, or a nested type asked about
+    /// from outside its parent. A scanned type nested elsewhere is never
+    /// substituted for it (SwiftPropertyLaws#63).
     case notInUniverse
 
-    /// Two or more distinct types carry this name (bare or as a nested leaf),
-    /// and the resolver refuses to guess between them. A qualified spelling
-    /// resolves it. See `GeneratorResolver.init(types:aliases:)`.
+    /// Two or more distinct types carry the name the lookup stopped at, and the
+    /// resolver refuses to guess between them. A qualified spelling resolves
+    /// it. See `GeneratorResolver.init(types:aliases:)`.
     case ambiguous
 
     /// A typealias whose underlying spelling did not resolve.

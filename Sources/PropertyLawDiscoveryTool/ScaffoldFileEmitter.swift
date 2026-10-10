@@ -16,7 +16,7 @@ enum ScaffoldFileEmitter {
         for entry in map.entries {
             guard case .todo = entry.derivationStrategy,
                   let shape = map.shapesByName[entry.typeName],
-                  let stub = ScaffoldEmitter.stub(for: shape, resolve: resolver.customTypeGenerator)
+                  let stub = ScaffoldEmitter.stub(for: shape, resolve: resolver.resolve(within: shape.name))
             else { continue }
             stubs.append(stub)
         }
