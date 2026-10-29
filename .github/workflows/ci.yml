@@ -1,6 +1,15 @@
 name: CI
 
+# Every job runs on a standard GitHub-hosted runner (macos-15), which is
+# free because this repository is public. Minutes become billable if the
+# repository goes private or a job moves to a larger runner (for example
+# macos-15-xlarge).
+
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
