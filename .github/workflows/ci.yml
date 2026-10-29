@@ -17,9 +17,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Each job takes about 4 minutes, cold build included. Without a timeout a
+  # hung run holds the runner for GitHub's 6-hour default.
   test-macos:
     name: Test (macOS)
     runs-on: macos-15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - uses: maxim-lobanov/setup-xcode@v1
@@ -35,6 +38,7 @@ jobs:
   build-apple:
     name: Build (${{ matrix.platform }})
     runs-on: macos-15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
