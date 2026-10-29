@@ -5,7 +5,7 @@
 **Version:** 0.3 Draft
 **Status:** Proposal
 **Audience:** Open Source Contributors, Swift Ecosystem
-**Supersedes:** v0.2 (in-place evolution; Appendix A is the v0.2 → v0.3 changelog) and v0.1 (preserved alongside as `SwiftPropertyLaws PRD v0.1.md`; Appendix B is the v0.1 → v0.2 changelog).
+**Supersedes:** v0.2 (in-place evolution; Appendix A is the v0.2 → v0.3 changelog) and v0.1 (Appendix B is the v0.1 → v0.2 changelog).
 
 -----
 
