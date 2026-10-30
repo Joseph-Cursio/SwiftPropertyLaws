@@ -4,10 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**A dependency's namesake no longer merges into a target type (2026-10-29).** The scan keys types by qualified name, and the target's own declaration of a name used to share its aggregate with any dependency type of the same name. Context was walked first, so the target's *members* won by arriving last, but conformances, provenances and witnesses accumulated from both. A memberless target type even took its namesake's members, because the rule was "last *non-empty* list wins". Found by Pass 1 through the plugin: Sitrep's `Node` got `Hashable` and `Comparable` checks from Yams' unrelated `Node`.
+
+The fix follows Swift's lookup, which tries the current module before any import. `ModuleScanner.typesDeclared(in:)` collects the qualified names the target declares, walking its already-parsed files once more. Context files are then absorbed with those names hidden: their declarations, extensions (dotted ones too), the types nested in either, and typealiases. A target *extension* of a dependency type is unaffected, because the target does not declare that name. Hiding is by qualified name, so the target's `Outer.Node` hides no top-level `Node`. The new code lives in `ModuleScanner+Namesakes.swift`, which keeps `ModuleScanner.swift` under the length lints. Eight mutants, eight killed:
+- the hiding disabled,
+- an exact-name match that misses nested types,
+- leaf-name matching,
+- target extensions counted as declarations,
+- target files hidden too,
+- and each of the declaration, extension and alias guards removed.
+
+Rerunning Pass 1 also showed that the `.summary.txt` gap buckets listed ties in `Dictionary` order, which Swift randomizes per process. `PropertyLawDiscoveryTool.bucketLines(_:)` breaks ties by name, and two runs are now byte-identical.
+
 **The discovery plugin is a product now, and Pass 1 runs it (2026-10-29).** `PropertyLawDiscoveryPlugin` was a plugin *target* with no plugin *product*. A dependent package cannot see a command plugin that isn't vended, so the README's `swift package propertylawcheck discover` worked in this repo alone. Verified on a copy of Sitrep with this repo added as a dependency: `swift package plugin --list` showed swift-argument-parser's plugins and not this one, and the command failed with "Unknown subcommand or plugin name 'propertylawcheck'". **Nothing exercised the plugin from outside.** `Validation/run.sh` called the tool directly, so Pass 1 never touched the code path an adopter uses.
 
-`run.sh` now runs the real plugin, on a copy of the package at `.build/validation-pass1/<Target>/` with this repo appended to its dependencies. Pass 1 therefore gets the target's real source list and its transitive dependencies as context, which is what an adopter gets. That surfaced one more defect, **not fixed**:
-- **A target type and a dependency type of the same name are merged.** Types are keyed by bare name, so Sitrep's own `Node` picked up the `Hashable` and `Comparable` conformances of Yams' `Node` and got checks it cannot satisfy.
+`run.sh` now runs the real plugin, on a copy of the package at `.build/validation-pass1/<Target>/` with this repo appended to its dependencies. Pass 1 therefore gets the target's real source list and its transitive dependencies as context, which is what an adopter gets. That surfaced one more defect, since fixed (see the entry above):
+- **A target type and a dependency type of the same name were merged.** Types were keyed by name alone, so Sitrep's own `Node` picked up the `Hashable` and `Comparable` conformances of Yams' `Node` and got checks it cannot satisfy.
 
 Foundation's `Sendable` refinements were also seeded, because Foundation ships no sources to pass as context: `CustomNSError`, `LocalizedError`, `RecoverableError`, `AttributedStringProtocol`, `NotificationCenter.AsyncMessage`, `SortComparator` and `StandardPredicateExpression`. `Foundation.` joins the stripped qualifiers. Four mutants, four killed.
 
