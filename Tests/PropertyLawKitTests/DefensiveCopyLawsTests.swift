@@ -42,6 +42,25 @@ struct DefensiveCopyLawsTests {
             )
         }
     }
+
+    /// Every non-empty script reaches the shared box, so a script of four or
+    /// more mutations must shrink to one. No other test read the script, so a
+    /// shrinker that returned nothing passed.
+    @Test func shallowCopyShrinksToASingleMutation() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkDefensiveCopyPropertyLaws(
+                for: ShallowCopy.self,
+                length: 4...8,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+        let shallow = violation?.results.first { $0.protocolLaw == "DefensiveCopy.copyIsIndependent" }
+        guard case .failed(let counterexample) = shallow?.outcome else {
+            Issue.record("expected copyIsIndependent to fail; got \(String(describing: shallow))")
+            return
+        }
+        #expect(counterexample.contains("applying [bump] to the copy alone"), "\(counterexample)")
+    }
 }
 
 // MARK: - Fixtures: correct deep copy (positive control)

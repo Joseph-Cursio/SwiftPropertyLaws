@@ -69,6 +69,25 @@ struct ValueSemanticLawsTests {
         }
     }
 
+    /// Every non-empty script leaks, so a script of four or more mutations
+    /// must shrink to one. No other test read the script, so a shrinker that
+    /// returned nothing passed.
+    @Test func leakShrinksToASingleMutation() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkValueSemanticPropertyLaws(
+                for: LeakyBadge.self,
+                length: 4...8,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+        let leak = violation?.results.first { $0.protocolLaw == "ValueSemantic.copyMutationDoesNotLeak" }
+        guard case .failed(let counterexample) = leak?.outcome else {
+            Issue.record("expected copyMutationDoesNotLeak to fail; got \(String(describing: leak))")
+            return
+        }
+        #expect(counterexample.contains("applying [increment] to the copy alone"), "\(counterexample)")
+    }
+
     // MARK: - Negative control — broken copy-on-write (Chapter 9 §9.2.2)
 
     @Test func brokenCopyOnWriteIsDetected() async throws {
