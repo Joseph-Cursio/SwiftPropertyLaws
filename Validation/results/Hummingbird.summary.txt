@@ -1,104 +1,50 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/Hummingbird.generated.swift
   target: Hummingbird
-  source files scanned: 73
-  types detected: 99
-  types needing manual gen() (99):
-    - Application
-    - ApplicationConfiguration
-    - ApplicationProtocol
-    - ApplicationRequestContextSource
-    - BasicRequestContext
-    - ByteBuffer
-    - CORSMiddleware
-    - CacheControl
-    - CallbackResponder
-    - ChildRequestContext
-    - CodingKey
-    - Cookie
-    - Cookies
-    - CoreRequestContextStorage
-    - Date
-    - DateCache
-    - EditedHTTPError
-    - EditedResponse
-    - Element
-    - EndpointPath
-    - EndpointResponders
-    - Environment
-    - EventLoopGroupProvider
-    - FileExtension
-    - FileIO
-    - FileMiddleware
-    - HTTPError
-    - HTTPFields
-    - HTTPHeaderDateFormatStyle
-    - HTTPHeaderDateParsingError
-    - HTTPHeadersExtractor
-    - JSONDecoder
-    - JSONEncoder
-    - KeyParser
-    - LocalFileSystem
-    - LogRequestsMiddleware
-    - Logger
-    - MediaType
-    - MemoryPersistDriver
-    - MetricsMiddleware
-    - MiddlewareFixedTypeBuilder
-    - MiddlewareGroup
-    - MiddlewareResponder
-    - NIOTooManyBytesError
-    - Never
-    - Node
-    - NonBlockingFileIO
-    - NotFoundResponder
-    - Parameters
-    - PersistDriver
-    - PersistError
-    - PreludeService
-    - RecordingHeader
-    - Request
-    - RequestContext
-    - RequestID
-    - Response
-    - ResponseEncodable
-    - RouteCollection
-    - Router
-    - RouterGroup
-    - RouterMethods
-    - RouterOptions
-    - RouterPath
-    - RouterPathTrieBuilder
-    - RouterResponder
-    - RouterTrie
-    - RouterValidationError
-    - Sequence<UInt8>
-    - Service
-    - SpanWrapper
-    - SplitStringMaxSplitsSequence
-    - SplitStringSequence
-    - Status
-    - String
-    - StringProtocol
-    - Substring
-    - ThrowingTransformingRouterGroup
-    - TracingMiddleware
-    - TransformingRouterGroup
-    - Trie
-    - TrieNode
-    - TrieToken
-    - UInt8
-    - URI
-    - URLEncodedForm
-    - URLEncodedFormDecoder
-    - URLEncodedFormDecodingStorage
-    - URLEncodedFormEncoder
-    - URLEncodedFormEncoderStorage
-    - URLEncodedFormError
-    - URLEncodedFormNode
-    - UUID
-    - [CodingKey]
-    - _Middleware2
-    - _OptionalMiddleware
-    - _SpreadMiddleware
-    - _URLEncodedFormDecoder
-    - _URLEncodedFormEncoder
+  source files scanned: 75
+  types detected: 139
+  detected but skipped, no suite emitted (35):
+    - Application: `public` without a `Sendable` conformance — the law entry points require one
+    - ApplicationRequestContextSource: `public` without a `Sendable` conformance — the law entry points require one
+    - CacheControl.CacheControlValue.Value: declared `private` — not nameable from another file
+    - CacheControl.Entry: declared `private` — not nameable from another file
+    - Cookie.ValidationError: `public` without a `Sendable` conformance — the law entry points require one
+    - EditedResponse: `public` without a `Sendable` conformance — the law entry points require one
+    - Environment.Error: `public` without a `Sendable` conformance — the law entry points require one
+    - EventLoopGroupProvider: `public` without a `Sendable` conformance — the law entry points require one
+    - FileMiddleware.FileResult: declared `private` — not nameable from another file
+    - FileMiddleware.GetFileAttributesAction: declared `private` — not nameable from another file
+    - HTTPError.CodableFormat: declared `fileprivate` — not nameable from another file
+    - HTTPHeadersExtractor: declared `private` — not nameable from another file
+    - LogRequestsMiddleware.HeaderFilter._Internal: declared `fileprivate` — not nameable from another file
+    - MemoryPersistDriver: `public` without a `Sendable` conformance — the law entry points require one
+    - MiddlewareFixedTypeBuilder: `public` without a `Sendable` conformance — the law entry points require one
+    - MiddlewareGroup: `public` without a `Sendable` conformance — the law entry points require one
+    - PersistError: `public` without a `Sendable` conformance — the law entry points require one
+    - PersistError.Internal: declared `private` — not nameable from another file
+    - RouteCollection: `public` without a `Sendable` conformance — the law entry points require one
+    - RouteCollection.RouteDefinition: declared `fileprivate` — not nameable from another file
+    - Router: `public` without a `Sendable` conformance — the law entry points require one
+    - Router.RouteDescription: `public` without a `Sendable` conformance — the law entry points require one
+    - RouterGroup: `public` without a `Sendable` conformance — the law entry points require one
+    - RouterPathTrieBuilder: `public` without a `Sendable` conformance — the law entry points require one
+    - RouterPathTrieBuilder.Node: `public` without a `Sendable` conformance — the law entry points require one
+    - RouterValidationError: `public` without a `Sendable` conformance — the law entry points require one
+    - SpanWrapper: declared `private` — not nameable from another file
+    - URLEncodedFormDecoder._Options: declared `fileprivate` — not nameable from another file
+    - URLEncodedFormDecodingStorage: declared `private` — not nameable from another file
+    - URLEncodedFormEncoder._Options: declared `fileprivate` — not nameable from another file
+    - URLEncodedFormEncoderStorage: declared `private` — not nameable from another file
+    - URLEncodedFormError: `public` without a `Sendable` conformance — the law entry points require one
+    - URLEncodedFormError.Code.Internal: declared `fileprivate` — not nameable from another file
+    - _URLEncodedFormDecoder: declared `private` — not nameable from another file
+    - _URLEncodedFormEncoder: declared `private` — not nameable from another file
+  types needing manual gen() (91):
+    [42] user-defined init
+    [28] declaration not in this target
+    [7] unsupported member type (nested/custom)
+    [3] class not Sendable (a check's inputs must be)
+    [3] enum payload type unresolved
+    [3] class with no callable initializer
+    [2] caseless enum (uninhabited)
+    [2] access-restricted member (private/fileprivate)
+    [1] access-restricted initializer (private/fileprivate)

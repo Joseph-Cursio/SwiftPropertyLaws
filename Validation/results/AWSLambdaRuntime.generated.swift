@@ -2,13 +2,29 @@
 // `// property-law-suppress: <protocol>_<TypeName>` markers.
 //
 // Target: AWSLambdaRuntime
-// Types detected: 35
+// Types detected: 38
 // Re-run: swift package propertylawcheck discover --target AWSLambdaRuntime
+//
+// Detected but skipped — a suite for these would not compile (12):
+//   - ClientApplication.CodingKeys: declared `private` — not nameable from another file
+//   - ClientContext.CodingKeys: declared `private` — not nameable from another file
+//   - ClosureHandler: `public` without a `Sendable` conformance — the law entry points require one
+//   - JSONLogHandler: `public` without a `Sendable` conformance — the law entry points require one
+//   - Lambda: `public` without a `Sendable` conformance — the law entry points require one
+//   - LambdaClock: `public` without a `Sendable` conformance — the law entry points require one
+//   - LambdaClock.Instant: `public` without a `Sendable` conformance — the law entry points require one
+//   - LambdaCodableAdapter: `public` without a `Sendable` conformance — the law entry points require one
+//   - LambdaCodableResponseWriter: `public` without a `Sendable` conformance — the law entry points require one
+//   - LambdaHandlerAdapter: `public` without a `Sendable` conformance — the law entry points require one
+//   - LambdaRuntimeClient.ConnectionState: declared `private` — not nameable from another file
+//   - StreamingClosureHandler: `public` without a `Sendable` conformance — the law entry points require one
 
 import Testing
 import PropertyLawKit
+@testable import AWSLambdaRuntime
+import Foundation
 
-// AmazonHeaders — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:38 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:82 (extension)
+// AmazonHeaders — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:36 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:80 (extension)
 // No emit-able stdlib conformance recognized.
 
 // ByteBuffer — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:109 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:320 (extension)
@@ -19,7 +35,8 @@ import PropertyLawKit
     @Test func codable_ClientApplication() async throws {
         try await checkCodablePropertyLaws(
             for: ClientApplication.self,
-            using: ClientApplication.gen()
+            using: zip(Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional)
+            .map { ClientApplication(installationID: $0.0, appTitle: $0.1, appVersionName: $0.2, appVersionCode: $0.3, appPackageName: $0.4) }
         )
     }
 }
@@ -29,15 +46,14 @@ import PropertyLawKit
     @Test func codable_ClientContext() async throws {
         try await checkCodablePropertyLaws(
             for: ClientContext.self,
-            using: ClientContext.gen()
+            using: zip(zip(Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8).optional)
+            .map { ClientApplication(installationID: $0.0, appTitle: $0.1, appVersionName: $0.2, appVersionCode: $0.3, appPackageName: $0.4) }.optional, zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8)).dictionary(ofAtMost: 0...8).optional, zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8)).dictionary(ofAtMost: 0...8).optional)
+            .map { ClientContext(client: $0.0, custom: $0.1, environment: $0.2) }
         )
     }
 }
 
-// ClosureHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaHandlers.swift:159 (primary)
-// No emit-able stdlib conformance recognized.
-
-// Consts — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:21 (primary)
+// Consts — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
 // ControlPlaneRequest — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:19 (primary)
@@ -45,7 +61,7 @@ import PropertyLawKit
     @Test func hashable_ControlPlaneRequest() async throws {
         try await checkHashablePropertyLaws(
             for: ControlPlaneRequest.self,
-            using: ControlPlaneRequest.gen()
+            using: ControlPlaneRequest.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
@@ -58,7 +74,7 @@ import PropertyLawKit
     @Test func hashable_ControlPlaneResponse() async throws {
         try await checkHashablePropertyLaws(
             for: ControlPlaneResponse.self,
-            using: ControlPlaneResponse.gen()
+            using: ControlPlaneResponse.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
@@ -90,33 +106,35 @@ import PropertyLawKit
     @Test func hashable_InvocationMetadata() async throws {
         try await checkHashablePropertyLaws(
             for: InvocationMetadata.self,
-            using: InvocationMetadata.gen()
+            using: InvocationMetadata.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
 
-// JSONLogHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/JSONLogHandler.swift:40 (primary)
+// JSONLogHandler.LogEntry — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/JSONLogHandler.swift:168 (primary)
+@Suite struct JSONLogHandler_LogEntryPropertyLawTests {
+    @Test func codable_JSONLogHandler_LogEntry() async throws {
+        try await checkCodablePropertyLaws(
+            for: JSONLogHandler.LogEntry.self,
+            using: zip(zip(Gen<Date>.date, Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8).optional, Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8), Gen<UInt>.uint()), zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8)).dictionary(ofAtMost: 0...8).optional)
+            .map { JSONLogHandler.LogEntry(timestamp: $0.0.0, level: $0.0.1, message: $0.0.2, source: $0.0.3, error: $0.0.4, requestId: $0.0.5, traceId: $0.0.6, file: $0.0.7, function: $0.0.8, line: $0.0.9, metadata: $0.1) }
+        )
+    }
+}
+
+// LambdaChannelHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:26 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:359 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Lambda — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Lambda.swift:33 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Lambda.swift:153 (extension)
+// LambdaChannelHandler.State — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:30 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaChannelHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:26 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:364 (extension)
-// No emit-able stdlib conformance recognized.
-
-// LambdaClock — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:55 (primary)
-// No emit-able stdlib conformance recognized.
-
-// LambdaCodableAdapter — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Codable.swift:89 (primary)
-// No emit-able stdlib conformance recognized.
-
-// LambdaCodableResponseWriter — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Codable.swift:152 (primary)
+// LambdaChannelHandler.State.LambdaState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:35 (primary)
 // No emit-able stdlib conformance recognized.
 
 // LambdaContext — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:87 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaHandlerAdapter — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Codable.swift:52 (primary)
+// LambdaContext._Storage — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:93 (primary)
 // No emit-able stdlib conformance recognized.
 
 // LambdaRequestID — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:118 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:130 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:139 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:145 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:151 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:167 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:176 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:266 (extension)
@@ -124,14 +142,14 @@ import PropertyLawKit
     @Test func hashable_LambdaRequestID() async throws {
         try await checkHashablePropertyLaws(
             for: LambdaRequestID.self,
-            using: LambdaRequestID.gen()
+            using: LambdaRequestID.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 
     @Test func codable_LambdaRequestID() async throws {
         try await checkCodablePropertyLaws(
             for: LambdaRequestID.self,
-            using: LambdaRequestID.gen()
+            using: LambdaRequestID.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
@@ -142,13 +160,31 @@ import PropertyLawKit
 // LambdaRuntime — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Handler.swift:19 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime.swift:41 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeClient — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:507 (extension)
+// LambdaRuntimeClient — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:512 (extension)
+// No emit-able stdlib conformance recognized.
+
+// LambdaRuntimeClient.ClosingState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:91 (primary)
+// No emit-able stdlib conformance recognized.
+
+// LambdaRuntimeClient.Configuration — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:27 (primary)
+// No emit-able stdlib conformance recognized.
+
+// LambdaRuntimeClient.LambdaState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:78 (primary)
+// No emit-able stdlib conformance recognized.
+
+// LambdaRuntimeClient.Writer — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:39 (primary)
 // No emit-able stdlib conformance recognized.
 
 // LambdaRuntimeError — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRuntimeError.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
+// LambdaRuntimeError.Code — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRuntimeError.swift:18 (primary)
+// No emit-able stdlib conformance recognized.
+
 // LoggingConfiguration — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/LoggingConfiguration.swift:18 (primary)
+// No emit-able stdlib conformance recognized.
+
+// LoggingConfiguration.LogFormat — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/LoggingConfiguration.swift:20 (primary)
 // No emit-able stdlib conformance recognized.
 
 // Request — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-01-main.swift:2 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-02-main.swift:2 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-03-main.swift:2 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-04-main.swift:4 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-05-main.swift:4 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-06-main.swift:4 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-07-main.swift:4 (primary)
@@ -157,10 +193,10 @@ import PropertyLawKit
 // Response — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-02-main.swift:7 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-03-main.swift:7 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-04-main.swift:9 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-05-main.swift:9 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-06-main.swift:9 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Docs.docc/Resources/code/03-03-07-main.swift:9 (primary)
 // No emit-able stdlib conformance recognized.
 
-// SendingStorage — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:113 (primary)
+// SendingStorage — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:109 (primary)
 // No emit-able stdlib conformance recognized.
 
-// StreamingClosureHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaHandlers.swift:130 (primary)
+// SendingStorage.ValueAlreadySentError — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:112 (primary)
 // No emit-able stdlib conformance recognized.
 
 // StreamingLambdaStatusAndHeadersResponse — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaResponseStreamWriter+Headers.swift:29 (primary)
@@ -168,12 +204,13 @@ import PropertyLawKit
     @Test func codable_StreamingLambdaStatusAndHeadersResponse() async throws {
         try await checkCodablePropertyLaws(
             for: StreamingLambdaStatusAndHeadersResponse.self,
-            using: StreamingLambdaStatusAndHeadersResponse.gen()
+            using: zip(Gen<Int>.int(), zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8)).dictionary(ofAtMost: 0...8).optional, zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8)).dictionary(ofAtMost: 0...8).optional)
+            .map { StreamingLambdaStatusAndHeadersResponse(statusCode: $0.0, headers: $0.1, multiValueHeaders: $0.2) }
         )
     }
 }
 
-// String — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:95 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:48 (extension)
+// String — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:95 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:46 (extension)
 // No emit-able stdlib conformance recognized.
 
 // UnsafeRawBufferPointer — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:373 (extension)

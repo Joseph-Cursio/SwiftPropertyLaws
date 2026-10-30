@@ -2,11 +2,26 @@
 // `// property-law-suppress: <protocol>_<TypeName>` markers.
 //
 // Target: SitrepCore
-// Types detected: 18
+// Types detected: 16
 // Re-run: swift package propertylawcheck discover --target SitrepCore
+//
+// Detected but skipped — a suite for these would not compile (12):
+//   - Configuration: `public` without a `Sendable` conformance — the law entry points require one
+//   - File: `public` without a `Sendable` conformance — the law entry points require one
+//   - Function.CodingKeys: declared `private` — not nameable from another file
+//   - Node.CodingKeys: declared `private` — not nameable from another file
+//   - Report: `public` without a `Sendable` conformance — the law entry points require one
+//   - Report.Object: `public` without a `Sendable` conformance — the law entry points require one
+//   - Report.Scan: `public` without a `Sendable` conformance — the law entry points require one
+//   - Report.Stat: `public` without a `Sendable` conformance — the law entry points require one
+//   - Results: `public` without a `Sendable` conformance — the law entry points require one
+//   - Scan: `public` without a `Sendable` conformance — the law entry points require one
+//   - Scan.ReportType: `public` without a `Sendable` conformance — the law entry points require one
+//   - Type.CodingKeys: declared `private` — not nameable from another file
 
 import Testing
 import PropertyLawKit
+@testable import SitrepCore
 
 // Array — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:13 (extension)
 // No emit-able stdlib conformance recognized.
@@ -20,23 +35,13 @@ import PropertyLawKit
 // Comment — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Comment.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Configuration — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Configuration.swift:5 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Configuration.swift:29 (extension)
-@Suite struct ConfigurationPropertyLawTests {
-    @Test func codable_Configuration() async throws {
-        try await checkCodablePropertyLaws(
-            for: Configuration.self,
-            using: Configuration.gen()
-        )
-    }
-}
+// Comment.CommentType — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Comment.swift:15 (primary)
+// No emit-able stdlib conformance recognized.
 
 // EnumDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:234 (extension)
 // No emit-able stdlib conformance recognized.
 
 // ExtensionDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:249 (extension)
-// No emit-able stdlib conformance recognized.
-
-// File — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/File.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
 // FileVisitor — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:17 (primary)
@@ -45,26 +50,13 @@ import PropertyLawKit
 // Function — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Function.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
+// Function.ThrowingStatus — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Function.swift:16 (primary)
+// No emit-able stdlib conformance recognized.
+
 // Node — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Node.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
 // ProtocolDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:244 (extension)
-// No emit-able stdlib conformance recognized.
-
-// Report — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Report.swift:14 (primary)
-@Suite struct ReportPropertyLawTests {
-    @Test func codable_Report() async throws {
-        try await checkCodablePropertyLaws(
-            for: Report.self,
-            using: Report.gen()
-        )
-    }
-}
-
-// Results — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Results.swift:13 (primary)
-// No emit-able stdlib conformance recognized.
-
-// Scan — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Scan.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
 // String — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:28 (extension)
@@ -74,4 +66,7 @@ import PropertyLawKit
 // No emit-able stdlib conformance recognized.
 
 // Type — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:66 (extension), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Type.swift:14 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Type.swift:67 (extension)
+// No emit-able stdlib conformance recognized.
+
+// Type.ObjectType — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Type.swift:21 (primary)
 // No emit-able stdlib conformance recognized.

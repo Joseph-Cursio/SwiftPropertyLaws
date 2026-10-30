@@ -1,23 +1,32 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/SitrepCore.generated.swift
   target: SitrepCore
   source files scanned: 12
-  types detected: 18
-  types needing manual gen() (18):
-    - Array
-    - BodyStripper
-    - ClassDeclSyntax
-    - Comment
-    - Configuration
-    - EnumDeclSyntax
-    - ExtensionDeclSyntax
-    - File
-    - FileVisitor
-    - Function
-    - Node
-    - ProtocolDeclSyntax
-    - Report
-    - Results
-    - Scan
-    - String
-    - StructDeclSyntax
-    - Type
+  types detected: 16
+  detected but skipped, no suite emitted (12):
+    - Configuration: `public` without a `Sendable` conformance — the law entry points require one
+    - File: `public` without a `Sendable` conformance — the law entry points require one
+    - Function.CodingKeys: declared `private` — not nameable from another file
+    - Node.CodingKeys: declared `private` — not nameable from another file
+    - Report: `public` without a `Sendable` conformance — the law entry points require one
+    - Report.Object: `public` without a `Sendable` conformance — the law entry points require one
+    - Report.Scan: `public` without a `Sendable` conformance — the law entry points require one
+    - Report.Stat: `public` without a `Sendable` conformance — the law entry points require one
+    - Results: `public` without a `Sendable` conformance — the law entry points require one
+    - Scan: `public` without a `Sendable` conformance — the law entry points require one
+    - Scan.ReportType: `public` without a `Sendable` conformance — the law entry points require one
+    - Type.CodingKeys: declared `private` — not nameable from another file
+  types needing manual gen() (12):
+    [7] declaration not in this target
+    [5] class not Sendable (a check's inputs must be)
+      - Array
+      - BodyStripper
+      - ClassDeclSyntax
+      - EnumDeclSyntax
+      - ExtensionDeclSyntax
+      - FileVisitor
+      - Function
+      - Node
+      - ProtocolDeclSyntax
+      - String
+      - StructDeclSyntax
+      - Type
