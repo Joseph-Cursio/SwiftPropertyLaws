@@ -44,19 +44,19 @@ import HummingbirdCore
 import Logging
 import NIOCore
 
-// Application — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Application.swift:185 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Application.swift:314 (extension)
+// Application — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Application.swift:185 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Application.swift:314 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ApplicationConfiguration — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Configuration.swift:20 (primary)
+// ApplicationConfiguration — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Configuration.swift:20 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ApplicationProtocol — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Application.swift:71 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Application.swift:77 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Application.swift:94 (extension)
+// ApplicationProtocol — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Application.swift:71 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Application.swift:77 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Application.swift:94 (extension)
 // No emit-able stdlib conformance recognized.
 
-// BasicRequestContext — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:125 (primary)
+// BasicRequestContext — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:125 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ByteBuffer — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/LengthFieldBasedFrameDecoder.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/LengthFieldPrepender.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/WritePCAPHandler.swift:586 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:21 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:658 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:698 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:870 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:1075 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:79 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:213 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:290 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:314 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:318 (primary), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1301 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1322 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1427 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1491 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1515 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1525 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1527 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1553 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift:15 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-int.swift:15 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:15 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:32 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:75 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-multi-int.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-quicBinaryEncodingStrategy.swift:15 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-views.swift:284 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/Codec.swift:349 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/NIOPooledRecvBufferAllocator.swift:214 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/ByteBuffer-foundation.swift:41 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/Codable+ByteBuffer.swift:23 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPEncoder.swift:439 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:529 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOTLS/SNIHandler.swift:47 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/ByteBuffer+FileSystem.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:60 (extension)
+// ByteBuffer — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/LengthFieldBasedFrameDecoder.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/LengthFieldPrepender.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/WritePCAPHandler.swift:586 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:21 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:658 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:698 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:870 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:1075 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:79 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:213 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:290 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:314 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:318 (primary), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1301 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1322 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1427 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1491 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1515 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1525 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1527 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1553 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift:15 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-int.swift:15 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:15 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:32 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:75 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-multi-int.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-quicBinaryEncodingStrategy.swift:15 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-views.swift:284 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/Codec.swift:349 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/NIOPooledRecvBufferAllocator.swift:214 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/ByteBuffer-foundation.swift:41 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/Codable+ByteBuffer.swift:23 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPEncoder.swift:439 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:529 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOTLS/SNIHandler.swift:47 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/ByteBuffer+FileSystem.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:60 (extension)
 @Suite struct ByteBufferPropertyLawTests {
     @Test func hashable_ByteBuffer() async throws {
         try await checkHashablePropertyLaws(
@@ -73,133 +73,133 @@ import NIOCore
     }
 }
 
-// CORSMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:18 (primary)
+// CORSMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CORSMiddleware.AllowOrigin — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:20 (primary)
+// CORSMiddleware.AllowOrigin — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:20 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CORSMiddleware.AllowOriginExtended — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:44 (primary)
+// CORSMiddleware.AllowOriginExtended — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:44 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CORSMiddleware.AllowOriginExtended.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:45 (primary)
+// CORSMiddleware.AllowOriginExtended.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/CORSMiddleware.swift:45 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CacheControl — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/CacheControl.swift:10 (primary)
+// CacheControl — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/CacheControl.swift:10 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CacheControl.CacheControlValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/CacheControl.swift:54 (primary)
+// CacheControl.CacheControlValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/CacheControl.swift:54 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CacheControl.Value — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/CacheControl.swift:15 (primary)
+// CacheControl.Value — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/CacheControl.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CallbackResponder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/RequestResponder.swift:22 (primary)
+// CallbackResponder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/RequestResponder.swift:22 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ChildRequestContext — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/ChildRequestContext.swift:28 (extension)
+// ChildRequestContext — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/ChildRequestContext.swift:28 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CodingKey — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:206 (extension)
+// CodingKey — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:206 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/ContentSecurityMiddleware.swift:15 (primary)
+// ContentSecurityMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/ContentSecurityMiddleware.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:25 (primary)
+// ContentSecurityPolicy — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:25 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.Directive — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:27 (primary)
+// ContentSecurityPolicy.Directive — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.Directive.FetchDirective — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:43 (primary)
+// ContentSecurityPolicy.Directive.FetchDirective — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:43 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.Directive.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:28 (primary)
+// ContentSecurityPolicy.Directive.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:28 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.FetchDirectiveValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:224 (primary)
+// ContentSecurityPolicy.FetchDirectiveValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:224 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.FetchDirectiveValue.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:225 (primary)
+// ContentSecurityPolicy.FetchDirectiveValue.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:225 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.HashAlgorithm — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:202 (primary)
+// ContentSecurityPolicy.HashAlgorithm — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:202 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.RequireTrustedTypesForValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:494 (primary)
+// ContentSecurityPolicy.RequireTrustedTypesForValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:494 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.RequireTrustedTypesForValue.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:495 (primary)
+// ContentSecurityPolicy.RequireTrustedTypesForValue.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:495 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.SandboxValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:387 (primary)
+// ContentSecurityPolicy.SandboxValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:387 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.SandboxValue.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:388 (primary)
+// ContentSecurityPolicy.SandboxValue.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:388 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.Scheme — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:187 (primary)
+// ContentSecurityPolicy.Scheme — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:187 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.TrustedTypesValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:461 (primary)
+// ContentSecurityPolicy.TrustedTypesValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:461 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.TrustedTypesValue.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:462 (primary)
+// ContentSecurityPolicy.TrustedTypesValue.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:462 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.URIRestrictionValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:345 (primary)
+// ContentSecurityPolicy.URIRestrictionValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:345 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ContentSecurityPolicy.URIRestrictionValue.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:346 (primary)
+// ContentSecurityPolicy.URIRestrictionValue.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/ContentSecurityPolicy.swift:346 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookie — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:16 (primary)
+// Cookie — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookie.Properties — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:298 (primary)
+// Cookie.Properties — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:298 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookie.Properties.CommonProperties — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:300 (primary)
+// Cookie.Properties.CommonProperties — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:300 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookie.SameSite — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:27 (primary)
+// Cookie.SameSite — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookie.ValidationError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:18 (primary)
+// Cookie.ValidationError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookie.ValidationError.Reason — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:19 (primary)
+// Cookie.ValidationError.Reason — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Cookies — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookies.swift:12 (primary)
+// Cookies — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookies.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CoreRequestContextStorage — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:37 (primary)
+// CoreRequestContextStorage — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:37 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Date — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-configuration/Sources/Configuration/ExpressibleByConfigString.swift:96 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:21 (extension)
+// Date — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-configuration/Sources/Configuration/ExpressibleByConfigString.swift:96 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:21 (extension)
 // No emit-able stdlib conformance recognized.
 
-// DateCache — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/DateCache.swift:25 (primary)
+// DateCache — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/DateCache.swift:25 (primary)
 // No emit-able stdlib conformance recognized.
 
-// DateCache.DateContainer — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/DateCache.swift:27 (primary)
+// DateCache.DateContainer — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/DateCache.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
-// EditedHTTPError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Error/EditedHTTPError.swift:13 (primary)
+// EditedHTTPError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Error/EditedHTTPError.swift:13 (primary)
 // No emit-able stdlib conformance recognized.
 
-// EndpointPath — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:22 (primary)
+// EndpointPath — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:22 (primary)
 // No emit-able stdlib conformance recognized.
 
-// EndpointResponders — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/EndpointResponder.swift:12 (primary)
+// EndpointResponders — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/EndpointResponder.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Environment — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:32 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:244 (extension)
+// Environment — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Environment.swift:32 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Environment.swift:244 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Environment.Error — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:33 (primary)
+// Environment.Error — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Environment.swift:33 (primary)
 @Suite struct Environment_ErrorPropertyLawTests {
     @Test func equatable_Environment_Error() async throws {
         try await checkEquatablePropertyLaws(
@@ -209,28 +209,28 @@ import NIOCore
     }
 }
 
-// Environment.Error.Code — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:34 (primary)
+// Environment.Error.Code — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Environment.swift:34 (primary)
 // No emit-able stdlib conformance recognized.
 
-// FileIO — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/FileIO.swift:17 (primary)
+// FileIO — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/FileIO.swift:17 (primary)
 // No emit-able stdlib conformance recognized.
 
-// FileIO.FileError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/FileIO.swift:18 (primary)
+// FileIO.FileError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/FileIO.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// FileIO.FileError.Value — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/FileIO.swift:19 (primary)
+// FileIO.FileError.Value — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/FileIO.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
-// FileMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/FileMiddleware.swift:43 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/FileMiddleware.swift:262 (extension)
+// FileMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/FileMiddleware.swift:43 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/FileMiddleware.swift:262 (extension)
 // No emit-able stdlib conformance recognized.
 
-// HTTPError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Error/HTTPError.swift:13 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Error/HTTPError.swift:75 (extension)
+// HTTPError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Error/HTTPError.swift:13 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Error/HTTPError.swift:75 (extension)
 // No emit-able stdlib conformance recognized.
 
-// HTTPError.CodableFormat.ErrorFormat — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Error/HTTPError.swift:53 (primary)
+// HTTPError.CodableFormat.ErrorFormat — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Error/HTTPError.swift:53 (primary)
 // No emit-able stdlib conformance recognized.
 
-// HTTPFields — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:23 (primary), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:203 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:359 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:380 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:392 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOHTTPTypesHTTP1/HTTPTypeConversion.swift:142 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:128 (extension)
+// HTTPFields — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:23 (primary), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:203 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:359 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:380 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift:392 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOHTTPTypesHTTP1/HTTPTypeConversion.swift:142 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:128 (extension)
 @Suite struct HTTPFieldsPropertyLawTests {
     @Test func hashable_HTTPFields() async throws {
         try await checkHashablePropertyLaws(
@@ -261,13 +261,13 @@ import NIOCore
     }
 }
 
-// HTTPHeaderDateFormatStyle — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:34 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:45 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:281 (extension)
+// HTTPHeaderDateFormatStyle — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:34 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:45 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:281 (extension)
 // No emit-able stdlib conformance recognized.
 
-// HTTPHeaderDateParsingError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:32 (primary)
+// HTTPHeaderDateParsingError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:32 (primary)
 // No emit-able stdlib conformance recognized.
 
-// HTTPResponse.Status — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPResponse.swift:22 (primary), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPResponse.swift:350 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:75 (extension)
+// HTTPResponse.Status — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPResponse.swift:22 (primary), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-http-types/Sources/HTTPTypes/HTTPResponse.swift:350 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:75 (extension)
 @Suite struct HTTPResponse_StatusPropertyLawTests {
     @Test func hashable_HTTPResponse_Status() async throws {
         try await checkHashablePropertyLaws(
@@ -278,16 +278,16 @@ import NIOCore
     }
 }
 
-// JSONDecoder — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/Codable+ByteBuffer.swift:113 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/JSON/JSONCoding.swift:37 (extension)
+// JSONDecoder — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/Codable+ByteBuffer.swift:113 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/JSON/JSONCoding.swift:37 (extension)
 // No emit-able stdlib conformance recognized.
 
-// JSONEncoder — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/Codable+ByteBuffer.swift:137 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/JSON/JSONCoding.swift:17 (extension)
+// JSONEncoder — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOFoundationEssentialsCompat/Codable+ByteBuffer.swift:137 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/JSON/JSONCoding.swift:17 (extension)
 // No emit-able stdlib conformance recognized.
 
-// KeyParser — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:251 (primary)
+// KeyParser — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:251 (primary)
 // No emit-able stdlib conformance recognized.
 
-// KeyParser.KeyType — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:252 (primary)
+// KeyParser.KeyType — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:252 (primary)
 @Suite struct KeyParser_KeyTypePropertyLawTests {
     @Test func equatable_KeyParser_KeyType() async throws {
         try await checkEquatablePropertyLaws(
@@ -301,22 +301,22 @@ import NIOCore
     }
 }
 
-// LocalFileSystem — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/LocalFileSystem.swift:21 (primary)
+// LocalFileSystem — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/LocalFileSystem.swift:21 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LocalFileSystem.FileAttributes — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Files/LocalFileSystem.swift:23 (primary)
+// LocalFileSystem.FileAttributes — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Files/LocalFileSystem.swift:23 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LogRequestsMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/LogRequestMiddleware.swift:18 (primary)
+// LogRequestsMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/LogRequestMiddleware.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LogRequestsMiddleware.HeaderFilter — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/LogRequestMiddleware.swift:20 (primary)
+// LogRequestsMiddleware.HeaderFilter — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/LogRequestMiddleware.swift:20 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Logger — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger+Attributes.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger+Attributes.swift:227 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:26 (primary), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:91 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:376 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1092 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1189 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1351 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1382 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1482 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1549 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/MetadataProvider.swift:33 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Application.swift:319 (extension)
+// Logger — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger+Attributes.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger+Attributes.swift:227 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:26 (primary), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:91 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:376 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1092 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1189 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1351 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1382 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1482 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/Logger.swift:1549 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-log/Sources/Logging/MetadataProvider.swift:33 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Application.swift:319 (extension)
 // No emit-able stdlib conformance recognized.
 
-// MediaType — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType+FileExtension.swift:3 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:12 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:208 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:224 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:486 (extension)
+// MediaType — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType+FileExtension.swift:3 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:12 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:208 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:224 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:486 (extension)
 @Suite struct MediaTypePropertyLawTests {
     @Test func codable_MediaType() async throws {
         try await checkCodablePropertyLaws(
@@ -326,7 +326,7 @@ import NIOCore
     }
 }
 
-// MediaType.Category — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:150 (primary)
+// MediaType.Category — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:150 (primary)
 @Suite struct MediaType_CategoryPropertyLawTests {
     @Test func equatable_MediaType_Category() async throws {
         try await checkEquatablePropertyLaws(
@@ -367,10 +367,10 @@ import NIOCore
     }
 }
 
-// MediaType.Category.Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:151 (primary)
+// MediaType.Category.Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType.swift:151 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MediaType.FileExtension — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType+FileExtension.swift:5 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType+FileExtension.swift:30 (extension)
+// MediaType.FileExtension — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType+FileExtension.swift:5 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/MediaType+FileExtension.swift:30 (extension)
 @Suite struct MediaType_FileExtensionPropertyLawTests {
     @Test func hashable_MediaType_FileExtension() async throws {
         try await checkHashablePropertyLaws(
@@ -387,22 +387,22 @@ import NIOCore
     }
 }
 
-// MemoryPersistDriver — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:15 (primary)
+// MemoryPersistDriver — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MemoryPersistDriver.Configuration — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:17 (primary)
+// MemoryPersistDriver.Configuration — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:17 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MemoryPersistDriver.Item — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:104 (primary)
+// MemoryPersistDriver.Item — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:104 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MetricsCache — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:67 (primary)
+// MetricsCache — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:67 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MetricsCache.EndpointMetrics — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:78 (primary)
+// MetricsCache.EndpointMetrics — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:78 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MetricsCache.EndpointMetrics.ID — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:79 (primary)
+// MetricsCache.EndpointMetrics.ID — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:79 (primary)
 @Suite struct MetricsCache_EndpointMetrics_IDPropertyLawTests {
     @Test func hashable_MetricsCache_EndpointMetrics_ID() async throws {
         try await checkHashablePropertyLaws(
@@ -414,10 +414,10 @@ import NIOCore
     }
 }
 
-// MetricsCache.MethodMetrics — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:68 (primary)
+// MetricsCache.MethodMetrics — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:68 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MetricsCache.MethodMetrics.ID — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:69 (primary)
+// MetricsCache.MethodMetrics.ID — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:69 (primary)
 @Suite struct MetricsCache_MethodMetrics_IDPropertyLawTests {
     @Test func hashable_MetricsCache_MethodMetrics_ID() async throws {
         try await checkHashablePropertyLaws(
@@ -427,13 +427,13 @@ import NIOCore
     }
 }
 
-// MetricsMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:22 (primary)
+// MetricsMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MetricsMiddleware.swift:22 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MiddlewareResponder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/Middleware.swift:49 (primary)
+// MiddlewareResponder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/Middleware.swift:49 (primary)
 // No emit-able stdlib conformance recognized.
 
-// NIOTooManyBytesError — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift:410 (primary), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift:428 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift:435 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Error/NIOCore+HTTPResponseError.swift:13 (extension)
+// NIOTooManyBytesError — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift:410 (primary), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift:428 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift:435 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Error/NIOCore+HTTPResponseError.swift:13 (extension)
 @Suite struct NIOTooManyBytesErrorPropertyLawTests {
     @Test func hashable_NIOTooManyBytesError() async throws {
         try await checkHashablePropertyLaws(
@@ -443,19 +443,19 @@ import NIOCore
     }
 }
 
-// Never — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/ChildRequestContext.swift:36 (extension)
+// Never — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/ChildRequestContext.swift:36 (extension)
 // No emit-able stdlib conformance recognized.
 
-// NotFoundResponder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Router.swift:106 (primary)
+// NotFoundResponder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Router.swift:106 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Parameters — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Parameters+UUID.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Parameters.swift:16 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Parameters.swift:133 (extension)
+// Parameters — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Parameters+UUID.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Parameters.swift:16 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Parameters.swift:133 (extension)
 // No emit-able stdlib conformance recognized.
 
-// PersistDriver — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/PersistDriver.swift:54 (extension)
+// PersistDriver — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Storage/PersistDriver.swift:54 (extension)
 // No emit-able stdlib conformance recognized.
 
-// PersistError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/PersistError.swift:10 (primary)
+// PersistError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Storage/PersistError.swift:10 (primary)
 @Suite struct PersistErrorPropertyLawTests {
     @Test func equatable_PersistError() async throws {
         try await checkEquatablePropertyLaws(
@@ -465,10 +465,10 @@ import NIOCore
     }
 }
 
-// PreludeService — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/PreludeService.swift:12 (primary)
+// PreludeService — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/PreludeService.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
-// RecordingHeader — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/TracingMiddleware.swift:200 (primary)
+// RecordingHeader — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/TracingMiddleware.swift:200 (primary)
 @Suite struct RecordingHeaderPropertyLawTests {
     @Test func hashable_RecordingHeader() async throws {
         try await checkHashablePropertyLaws(
@@ -479,31 +479,31 @@ import NIOCore
     }
 }
 
-// Request — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Request+Cookies.swift:11 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:18 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:61 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/HummingbirdCore/Request/Request.swift:14 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/HummingbirdCore/Request/Request.swift:87 (extension)
+// Request — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Request+Cookies.swift:11 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:18 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:61 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/HummingbirdCore/Request/Request.swift:14 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/HummingbirdCore/Request/Request.swift:87 (extension)
 // No emit-able stdlib conformance recognized.
 
-// RequestContext — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:86 (extension)
+// RequestContext — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/RequestContext.swift:86 (extension)
 // No emit-able stdlib conformance recognized.
 
-// RequestID — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/RequestID.swift:12 (primary)
+// RequestID — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/RequestID.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Response — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Response+Cookies.swift:11 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:22 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/Response.swift:11 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/HummingbirdCore/Response/Response.swift:12 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/HummingbirdCore/Response/Response.swift:61 (extension)
+// Response — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/HTTP/Response+Cookies.swift:11 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:22 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/Response.swift:11 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/HummingbirdCore/Response/Response.swift:12 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/HummingbirdCore/Response/Response.swift:61 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Response.RedirectType — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/Response.swift:13 (primary)
+// Response.RedirectType — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/Response.swift:13 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ResponseEncodable — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/ResponseEncodable.swift:19 (extension)
+// ResponseEncodable — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/ResponseEncodable.swift:19 (extension)
 // No emit-able stdlib conformance recognized.
 
-// RouterMethods — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouteCollection.swift:56 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouterMethods.swift:37 (extension)
+// RouterMethods — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouteCollection.swift:56 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouterMethods.swift:37 (extension)
 // No emit-able stdlib conformance recognized.
 
-// RouterOptions — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Router.swift:121 (primary)
+// RouterOptions — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Router.swift:121 (primary)
 // No emit-able stdlib conformance recognized.
 
-// RouterPath — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:16 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:205 (extension)
+// RouterPath — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:16 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:205 (extension)
 @Suite struct RouterPathPropertyLawTests {
     @Test func equatable_RouterPath() async throws {
         try await checkEquatablePropertyLaws(
@@ -544,7 +544,7 @@ import NIOCore
     }
 }
 
-// RouterPath.Element — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:17 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+serialize.swift:103 (extension)
+// RouterPath.Element — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:17 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+serialize.swift:103 (extension)
 @Suite struct RouterPath_ElementPropertyLawTests {
     @Test func equatable_RouterPath_Element() async throws {
         try await checkEquatablePropertyLaws(
@@ -566,7 +566,7 @@ import NIOCore
     }
 }
 
-// RouterPath.Element._Internal — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:18 (primary)
+// RouterPath.Element._Internal — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouterPath.swift:18 (primary)
 @Suite struct RouterPath_Element__InternalPropertyLawTests {
     @Test func equatable_RouterPath_Element__Internal() async throws {
         try await checkEquatablePropertyLaws(
@@ -588,19 +588,19 @@ import NIOCore
     }
 }
 
-// RouterResponder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/RouterResponder.swift:11 (primary)
+// RouterResponder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/RouterResponder.swift:11 (primary)
 // No emit-able stdlib conformance recognized.
 
-// RouterTrie — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:53 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+serialize.swift:11 (extension)
+// RouterTrie — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:53 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+serialize.swift:11 (extension)
 // No emit-able stdlib conformance recognized.
 
-// RouterTrie.ResolveContext — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:30 (primary)
+// RouterTrie.ResolveContext — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:30 (primary)
 // No emit-able stdlib conformance recognized.
 
-// RouterTrie.ResolveContext.MatchResult — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:154 (primary)
+// RouterTrie.ResolveContext.MatchResult — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:154 (primary)
 // No emit-able stdlib conformance recognized.
 
-// RouterValidationError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Router+validation.swift:93 (primary)
+// RouterValidationError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Router+validation.swift:93 (primary)
 @Suite struct RouterValidationErrorPropertyLawTests {
     @Test func equatable_RouterValidationError() async throws {
         try await checkEquatablePropertyLaws(
@@ -635,13 +635,13 @@ import NIOCore
     }
 }
 
-// Sequence<UInt8> — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HexDigest.swift:9 (extension)
+// Sequence<UInt8> — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HexDigest.swift:9 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Service — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/PreludeService.swift:31 (extension)
+// Service — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/PreludeService.swift:31 (extension)
 // No emit-able stdlib conformance recognized.
 
-// SplitStringMaxSplitsSequence — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:71 (primary)
+// SplitStringMaxSplitsSequence — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:71 (primary)
 @Suite struct SplitStringMaxSplitsSequencePropertyLawTests {
     @Test func sequence_SplitStringMaxSplitsSequence() async throws {
         try await checkSequencePropertyLaws(
@@ -651,10 +651,10 @@ import NIOCore
     }
 }
 
-// SplitStringMaxSplitsSequence.Iterator — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:89 (primary)
+// SplitStringMaxSplitsSequence.Iterator — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:89 (primary)
 // No emit-able stdlib conformance recognized.
 
-// SplitStringSequence — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:11 (primary)
+// SplitStringSequence — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:11 (primary)
 @Suite struct SplitStringSequencePropertyLawTests {
     @Test func sequence_SplitStringSequence() async throws {
         try await checkSequencePropertyLaws(
@@ -664,40 +664,40 @@ import NIOCore
     }
 }
 
-// SplitStringSequence.Iterator — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:27 (primary)
+// SplitStringSequence.Iterator — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
-// String — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-collections/Sources/InternalCollectionsUtilities/String+Padding.swift:14 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-distributed-tracing/Sources/Tracing/SpanProtocol.swift:536 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/JSONRPCFraming+ContentLengthHeader.swift:210 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-conversions.swift:31 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/ByteCollectionUtils.swift:70 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift:15 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:590 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:18 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:198 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:228 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Convenience.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/String+UnsafeUnititializedCapacity.swift:15 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/String+UnsafeUnititializedCapacity.swift:41 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/System Calls/Mocking.swift:346 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/Utilities.swift:30 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/String+FileSystem.swift:17 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:448 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:466 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:482 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:512 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:548 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:565 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/Internals/Backcompat.swift:10 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/Internals/Exports.swift:138 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/PlatformString.swift:10 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/PlatformString.swift:197 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/SystemString.swift:243 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/Util+StringArray.swift:84 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:28 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HexDigest.swift:16 (extension)
+// String — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-collections/Sources/InternalCollectionsUtilities/String+Padding.swift:14 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-distributed-tracing/Sources/Tracing/SpanProtocol.swift:536 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio-extras/Sources/NIOExtras/JSONRPCFraming+ContentLengthHeader.swift:210 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-conversions.swift:31 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/ByteCollectionUtils.swift:70 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift:15 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:590 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:18 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:198 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:228 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Convenience.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/String+UnsafeUnititializedCapacity.swift:15 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/String+UnsafeUnititializedCapacity.swift:41 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/System Calls/Mocking.swift:346 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/Internal/Utilities.swift:30 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/_NIOFileSystem/String+FileSystem.swift:17 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:448 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:466 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:482 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:512 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:548 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/FilePath/FilePathString.swift:565 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/Internals/Backcompat.swift:10 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/Internals/Exports.swift:138 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/PlatformString.swift:10 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/PlatformString.swift:197 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/SystemString.swift:243 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-system/Sources/System/Util+StringArray.swift:84 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:28 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HexDigest.swift:16 (extension)
 // No emit-able stdlib conformance recognized.
 
-// StringProtocol — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-configuration/Sources/Configuration/Utilities/FoundationExtensions.swift:30 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:242 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:140 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/StringProtocol.swift:9 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/HummingbirdCore/Utils/String+percentEncode.swift:23 (extension)
+// StringProtocol — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-configuration/Sources/Configuration/Utilities/FoundationExtensions.swift:30 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:242 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/SplitStringSequences.swift:140 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/StringProtocol.swift:9 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/HummingbirdCore/Utils/String+percentEncode.swift:23 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Substring — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:596 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:44 (extension)
+// Substring — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:596 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/ResponseGenerator.swift:44 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ThrowingTransformingRouterGroup — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:57 (primary)
+// ThrowingTransformingRouterGroup — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:57 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ThrowingTransformingRouterGroup.ContextTransformingResponder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:62 (primary)
+// ThrowingTransformingRouterGroup.ContextTransformingResponder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:62 (primary)
 // No emit-able stdlib conformance recognized.
 
-// TracingMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/TracingMiddleware.swift:31 (primary)
+// TracingMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/TracingMiddleware.swift:31 (primary)
 // No emit-able stdlib conformance recognized.
 
-// TransformingRouterGroup — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:14 (primary)
+// TransformingRouterGroup — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
-// TransformingRouterGroup.ContextTransformingResponder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:19 (primary)
+// TransformingRouterGroup.ContextTransformingResponder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/TransformingRouterGroup.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Trie — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:41 (primary)
+// Trie — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:41 (primary)
 // No emit-able stdlib conformance recognized.
 
-// TrieNode — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:22 (primary)
+// TrieNode — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:22 (primary)
 // No emit-able stdlib conformance recognized.
 
-// TrieToken — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:9 (primary)
+// TrieToken — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Trie/RouterTrie.swift:9 (primary)
 @Suite struct TrieTokenPropertyLawTests {
     @Test func equatable_TrieToken() async throws {
         try await checkEquatablePropertyLaws(
@@ -720,31 +720,31 @@ import NIOCore
     }
 }
 
-// UInt8 — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-atomics/Sources/Atomics/Conformances/autogenerated/IntegerConformances.swift:833 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-atomics/Sources/Atomics/Conformances/autogenerated/IntegerConformances.swift:964 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOConcurrencyHelpers/NIOAtomic.swift:61 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOConcurrencyHelpers/atomics.swift:334 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift:380 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift:104 (extension), /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:260 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:246 (extension)
+// UInt8 — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-atomics/Sources/Atomics/Conformances/autogenerated/IntegerConformances.swift:833 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-atomics/Sources/Atomics/Conformances/autogenerated/IntegerConformances.swift:964 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOConcurrencyHelpers/NIOAtomic.swift:61 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOConcurrencyHelpers/atomics.swift:334 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift:380 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift:104 (extension), /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:260 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Utils/HTTPHeaderDateFormatStyle.swift:246 (extension)
 // No emit-able stdlib conformance recognized.
 
-// URI — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/URI+decodeQuery.swift:12 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/HummingbirdCore/Request/URI.swift:10 (primary)
+// URI — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/URI+decodeQuery.swift:12 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/HummingbirdCore/Request/URI.swift:10 (primary)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedForm — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm.swift:15 (primary)
+// URLEncodedForm — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedForm.Key — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm.swift:17 (primary)
+// URLEncodedForm.Key — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm.swift:17 (primary)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedFormDecoder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm+Request.swift:30 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:16 (primary)
+// URLEncodedFormDecoder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm+Request.swift:30 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedFormDecoder.DateDecodingStrategy — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:19 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:719 (extension)
+// URLEncodedFormDecoder.DateDecodingStrategy — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:19 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:719 (extension)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedFormEncoder — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm+Request.swift:9 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:16 (primary)
+// URLEncodedFormEncoder — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedForm+Request.swift:9 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedFormEncoder.DateEncodingStrategy — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:19 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:404 (extension)
+// URLEncodedFormEncoder.DateEncodingStrategy — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:19 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:404 (extension)
 // No emit-able stdlib conformance recognized.
 
-// URLEncodedFormError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:16 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:59 (extension)
+// URLEncodedFormError — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:16 (primary), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:59 (extension)
 @Suite struct URLEncodedFormErrorPropertyLawTests {
     @Test func equatable_URLEncodedFormError() async throws {
         try await checkEquatablePropertyLaws(
@@ -754,7 +754,7 @@ import NIOCore
     }
 }
 
-// URLEncodedFormError.Code — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:17 (primary)
+// URLEncodedFormError.Code — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:17 (primary)
 @Suite struct URLEncodedFormError_CodePropertyLawTests {
     @Test func equatable_URLEncodedFormError_Code() async throws {
         try await checkEquatablePropertyLaws(
@@ -764,7 +764,7 @@ import NIOCore
     }
 }
 
-// URLEncodedFormNode — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:74 (primary)
+// URLEncodedFormNode — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:74 (primary)
 @Suite struct URLEncodedFormNodePropertyLawTests {
     @Test func equatable_URLEncodedFormNode() async throws {
         try await checkEquatablePropertyLaws(
@@ -774,7 +774,7 @@ import NIOCore
     }
 }
 
-// URLEncodedFormNode.Array — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:234 (primary)
+// URLEncodedFormNode.Array — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:234 (primary)
 @Suite struct URLEncodedFormNode_ArrayPropertyLawTests {
     @Test func equatable_URLEncodedFormNode_Array() async throws {
         try await checkEquatablePropertyLaws(
@@ -784,7 +784,7 @@ import NIOCore
     }
 }
 
-// URLEncodedFormNode.Map — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:219 (primary)
+// URLEncodedFormNode.Map — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:219 (primary)
 @Suite struct URLEncodedFormNode_MapPropertyLawTests {
     @Test func equatable_URLEncodedFormNode_Map() async throws {
         try await checkEquatablePropertyLaws(
@@ -794,7 +794,7 @@ import NIOCore
     }
 }
 
-// URLEncodedFormNode.NodeValue — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:197 (primary)
+// URLEncodedFormNode.NodeValue — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:197 (primary)
 @Suite struct URLEncodedFormNode_NodeValuePropertyLawTests {
     @Test func equatable_URLEncodedFormNode_NodeValue() async throws {
         try await checkEquatablePropertyLaws(
@@ -804,29 +804,29 @@ import NIOCore
     }
 }
 
-// UUID — /Users/josephcursio/xcode_projects/Hummingbird/.build/checkouts/swift-configuration/Sources/Configuration/ExpressibleByConfigString.swift:88 (extension), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Parameters+UUID.swift:63 (extension)
+// UUID — /Users/josephcursio/github_projects/Hummingbird/.build/checkouts/swift-configuration/Sources/Configuration/ExpressibleByConfigString.swift:88 (extension), /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Router/Parameters+UUID.swift:63 (extension)
 // No emit-able stdlib conformance recognized.
 
-// [CodingKey] — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:216 (extension)
+// [CodingKey] — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Server/Request.swift:216 (extension)
 // No emit-able stdlib conformance recognized.
 
-// _Middleware2 — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MiddlewareModule/_Middleware2.swift:21 (primary)
+// _Middleware2 — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MiddlewareModule/_Middleware2.swift:21 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _OptionalMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MiddlewareModule/_OptionalMiddleware.swift:24 (primary)
+// _OptionalMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MiddlewareModule/_OptionalMiddleware.swift:24 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _SpreadMiddleware — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Middleware/MiddlewareModule/_SpreadMiddleware.swift:23 (primary)
+// _SpreadMiddleware — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Middleware/MiddlewareModule/_SpreadMiddleware.swift:23 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _URLEncodedFormDecoder.KDC — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:138 (primary)
+// _URLEncodedFormDecoder.KDC — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:138 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _URLEncodedFormDecoder.UKDC — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:307 (primary)
+// _URLEncodedFormDecoder.UKDC — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormDecoder.swift:307 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _URLEncodedFormEncoder.KEC — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:127 (primary)
+// _URLEncodedFormEncoder.KEC — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:127 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _URLEncodedFormEncoder.UKEC — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:209 (primary)
+// _URLEncodedFormEncoder.UKEC — /Users/josephcursio/github_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:209 (primary)
 // No emit-able stdlib conformance recognized.
