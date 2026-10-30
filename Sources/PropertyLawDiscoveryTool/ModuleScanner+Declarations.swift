@@ -75,8 +75,8 @@ extension ModuleScanner {
     ///
     /// Conditional conformances (`extension Foo: Equatable where T: ...`) are
     /// skipped as *conformances* — they're not unconditional, so emitting an
-    /// unconditional check would be wrong (PRD §4.4 handles the bound case via
-    /// an explicit `@LawGenerator(bindings:)`). The **body is still walked**: a
+    /// unconditional check would be wrong; a bound instantiation is checked by
+    /// hand at the call site (PRD §4.4 Generic Conformances). The **body is still walked**: a
     /// `where` clause says nothing about the types declared inside the
     /// extension, and skipping them would lose the very nested declarations
     /// this pass exists to find.

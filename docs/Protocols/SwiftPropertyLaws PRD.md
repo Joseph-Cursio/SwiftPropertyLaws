@@ -2,8 +2,8 @@
 
 ## SwiftPropertyLaws: Protocol Law Testing for Swift
 
-**Version:** 0.3 Draft
-**Status:** Proposal
+**Version:** 0.3
+**Status:** Describes the shipped kit, as of v4.10.0.
 **Audience:** Open Source Contributors, Swift Ecosystem
 **Supersedes:** v0.2 (in-place evolution; Appendix A is the v0.2 → v0.3 changelog) and v0.1 (Appendix B is the v0.1 → v0.2 changelog).
 
@@ -15,20 +15,20 @@ Swift's protocol system creates a gap between structural conformance — which t
 
 **SwiftPropertyLaws prevents subtle semantic bugs that escape code review and static analysis, without requiring developers to write or maintain property-based test infrastructure per type.**
 
-This document proposes **SwiftPropertyLaws**, an open source Swift package delivering two separable but complementary contributions:
+This document specifies **SwiftPropertyLaws**, an open source Swift package delivering two separable but complementary contributions:
 
-- **Contribution 1 — PropertyLawKit**: A curated library of protocol law property tests, generic over any conforming type, usable standalone with any property-based testing backend.
-- **Contribution 2 — PropertyLawMacro**: A Swift tooling layer (a per-suite macro/trait plus a build-tool plugin) that detects protocol conformances in a codebase and generates PropertyLawKit test registrations, eliminating manual test wiring.
+- **Contribution 1 — PropertyLawKit**: A curated library of protocol law property tests, generic over any conforming type, run through a public backend abstraction (§4.5).
+- **Contribution 2 — PropertyLawMacro**: A Swift tooling layer (peer macros attached to a type, plus a command plugin for whole-module discovery) that detects protocol conformances and generates PropertyLawKit test suites, eliminating manual test wiring.
 
-These two contributions are intentionally decoupled. PropertyLawKit ships first and has independent value. PropertyLawMacro depends on PropertyLawKit and adds automation.
+These two contributions are intentionally decoupled. PropertyLawKit has independent value. PropertyLawMacro depends on PropertyLawKit and adds automation. The macro and the plugin share one code-generation library, `PropertyLawCore`, and a handful of opt-in products carry laws and generators that need third-party dependencies (§4.10).
 
 ### 1.1 Why Now
 
 Several recent shifts in the Swift ecosystem make this proposal feasible *and* timely:
 
 - Swift macros (SE-0382 et al.) are stable enough to support compile-time generation reliably.
-- Swift Testing supersedes XCTest as the official testing system, with a trait system that this proposal can integrate with rather than work around.
-- `swift-property-based` is active and battle-tested enough to serve as the backend without bootstrapping our own generator/shrinking infrastructure. SwiftQC exists as a second active package (different shrinking and async semantics) that demonstrates the abstraction surface is generalizable, even if v1 ships single-backend by design.
+- Swift Testing supersedes XCTest as the official testing system, with an issue-recording and reporting model this kit can integrate with rather than work around.
+- `swift-property-based` is active and battle-tested enough to serve as the backend without bootstrapping our own generator/shrinking infrastructure. SwiftQC exists as a second active package (different shrinking and async semantics) that demonstrates the abstraction surface is generalizable, even though the kit ships a single backend by design.
 - The protocol surface itself has expanded (`Sendable`, `Identifiable`, `AdditiveArithmetic`, `Actor`) — more conformance contracts in flight, more value in checking them.
 - Apple's broader correctness push (SwiftData, structured concurrency, ownership) signals an audience already attuned to "the compiler can't catch everything we care about."
 
@@ -92,17 +92,17 @@ Swift has neither piece. The Swift property-based testing ecosystem has active p
 - Provide a complete, accurate library of semantic protocol law checks for Swift's core protocols, with each protocol law explicitly classified by strictness (see §4.2).
 - Make protocol law checking available to any Swift project with a one-line addition per type, while honestly surfacing what *one line + a generator + interpretation* actually requires.
 - Integrate naturally with `swift-property-based` as the default backend.
-- Keep the backend swappable by design, while deferring the public abstraction surface until a second backend is actually wired up (see §4.5).
-- Provide tooling (per-suite macro/trait + build-tool plugin) that eliminates manual protocol law registration through static analysis.
+- Keep the backend swappable: `PropertyBackend` is public, with one shipped implementation (§4.5).
+- Provide tooling (peer macros + a discovery command plugin) that eliminates manual protocol law registration through static analysis.
 - Surface missing protocol conformances as opt-in suggestions, not just verify existing ones.
 - Produce human-reviewable output, not silent automatic test generation.
 
 ### Non-Goals
 
 - Replacing unit tests or general property-based testing.
-- Supporting stateful / model-based testing (separate project scope).
+- A general state-machine testing framework. The kit checks invariants and idempotence over action sequences driven through a caller's reducer (§4.9), and a few opt-in law families compare a concrete type against a model (§4.10), but it does not model arbitrary stateful systems.
 - Formal verification.
-- Full EvoSuite parity (domain-specific property inference is out of scope for v1).
+- Full EvoSuite parity (domain-specific property inference is out of scope).
 - Automatic code fixing of detected protocol law violations.
 - Treating every protocol law as equally absolute — see strictness tiers, §4.2.
 
@@ -112,7 +112,7 @@ Swift has neither piece. The Swift property-based testing ecosystem has active p
 
 ### 4.1 Description
 
-PropertyLawKit is a standalone Swift package providing a typed registry of protocol law property tests. Each protocol law is expressed as a generic function parameterized over a conforming type, runnable against any property-based testing backend through a thin abstraction protocol.
+PropertyLawKit is a standalone Swift library of protocol law property tests. Each protocol's laws are exposed as a generic `async throws` function, `check<Protocol>PropertyLaws`, parameterized over a conforming type and run through the `PropertyBackend` abstraction (§4.5). Its only dependency is `swift-property-based`.
 
 ### 4.2 Protocol Law Strictness Tiers
 
@@ -120,17 +120,20 @@ Not every "law" associated with a Swift protocol is universally true in idiomati
 
 Every check PropertyLawKit ships carries one of three explicit strictness tiers:
 
-| Tier | Meaning | Default behavior on violation | Examples |
+| Tier | Meaning | Behavior on violation under `.default` | Examples |
 |---|---|---|---|
-| **Strict** | Must hold for any correct conformance. A violation is a bug. | Test failure. | `Equatable` reflexivity, symmetry, transitivity; `Comparable` antisymmetry; `SetAlgebra` empty identity. |
-| **Conventional** | Usually expected, but situationally violated by design. Caller can opt in to strict enforcement. | Warning by default; failure when `.strict` is requested. | `Codable` exact round-trip equality; `Comparable` totality on `Float`/`Double`; `Collection` non-mutation on lazy views. |
-| **Heuristic** | A useful signal, not a correctness claim. Best for detecting accidental violations. | Informational only — never fails the test. | `hashValue` distribution sanity; iterator non-reuse hints. |
+| **Strict** | Must hold for any correct conformance. A violation is a bug. | Throws, failing the test. | `Equatable` reflexivity, symmetry, transitivity; `Comparable` antisymmetry; `SetAlgebra` empty identity. |
+| **Conventional** | Usually expected, but situationally violated by design. | Recorded, not thrown (see below). | `Codable` round-trip fidelity; `Comparable` totality; `Collection` non-mutation; `Hashable` stability within a process. |
+| **Heuristic** | A useful signal, not a correctness claim. | Recorded, not thrown (see below). | `Hashable.distribution`. |
 
 The tier appears in:
 
 - The §4.3 tables (a `Tier` column per protocol).
-- The output of every check (`CheckResult.tier`).
-- The default failure policy — `Conventional` and `Heuristic` violations do *not* fail CI unless the caller opts in via `.strict`.
+- Every result (`CheckResult.tier`).
+- The failure policy, set by `LawCheckOptions.enforcement`:
+  - **`.default`.** A Strict violation throws `PropertyLawViolation`. A Conventional or Heuristic violation does not throw. On Swift 6.3 and later it is recorded as a Swift Testing issue of `.warning` severity, so the run prints it and the test passes. Swift Testing before 6.3 has no warning severity, so there the violation is recorded as an error, which marks the test failed even though nothing throws.
+  - **`.strict`.** Every violation throws, whatever its tier. Under `.strict` a Heuristic violation fails the test too.
+- Suppressed and intentional violations (§4.7) are never recorded or thrown under either mode.
 
 This addresses the recurring critique that some advertised laws (lossy `Codable`, `NaN`, lazy collections) are intentionally violated in correct Swift code.
 
@@ -141,7 +144,7 @@ This addresses the recurring critique that some advertised laws (lossy `Codable`
 ```swift
 // One call. Runs Equatable.{reflexivity, symmetry, transitivity, negationConsistency}
 // AND Hashable.{equalityConsistency, stabilityWithinProcess, distribution}.
-try await checkHashablePropertyLaws(for: MyType.self, using: Gen.myType())
+try await checkHashablePropertyLaws(for: MyType.self, using: MyType.gen())
 ```
 
 This is the safe default. Property tests are expensive enough that "remember to chain inherited suites" cannot be a per-call developer responsibility — forgetting is a silent way to miss exactly the kind of semantic bugs this library exists to catch. Each inherited check produces its own `CheckResult` (`Equatable.symmetry`, `Hashable.equalityConsistency`, etc.) so test runner output stays attributable and a single suite's failure points at the actual offending law, not its descendant.
@@ -152,7 +155,7 @@ This is the safe default. Property tests are expensive enough that "remember to 
 // Skip Equatable's suite this run; we ran it explicitly above with a richer generator.
 try await checkHashablePropertyLaws(
     for: MyType.self,
-    using: Gen.myType(),
+    using: MyType.gen(),
     laws: .ownOnly
 )
 ```
@@ -168,7 +171,9 @@ try await checkHashablePropertyLaws(
 | Transitivity | Strict | `x == y` and `y == z` implies `x == z` |
 | Negation consistency | Strict | `x != y` iff `!(x == y)` |
 
-Floating-point `NaN` is the canonical intentional violation; types containing `Float`/`Double` should pass `.allowNaN` to opt out of reflexivity over `NaN`.
+Floating-point `NaN` is the canonical intentional violation of reflexivity. `LawCheckOptions.allowNaN` does not affect these laws (it gates only the FloatingPoint NaN laws), so a type containing `Float`/`Double` should be checked with a finite-only generator, or have reflexivity marked as an intentional violation (§4.7).
+
+Transitivity is conditional: it tests something only when two draws are equal. It reports how often that happened (`CheckResult.applications`, §4.6), and `LawCheckOptions.equalValuePairing` can make it find equal pairs a wide generator rarely draws (§4.4).
 
 #### `Hashable` (extends `Equatable` protocol laws)
 
@@ -178,7 +183,7 @@ Floating-point `NaN` is the canonical intentional violation; types containing `F
 | Hash stability within a process | Conventional | `x.hashValue` constant across calls in one program run |
 | Hash distribution | Heuristic | Hashes don't collapse to a small set across the generator |
 
-`hashValue` is explicitly *not* required to be stable across runs (Swift randomizes hashing per launch); PropertyLawKit does not check cross-run stability.
+`hashValue` is explicitly *not* required to be stable across runs (Swift randomizes hashing per launch); PropertyLawKit does not check cross-run stability. Hash/equality consistency is conditional like `Equatable.transitivity`, and reports its applications. The walked entry `checkHashablePropertyLaws(overEvery:)` (§4.4) runs every law except `distribution`, which is a statistic about a sample budget rather than a property of a space.
 
 #### `Comparable` (extends `Equatable` protocol laws)
 
@@ -189,6 +194,8 @@ Floating-point `NaN` is the canonical intentional violation; types containing `F
 | Transitivity | Strict | `x <= y` and `y <= z` implies `x <= z` |
 | Totality | Conventional | `x <= y` or `y <= x` for all `x`, `y` (relaxed for `Float`/`Double` because of `NaN`) |
 | Operator consistency | Strict | `>`, `>=`, `<` are consistent with `<=` |
+
+Antisymmetry and transitivity are conditional and report their applications.
 
 #### `Strideable` (extends `Comparable` protocol laws)
 
@@ -239,17 +246,20 @@ For compiler-synthesized conformances on enums this holds by construction. The c
 
 | Protocol Law | Tier | Description |
 |---|---|---|
-| Round-trip fidelity | Conventional | `decode(encode(x)) == x` for all `x` (default mode: exact equality) |
-| Encoder independence | Conventional | Round-trip holds for all standard encoder/decoder pairs |
+| Round-trip fidelity | Conventional | `decode(encode(x))` matches `x` under the configured mode and codec |
 
-`Codable` round-trip ships with three modes to accommodate real-world lossy encodings:
+`checkCodablePropertyLaws(for:using:config:options:)` takes a `CodableLawConfig(mode:codec:)`, defaulting to `.strict` and `.json`. The result is named `Codable.roundTripFidelity[<codec identifier>]`. The round-trip ships with three modes to accommodate real-world lossy encodings:
 
 - `.strict` — exact equality required.
 - `.semantic(equivalent:)` — caller-provided equivalence predicate, for cases where representational round-trip is intentionally lossy (canonicalized dates, normalized whitespace, etc.).
 - `.partial(fields:)` — round-trip preserves a named subset of fields, for versioned schemas with default-bearing additions. Fields are typed `[PartialKeyPath<T>]`, not strings, so they survive renames and refactors:
   ```swift
-  mode: .partial(fields: [\Invoice.id, \Invoice.amount])
+  config: CodableLawConfig(mode: .partial(fields: [\Invoice.id, \Invoice.amount]))
   ```
+
+The codec is `.json`, `.binaryPlist`, or any `CodableCodec(identifier:encode:decode:)`. Under `.semantic` and `.partial`, fields that diverge while the law still passes are recorded as near-misses (§4.6).
+
+**Encoder independence** (the round-trip holding across every standard codec at once) is not built. Run the check once per codec instead.
 
 #### `IteratorProtocol`
 
@@ -257,6 +267,8 @@ For compiler-synthesized conformances on enums this holds by construction. The c
 |---|---|---|
 | Termination stability | Conventional | Once `next()` returns `nil`, subsequent calls also return `nil` (the iterator stays exhausted) |
 | Single-pass yield | Conventional | An iterator yields each element at most once across a complete iteration |
+
+`checkIteratorProtocolPropertyLaws` takes a generator of the host `Sequence`, since an iterator is obtained from one.
 
 #### `Sequence`
 
@@ -266,7 +278,9 @@ For compiler-synthesized conformances on enums this holds by construction. The c
 | Multi-pass consistency | Conventional | For non-single-pass sequences, two fresh iterators yield the same elements in the same order |
 | `makeIterator()` independence | Conventional | Calling `makeIterator()` does not perturb prior iterators or the sequence's observable state |
 
-`Sequence` does not require multi-pass iteration in general; sequences that document themselves as single-pass (e.g. `AnyIterator` wrappers, network streams) pass `.singlePass` to suppress the multi-pass and `makeIterator()`-independence checks.
+`Sequence` does not require multi-pass iteration in general; sequences that document themselves as single-pass (e.g. `AnyIterator` wrappers, network streams) pass `sequenceOptions: SequenceLawOptions(passing: .singlePass)` to suppress the multi-pass and `makeIterator()`-independence checks.
+
+`checkSequencePropertyLaws` and `checkCollectionPropertyLaws` also have overloads taking `elementSameResult:` in place of `Element: Equatable`, for elements that cannot be `Equatable` — tuple elements such as `Dictionary`'s.
 
 #### `Collection`
 
@@ -328,13 +342,27 @@ The four refinements are independent siblings except for the `RandomAccessCollec
 | Intersection idempotence | Strict | `x.intersection(x) == x` |
 | Union commutativity | Strict | `x.union(y) == y.union(x)` |
 | Intersection commutativity | Strict | `x.intersection(y) == y.intersection(x)` |
-| Empty identity | Strict | `x.union(.empty) == x` |
-| Symmetric-difference self-empty | Strict | `x.symmetricDifference(x) == .empty` |
-| Symmetric-difference empty identity | Strict | `x.symmetricDifference(.empty) == x` |
+| Empty identity | Strict | `x.union(Self()) == x` |
+| Symmetric-difference self-empty | Strict | `x.symmetricDifference(x) == Self()` |
+| Symmetric-difference empty identity | Strict | `x.symmetricDifference(Self()) == x` |
 | Symmetric-difference commutativity | Strict | `x.symmetricDifference(y) == y.symmetricDifference(x)` |
 | Symmetric-difference definition | Strict | `x.symmetricDifference(y) == x.union(y).subtracting(x.intersection(y))` |
+| Union distributivity | Strict | `x.union(y.intersection(z)) == x.union(y).intersection(x.union(z))` |
+| Intersection distributivity | Strict | `x.intersection(y.union(z)) == x.intersection(y).union(x.intersection(z))` |
+| Union absorption | Strict | `x.union(x.intersection(y)) == x` |
+| Intersection absorption | Strict | `x.intersection(x.union(y)) == x` |
+| De Morgan for union | Strict | `x.subtracting(y.union(z)) == x.subtracting(y).intersection(x.subtracting(z))` |
+| De Morgan for intersection | Strict | `x.subtracting(y.intersection(z)) == x.subtracting(y).union(x.subtracting(z))` |
+| `formUnion` matches `union` | Strict | `var c = x; c.formUnion(y)` leaves `c == x.union(y)` |
+| `formIntersection` matches `intersection` | Strict | likewise for `formIntersection` / `intersection` |
+| `subtract` matches `subtracting` | Strict | likewise for `subtract` / `subtracting` |
+| `formSymmetricDifference` matches `symmetricDifference` | Strict | likewise for `formSymmetricDifference` / `symmetricDifference` |
 
-The four `symmetricDifference*` laws were added in response to a real-world miss: pre-fix `swift-collections@35349601`, `TreeSet.symmetricDifference` returned the *intersection* via a `_Bitmap` typo (`&` instead of `^`). The original five-law SetAlgebra suite — union/intersection idempotence + commutativity + emptyIdentity — does not exercise `symmetricDifference` at all and would not have caught the bug. The retroactive validation in `Validation/Pass3` pins the kit against the pre-fix SHA and asserts the new laws fire.
+The four `symmetricDifference*` laws exist because the first five never exercise `symmetricDifference`. A git-archaeology pass found a `swift-collections` fix (`35349601`) where `_Bitmap.symmetricDifference` used `&` instead of `^`. `Validation/Tests/ValidationPass3Tests` pins the pre-fix parent and records that `TreeSet<Int>` passes every law there, because no public API reaches the buggy method (§8).
+
+The six distributivity, absorption and De Morgan laws relate `union`, `intersection` and `subtracting` to each other, which no earlier law does. Without them a `subtracting` implemented as `symmetricDifference` passes, since the two agree whenever the subtrahend is a subset. `SetAlgebra` has no complement, so De Morgan is stated in relative (subtracting) form. The four `form*`/`subtract` laws check each mutating method against its non-mutating twin, because every other law uses the non-mutating operations only.
+
+`SetAlgebra` does not formally extend `Equatable`, but the laws compare `Self == Self`, so the signature requires `Equatable`.
 
 #### `AdditiveArithmetic`
 
@@ -346,7 +374,9 @@ The four `symmetricDifference*` laws were added in response to a real-world miss
 | Subtraction inverse | Strict | `(x + y) - y == x` |
 | Self-subtraction is zero | Strict | `x - x == .zero` |
 
-These exact-equality algebraic laws fire on integer-like types (`Int`, `Decimal`, BigInt). Floating-point types satisfy them only approximately due to IEEE-754 rounding — for `Float` / `Double`, use `checkFloatingPointPropertyLaws` (v1.4 M4) instead. For FixedWidthInteger types, callers should pass a magnitude-bounded generator at `.standard` budget to avoid overflow traps.
+These exact-equality algebraic laws fire on integer-like types (`Int`, `Decimal`, BigInt). Floating-point types satisfy them only approximately due to IEEE-754 rounding — for `Float` / `Double`, use `checkFloatingPointPropertyLaws` instead. For FixedWidthInteger types, callers should pass a magnitude-bounded generator at `.standard` budget to avoid overflow traps.
+
+`checkAdditiveArithmeticPropertyLaws` and `checkNumericPropertyLaws` take a `sameResult:` equivalence (default `==`) used only by the commutativity laws, the ones that hold exactly over floats. `floatSameResult` is the NaN-reflexive choice: `(a.isNaN && b.isNaN) || a == b`, with no tolerance term.
 
 #### `Numeric` (extends `AdditiveArithmetic` protocol laws)
 
@@ -359,7 +389,7 @@ These exact-equality algebraic laws fire on integer-like types (`Int`, `Decimal`
 | Left distributivity | Strict | `x * (y + z) == x*y + x*z` |
 | Right distributivity | Strict | `(x + y) * z == x*z + y*z` |
 
-Three-way multiplication overflows under unbounded random sampling on `Int` / `Int32`; pass a bounded generator (≈ ±cube-root of `T.max`) for fixed-width types at `.standard` budget. v1.4 M2 ships a `Gen<T: FixedWidthInteger>.boundedForArithmetic()` convenience helper.
+Three-way multiplication overflows under unbounded random sampling on `Int` / `Int32`; pass a bounded generator for fixed-width types at `.standard` budget. `Gen<T: FixedWidthInteger>.boundedForArithmetic()` does this.
 
 #### `SignedNumeric` (extends `Numeric` protocol laws)
 
@@ -393,7 +423,7 @@ Three-way multiplication overflows under unbounded random sampling on `Int` / `I
 | Shift-by-zero identity | Strict | `x << 0 == x && x >> 0 == x` |
 | Trailing-zero bit-count range | Strict | `0 ≤ x.trailingZeroBitCount ≤ x.bitWidth` |
 
-Division-related laws skip samples with denominator `0` (vacuous-true), so callers don't need to filter their own generators. Use `Gen<T: FixedWidthInteger>.boundedForArithmetic()` for fixed-width signed/unsigned types — it picks a per-type magnitude bound (`2^(bitWidth/4)`) so the inherited Numeric laws' triple multiplication doesn't overflow under random sampling. `nonzeroBitCount` is FixedWidthInteger-only and lands in v1.4 M3.
+Division-related laws skip samples with denominator `0` (vacuous-true), so callers don't need to filter their own generators. Use `Gen<T: FixedWidthInteger>.boundedForArithmetic()` for fixed-width signed/unsigned types — it picks a per-type magnitude bound (`2^(bitWidth/4)`) so the inherited Numeric laws' triple multiplication doesn't overflow under random sampling. `nonzeroBitCount` is FixedWidthInteger-only, so its law lives there.
 
 #### `SignedInteger` (extends `BinaryInteger` and `SignedNumeric` protocol laws)
 
@@ -401,7 +431,7 @@ Division-related laws skip samples with denominator `0` (vacuous-true), so calle
 |---|---|---|
 | Signum consistency | Strict | `x.signum() == 1` if `x > 0`, `-1` if `x < 0`, `0` if `x == 0` |
 
-`SignedInteger` sits at the diamond between `BinaryInteger` and `SignedNumeric`. The `.all` dispatch runs `BinaryInteger`'s full inherited chain first (which includes `Numeric` and `AdditiveArithmetic`), then `SignedNumeric`'s own laws via `.ownOnly` to avoid double-running `Numeric`'s six laws. Most useful coverage comes from the inherited suites.
+`SignedInteger` sits at the diamond between `BinaryInteger` and `SignedNumeric`. The `.all` dispatch runs `BinaryInteger`'s full inherited chain first (which includes `Numeric` and `AdditiveArithmetic`), then `SignedNumeric`'s own laws via `.ownOnly` to avoid double-running `Numeric`'s six laws. Most useful coverage comes from the inherited suites. The result is named `SignedInteger.signednessConsistency`.
 
 #### `UnsignedInteger` (extends `BinaryInteger` protocol laws)
 
@@ -412,7 +442,7 @@ Division-related laws skip samples with denominator `0` (vacuous-true), so calle
 
 For stdlib `UInt*` types both laws hold by construction. The checks exist as the self-test gate against custom `UnsignedInteger` conformers that lie about signedness or whose `magnitude` typealias points somewhere non-trivial.
 
-#### `FloatingPoint` (no inherited suite auto-run — see note)
+#### `FloatingPoint` (inherited algebraic chain not auto-run — see note)
 
 | Protocol Law | Tier | When | Description |
 |---|---|---|---|
@@ -425,15 +455,17 @@ For stdlib `UInt*` types both laws hold by construction. The checks exist as the
 | Next-up/next-down round-trip | Strict | always-on | finite, non-extreme, non-zero ⇒ `x.nextUp.nextDown == x` |
 | Sign matches less-than-zero | Strict | always-on | finite non-zero `x` ⇒ `x.sign` matches sign of `x < 0` |
 | Absolute value non-negative | Strict | always-on | `!x.isNaN ⇒ x.magnitude >= 0` |
+| Addition commutativity | Strict | always-on | `x + y` and `y + x` are the same result under `floatSameResult` |
+| Multiplication commutativity | Strict | always-on | `x * y` and `y * x` are the same result under `floatSameResult` |
 | NaN is NaN | Strict | `allowNaN` | `Self.nan.isNaN` |
 | NaN inequality | Strict | `allowNaN` | `Self.nan != Self.nan` (IEEE-754) |
 | NaN propagates addition | Strict | `allowNaN` | `(Self.nan + x).isNaN` |
 | NaN propagates multiplication | Strict | `allowNaN` | `(Self.nan * x).isNaN` |
 | NaN comparison is unordered | Strict | `allowNaN` | `!(Self.nan < x) && !(Self.nan > x) && !(Self.nan == x)` |
 
-`FloatingPoint` is the first kit protocol where the inherited chain is deliberately not auto-run. AdditiveArithmetic / Numeric / SignedNumeric laws use exact `==` and fire spurious violations on `Float` / `Double` because IEEE-754 multiplication and addition round. Users wanting algebraic coverage on a finite-only generator can call `checkSignedNumericPropertyLaws` directly.
+`checkFloatingPointPropertyLaws` does not run the inherited `AdditiveArithmetic` / `Numeric` / `SignedNumeric` chain. Those laws use exact `==`, and associativity, distributivity and subtraction-inverse fail on `Float` / `Double` by unbounded amounts under cancellation, so no equivalence rescues them. The suite runs the two algebraic laws that do hold exactly in IEEE-754, commutativity of `+` and `*`, compared with `floatSameResult` so that two NaNs count as the same result. The macro and plugin's most-specific dedupe drops the algebraic chain for `: FloatingPoint` types. Users wanting the full algebraic chain on a finite-only generator can call `checkSignedNumericPropertyLaws` directly.
 
-The five NaN-domain laws are gated on `LawCheckOptions.allowNaN`. Default `false` skips them; set to `true` when explicitly testing IEEE-754 NaN behavior. The kit ships `Gen<Double>.doubleWithNaN()` and `Gen<Float>.floatWithNaN()` helpers that inject `Self.nan` on roughly 1 of every 20 trials — useful for exercising the always-on laws' NaN-skip guards even when `allowNaN` is left at the default.
+The five NaN-domain laws are gated on `LawCheckOptions.allowNaN`. Default `false` skips them; set to `true` when explicitly testing IEEE-754 NaN behavior. The kit ships `Gen<Double>.doubleWithNaN()` and `Gen<Float>.floatWithNaN()` helpers that inject `Self.nan` on roughly 1 of every 20 trials, with seeded finite values — useful for exercising the always-on laws' NaN-skip guards even when `allowNaN` is left at the default.
 
 #### `BinaryFloatingPoint` (extends `FloatingPoint` protocol laws)
 
@@ -444,7 +476,7 @@ The five NaN-domain laws are gated on `LawCheckOptions.allowNaN`. Default `false
 | Binade membership | Strict | finite normal non-zero `x` ⇒ `\|x.binade\| <= \|x\| < 2·\|x.binade\|` |
 | Converting from integer exactness | Strict | for `n` where `Value(exactly: n) != nil`: `Int(exactly: Value(exactly: n)!) == n` |
 
-`x.binade` carries the sign of `x` in stdlib, and `binade.nextUp` returns the next *representable value* (not the next binade). The membership law uses `2·|binade|` as the upper bound and compares magnitudes so the law holds for negative samples.
+`x.binade` carries the sign of `x` in stdlib, and `binade.nextUp` returns the next *representable value* (not the next binade). The membership law uses `2·|binade|` as the upper bound and compares magnitudes so the law holds for negative samples. `allowNaN` propagates to the inherited FloatingPoint suite.
 
 #### `FixedWidthInteger` (extends `BinaryInteger` protocol laws)
 
@@ -460,7 +492,7 @@ The five NaN-domain laws are gated on `LawCheckOptions.allowNaN`. Default `false
 | Byte-swapped involution | Strict | `x.byteSwapped.byteSwapped == x` |
 | Nonzero-bit-count range | Strict | `0 ≤ x.nonzeroBitCount ≤ x.bitWidth` |
 
-`FixedWidthInteger` is orthogonal to `SignedInteger` and `UnsignedInteger` — `Int32` conforms to both `FixedWidthInteger & SignedInteger`, `UInt` conforms to both `FixedWidthInteger & UnsignedInteger`. The discovery plugin emits both checks under most-specific dedupe (matching the v1.2 `MutableCollection + RangeReplaceableCollection` sibling precedent). `nonzeroBitCount` is a FixedWidthInteger-only requirement; the corresponding law lives here rather than on `BinaryInteger`.
+`FixedWidthInteger` is orthogonal to `SignedInteger` and `UnsignedInteger` — `Int32` conforms to both `FixedWidthInteger & SignedInteger`, `UInt` conforms to both `FixedWidthInteger & UnsignedInteger`. The discovery plugin emits both checks under most-specific dedupe (matching the `MutableCollection + RangeReplaceableCollection` sibling precedent). `nonzeroBitCount` is a FixedWidthInteger-only requirement; the corresponding law lives here rather than on `BinaryInteger`.
 
 #### `StringProtocol` (extends `BidirectionalCollection` protocol laws)
 
@@ -475,62 +507,33 @@ The five NaN-domain laws are gated on `LawCheckOptions.allowNaN`. Default `false
 | Uppercased idempotent | Strict | `s.uppercased().uppercased() == s.uppercased()` |
 | UTF-8 view invariance | Strict | `Array(s.utf8) == Array(String(s).utf8)` — byte-level representation is invariant of the StringProtocol view |
 
-`StringProtocol` is the last protocol in the v1.1+ candidates list. Its conformers in stdlib are limited to `String` and `Substring`; custom conformers are essentially nonexistent in real-world Swift code. The kit's value here is twofold: a self-test gate that the framework's StringProtocol detection works, and an in-place property-based test of Apple's `String` / `Substring` implementations against algebraic invariants the stdlib documents informally. The Pass 2 sub-package's `StdlibStringPropertyLawsTests.swift` exercises both.
+Its conformers in stdlib are limited to `String` and `Substring`; custom conformers are essentially nonexistent in real-world Swift code. The kit's value here is twofold: a self-test gate that the framework's StringProtocol detection works, and an in-place property-based test of Apple's `String` / `Substring` implementations against algebraic invariants the stdlib documents informally. The Validation Pass 2 package's `StdlibStringProtocolLawsTests.swift` exercises both. Comparable / Hashable / LosslessStringConvertible, which StringProtocol also refines, are not auto-run; types declaring those still emit their own checks under most-specific dedupe.
+
+#### Laws over methods and comparators
+
+Two law families have no conformance to hang on.
+
+**`checkTransformationPropertyLaws`** checks what stdlib *methods* promise over any `Sequence`. The closure-free entry (`Element: Comparable`) runs four Strict laws: `Transformation.sortedIdempotence` (`s.sorted().sorted() == s.sorted()`), `sortedIsNonDecreasing`, `sortedPreservesCount`, and `reversedInvolution`. The overload taking `functions: TransformationFunctions(first:second:predicate:)` runs four more over two endomorphisms and a predicate: `mapFusion` (`s.map(f).map(g) == s.map { g(f($0)) }`), `mapFilterCommutation` (`s.map(f).filter(p) == s.filter { p(f($0)) }.map(f)`), `lazyMapEquivalence` and `lazyFilterEquivalence`. The supplied closures must be pure. There is no planted violator: a protocol-extension method has no substitutable conformance to break.
+
+**`checkStrictWeakOrderingLaws(over:by:options:)`** checks a supplied comparator — the `(T, T) -> Bool` that `sorted(by:)`, `min(by:)` and `max(by:)` take — rather than a type's `<`.
+
+| Protocol Law | Tier | Description |
+|---|---|---|
+| Irreflexivity | Strict | `!compare(a, a)` |
+| Asymmetry | Strict | `compare(a, b)` implies `!compare(b, a)` |
+| Transitivity | Strict | `compare(a, b) && compare(b, c)` implies `compare(a, c)` |
+| Incomparability transitivity | Strict | if `a`, `b` are incomparable and `b`, `c` are incomparable, so are `a`, `c` |
+
+Two Conventional laws have their own entry points, because a comparator over a deliberately lossy key is supposed to fail them. `checkComparatorDiscriminates(over:by:distinct:options:)` (`StrictWeakOrdering.discrimination`) asks that no two distinct values be incomparable, which is what a reproducible order needs. `checkComparatorIsCongruent(over:by:options:)` (`StrictWeakOrdering.congruence`) asks that `a == b` imply `compare(a, x) == compare(b, x)`, i.e. that the comparator reads the value and not its storage. All three entry points also take `overEvery:` and `sampling:` (§4.4).
 
 #### Coverage Scope
 
-PropertyLawKit v1 covers the protocols enumerated above. The Swift Standard Library has roughly 54 public protocols (see `docs/Protocols/Swift Standard Library Protocols.md` for the full inventory); v1's coverage is deliberate and audited rather than exhaustive. Other stdlib protocols are categorized as follows:
+PropertyLawKit covers the stdlib protocols enumerated above and the kit-defined protocols in §4.9. The Swift Standard Library has roughly 54 public protocols (see `docs/Protocols/Swift Standard Library Protocols.md` for the full inventory); coverage is deliberate and audited rather than exhaustive. Every stdlib protocol identified as having testable laws has shipped. The rest are categorized as follows:
 
-**v1.1+ candidates (testable laws, clear contracts):** *(empty — all candidates have shipped as of v1.5.0)*
-
-**Shipped in v1.4 M1 (algebraic chain):**
-
-- `AdditiveArithmetic` (5 Strict laws — addition associativity, commutativity, zero identity, subtraction inverse, self-subtraction-is-zero).
-- `Numeric` (6 Strict laws — multiplication associativity + commutativity, multiplicative identity, zero annihilation, left/right distributivity).
-- `SignedNumeric` (4 Strict laws — negation involution, additive inverse, negation distributes over addition, negate-mutation consistency).
-
-**Shipped in v1.4 M2 (integer cluster):**
-
-- `BinaryInteger` (16 Strict laws — division/multiplication round-trip, remainder-magnitude bound, self-division-is-one, division-by-one identity, quotient-and-remainder consistency, bitwise AND/OR idempotence + commutativity, XOR self-is-zero, XOR zero-identity, double-negation, AND-distributes-over-OR, De Morgan, shift-by-zero identity, trailing-zero-bit-count range).
-- `SignedInteger` (1 own Strict law — signum consistency).
-- `UnsignedInteger` (2 own Strict laws — non-negative, magnitude-is-self).
-
-**Shipped in v1.4 M3:**
-
-- `FixedWidthInteger` (9 own Strict laws — bit-width matches type, four reportingOverflow consistency laws, wrapping arithmetic does not trap, min/max bounds reachable, byteSwapped involution, nonzero-bit-count range).
-
-**Shipped in v1.4 M4:**
-
-- `FloatingPoint` (9 always-on Strict laws + 5 NaN-domain Strict laws gated by `LawCheckOptions.allowNaN`). FloatingPoint deliberately does not auto-run the inherited `SignedNumeric` chain — IEEE-754 rounding makes the exact-equality algebraic laws fire spurious violations on `Float` / `Double`. Most-specific dedupe drops the algebraic chain for `: FloatingPoint` types. Users wanting algebraic coverage on a finite-only generator opt in by calling `checkSignedNumericPropertyLaws` directly.
-
-**Shipped in v1.4 M5:**
-
-- `BinaryFloatingPoint` (4 own Strict laws — radix-2 constraint, significand/exponent reconstruction, binade membership, integer-conversion exactness). Chains through to FloatingPoint via `.all`; `allowNaN` propagates to the inherited suite.
-
-**Shipped in v1.5:**
-
-- `StringProtocol` (8 own Strict laws — String-init round-trip, count match across String conversion, isEmpty / count-zero consistency, hasPrefix / hasSuffix on the empty string, lowercased / uppercased idempotence, UTF-8 view invariance). Chains through to BidirectionalCollection (and transitively Collection / Sequence / IteratorProtocol) via `.all`. Comparable / Hashable / LosslessStringConvertible — which StringProtocol also refines in stdlib — are not auto-run; types declaring those still emit their own checks under most-specific dedupe.
-
-**Shipped in v1.8 (kit-defined algebraic protocols — first non-stdlib cluster):**
-
-- `Semigroup` (1 Strict own law — `combineAssociativity`). Single requirement: `static func combine(_ lhs: Self, _ rhs: Self) -> Self`. Kit-defined because stdlib has no `Semigroup` protocol and `AdditiveArithmetic` doesn't fit the common merge-shape Swift case (`merge` / `combine` / `concat` / `union` operations that don't use `+` semantics).
-- `Monoid` (2 Strict own laws — `combineLeftIdentity`, `combineRightIdentity`; chains through to Semigroup via `.all`). Refines Semigroup, adds `static var identity: Self { get }`. The `identity` name is chosen over `empty` / `zero` to avoid overlap with `RangeReplaceableCollection.init()` and `AdditiveArithmetic.zero` semantics.
-
-v1.8 establishes the precedent that the kit can add its own protocols where stdlib leaves a useful gap. Closes the SwiftInferProperties RefactorBridge loop (PRD §11) for merge-shape types — previously claim-only; now backed by a real protocol the discovery plugin verifies on every CI run. Same architectural invariant as stdlib protocols: one `KnownProtocol` case + four switch arms + a `Public/<Protocol>Laws.swift` file. Macro and discovery plugin pick the cases up automatically via the existing `KnownProtocol` dispatch — no source changes were needed in either consumer.
-
-**Shipped in v1.9 (kit-defined algebraic protocols — second cluster):**
-
-- `CommutativeMonoid` (1 Strict own law — `combineCommutativity`; chains through Monoid + Semigroup via `.all`). Refines Monoid; no new requirements — pure marker that triggers the commutativity law check on top of the inherited Monoid surface. Kit-defined because stdlib has no general `CommutativeMonoid` (only `AdditiveArithmetic` for `+`/`zero`-shaped commutative types).
-- `Group` (2 Strict own laws — `combineLeftInverse`, `combineRightInverse`; chains through Monoid + Semigroup via `.all`). Refines Monoid, adds `static func inverse(_ x: Self) -> Self`. Static-method form (rather than `inverted()` instance method) keeps the witness-extraction shape uniform with `combine(_:_:)` and `identity`. Group does NOT subsume CommutativeMonoid — non-commutative groups are valid; the two are incomparable arms in the protocol DAG.
-- `Semilattice` (1 Strict own law — `combineIdempotence`; chains through CommutativeMonoid + Monoid + Semigroup via `.all`). Refines CommutativeMonoid; no new requirements — pure marker that triggers the idempotence law. Bounded join-semilattices and bounded meet-semilattices share this conformance (the law is symmetric).
-
-v1.9's inheritance shape extends the v1.8 cluster: `Semigroup → Monoid → CommutativeMonoid → Semilattice` and `Semigroup → Monoid → Group`, with CommutativeMonoid + Group incomparable. Closes three more rows of SwiftInferProperties PRD v0.4 §5.4's algebraic-structure-composition table — previously claim-only; now backed by real conformances. `Ring` and `CommutativeGroup` deferred to v1.10+ pending real-corpora motivation. Same kit-architectural pattern as v1.8 — three new `KnownProtocol` cases + their switch arms + three `Public/<Protocol>.swift` + three `Public/<Protocol>Laws.swift`. Macro and discovery plugin again required zero source changes.
-
-These exact-equality algebraic / bitwise laws fire on integer-like types (`Int`, `Decimal`, BigInt). Floating-point types satisfy the algebraic ones only approximately due to IEEE-754 rounding; v1.4 M4 ships `FloatingPoint`-specific laws that account for rounding.
 **Heuristic / deferred (laws are weak, contextual, or require runtime instrumentation):**
 
-- `Sendable` — value semantics is a heuristic, not a checkable invariant from outside the type. A `checkSendableContractLaws` Heuristic-tier suite (mutation-after-share spot checks) is a research item, not a v1.1 deliverable.
-- `LazySequenceProtocol`, `LazyCollectionProtocol` — laziness *is* a property to test (no eager evaluation) but requires instrumentation hooks.
+- `Sendable` — value semantics is not checkable from outside an arbitrary type. The kit-defined `ValueSemantic`, `StableIdentity` and `DefensiveCopy` protocols (§4.9) check it for a type that describes its own mutation surface.
+- `LazySequenceProtocol`, `LazyCollectionProtocol` — laziness *is* a property to test (no eager evaluation) but requires instrumentation hooks. `Transformation.lazyMapEquivalence` and `lazyFilterEquivalence` check that the lazy views give the eager answer, not that they are lazy.
 - `CustomStringConvertible`, `CustomDebugStringConvertible`, `TextOutputStreamable`, `TextOutputStream` — output formatting protocols; no semantic laws beyond "the conformance doesn't crash."
 - `ExpressibleBy*` (the 10 literal protocols) — laws are structural rather than semantic; covered by the compiler's literal expansion.
 
@@ -542,47 +545,45 @@ These exact-equality algebraic / bitwise laws fire on integer-like types (`Int`,
 - `CVarArg`, `MirrorPath`, `CustomReflectable` — bridging / reflection.
 - `RandomNumberGenerator` — `next() -> UInt64` has no testable contract beyond the type signature.
 
-Adding a new protocol's laws is a `LawRegistry` entry, not a structural change (§6 architecture). Community contributions for v1.1 protocols land in `PropertyLawKit-Community` (§9 Decision 3).
+Adding a protocol's laws means a `Public/<Protocol>Laws.swift` file in PropertyLawKit and, for the macro and plugin to detect it, a `KnownProtocol` case and its switch arms in PropertyLawCore. New protocols go into this Coverage Scope section before they go into the kit.
 
 ### 4.4 Usage API
 
-Protocol law checks are invoked as generic functions, ideally as Swift Testing traits so the test runner handles reporting and parallelization natively. The default backend is `swift-property-based`:
+Each suite is an `async throws` generic function called from an ordinary Swift Testing `@Test`. It returns `[CheckResult]` (§4.6, `@discardableResult`) and throws `PropertyLawViolation` when a violation escalates (§4.2). `using:` takes a `swift-property-based` `Generator<Value, _>`; there is no implicit generator. The default backend is `swift-property-based`:
 
 ```swift
 import PropertyLawKit
 import Testing
 
-// Trait-based style (recommended; see §9 Decision 5):
-@Test(.protocolLaws(Equatable.self, Comparable.self, budget: .standard))
-func myTypeLaws() async throws { /* uses .derived generator */ }
-
-// Or as explicit function calls:
 @Suite struct MyTypeConformanceTests {
 
     @Test func equatablePropertyLaws() async throws {
         try await checkEquatablePropertyLaws(
             for: MyType.self,
-            using: Gen.myType(),
-            budget: .standard
+            using: MyType.gen(),
+            options: LawCheckOptions(budget: .standard)
         )
     }
 
     @Test func codablePropertyLaws() async throws {
         try await checkCodablePropertyLaws(
             for: MyType.self,
-            using: Gen.myType(),
-            mode: .strict,
-            encoder: JSONEncoder(),
-            decoder: JSONDecoder(),
-            budget: .standard
+            using: MyType.gen(),
+            config: CodableLawConfig(mode: .strict, codec: .json)
         )
     }
 }
 ```
 
+Settings shared by every suite live in `LawCheckOptions`: `budget`, `enforcement`, `seed`, `suppressions`, `backend`, `expectedReplayEnvironment`, `replayRelaxation`, `allowNaN` and `equalValuePairing`. Settings that vary by protocol stay separate parameters: `laws:` (inheritance, §4.3), Codable's `config:`, Sequence's `sequenceOptions:`, Strideable's `strideGenerator:`, the numeric suites' `sameResult:`.
+
+#### Generators the kit ships
+
+Beyond what `swift-property-based` provides: `Gen<T>.boundedForArithmetic()` for fixed-width integers, `Gen<Double>.doubleWithNaN()` and `Gen<Float>.floatWithNaN()`, `Gen<Unicode.Scalar>.unicodeScalar()` (banded across ASCII, Latin, BMP and astral ranges) and `.asciiScalar()`, and Foundation generators `Gen<Date>.date()`, `Gen<UUID>.uuid()`, `Gen<Data>.data(of:)`, `Gen<URL>.url()` and `Gen<Decimal>.decimal()`. `ActionSequenceFactory.actionSequence(from:length:statefulGuards:)` turns an action generator into an `[Action]` generator (default length `0...16`), and `actionSequence(forCaseIterable:length:statefulGuards:)` does the same for a `CaseIterable` action type. A `StatefulGuard` drops a candidate action that the history so far would not allow.
+
 #### Trial Budget Tiers
 
-Property-based testing on `Collection` or recursive structures at 10,000 trials per protocol law per type can dominate CI time. Every check accepts a `budget`:
+Property-based testing on `Collection` or recursive structures at 10,000 trials per protocol law per type can dominate CI time. Every check accepts a `budget` (via `LawCheckOptions`):
 
 | Budget | Trials | Intended use |
 |---|---|---|
@@ -591,7 +592,37 @@ Property-based testing on `Collection` or recursive structures at 10,000 trials 
 | `.thorough` | 10,000 | Nightly / release branches |
 | `.custom(trials:)` | n | Explicit override |
 
-**These are effort tiers, not coverage claims.** Every case names a number of random draws and none says anything about the input space — a generator has no space to be exhaustive over. The tier was originally spelled `.exhaustive(n)`, which claimed the opposite and was additionally just `.custom(trials:)` under another name; it is deprecated in favour of `.thorough`. A run that genuinely covers its input space walks an `Enumeration` and reports `SpaceCoverage` (§4.6).
+**These are effort tiers, not coverage claims.** Every case names a number of random draws and none says anything about the input space — a generator has no space to be exhaustive over. `TrialBudget.exhaustive(_:)` survives only as a deprecated factory returning `.custom(trials:)`. A run that genuinely covers its input space walks an `Enumeration` and reports `SpaceCoverage` (below and §4.6).
+
+#### Bounded input spaces
+
+A `Generator` is an unbounded stream of random draws. An `Enumeration<Element>` is a finite space with a known size, an order (smallest cases first, in contiguous buckets of equal size) and an address for every case. Spaces are built with `Every`:
+
+- `Every.elements(_:in:size:)` — the elements of a collection.
+- `Every.ranges(_:upTo:)` — every subrange of `0 ..< bound`, shortest first.
+- `Every.subsets(_:of:)` — every subset of `0 ..< bound`, smallest first.
+- `Every.sequences(_:of:upTo:)` — every sequence over an alphabet up to a length.
+- `Every.product(_:_:)` and `Every.triples(of:)` — combinations, ordered by summed size.
+
+Every constructor is closed-form, so no space is materialised. `Enumeration.prefix(_:)` caps a space and remembers its full size; `map(_:)` keeps order and addresses.
+
+A space is consumed three ways:
+
+- **Walk it.** `checkEveryCase(of:law:tier:options:satisfies:)` runs a property over every case, and the `overEvery:` entries run a whole suite over every case of a carrier: `checkEquatablePropertyLaws`, `checkHashablePropertyLaws`, `checkComparablePropertyLaws`, the five algebraic suites and `checkRingPropertyLaws` (§4.9), and the three comparator entries (§4.3). `checkInteractionInvariantPropertyLaws(…overEverySequenceUpTo:)` walks every action sequence up to a length. A walk needs no shrinker, because the first failing case is the smallest, and it reports `SpaceCoverage`. A walk consumes no randomness, so it prints no seed.
+- **Sample it with its index.** `checkSampledCases(of:law:tier:options:satisfies:)` and the `sampling:` entries (Equatable, the algebraic suites, Ring, the comparator entries) draw at random but keep the index. A failure still shrinks toward the smallest case, and the run counts distinct cases against the space's size.
+- **Bridge it.** `Enumeration.generator` is an ordinary `Generator`, for suites with no walked entry. It neither shrinks nor reports coverage. What it keeps is reach: a space's cases are defined, not constructed, so it produces configurations a construction-path generator never does.
+
+`checkEveryCarrier(of:options:perCarrier:suite:)` varies the *subject* rather than the inputs: it runs a whole suite once per carrier. `perCarrier` (default `.sanity`) sets the per-carrier budget and `options.budget` is ignored, because otherwise the trial count multiplies by the carrier count. Results merge one per law, the walk stops at the first failing carrier, and `coverage` describes the carrier space.
+
+#### Laws that need equal values
+
+`Hashable.equalityConsistency`, `Equatable.transitivity` and `Comparable.antisymmetry` test something only when two draws are equal (or equivalent). Drawn independently, a wide generator almost never produces such a pair, and the law passes having tested nothing. `CheckResult.applications` reports how often the antecedent fired. `LawCheckOptions.equalValuePairing` changes how these three laws pair their draws; every other law ignores it:
+
+- `.independent` (default) — each trial draws its own values.
+- `.everyPairOfDraws` — draw the budget once and compare each draw with every earlier one (1,000 draws make 499,500 pairs). Transitivity follows the equal pairs into chains rather than testing every triple. The pool comes from one seeded stream, so the seed replays it.
+- `.recentDraws(window:)` — compare each draw with the `window` draws before it; linear rather than quadratic.
+
+Pooling is opt-in because its cost is quadratic and falls on whatever `==` the caller wrote. When a law pools, `trials` counts draws and `CheckResult.pairedDraws` records `(draws, pairs)`. A walk over an `Enumeration` reaches every pair already.
 
 #### Generic Conformances
 
@@ -602,151 +633,217 @@ Real Swift code is generic-heavy: `Array<T>: Equatable where T: Equatable`, `Res
 @Test func containerEquatablePropertyLaws() async throws {
     try await checkEquatablePropertyLaws(
         for: Container<Int>.self,
-        using: Gen.container(of: Gen.int())
+        using: Gen.container(of: Gen<Int>.int())
     )
     try await checkEquatablePropertyLaws(
         for: Container<String>.self,
-        using: Gen.container(of: Gen.string())
+        using: Gen.container(of: Gen<Character>.letterOrNumber.string(of: 0...8))
     )
 }
 ```
 
-The Discovery plugin does *not* automatically enumerate generic instantiations — that's an unbounded search space and will produce noisy stubs. Instead, the developer registers representative bindings on the generic type:
-
-```swift
-@LawGenerator(bindings: [Container<Int>.self, Container<String>.self, Container<UUID>.self])
-struct Container<T: Equatable>: Equatable { /* ... */ }
-```
-
-The plugin emits one stub per binding, with the binding listed in the generated comment header so reviewers see the exercised type set. Bindings can be added or removed in regenerated files; the regeneration-as-diff workflow (§5.3) preserves prior bindings as inline suppressions.
+The Discovery plugin does *not* enumerate generic instantiations — that's an unbounded search space. It also emits no check for a conditional conformance (`extension Container: Equatable where T: Equatable`), since an unconditional call would be wrong. Bind those by hand, as above.
 
 Failures report which specific protocol law was violated, the strictness tier, and an explicit "not a proof" disclaimer:
 
 ```
-✗ Equatable.symmetry violated for MyType  [Strict, .standard]
-  Counterexample: x = MyType(priority: 3), y = MyType(priority: 5)
-  x == y evaluated to true, but y == x evaluated to false
+✗ Equatable.symmetry  [Strict, 1000 trials]
+  Counterexample: x = MyType(priority: 3), y = MyType(priority: 5); x == y → true, y == x → false
   Replay with seed: aKPPWDEafU0CGMDYHef/ETcbYUyjWQvRVP1DTNy6qJk=
-  (1,000 trials run; this is empirical evidence, not a proof.)
+  (Empirical evidence, not a proof.)
 ```
 
 ### 4.5 Backend Abstraction
 
-PropertyLawKit defines a `PropertyBackend` protocol so teams can swap the underlying runner. The signature accommodates async, throwing properties (the common case in Swift code under test) and `Sendable` types (Swift 6 strict concurrency):
+PropertyLawKit defines a public `PropertyBackend` protocol so teams can swap the underlying runner. The signature accommodates async, throwing properties (the common case in Swift code under test) and `Sendable` types (Swift 6 strict concurrency):
 
 ```swift
-public protocol PropertyBackend {
-    func check<T: Sendable>(
+public protocol PropertyBackend: Sendable {
+    var identifier: String { get }
+
+    func check<Input: Sendable>(
         trials: Int,
         seed: Seed?,
-        generator: Gen<T>,
-        property: @Sendable (T) async throws -> Bool
-    ) async throws -> CheckResult
+        sample: @Sendable (inout Xoshiro) -> Input,
+        property: @Sendable (Input) async throws -> Bool
+    ) async -> BackendCheckResult<Input>
 }
 ```
 
-The single shipped implementation wraps `swift-property-based`. The abstraction stays public so a future second backend (e.g., a SwiftQC adapter once that package's Swift 6 support matures) can drop in without changing protocol law definitions.
+The backend owns the trial loop and the random stream. `sample` draws one input from a seeded `Xoshiro`, so a backend never needs to know about `Generator`. It returns `.passed(trialsRun:initialSeed:)` or `.failed(trialsRun:initialSeed:failingInput:thrownError:)`. Everything above that stays in the kit: the law, its tier, shrinking a failing input, near-miss collection, suppression and formatting.
 
-**Single-backend by design.** v1 ships only `SwiftPropertyBasedBackend` and deliberately does not chase a second concrete implementation. The protocol above was *internal* through M3 and made public at M4. The public surface — `@Sendable (T) async throws -> Bool` property closures, explicit `Seed` and `Environment` types, near-miss reporting hooks — was shaped against `swift-property-based` as the canonical implementation, with SwiftQC's documented shrinking and async semantics serving as the design check that the surface generalizes. Shipping the second backend was scoped out of v1: see `CLAUDE.md` "Single-backend by design" for the rationale (`swift-property-based` is best-of-breed; SwiftQC v1.0.0 also has an unrelated Swift 6.3 build issue at this writing). The abstraction is real, public, and ready for a second backend the moment one becomes a useful addition rather than a parity exercise.
+**Single-backend by design.** The kit ships only `SwiftPropertyBasedBackend`, the default for `LawCheckOptions.backend`, and deliberately does not chase a second implementation. The surface was shaped against `swift-property-based`, with SwiftQC's documented shrinking and async semantics as the design check that it generalizes. A second backend (e.g., a SwiftQC adapter) can drop in without changing law definitions, the moment one becomes a useful addition rather than a parity exercise.
 
-#### Actor-Isolated and Sendable Types
+Some checks bypass the backend: aggregate laws that judge a whole budget at once (`Hashable.distribution`, and the pooled equal-value laws of §4.4) draw from the kit's own seeded stream, and walks over an `Enumeration` run in a fixed order that no backend may vary.
 
-For an actor or actor-isolated type, the property closure runs on the type's actor; each trial pays one actor hop. Throughput is lower; correctness is unaffected. The `@Sendable` constraint on the property closure ensures inputs cross actor boundaries safely under Swift 6 strict concurrency.
+#### Sendable Types
 
-Pure `Sendable` value types check identically to non-Sendable types — the constraint is satisfied at the closure boundary. The generator registry is implemented as an actor (not as `static var`) so generator lookup is concurrency-safe.
+Every check constrains its value type to `Sendable`, and property closures are `@Sendable`, so inputs cross isolation boundaries safely under Swift 6 strict concurrency. Pure `Sendable` value types check identically to any other type.
 
-`Sendable`'s own informal contract — value semantics, no shared mutable state — is *not* a checkable v1 law (it would require runtime instrumentation to detect post-share mutation). A future `checkSendableContractLaws` Heuristic-tier suite is named in §4.3 Coverage Scope as a research item.
+`Sendable`'s own informal contract — value semantics, no shared mutable state — is not checkable for an arbitrary type. The kit-defined `ValueSemantic` protocol (§4.9) checks it for a type that describes its own mutation surface.
 
 ### 4.6 Confidence Reporting
 
-Each protocol law check reports its result as a confidence artifact rather than a simple pass/fail:
+Each protocol law check reports its result as a confidence artifact rather than a simple pass/fail. `CheckResult` carries:
 
-```swift
-CheckResult(
-    protocolLaw: "Equatable.symmetry",
-    tier: .strict,
-    trials: 1_000,
-    seed: "aKPPWDEafU0CGMDYHef/...",
-    environment: .init(             // fingerprint for replay validity
-        swiftVersion: "6.1",
-        backend: "swift-property-based 0.4.2",
-        generatorSchema: "abc123def..."   // hash of registered generators
-    ),
-    outcome: .passed,
-    nearMisses: [],                 // inputs that came close to violating
-    coverageHints: .init(           // approximate distribution insight
-        inputClasses: ["zero": 12, "negative": 488, "positive": 500],
-        boundaryHits: ["Int.min": 1, "Int.max": 1, "empty-string": 0]
-    )
-)
-```
+| Field | Meaning |
+|---|---|
+| `protocolLaw` | The law's name, e.g. `Equatable.symmetry` |
+| `tier` | `.strict`, `.conventional` or `.heuristic` |
+| `trials` | Inputs drawn. For a pooled law (§4.4), draws rather than property evaluations |
+| `seed` | The replay seed |
+| `environment` | The replay fingerprint (below) |
+| `outcome` | `.passed`, `.failed(counterexample:)`, `.suppressed(reason:)` or `.expectedViolation(reason:counterexample:)` |
+| `nearMisses` | `[String]?` — inputs that came close to violating. `nil` means the law does not track them |
+| `coverageHints` | `CoverageHints?` (`inputClasses`, `boundaryHits`), filled when the caller passes a `CoverageClassifier` (Equatable and Hashable take `coverage:`) |
+| `shrunkFrom`, `shrinkSteps` | The original failing input, and how many shrink steps reached the reported one |
+| `coverage` | `SpaceCoverage?` — `casesRun`, `spaceSize`, `isComplete`. `nil` for every sampled law: the check does not know its input space |
+| `applications` | `Int?` — how often a conditional law's antecedent fired. `nil` for unconditional laws |
+| `pairedDraws` | `(draws, pairs)` when a law pooled its draws |
 
-This positions protocol law checks as *replayable experiments* — the seed and trial count are part of the permanent test record. The optional `coverageHints` mitigates the "10,000 trials looks precise but is meaningless if all inputs are tiny integers" failure mode by recording which input classes the generator actually produced.
+This positions protocol law checks as *replayable experiments* — the seed and trial count are part of the permanent test record. `coverageHints` mitigates the "10,000 trials looks precise but is meaningless if all inputs are tiny integers" failure mode by recording which input classes the generator actually produced. `coverage` and `applications` say the same thing more directly: what fraction of a space a walk saw, and whether a conditional law tested anything at all. Both are reported, not enforced.
 
-**Near-miss semantics.** A near-miss is an input where the property *almost* failed — surfacing brittleness even on green runs. Each protocol law defines its own criterion:
+**Near-miss semantics.** A near-miss is an input where the property *almost* failed — surfacing brittleness even on green runs. Each law defines its own criterion, and two laws track one:
 
-- `Equatable.symmetry` — inputs where the implementation took asymmetric code paths but happened to return the same boolean.
-- `Equatable.transitivity` / `Comparable.transitivity` — triples where the relation barely held (within an epsilon for floating-point fields, or where ordering depended on tie-breaking that's not part of `<`).
-- `Codable.roundTripFidelity` — values where decoded ≠ original on a single field, with the failing field's `KeyPath` reported.
-- `Hashable` consistency — inputs that hashed differently across consecutive calls in the same process (a stability hint).
-- `Collection` / `Sequence` count — iterators that yielded a count off-by-one from `count` / `underestimatedCount`.
+- `Codable.roundTripFidelity` under `.semantic` or `.partial` — each field where the decoded value differs from the original while the law still passes.
+- `Collection.countConsistency` — an off-by-one between `count` and the number of iterated elements.
 
-Backends that don't expose this introspection report `nearMisses: nil` rather than an empty array, so callers distinguish "no near-misses" from "this backend doesn't track them."
+Every other law reports `nearMisses: nil` rather than an empty array, so callers distinguish "no near-misses" from "this law doesn't track them."
 
-**Environment fingerprinting.** A seed is only as replayable as the environment that produced it. `CheckResult.environment` records the Swift compiler version, the backend identity and version, and a hash of the registered generator schema. When a stored seed is replayed (e.g. from a CI artifact stored months earlier), PropertyLawKit verifies the environment matches before running. On mismatch, replay fails with a clear diagnostic (`seed produced under Swift 6.1 + swift-property-based 0.4.2; current is 6.2 + 0.5.0 — generator schema also differs`) rather than silently re-rolling a different test under the same seed string.
+**Environment fingerprinting.** A seed is only as replayable as the environment that produced it. `CheckResult.environment` is an `Environment(swiftVersion:backendIdentity:generatorSchemaHash:)`. When `LawCheckOptions.expectedReplayEnvironment` is set, the kit compares it with the current environment before running any trial and throws `ReplayEnvironmentMismatch` on divergence, naming each differing field, rather than silently re-rolling a different test under the same seed string. Matching is `.exact` by default; `replayRelaxation` accepts `.matchBackendOnly` or `.matchSwiftVersionOnly`. `generatorSchemaHash` is currently the fixed placeholder `"m1-no-registry"`: there is no generator registry to hash, so in practice a mismatch is detected on Swift version and backend identity.
 
-Sample outputs at three outcomes:
-
-```
-✓ Equatable.reflexivity for MyType  [Strict, .standard]
-  1,000 trials, no violations, no near-misses.
-  Coverage: 412 default-init / 588 generated; boundaries hit: 7/8 declared.
-  (Empirical evidence, not a proof.)
-
-⚠ Codable.roundTripFidelity for MyType  [Conventional, .standard]
-  1 near-miss in 1,000 trials (Date precision drift).
-  Suggest: switch to .semantic(equivalent:) or pin Date precision.
-  Replay with seed: 7Vh9...
-
-✗ Comparable.transitivity violated for MyType  [Strict, .standard]
-  Counterexample: a = MyType(rank: 1), b = MyType(rank: 4), c = MyType(rank: 2)
-  Replay with seed: aKPP...
-```
+**Rendering.** A thrown `PropertyLawViolation` and a recorded warning (§4.2) both render each result the same way: a header line with the outcome glyph (`✓`, `✗`, `…` suppressed, `⊘` expected violation), the law, the tier and what the run covered (`1000 trials`, `walked all 512 cases`, `failed at case N of M`, or `1000 draws, 499500 pairs compared`); then the counterexample, near-misses, coverage hints and application count where present; then the replay seed, or for a walk `Deterministic walk — replays from the space, not a seed.`; then `(Empirical evidence, not a proof.)`. A conditional law that never applied says so: `Applied: never — the antecedent did not fire, so this pass tested nothing.`
 
 ### 4.7 Suppression and Customization
 
-The biggest adoption risk for any law-checking tool is developer frustration from false positives. PropertyLawKit provides explicit, declarative suppression at three granularities:
+The biggest adoption risk for any law-checking tool is developer frustration from false positives. PropertyLawKit provides explicit, declarative suppression per law, per call:
 
 ```swift
-// Per-type, per-law: suppress this single check on this single type.
-@SuppressProtocolLaw(.equatable(.reflexivity), reason: "NaN by design")
-struct MyFloatWrapper: Equatable { /* ... */ }
+// Skip a law: it does not run, and reports `.suppressed(reason:)` with zero trials.
+// Intentional violation: the law runs, and a failure reports `.expectedViolation`
+// instead of failing the test.
+try await checkEquatablePropertyLaws(
+    for: MyFloatWrapper.self,
+    using: MyFloatWrapper.gen(),
+    options: LawCheckOptions(suppressions: [
+        .intentionalViolation(.equatable(.reflexivity), reason: "NaN by design")
+    ])
+)
 
-// Per-type: declare a type as intentionally violating a protocol's standard contract.
-// Strict-tier checks still run, but reported as `.expectedViolation` rather than failure.
-@IntentionalProtocolViolation(.equatable, scope: .reflexivityOnNaN)
-struct PartialOrderType { /* ... */ }
-
-// Per-call site: customize the equivalence used by Codable round-trip checking.
+// Customize the equivalence used by Codable round-trip checking.
 try await checkCodablePropertyLaws(
     for: Invoice.self,
-    using: Gen.invoice(),
-    mode: .semantic(equivalent: { $0.canonicalized == $1.canonicalized }),
-    budget: .standard
+    using: Invoice.gen(),
+    config: CodableLawConfig(mode: .semantic(equivalent: { $0.canonicalized == $1.canonicalized }))
 )
 ```
 
-Suppressions appear in the test report so reviewers can spot policy drift, and CI can assert that the suppression list does not grow unexpectedly (a `--max-suppressions=N` plugin flag).
+`LawSuppression.skip(_:reason:)` and `.intentionalViolation(_:reason:)` take a `LawIdentifier`. Factories such as `.equatable(.reflexivity)` exist for the core stdlib suites; any law can be named with `LawIdentifier(protocolName:lawName:)`. Suppressions never escalate to a throw under any enforcement mode, and a suppressed or expected violation is never recorded as an issue. Each still appears in the returned results with its reason, so reviewers can spot policy drift.
+
+In a file generated by the discovery plugin, a `// property-law-suppress: <protocol>_<TypeName>` marker suppresses one generated test and survives regeneration (§5.3).
 
 ### 4.8 Milestones
 
-| Milestone | Deliverable |
-|---|---|
-| M1 | `Equatable` and `Hashable` protocol laws (Strict tier only), `swift-property-based` backend, diagnostic output, trial budgets |
-| M2 | `Comparable` and `Codable` protocol laws; `Codable` strict/semantic/partial modes; Conventional tier introduced |
-| M3 | `Collection` and `SetAlgebra` protocol laws; suppression and intentional-violation API |
-| M4 | `PropertyBackend` public abstraction; finalized async/throws/Sendable property signature (single-backend by design — see §4.5) |
-| M5 | Confidence reporting upgrade — near-miss tracking, coverage hints, "not a proof" messaging, Heuristic tier |
+| Milestone | Deliverable | Status |
+|---|---|---|
+| M1 | `Equatable` and `Hashable` protocol laws (Strict tier only), `swift-property-based` backend, diagnostic output, trial budgets | Shipped |
+| M2 | `Comparable` and `Codable` protocol laws; `Codable` strict/semantic/partial modes; Conventional tier introduced | Shipped |
+| M3 | `Collection` and `SetAlgebra` protocol laws; suppression and intentional-violation API | Shipped |
+| M4 | `PropertyBackend` public abstraction; finalized async/throws/Sendable property signature (single-backend by design — see §4.5) | Shipped |
+| M5 | Confidence reporting upgrade — near-miss tracking, coverage hints, replay-environment validation, "not a proof" messaging, Heuristic tier | Shipped |
+
+Work after M5 shipped as minor releases: the rest of the stdlib protocols in §4.3, the kit-defined protocols (§4.9), bounded input spaces and equal-value pairing (§4.4), and the opt-in products (§4.10).
+
+### 4.9 Kit-defined Protocols
+
+PropertyLawKit defines protocols where the Swift Standard Library leaves a useful gap. They ship from `import PropertyLawKit`. `Equatable` is required to *check* the laws but not to *declare* the conformance.
+
+#### Algebraic protocols
+
+The algebraic protocols are `KnownProtocol` cases, so the macro and the discovery plugin detect them and apply most-specific dedupe exactly as for stdlib protocols. The single-operation chain shares one `combine(_:_:)`:
+
+`Semigroup → Monoid → CommutativeMonoid → Semilattice`, and `Monoid → Group`.
+
+| Protocol | Refines | Requirement |
+|---|---|---|
+| `Semigroup` | — | `static func combine(_ lhs: Self, _ rhs: Self) -> Self` |
+| `Monoid` | `Semigroup` | `static var identity: Self { get }` |
+| `CommutativeMonoid` | `Monoid` | none — marker protocol |
+| `Group` | `Monoid` | `static func inverse(_ value: Self) -> Self` |
+| `Semilattice` | `CommutativeMonoid` | none — marker protocol |
+
+| Protocol Law | Tier | Description |
+|---|---|---|
+| `Semigroup.combineAssociativity` | Strict | `combine(combine(a, b), c) == combine(a, combine(b, c))` |
+| `Monoid.combineLeftIdentity` | Strict | `combine(.identity, a) == a` |
+| `Monoid.combineRightIdentity` | Strict | `combine(a, .identity) == a` |
+| `CommutativeMonoid.combineCommutativity` | Strict | `combine(a, b) == combine(b, a)` |
+| `Group.combineLeftInverse` | Strict | `combine(inverse(a), a) == .identity` |
+| `Group.combineRightInverse` | Strict | `combine(a, inverse(a)) == .identity` |
+| `Semilattice.combineIdempotence` | Strict | `combine(a, a) == a` |
+
+Each refinement's check runs its inherited chain by default (`laws: .ownOnly` opts out), and every check takes `using:`, `overEvery:` and `sampling:` (§4.4). Stdlib has no `Semigroup`, and `AdditiveArithmetic` doesn't fit the common merge-shape Swift type, whose operation is a `merge` / `combine` / `concat` / `union` rather than arithmetic `+`. The naming follows from that: `combine` rather than `+` avoids colliding with arithmetic operators, and `identity` rather than `empty` / `zero` avoids overlap with `RangeReplaceableCollection.init()` and `AdditiveArithmetic.zero`. `inverse(_:)` is a static method, not an `inverted()` instance method, so every witness has the same shape as `combine(_:_:)` and `identity`.
+
+`Group` does not refine `CommutativeMonoid`: non-commutative groups (matrix groups, permutation groups) are valid, so the two are incomparable arms of the DAG and a type conforming to both surfaces both checks. Bounded join- and meet-semilattices share `Semilattice`, since the idempotence law is symmetric.
+
+#### `Ring`
+
+`Ring` is the kit's only two-operation protocol, a ring with unity. It stands alone: it neither refines nor is refined by the `combine` chain, because binding `combine` to one of its operations would leave the other lawless and collide with any single-operation conformance the type declares. A type that is both `Ring` and, through a different operation, `Monoid` surfaces both checks. It is for carriers whose ring operations are not named `+` / `*` (modular arithmetic, matrices, polynomials); stdlib `Numeric` / `BinaryInteger` already get ring-shaped coverage.
+
+Requirements: `static var zero: Self`, `static var one: Self`, `static func add(_:_:) -> Self`, `static func multiply(_:_:) -> Self`, `static func negate(_:) -> Self`. Multiplication is not assumed commutative.
+
+| Protocol Law | Tier | Description |
+|---|---|---|
+| `Ring.addAssociativity` | Strict | `add(add(a, b), c) == add(a, add(b, c))` |
+| `Ring.addCommutativity` | Strict | `add(a, b) == add(b, a)` |
+| `Ring.addLeftIdentity` | Strict | `add(.zero, a) == a` |
+| `Ring.addRightIdentity` | Strict | `add(a, .zero) == a` |
+| `Ring.addLeftInverse` | Strict | `add(negate(a), a) == .zero` |
+| `Ring.addRightInverse` | Strict | `add(a, negate(a)) == .zero` |
+| `Ring.multiplyAssociativity` | Strict | `multiply(multiply(a, b), c) == multiply(a, multiply(b, c))` |
+| `Ring.multiplyLeftIdentity` | Strict | `multiply(.one, a) == a` |
+| `Ring.multiplyRightIdentity` | Strict | `multiply(a, .one) == a` |
+| `Ring.leftDistributivity` | Strict | `multiply(a, add(b, c)) == add(multiply(a, b), multiply(a, c))` |
+| `Ring.rightDistributivity` | Strict | `multiply(add(a, b), c) == add(multiply(a, c), multiply(b, c))` |
+
+`checkRingPropertyLaws` takes `using:`, `overEvery:` and `sampling:`, and has no `laws:` parameter since nothing is inherited.
+
+**Roadmap.** `CommutativeGroup` is deferred: most everyday abelian groups are integers or floats under `+`, already covered by `AdditiveArithmetic` / `Numeric`, and a type that is both `CommutativeMonoid` and `Group` gets both checks today. `CommutativeSemigroup` is deferred likewise. `Functor` / `Applicative` / `Monad` are out of scope.
+
+#### `InteractionInvariant` family
+
+An invariant over the states a reducer can reach. The root protocol, `InteractionInvariant`, has `associatedtype State` and `static func invariantHolds(in state: State) -> Bool`. Four refinements add no requirements and only name the invariant's shape: `CardinalityInvariant`, `ReferentialIntegrityInvariant`, `BiconditionalInvariant` and `ConservationInvariant`. `ActionIdempotenceInvariant` requires `State: Equatable` and adds `associatedtype Action: Hashable` and `static var idempotentActions: Set<Action>`; its `invariantHolds` defaults to `true`.
+
+- `checkInteractionInvariantPropertyLaws(for:initialState:reducer:length:statefulGuards:options:)` samples action sequences for a `CaseIterable` action type, applies them step by step, and checks the invariant after every step (`InteractionInvariant.invariantHoldsAfterEachStep`, Strict). Checking per step catches a transient violation a later step repairs. The `overEverySequenceUpTo:` overload walks every sequence up to a length instead, which reports the shortest reaching sequence.
+- `checkActionIdempotenceInvariantPropertyLaws(for:initialState:reducer:length:statefulGuards:options:)` drives the reducer to a sampled reachable state, then checks `reducer(reducer(s, a), a) == reducer(s, a)` for each idempotent action (`ActionIdempotenceInvariant.doubleApplicationEqualsSingle`, Strict).
+- Both have overloads taking an `async` reducer.
+- `checkInvariantIsFalsifiable(for:using:options:)` (`InteractionInvariant.isFalsifiable`, Conventional) checks the specification rather than the code: it samples states from a caller's generator without running the reducer and asks that the invariant reject at least one. An invariant that accepts every state constrains nothing, and passes every other law. It is Conventional because a generator too narrow to build a violating state makes a correct invariant look vacuous.
+
+#### `ValueSemantic`, `StableIdentity` and `DefensiveCopy`
+
+Three protocols for checking copy and identity behavior. Each conformer describes its own mutation surface as an `associatedtype Mutation: CaseIterable & Sendable` with a static `apply`, and supplies `static func makeProbe() -> Self`, which must return an equal-valued, independently constructed instance on every call. The harness samples a script of mutations through `ActionSequenceFactory` and compares against a second probe, never against a copy of the first, since a leaky type's copies share the storage that leaks.
+
+| Protocol | Refines | Laws (all Strict) |
+|---|---|---|
+| `ValueSemantic` | `Equatable` | `ValueSemantic.copyMutationDoesNotLeak` — mutating a copy leaves the original unchanged; `copyMutationDoesNotLeakUnderInterleaving` — after a copy is mutated, the original's own later mutations still match an interference-free replay |
+| `StableIdentity` | `AnyObject, Hashable` | `StableIdentity.hashStableUnderMutation`, `equalityStableUnderMutation` — mutation does not change `hashValue` or equality to an independent twin, so the object is safe as a `Set` / `Dictionary` key |
+| `DefensiveCopy` | `AnyObject, Equatable` | `DefensiveCopy.copyIsDistinctInstance` — `copyUnderTest()` returns a new object; `copyIsIndependent` — mutating the copy does not affect the original |
+
+`DefensiveCopy` also requires `func copyUnderTest() -> Self`, which calls the type's real `copy()` / `clone()`. For the two class protocols, `apply` takes the target without `inout`. The entry points are `checkValueSemanticPropertyLaws`, `checkStableIdentityPropertyLaws` and `checkDefensiveCopyPropertyLaws`, each `(for:length:options:)`. A failing mutation script shrinks to the minimal reproduction. None of the three is a `KnownProtocol` case; they are wired by their own peer macros (§5.6).
+
+### 4.10 Opt-in Products
+
+Laws and generators that need a third-party dependency ship as separate products, so `PropertyLawKit` itself depends only on `swift-property-based`. Each is imported explicitly.
+
+| Product | Adds a dependency on | What it provides |
+|---|---|---|
+| `PropertyLawComplex` | `swift-numerics` | `Gen<Complex<Double>>.edgeCaseBiased()`: 90% finite values, 10% drawn from a curated set of twelve edge cases |
+| `PropertyLawCollections` | `swift-collections` | Generators for `Deque`, `OrderedSet`, `OrderedDictionary`, `BitSet`, `Heap`, `TreeSet` and `TreeDictionary`; `DequeLayouts.everyLayout()`, an `Enumeration` of deque buffer layouts including wrapped ones; and three law families over concrete types: `checkHeapPropertyLaws` (draining matches a sorted model), `checkDequeSymmetryPropertyLaws` (front-end operations mirror the back end and agree with an array model) and `checkOrderPreservationPropertyLaws` (`OrderedSet` order) |
+| `PropertyLawAsync` | `swift-async-algorithms` | `checkAsyncSequencePropertyLaws` — nine clock-free laws over a source array lifted to an async sequence: chunks, adjacent pairs, `removeDuplicates`, interspersed and compacted agree with sync models; `merge` preserves the element multiset; `zip` matches sync `zip`; an exhausted iterator stays exhausted. `checkTimedAsyncSequencePropertyLaws` — four `debounce` and cancellation laws run in virtual time on the product's own scheduler, which advances the clock only when every task is idle, so a run cannot hang |
+| `PropertyLawSyntax` | `swift-syntax` (`SwiftParser`) | `Gen<Syntax>.syntax()` and `Gen<T>.syntaxNode()` for any typed node, drawn from a pool of parsed trees kept alive so node identities stay distinct; `static func gen()` on `Syntax`, `ExprSyntax`, `DeclSyntax`, `StmtSyntax`, `PatternSyntax`, `TypeSyntax` and `TokenSyntax`, so derived code that spells `T.gen()` resolves |
+| `PropertyLawMinimalTypes` | — | `MinimalSequence`, `MinimalCollection` and `MinimalBidirectionalCollection`, the weakest legal conformances, for running a suite against something that is not `Array`; plus a minimal codec |
+
+The collection and async law families are stated over concrete types with no protocol to substitute, so the planted-violator gate (§8) does not apply to them: they test the dependency, not a user's conformance.
 
 -----
 
@@ -754,202 +851,216 @@ Suppressions appear in the test report so reviewers can spot policy drift, and C
 
 ### 5.1 Description
 
-PropertyLawMacro is a tooling layer that uses SwiftSyntax to statically analyze source files, detect protocol conformances, and automatically generate PropertyLawKit test registrations. It eliminates the need to manually write `checkEquatablePropertyLaws(...)` calls for each conforming type.
+PropertyLawMacro is a tooling layer that uses SwiftSyntax to statically analyze source files, detect protocol conformances, and automatically generate PropertyLawKit test suites. It eliminates the need to manually write `checkEquatablePropertyLaws(...)` calls for each conforming type.
 
-PropertyLawMacro outputs *human-reviewable stubs*, not silently executed tests. The developer reviews, approves, and commits generated test code. This preserves developer agency and avoids the "magic that occasionally breaks" failure mode.
+The generated code is *human-reviewable*: macro expansions can be inspected in the editor, and the discovery plugin writes a file the developer reviews, approves, and commits. This preserves developer agency and avoids the "magic that occasionally breaks" failure mode.
 
 ### 5.2 Layered Scope
 
-PropertyLawMacro is deliberately layered. The Core layer is the MVP — small, narrow, and the only thing required to deliver value. Advisory and Experimental layers are opt-in and ship later in the milestone sequence.
+PropertyLawMacro is deliberately layered. The Core layer is the MVP — small, narrow, and the only thing required to deliver value. The Advisory layer is opt-in.
 
 | Layer | Capabilities | Default state |
 |---|---|---|
-| **Core** | Conformance → test stub generation (per-suite macro/trait and discovery plugin) | Always on |
-| **Advisory** | Missing-conformance suggestions; cross-function round-trip discovery | Off by default; CLI flag or config to enable |
-| **Experimental** | Pattern warnings for known protocol law combinations; Codable-derived generators | Off by default; explicit opt-in per project |
+| **Core** | Conformance → test suite generation (peer macros and discovery plugin), generator derivation | Always on |
+| **Advisory** | Missing-conformance suggestions; cross-function round-trip discovery | Off by default; `--advisory` to enable |
 
-The architecture diagram (§6) reflects this layering. Users adopting only Core get a deterministic, low-noise tool. Advisory and Experimental can be evaluated independently without affecting Core's signal-to-noise ratio.
+The architecture diagram (§6) reflects this layering. Users adopting only Core get a deterministic, low-noise tool. Advisory output goes to stderr and never touches the generated file, so it can be evaluated without affecting Core's signal-to-noise ratio.
 
 ### 5.3 Core: Two Operating Modes
 
-#### Macro Mode (compile-time, per-suite)
+#### Macro Mode (compile-time, per type)
 
-A single annotation on a test triggers protocol law generation for the named types. This is best expressed as a Swift Testing trait so the runner integrates law checks naturally:
-
-```swift
-@Test(.protocolLaws(MyType.self, OtherType.self))
-func conformanceLaws() async throws { /* expanded at compile time */ }
-
-// Equivalent freestanding macro form (for non-Swift-Testing contexts):
-@PropertyLawSuite(types: [MyType.self, OtherType.self])
-struct AutoPropertyLawTests {}
-```
-
-The macro/trait expands to the appropriate `checkXxxPropertyLaws(...)` calls based on the detected conformances of each named type at compile time.
-
-#### Discovery Mode (Swift Package Plugin, whole-module)
-
-Whole-module discovery is delivered as a **Swift Package Plugin**, not a macro: macros are file-local and cannot scan a module's other files, while a build-tool plugin has the file-system access required.
-
-```bash
-swift package propertylawcheck discover --target MyModule --output PropertyLawTests.generated.swift
-```
-
-Output is clearly marked as generated and includes provenance:
+`@PropertyLawSuite` is a peer macro attached to a type declaration. Swift macros see only their decoratee's syntax, so the macro works one type at a time. It reads the type's inheritance clause, applies the most-specific dedupe (§4.3), derives a generator (§5.7), and emits a sibling `struct <TypeName>PropertyLawTests` holding one `@Test` per surviving protocol:
 
 ```swift
-// GENERATED by swift-package propertylawcheck — review before committing
-// Detected conformances: Equatable, Comparable, Codable
-// Source: Sources/MyModule/MyType.swift
-//
-// Note: Comparable extends Equatable, so checkComparable runs Equatable's
-// laws automatically (see §4.3 inheritance semantics). One call per type,
-// most specific wins.
+@PropertyLawSuite
+struct Foo: Equatable, Hashable {
+    let value: Int
+}
 
-@Suite struct MyTypePropertyLaws {
-
-    // Comparable + inherited Equatable laws — MyType: Comparable (line 13, MyType.swift)
-    @Test func comparablePropertyLaws() async throws {
-        try await checkComparablePropertyLaws(for: MyType.self, using: .derived)
-    }
-
-    // Codable protocol laws — MyType: Codable (line 14, MyType.swift)
-    @Test func codablePropertyLaws() async throws {
-        try await checkCodablePropertyLaws(
-            for: MyType.self,
-            using: .derived,
-            mode: .strict,
-            encoder: JSONEncoder(), decoder: JSONDecoder()
+// Expands, as a peer of Foo, to:
+struct FooPropertyLawTests {
+    @Test func hashable_Foo() async throws {
+        try await checkHashablePropertyLaws(
+            for: Foo.self,
+            using: Gen<Int>.int().map { Foo(value: $0) }
         )
     }
 }
 ```
 
+The macro derives with the type's own syntax only, so a member whose type is another custom type does not derive here (the plugin resolves those). A type with no derivable generator raises a `cannotDeriveGenerator` diagnostic and emits a `.todo` stub (§5.7).
+
+#### Discovery Mode (Swift Package Plugin, whole-module)
+
+Whole-module discovery is delivered as a **command plugin**, not a macro: macros are file-local and cannot scan a module's other files, while a plugin has the file-system access required. It is run on demand, not as a build step.
+
+```bash
+swift package propertylawcheck discover --target MyModule
+```
+
+| Flag | Effect |
+|---|---|
+| `--target <name>` | Required. The target to scan. |
+| `--output <path>` | Where to write. Default `Tests/<Target>Tests/PropertyLawTests.generated.swift`. |
+| `--extra-import <Module>` | Repeatable. Adds a plain `import` for a module that supplies generators rather than types (e.g. `PropertyLawSyntax`). Never inferred, because guessing an opt-in product's import breaks every project that lacks it. |
+| `--scaffold-out <path>` | Also writes a separate, non-compiling file of `gen()` stubs for `.todo` types, with derivable slots filled and `<#…#>` placeholders for the rest. |
+| `--advisory` | Enables the Advisory suggestions (§5.4, §5.5) on stderr. |
+| `--advisory-min low\|medium\|high` | Confidence floor for Advisory output. Default `high`. |
+
+The plugin also passes the source files of the target's transitive dependencies to the scan as context, for declarations only. Context tells the scan what a type this target merely extends looks like and which module declares it; context types get no suites of their own.
+
+Output is clearly marked as generated and includes provenance. Paths print as the plugin passed them:
+
+```swift
+// GENERATED by PropertyLawDiscoveryPlugin — DO NOT EDIT outside
+// `// property-law-suppress: <protocol>_<TypeName>` markers.
+//
+// Target: MyModule
+// Types detected: 1
+// Re-run: swift package propertylawcheck discover --target MyModule
+
+import Testing
+import PropertyLawKit
+@testable import MyModule
+
+// MyType — Sources/MyModule/MyType.swift:13 (primary)
+@Suite struct MyTypePropertyLawTests {
+    @Test func comparable_MyType() async throws {
+        try await checkComparablePropertyLaws(
+            for: MyType.self,
+            using: Gen<Int>.int().map { MyType(rank: $0) }
+        )
+    }
+
+    @Test func codable_MyType() async throws {
+        try await checkCodablePropertyLaws(
+            for: MyType.self,
+            using: Gen<Int>.int().map { MyType(rank: $0) }
+        )
+    }
+}
+```
+
+The module under test is imported `@testable`, so `internal` types are reachable. Modules that declare foreign types the file names get a plain `import`, as do modules a derived generator needs and any `--extra-import`. A nested type is named by its qualified name (`BitSet.Counted`) and its suite by a sanitized identifier (`BitSet_CountedPropertyLawTests`). Three kinds of type are detected but get no suite, listed in the header and the summary with the reason: `private` / `fileprivate` types (not nameable from another file), non-`public` types declared in another module, and `public` types with no `Sendable` conformance (every check requires `Sendable`).
+
 #### Developer Workflow
 
 1. Run the discovery plugin (locally or wired into CI).
 2. Review the generated `*.generated.swift` file as a normal PR.
-3. Commit the generated file. Re-run the plugin when types or conformances change; subsequent runs produce a *diff* against the existing generated file rather than overwriting suppressions or hand edits.
-4. Suppress noisy or wrong suggestions inline (in the generated file) with comments the next regeneration honors. Suppression deltas show up in diff review.
+3. Commit the generated file. Re-run the plugin when types or conformances change. Output is deterministic, so a regeneration shows up as a diff. The file is rewritten each run: hand edits do not survive, suppression markers do.
+4. Suppress a noisy or wrong test by adding `// property-law-suppress: <protocol>_<TypeName>` (e.g. `hashable_MyType`) to the generated file. The next regeneration replaces that test with a comment stub that keeps the marker, so suppression deltas show up in diff review.
 
 ### 5.4 Advisory: Missing Conformance Suggestions (opt-in)
 
-Beyond verifying declared conformances, PropertyLawMacro can suggest *potentially missing* conformances based on structural analysis. **This is opt-in (`--advisory` flag), not default.** It is informational output, never a test failure:
+Beyond verifying declared conformances, the discovery plugin can suggest *potentially missing* conformances based on structural analysis. **This is opt-in (`--advisory` flag), not default.** It is informational output on stderr, never a test failure:
 
 ```
-ℹ️  MyType has encode(_:) and init(from:) but does not declare Codable.
-    Consider conforming and running codablePropertyLaws to verify round-trip fidelity.
-
-ℹ️  MyType has a binary + operator and a zero static property.
-    This matches the Monoid pattern. Consider formalizing with AdditiveArithmetic.
+PropertyLawDiscoveryTool: 1 advisory suggestion(s):
+  note: MyType defines `func encode(to:)` and `init(from:)` but does not declare Codable.
+        Consider conforming and running checkCodablePropertyLaws to verify the laws hold.
+        confidence: high
 ```
 
-Suggestions carry a confidence score (Low / Medium / High); only High by default, to keep noise low. Suggestions are conservative — only emitted when structural evidence is strong — and always require human judgment to act on.
+Four detectors ship, each High confidence and each firing only when the protocol is not already declared: `Codable` (both `encode(to:)` and `init(from:)`), `Equatable` (`static func ==`), `Hashable` (`func hash(into:)`) and `Comparable` (`static func <`). An `Equatable` suggestion is dropped when `Hashable` or `Comparable` is suggested for the same type. Suggestions always require human judgment to act on.
 
 ### 5.5 Advisory: Cross-Function Discovery (opt-in)
 
-PropertyLawMacro can detect function pairs with inverse type signatures and suggest round-trip properties:
+With `--advisory`, the plugin also detects function pairs with inverse type signatures and suggests round-trip properties:
 
-- Detection criteria: functions `f: T → U` and `g: U → T` in the same type or module.
-- Filtered by: type compatibility first, naming heuristics second (`encode`/`decode`, `serialize`/`deserialize`, `push`/`pop`).
-- Optional grouping hint to reduce noise: `@Discoverable(group: "serialization")`.
+- Detection criteria: functions `f: T → U` and `g: U → T` among one type's members, or among the module's free functions. Generic functions are skipped.
+- Confidence: **High** when the signatures invert *and* either the names match a curated pair (`encode`/`decode`, `serialize`/`deserialize`, `encrypt`/`decrypt`, `compress`/`decompress`, `marshal`/`unmarshal`, `pack`/`unpack`, `parse`/`format`, `push`/`pop`) or both functions carry the same `@Discoverable(group:)`. **Medium** on signature inversion alone. **Low** on a name or group match without inversion.
+- `@Discoverable(group: "serialization")` is a marker peer macro that emits nothing; it exists to be read here.
 
-Cross-function discovery is opt-in to manage signal-to-noise ratio.
+The default floor is High, so Medium and Low suggestions appear only with `--advisory-min`. Adding a curated name pair requires a maintainer commit.
 
-### 5.6 Experimental: Pattern Warnings for Known Combinations
+### 5.6 Peer Macros for Kit-defined Protocols
 
-When multiple protocol law annotations are applied to the same function or type, PropertyLawMacro can emit *pattern warnings* drawn from a small, curated table of known combinations. **This is not a logical-contradiction-detection system; it does not aspire to soundness or completeness.** It is a fixed list of patterns the maintainers have seen produce surprising test outcomes in practice.
+Four more peer macros wire the kit-defined protocols of §4.9, whose harnesses need members a stdlib conformance does not have. Each emits a sibling struct with one `@Test` and raises a diagnostic when the type's primary declaration does not list the protocol:
 
-```swift
-@CheckPropertyLaws([.idempotent, .involutive])
-func normalize(_ x: MyType) -> MyType { /* ... */ }
-```
-
-Triggers:
-
-```
-⚠️  Pattern warning: .idempotent + .involutive applied to the same function imply f is identity.
-    If that is intentional, suppress with @CheckPropertyLaws(..., suppressPatterns: [.idempotentInvolutive]).
-```
-
-Patterns are small, curated, and named individually. No graph reasoning. Adding a new pattern requires a maintainer commit, not implicit derivation.
+- `@InteractionInvariantTests` — on an `InteractionInvariant`-family conformer that defines `static var initialState` and `static var reducer`. Emits `<TypeName>InteractionInvariantTests`, calling `checkActionIdempotenceInvariantPropertyLaws` for an `ActionIdempotenceInvariant` conformer and `checkInteractionInvariantPropertyLaws` otherwise. A missing member is a compile error in the emitted code.
+- `@ValueSemanticTests`, `@StableIdentityTests`, `@DefensiveCopyTests` — emit `<TypeName>ValueSemanticTests` (and so on), calling the matching harness with `for: TypeName.self`.
 
 ### 5.7 Generator Derivation
 
-Generator derivation is the single highest execution risk in this proposal — a weak generator produces green tests that are not meaningful, defeating the entire premise. PropertyLawMacro's `.derived` strategy is therefore explicit, prioritized, and produces *visible warnings* when coverage is likely insufficient.
+Generator derivation is the single highest execution risk in this proposal — a weak generator produces green tests that are not meaningful, defeating the entire premise. Derivation is therefore explicit, prioritized, and visible: the derived expression is written into the generated code, and when nothing derives the output does not compile.
+
+One implementation serves every consumer: `DerivationStrategist.strategy(for:resolve:emissionSite:)` in `PropertyLawCore`, called by the macro, the discovery plugin and downstream tools. It returns a `DerivationStrategy`, which `GeneratorExpressionEmitter` renders as the `using:` expression. The plugin supplies `resolve:` from a `GeneratorResolver` over every type it scanned, so member types declared elsewhere in the module derive too. The macro has no such universe.
 
 #### Derivation Priority Order
 
-For type `T`, PropertyLawMacro tries strategies in this order, falling through to the next on failure:
+For type `T`, the strategist tries these in order, falling through to the next on failure:
 
-1. **Explicit registration** — a `Gen<T>` provided by the developer (kit shape: `static func gen() -> Generator<T, _>` on the type, found in the type's primary body by the macro and anywhere in the module by the discovery plugin). Wins unconditionally.
-2. **`CaseIterable`** — enumerate cases. Strong distribution. Implementation: `enum T: CaseIterable` → `Gen<T>.element(of: T.allCases)`.
-3. **All-`Arbitrary` memberwise init** — compose generators for each stored property. Strong distribution. Implementation: `struct T { let prop1: R1; let prop2: R2; ... }` where every `Ri` resolves to a recognized stdlib raw type (Int/String/Bool/Double/Float and the fixed-width integer family) → `zip(R1.gen, R2.gen, ...).map { T(prop1: $0.0, prop2: $0.1, ...) }`. Arity 1–10 (capped by `swift-property-based`'s `zip` overload set). Falls through when any member's type isn't a recognized raw type, when the struct declares a user `init` in its primary body (Swift suppresses the synthesized memberwise init), when the kind is class/actor (reference-semantic init contracts complicate v1), or when arity exceeds 10. Recursive composition (member types that themselves derive memberwise) is not supported in v1 — out of scope per §5.7 Recursive Types.
-4. **`RawRepresentable` with `Arbitrary` `RawValue`** — lift the raw-value generator. Implementation: `enum T: <RawType>` where `RawType` is a recognized stdlib raw type → `<RawType>.gen.compactMap { T(rawValue: $0) }`.
-5. **`Codable` round-trip from a sample literal** — only when explicitly enabled (`--allow-codable-derivation`); produces a "weak generator" warning because the distribution clusters around defaults and misses boundary cases. *Experimental layer.*
-6. **No generator available** — emit a `.todo` stub that does *not* compile until replaced. The macro/plugin emits `<TypeName>.gen()` as the placeholder reference, surfaces a `cannotDeriveGenerator` diagnostic naming the specific reason (empty stored-member set, unknown member type, user-init suppresses synthesis, arity overflow), and lets the missing-symbol compile error pin the user's attention. Silent fallthrough is more dangerous than a compile error.
+1. **Explicit `gen()`** — a `static func gen()` on the type, found in the primary body by the macro and anywhere in the module by the plugin. Wins unconditionally; emitted as `T.gen()`.
+2. **`CaseIterable` enum** — `Gen<T?>.element(of: T.allCases).compactMap { $0 }`. (`Gen.element(of:)` yields an optional, which is why the `Gen<T?>` spelling.)
+3. **Memberwise** — a struct with no user `init` in its primary body, every stored property resolving to a generator: `zip(g1, g2, …).map { T(p1: $0.0, p2: $0.1, …) }`, or `g.map { T(p: $0) }` for one member. Member types may be the stdlib raw types (the integer family, `Bool`, `Double`, `Float`, `String`), known value types (`Character`, `Date`, `UUID`, `Data`, `URL`, `Decimal`, `Unicode.Scalar`, `Substring`), a few typealiases (`TimeInterval`, `CGFloat`, `unichar` and others), `Optional`, `Array`, `ArraySlice`, `Set` and `Dictionary` of those, and on the plugin path other types in the module. Up to 100 members, by nesting `zip` groups of ten. Declined when a stored property's access level puts the synthesized initializer out of reach of the emitted code.
+4. **Initializer-based** — a struct (or a class declaring `Sendable`) with a user `init`: lift through the first callable initializer whose parameters all resolve. Initializers are declined when they are, among others, `private` / `fileprivate`, failable or throwing, parameterless, capacity-only (they would draw a constant), `_`-labelled (private storage whose arguments must jointly hold an invariant), or ones that state preconditions on their arguments.
+5. **Stateless** — a struct with no stored properties and no `init` or a callable `init()`: `Gen.always(T())`. With one value, the constant is the whole domain.
+6. **Enum case enumeration** — an enum whose cases were captured: `Gen.oneOf` over one generator per case, `Gen.always(T.c)` for payload-free cases and payloads derived like members. It comes before raw-value derivation because that is a filter that, for a `String`-backed enum, effectively never terminates.
+7. **Raw value** — fallback for a raw-value enum whose cases were not captured: the raw-type generator `.compactMap { T(rawValue: $0) }`. Still a filter, so usable only where the raw domain is small and densely covered.
+8. **No generator available** — emit `T.gen()` followed by the comment `` // TODO: no generator derived — supply `static func gen()` (this line will not compile) ``. The missing symbol is a compile error that pins the user's attention; silent fallthrough is more dangerous. The macro raises a `cannotDeriveGenerator` diagnostic carrying the strategist's reason, which names the member, initializer parameter or enum case that failed. `GeneratorResolver.resolutionFailure(forTypeName:within:)` says why a type did not resolve.
 
 #### Recursive Types
 
-For recursive types (`indirect enum`, struct that contains itself in an array, etc.), PropertyLawMacro:
-
-- Detects recursion at derivation time.
-- Requires either an explicit `Gen<T>` or a `@RecursionLimit(_)` annotation.
-- Refuses to derive without one, rather than silently producing a generator that diverges or always returns the base case.
+A self-reference under a wrapper — `[Self]`, `Self?`, `Set<Self>`, `[K: Self]` — derives on the plugin path as a depth-budgeted helper function whose base case collapses the wrapper to `[]` or `nil`. A bare recursive payload (`indirect case add(Expr, Expr)`) has no wrapper to terminate it and stays `.todo`, rather than becoming a generator that diverges or always returns the base case.
 
 #### Override Mechanism
 
-The developer always wins. Annotating a type with `@LawGenerator(custom: Gen.myType)` shadows the derived generator everywhere PropertyLawMacro emits a stub for that type.
+The developer always wins. A `static func gen()` on the type shadows derivation everywhere a stub is emitted for that type.
 
 #### Failure Telemetry
 
-When derivation falls back to `.todo` or emits a "weak generator" warning, the discovery plugin records which type, which strategy was attempted, and why it failed. This telemetry surfaces in the plugin's summary report so weak coverage is visible, not buried.
+When derivation falls back to `.todo`, the discovery plugin's summary lists the type and buckets the `.todo` types by reason (user `init` blocking memberwise, unresolved member type, enum payload unresolved, and so on), so the dominant derivation gap is visible, not buried. `--scaffold-out` turns those types into partial stubs.
 
 ### 5.8 Milestones
 
-| Milestone | Deliverable | Layer |
-|---|---|---|
-| M1 | SwiftSyntax conformance detection, `@PropertyLawSuite` macro and `.protocolLaws(...)` trait, diagnostic emission | Core |
-| M2 | Swift Package Plugin discovery mode, generated file output with provenance, regeneration-as-diff workflow | Core |
-| M3 | Generator derivation with priority order, recursion handling, `.todo` stubs, weak-generator telemetry | Core |
-| M4 | Missing-conformance suggestions (opt-in, confidence-scored) | Advisory |
-| M5 | Cross-function round-trip discovery (opt-in) | Advisory |
-| M6 | Pattern warnings for known protocol law combinations; `Codable`-derived generators behind opt-in flag | Experimental |
+| Milestone | Deliverable | Layer | Status |
+|---|---|---|---|
+| M1 | SwiftSyntax conformance detection, `@PropertyLawSuite` peer macro, diagnostic emission | Core | Shipped |
+| M2 | Swift Package Plugin discovery mode, generated file output with provenance, suppression markers preserved across regeneration | Core | Shipped |
+| M3 | Generator derivation with priority order, `.todo` stubs, derivation-gap telemetry | Core | Shipped |
+| M4 | Missing-conformance suggestions (opt-in, confidence-scored) | Advisory | Shipped |
+| M5 | Cross-function round-trip discovery (opt-in) | Advisory | Shipped |
+
+Later releases extended derivation (§5.7) and added the peer macros of §5.6.
 
 -----
 
 ## 6. Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  PropertyLawMacro                  │
-│  Core: SwiftSyntax + @PropertyLawSuite +           │
-│        .protocolLaws(...) trait + Plugin CLI    │
-│  Advisory: missing-conformance, cross-function  │
-│  Experimental: pattern warnings                 │
-└────────────────┬────────────────────────────────┘
-                 │ generates calls into
-┌────────────────▼────────────────────────────────┐
-│                 PropertyLawKit                  │
-│  ┌───────────────────────────────────────────┐  │
-│  │            LawRegistry                    │  │
-│  │  Equatable / Hashable / Comparable /      │  │
-│  │  Codable / Collection / SetAlgebra        │  │
-│  │  Each protocol law has a strictness tier  │  │
-│  └───────────────────────────────────────────┘  │
-│  Suppression API · Confidence reporting         │
-│  Trial budgets · Coverage hints                 │
-└────────────────┬────────────────────────────────┘
-                 │ runs via
-┌────────────────▼────────────────────────────────┐
-│                 PropertyBackend                 │
-│  swift-property-based (the single v1 backend)   │
-│  Public abstraction surface (since M4)          │
-│  async / throws / Sendable property closures    │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────┐  ┌──────────────────────────────┐
+│ PropertyLawMacro             │  │ Discovery plugin + tool      │
+│ @PropertyLawSuite            │  │ propertylawcheck discover    │
+│ §5.6 peer macros             │  │ Advisory: --advisory         │
+│ @Discoverable marker         │  │                              │
+└──────────────┬───────────────┘  └──────────────┬───────────────┘
+               │ both build on                   │
+┌──────────────▼─────────────────────────────────▼───────────────┐
+│ PropertyLawCore (no dependencies)                              │
+│ KnownProtocol · DerivationStrategist · GeneratorResolver ·     │
+│ GeneratorExpressionEmitter                                     │
+│ (+ PropertyLawSyntaxSupport: shared SwiftSyntax inspection)    │
+└──────────────────────────────┬─────────────────────────────────┘
+                               │ generated code calls into
+┌──────────────────────────────▼─────────────────────────────────┐
+│ PropertyLawKit                                                 │
+│ check…PropertyLaws for stdlib and kit-defined protocols        │
+│ Strictness tiers · LawCheckOptions · suppression               │
+│ Trial budgets · Enumeration / SpaceCoverage · CheckResult      │
+└──────────────────────────────┬─────────────────────────────────┘
+                               │ runs sampled laws via
+┌──────────────────────────────▼─────────────────────────────────┐
+│ PropertyBackend (public)                                       │
+│ SwiftPropertyBasedBackend — the single shipped backend         │
+└────────────────────────────────────────────────────────────────┘
+
+Opt-in products (§4.10) build on PropertyLawKit, each adding one
+third-party dependency: PropertyLawComplex, PropertyLawCollections,
+PropertyLawAsync, PropertyLawSyntax. PropertyLawMinimalTypes adds none.
 ```
 
-The named **LawRegistry** layer makes the extension point explicit: adding a new protocol's laws is a registry entry, not a structural change. The strictness tier per protocol law is a property of the registry entry, not a runtime flag.
+A protocol's laws live in its own `Public/<Protocol>Laws.swift` file in PropertyLawKit, each law's tier is fixed at its definition, and `KnownProtocol` in PropertyLawCore is the one list the macro and the plugin dispatch on.
 
 -----
 
@@ -957,15 +1068,15 @@ The named **LawRegistry** layer makes the extension point explicit: adding a new
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Developer frustration from false positives kills adoption | High | Strictness tiers (§4.2) demote conventional/heuristic checks; suppression API (§4.7) provides per-type, per-law, and intentional-violation escape hatches; tools can assert the suppression list does not grow unexpectedly. |
-| Weak generators produce green tests that miss real bugs | High | Derivation is prioritized and visible (§5.7); fallback emits `.todo` stubs that don't compile; weak-generator warnings surface in the report; `CheckResult.coverageHints` records actual distribution. |
+| Developer frustration from false positives kills adoption | High | Strictness tiers (§4.2) demote conventional/heuristic checks; suppression API (§4.7) provides per-law skip and intentional-violation escape hatches, and every suppression stays visible in the results. |
+| Weak generators produce green tests that miss real bugs | High | Derivation is prioritized and visible (§5.7); fallback emits `.todo` stubs that don't compile; the plugin summary buckets `.todo` types by reason; `CheckResult.coverageHints` records actual distribution when a classifier is supplied. |
+| Conditional laws pass without testing anything | Medium | Conditional laws report `applications` (§4.6); walks over an `Enumeration` reach rare cases by construction; `equalValuePairing` finds equal values a wide generator rarely pairs (§4.4). |
 | Swift macro / plugin diagnostics UX is poor | Medium | Diagnostic quality is a first-class M1 deliverable; trial output includes the strictness tier and a "not a proof" disclaimer. |
-| Generated tests are noisy / low signal | Medium | Layered scope (Core / Advisory / Experimental); Advisory and Experimental are off by default; regeneration-as-diff so suppressions persist. |
+| Generated tests are noisy / low signal | Medium | Layered scope (Core / Advisory); Advisory is off by default; suppression markers persist across regeneration. |
 | Cross-function pairing is O(n²) at scale | Low | Type-directed filtering; cross-function discovery is Advisory and off by default. |
-| Recursive monorepo discovery is slow | Medium | Plugin caches conformance scan per file; `--changed-only` flag scopes to files changed in the current PR/branch. |
-| Backend divergence (seed / generator mismatch between backends) | Low | Public `PropertyBackend` abstraction deferred until M4 so it's shaped against two concrete backends; explicit seed contract. |
-| Pattern warnings misread as "logical contradiction proofs" | Low | §5.6 is reframed as a curated, named-pattern list; documentation does not claim soundness or completeness. |
-| Checkbox testing — green output assumed to mean correctness | Medium | Every pass output carries an explicit "empirical evidence, not a proof" disclaimer (§4.6). |
+| Discovery over a large target is slow | Medium | Discovery is an on-demand command plugin, not a build step, so the cost is paid only when someone regenerates. |
+| Seed replay across backends or toolchains silently runs a different test | Low | One backend ships; the `Environment` fingerprint and `ReplayEnvironmentMismatch` make a stale seed fail loudly (§4.6). |
+| Checkbox testing — green output assumed to mean correctness | Medium | Every output carries an explicit "empirical evidence, not a proof" disclaimer (§4.6). |
 
 -----
 
@@ -975,49 +1086,48 @@ The named **LawRegistry** layer makes the extension point explicit: adding a new
 
 - A developer can add protocol law checking for a custom `Equatable` type in under 5 minutes (UX criterion).
 - Protocol law violations produce failure messages that identify the specific violated protocol law, its strictness tier, and a reproducible counterexample (replayable seed).
-- The protocol law library compiles and tests pass on macOS (Swift 6.3+) via local `swift test`. Linux and Windows are out of scope for v1 — there is no automated cross-platform verification, and no CI infrastructure is maintained. The kit uses no Foundation API beyond what `Codable` already implies, so Linux is *expected* to work, but expected ≠ verified. (Earlier drafts of this criterion required Linux + macOS + Windows CI; the cost of maintaining that infrastructure outweighed the value for a single-maintainer pre-1.0 project. Re-add when there is a concrete user request from a non-macOS platform.)
+- The package builds and its tests pass on macOS via `swift test`. CI (`.github/workflows/ci.yml`) runs on every push to `main`, every pull request against `main`, and on manual dispatch. It has a macOS test job (`swift test`) and a build matrix that builds the `PropertyLawKit` and `PropertyLawMacro` schemes for iOS, tvOS, watchOS and visionOS with `xcodebuild`, all on `macos-15` runners with the latest stable Xcode. Linux and Windows are not verified. The kit uses no Foundation API beyond what `Codable` already implies, so Linux is *expected* to work, but expected ≠ verified.
 - **Framework self-test gate (every CI run).** PropertyLawKit ships a planted-bug suite: types deliberately violating each Strict law, asserted to be detected by the framework. A green CI run requires every planted violation to be caught at the expected strictness tier. This catches regressions in the framework itself — without it, a bug that silences the symmetry check would pass CI undetected.
-- **External validation gate (must hit before 1.0).** Three artifacts in `Validation/`, each demonstrating one face of the kit's pipeline against external real-world Swift code:
+- **External validation gate (met).** Three artifacts in `Validation/`, each demonstrating one face of the kit's pipeline against external real-world Swift code:
 
   1. **Pass 1 — discovery scan.** The `propertylawcheck discover` plugin emits law-check scaffolding for **at least four real-world Swift packages** without crashes, malformed output, or false-positive duplicate suites. Generated files plus per-package `.todo` summaries are checked into `Validation/results/`.
   2. **Pass 2 — composition.** The kit composes with at least one external SwiftPM dependency and runs at least one Strict-tier law check end-to-end against a public type from that package, with the test target green under `swift test`.
   3. **Pass 3 — archaeology.** A git-archaeology survey of fix-commits across full-history Swift packages, with results documented in `Validation/FINDINGS.md`. The artifact is the documented search effort and any candidate bugs found — *regardless of whether the kit catches them*. A null result is a valid Pass 3 outcome and counts toward the gate, provided the search method, surveyed corpus, and rejection rationale are all in the repository.
 
-  **Why this replaces v0.2's "catch a real bug in 5+ packages" criterion.** The v0.2 wording set retroactive bug-discovery in already-shipped popular code as the bar for shipping 1.0. Empirically — see `Validation/FINDINGS.md` Pass 3 — that bar is approximately uncloseable: across ~5,200 commits surveyed in four full-history Apple/SSWG/community packages (`swift-argument-parser`, `swift-aws-lambda-runtime`, `swift-collections`, `swift-nio`, `hummingbird`), exactly one candidate fix-commit survived initial filtering, and on inspection the bug was in dead code unreachable through the public API. The structural reasons are clear: well-tested Swift OSS leans on synthesized conformances (bulletproof by construction); hand-written conformances in scrutinized code land correct on first commit and rarely get patched; the population of historical kit-detectable bugs in well-tested packages is approximately empty. The kit's value prop is therefore *prevention* — catching bugs in new code as it's written, before they ship — not retroactive *discovery* in code that's already been hammered by years of users. The v0.3 gate measures what the kit can actually deliver: pipeline composition (Pass 1+2) plus an honest, documented search effort (Pass 3).
+  **Why the gate measures the pipeline rather than retroactive bug discovery.** An earlier version required catching a real bug in 5+ popular packages. Empirically — see `Validation/FINDINGS.md` Pass 3 — that bar is approximately uncloseable: across the full-history Apple/SSWG/community packages surveyed (`swift-argument-parser`, `swift-aws-lambda-runtime`, `swift-collections`, `swift-nio`, `hummingbird`), exactly one candidate fix-commit survived initial filtering, and on inspection the bug was in dead code unreachable through the public API. The structural reasons are clear: well-tested Swift OSS leans on synthesized conformances (bulletproof by construction); hand-written conformances in scrutinized code land correct on first commit and rarely get patched; the population of historical kit-detectable bugs in well-tested packages is approximately empty. The kit's value prop is therefore *prevention* — catching bugs in new code as it's written, before they ship — not retroactive *discovery* in code that's already been hammered by years of users. The gate measures what the kit can actually deliver: pipeline composition (Pass 1+2) plus an honest, documented search effort (Pass 3).
 
 ### PropertyLawMacro
 
-- The discovery plugin correctly identifies conformances in a real-world Swift module with less than 5% false-positive *Strong*-confidence suggestions in the Advisory layer.
+- The discovery plugin correctly identifies conformances in a real-world Swift module with less than 5% false-positive High-confidence suggestions in the Advisory layer.
 - Generated test stubs for types with derivable generators compile without modification.
-- For types where derivation is uncertain, the plugin always emits a non-compiling `.todo` stub or a visible weak-generator warning — never a silently green test.
-- Pattern warnings catch the idempotent/involutive case and at least two other curated patterns.
+- For types where derivation fails, the plugin always emits a non-compiling `.todo` stub — never a silently green test.
 
 -----
 
 ## 9. Resolved Decisions
 
-These were Open Questions in v0.1; v0.2 commits to a direction.
+These were Open Questions in v0.1; later revisions committed to a direction.
 
-1. **Naming.** `SwiftPropertyLaws` (umbrella) / `PropertyLawKit` (library target) / `PropertyLawMacro` (tooling target). **Single repository, multiple targets.** PropertyLawMacro is too tightly coupled to the PropertyLawKit API for separate-repo versioning to be worth the overhead.
-2. **Generator convention.** **Explicit `Gen<T>` is required by default.** `.derived` is opt-in via `using: .derived` (or via the Discovery plugin, which always emits explicit derivation calls reviewers can audit). When `.derived` fails, the failure mode is a non-compiling `.todo` stub or a visible weak-generator warning — never silent fallthrough. The "magic" path is opt-in.
-3. **Conformance scope.** v1 ships only the standard-library protocols enumerated in §4.3. Common third-party protocols (`Identifiable`, custom algebraic structures) are deferred to a community-contributed target (`PropertyLawKit-Community`) to keep the core library's law set audited and stable.
-4. **Macro vs. Swift Package Plugin for discovery.** **Both, with clear roles.** `@PropertyLawSuite` (and the Swift Testing `.protocolLaws(...)` trait) remain compile-time macros for per-suite, per-type wiring. **Whole-module discovery is a Swift Package Plugin**, not a macro — macros cannot read other files in the module, and the plugin model is purpose-built for this access pattern.
-5. **Relationship to swift-testing.** **`@PropertyLawSuite` is implemented as a Swift Testing custom Trait** (`@Test(.protocolLaws(Equatable.self, ...))`). The trait composes naturally with Swift Testing's reporting, filtering, parallelization, and `.disabled(...)` ergonomics rather than reinventing them. The freestanding `@PropertyLawSuite(types:)` macro form remains available for non-Swift-Testing contexts.
+1. **Naming.** `SwiftPropertyLaws` (package) / `PropertyLawKit` (library) / `PropertyLawMacro` (macros) / `PropertyLawCore` (shared derivation and emission, used by the macro, the plugin and downstream tools). **Single repository, multiple products.** The tooling is too tightly coupled to the PropertyLawKit API for separate-repo versioning to be worth the overhead.
+2. **Generator convention.** **Every check takes an explicit `Generator`.** There is no implicit generator at the call site. Derivation lives in the tooling: the macro and the plugin write the derived expression into the generated code, where a reviewer can read it, and when nothing derives they emit a non-compiling `.todo` stub — never silent fallthrough.
+3. **Conformance scope.** PropertyLawKit ships the stdlib protocols in §4.3 and the kit-defined protocols in §4.9, audited in-tree. Laws and generators that need a third-party dependency ship as opt-in products (§4.10), so the main library depends on `swift-property-based` alone.
+4. **Macro vs. Swift Package Plugin for discovery.** **Both, with clear roles.** Peer macros wire one type at a time, because a macro sees only its decoratee. **Whole-module discovery is a command plugin**, not a macro — macros cannot read other files in the module, and the plugin can read every file in a target and its dependencies.
+5. **Relationship to swift-testing.** **Generated code is plain Swift Testing**: a struct of `@Test` methods (the plugin's carries `@Suite`), each calling a check function. Results report through Swift Testing — a thrown `PropertyLawViolation` for escalated violations, a recorded issue for the rest — so the runner's reporting, filtering and parallelization apply unchanged.
 
 Remaining open question, deferred to a future revision:
 
-- **Stateful / model-based testing.** Hedgehog-style state-machine testing for protocols like `Collection` or `MutableCollection` would catch a different class of bug than property-per-trial testing. v1 explicitly excludes this; whether v2 adopts a state-machine layer remains open.
+- **Stateful / model-based testing.** The kit checks invariants and idempotence over sampled action sequences (§4.9), and can walk every sequence up to a length (§4.4), but has no general state-machine layer with commands, preconditions and a model. Whether to add one remains open.
 
 -----
 
 ## 10. References
 
 - [swift-property-based](https://github.com/x-sheep/swift-property-based) — primary backend target
-- [SwiftQC](https://github.com/Aristide021/SwiftQC) — alternative backend
+- [SwiftQC](https://github.com/Aristide021/SwiftQC) — alternative backend, not adopted
 - [SwiftCheck](https://github.com/typelift/SwiftCheck) — prior art, now dormant
 - [QuickCheck](https://hackage.haskell.org/package/QuickCheck) and `quickcheck-classes` — Haskell prior art (law libraries are the closest analog to PropertyLawKit)
-- [proptest](https://github.com/proptest-rs/proptest) and the `arbitrary` derive — Rust prior art (`arbitrary` is the closest analog to `.derived` generator derivation)
-- [Hedgehog](https://hackage.haskell.org/package/hedgehog) — state-machine testing reference (deferred to v2 scope)
+- [proptest](https://github.com/proptest-rs/proptest) and the `arbitrary` derive — Rust prior art (`arbitrary` is the closest analog to generator derivation)
+- [Hedgehog](https://hackage.haskell.org/package/hedgehog) — state-machine testing reference
 - [EvoSuite](https://www.evosuite.org) — Java property inference inspiration
 - [Daikon](https://plse.cs.washington.edu/daikon/) — runtime invariant inference reference
 - Swift Evolution [SE-0185](https://github.com/apple/swift-evolution/blob/main/proposals/0185-synthesize-equatable-hashable.md) — synthesized protocol conformances
