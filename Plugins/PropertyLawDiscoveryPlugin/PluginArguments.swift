@@ -10,6 +10,11 @@ struct ParsedArguments: Equatable {
     let subcommand: String
     let target: String?
     let outputPath: String?
+    /// `--scaffold-out`, forwarded as given.
+    let scaffoldOutputPath: String?
+    /// `--extra-import`, repeatable, in the order given. The tool drops the
+    /// target's own module, so the plugin forwards every one.
+    let extraImports: [String]
     let advisory: Bool
     let advisoryMin: String?
 
@@ -19,6 +24,8 @@ struct ParsedArguments: Equatable {
         }
         var target: String?
         var outputPath: String?
+        var scaffoldOutputPath: String?
+        var extraImports: [String] = []
         var advisory = false
         var advisoryMin: String?
         var rest = arguments.dropFirst().makeIterator()
@@ -28,6 +35,10 @@ struct ParsedArguments: Equatable {
                 target = try Self.value(of: flag, from: &rest)
             case "--output":
                 outputPath = try Self.value(of: flag, from: &rest)
+            case "--scaffold-out":
+                scaffoldOutputPath = try Self.value(of: flag, from: &rest)
+            case "--extra-import":
+                extraImports.append(try Self.value(of: flag, from: &rest))
             case "--advisory":
                 advisory = true
             case "--advisory-min":
@@ -39,6 +50,8 @@ struct ParsedArguments: Equatable {
         self.subcommand = subcommand
         self.target = target
         self.outputPath = outputPath
+        self.scaffoldOutputPath = scaffoldOutputPath
+        self.extraImports = extraImports
         self.advisory = advisory
         self.advisoryMin = advisoryMin
     }
@@ -57,6 +70,12 @@ struct ParsedArguments: Equatable {
         contextFiles: [String]
     ) -> [String] {
         var arguments = ["--target", target, "--output", outputPath]
+        if let scaffoldOutputPath {
+            arguments.append(contentsOf: ["--scaffold-out", scaffoldOutputPath])
+        }
+        for module in extraImports {
+            arguments.append(contentsOf: ["--extra-import", module])
+        }
         if advisory { arguments.append("--advisory") }
         if let advisoryMin {
             arguments.append(contentsOf: ["--advisory-min", advisoryMin])
