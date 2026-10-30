@@ -1,18 +1,25 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/ArgumentParser.generated.swift
   target: ArgumentParser
   source files scanned: 52
-  types detected: 134
-  detected but skipped, no suite emitted (8):
+  types detected: 127
+  detected but skipped, no suite emitted (15):
     - Argument: `public` without a `Sendable` conformance — the law entry points require one
+    - ArgumentInfoV0: `public` without a `Sendable` conformance — the law entry points require one
+    - ArgumentInfoV0.CompletionKindV0: `public` without a `Sendable` conformance — the law entry points require one
+    - ArgumentInfoV0.KindV0: `public` without a `Sendable` conformance — the law entry points require one
+    - ArgumentInfoV0.NameInfoV0: `public` without a `Sendable` conformance — the law entry points require one
+    - ArgumentInfoV0.ParsingStrategyV0: `public` without a `Sendable` conformance — the law entry points require one
     - CodingKeyValidator.Validator: declared `private` — not nameable from another file
+    - CommandInfoV0: `public` without a `Sendable` conformance — the law entry points require one
     - Flag: `public` without a `Sendable` conformance — the law entry points require one
     - Mutex._Buffer: declared `private` — not nameable from another file
     - Mutex._Lock: declared `private` — not nameable from another file
     - Option: `public` without a `Sendable` conformance — the law entry points require one
     - OptionGroup: `public` without a `Sendable` conformance — the law entry points require one
     - ParentCommand: `public` without a `Sendable` conformance — the law entry points require one
-  types needing manual gen() (79):
-    [36] declaration not in this target
+    - ToolInfoV0: `public` without a `Sendable` conformance — the law entry points require one
+  types needing manual gen() (72):
+    [29] declaration not in this target
     [15] unsupported member type (nested/custom)
     [13] user-defined init
     [8] enum payload type unresolved

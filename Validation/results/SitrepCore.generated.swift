@@ -22,14 +22,15 @@
 import Testing
 import PropertyLawKit
 @testable import SitrepCore
+import SwiftSyntax
 
-// Array — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:13 (extension)
+// Array — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Constructor.swift:506 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:36 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:423 (extension), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:13 (extension)
 // No emit-able stdlib conformance recognized.
 
 // BodyStripper — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/BodyStripper.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ClassDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:229 (extension)
+// ClassDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/CustomTraits.swift:24 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/RenamedChildrenCompatibility.swift:1077 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/SyntaxTraits.swift:699 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/syntaxNodes/SyntaxNodesC.swift:765 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:229 (extension)
 // No emit-able stdlib conformance recognized.
 
 // Comment — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Comment.swift:14 (primary)
@@ -38,10 +39,10 @@ import PropertyLawKit
 // Comment.CommentType — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Comment.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// EnumDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:234 (extension)
+// EnumDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/CustomTraits.swift:35 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/RenamedChildrenCompatibility.swift:2577 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/SyntaxTraits.swift:745 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/syntaxNodes/SyntaxNodesEF.swift:1268 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:234 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ExtensionDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:249 (extension)
+// ExtensionDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/CustomTraits.swift:46 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/SyntaxTraits.swift:749 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/syntaxNodes/SyntaxNodesEF.swift:2039 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:249 (extension)
 // No emit-able stdlib conformance recognized.
 
 // FileVisitor — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:17 (primary)
@@ -53,16 +54,30 @@ import PropertyLawKit
 // Function.ThrowingStatus — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Function.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Node — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Node.swift:14 (primary)
+// Node — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Encoder.swift:346 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Alias.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Mapping.swift:9 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Scalar.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Sequence.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:12 (primary), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:23 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:63 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:216 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:252 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:264 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:277 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:284 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:291 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:300 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:29 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/YamlAnchorProviding.swift:24 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/YamlTagProviding.swift:24 (extension), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Node.swift:14 (primary)
+@Suite struct NodePropertyLawTests {
+    @Test func hashable_Node() async throws {
+        try await checkHashablePropertyLaws(
+            for: Node.self,
+            using: Node.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
+        )
+    }
+
+    @Test func comparable_Node() async throws {
+        try await checkComparablePropertyLaws(
+            for: Node.self,
+            using: Node.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
+        )
+    }
+}
+
+// ProtocolDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/CustomTraits.swift:57 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/RenamedChildrenCompatibility.swift:6373 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/SyntaxTraits.swift:821 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/syntaxNodes/SyntaxNodesOP.swift:4322 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:244 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ProtocolDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:244 (extension)
+// String — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Constructor.swift:381 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Constructor.swift:591 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Constructor.swift:680 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:258 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:310 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/String+Yams.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:142 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:360 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:275 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:100 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftParser/IsValidIdentifier.swift:41 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/SyntaxText.swift:256 (extension), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:28 (extension)
 // No emit-able stdlib conformance recognized.
 
-// String — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:28 (extension)
-// No emit-able stdlib conformance recognized.
-
-// StructDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:239 (extension)
+// StructDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/CustomTraits.swift:68 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/RenamedChildrenCompatibility.swift:7146 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/SyntaxTraits.swift:829 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/syntaxNodes/SyntaxNodesQRS.swift:2475 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:239 (extension)
 // No emit-able stdlib conformance recognized.
 
 // Type — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Extensions.swift:66 (extension), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Type.swift:14 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Type.swift:67 (extension)

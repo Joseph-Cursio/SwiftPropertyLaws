@@ -83,6 +83,14 @@ let package = Package(
         .library(
             name: "PropertyLawAsync",
             targets: ["PropertyLawAsync"]
+        ),
+        // A command plugin is usable from a dependent package only when it is
+        // vended as a product. Without this, `swift package propertylawcheck
+        // discover` worked in this repo alone, and every adopter following
+        // the README got "Unknown subcommand".
+        .plugin(
+            name: "PropertyLawDiscoveryPlugin",
+            targets: ["PropertyLawDiscoveryPlugin"]
         )
     ],
     dependencies: [

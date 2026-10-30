@@ -125,6 +125,27 @@ struct ExtensionOnlyAndSendableTests {
         #expect(map.entries.map(\.typeName).contains("Node"))
     }
 
+    /// Foundation ships no sources, so context files cannot supply these.
+    /// Spelled out for the same reason as the standard library's list.
+    @Test(
+        "a Foundation protocol that refines Sendable supplies it",
+        arguments: [
+            "CustomNSError", "LocalizedError", "RecoverableError",
+            "AttributedStringProtocol", "NotificationCenter.AsyncMessage",
+            "SortComparator", "StandardPredicateExpression"
+        ]
+    )
+    func foundationRefinementSuppliesSendable(protocolName: String) {
+        let map = scan(["S.swift": """
+        import Foundation
+        public struct Node: \(protocolName), Equatable {
+            public let a: Int
+        }
+        """])
+        #expect(map.skippedTypes.isEmpty)
+        #expect(map.entries.map(\.typeName).contains("Node"))
+    }
+
     /// The Pass 1 shape: `ArgumentParser.ExitCode` reaches `Sendable` only
     /// through `Error`, and was skipped as not `Sendable` before the seeds.
     @Test("a module-local protocol refining Error supplies Sendable")
@@ -146,6 +167,7 @@ struct ExtensionOnlyAndSendableTests {
         public struct Failure: Swift.Error, Equatable { public let a: Int }
         public struct Point: Equatable, Swift.Sendable { public let b: Int }
         public struct Tick: _Concurrency.Clock, Equatable { public let c: Int }
+        public struct Lost: Foundation.LocalizedError, Equatable { public let d: Int }
         """])
         #expect(map.skippedTypes.isEmpty)
     }

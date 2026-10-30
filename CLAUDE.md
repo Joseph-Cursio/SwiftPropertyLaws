@@ -4,6 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**The discovery plugin is a product now, and Pass 1 runs it (2026-10-29).** `PropertyLawDiscoveryPlugin` was a plugin *target* with no plugin *product*. A dependent package cannot see a command plugin that isn't vended, so the README's `swift package propertylawcheck discover` worked in this repo alone. Verified on a copy of Sitrep with this repo added as a dependency: `swift package plugin --list` showed swift-argument-parser's plugins and not this one, and the command failed with "Unknown subcommand or plugin name 'propertylawcheck'". **Nothing exercised the plugin from outside.** `Validation/run.sh` called the tool directly, so Pass 1 never touched the code path an adopter uses.
+
+`run.sh` now runs the real plugin, on a copy of the package at `.build/validation-pass1/<Target>/` with this repo appended to its dependencies. Pass 1 therefore gets the target's real source list and its transitive dependencies as context, which is what an adopter gets. That surfaced one more defect, **not fixed**:
+- **A target type and a dependency type of the same name are merged.** Types are keyed by bare name, so Sitrep's own `Node` picked up the `Hashable` and `Comparable` conformances of Yams' `Node` and got checks it cannot satisfy.
+
+Foundation's `Sendable` refinements were also seeded, because Foundation ships no sources to pass as context: `CustomNSError`, `LocalizedError`, `RecoverableError`, `AttributedStringProtocol`, `NotificationCenter.AsyncMessage`, `SortComparator` and `StandardPredicateExpression`. `Foundation.` joins the stripped qualifiers. Four mutants, four killed.
+
 **Discovery counts the standard library's `Sendable` refinements and actors as `Sendable` (2026-10-29).** The skip rule's fixed point (`SendableProtocols`) was seeded with `Sendable` alone, so a `public` type whose only route to `Sendable` was `Error` was skipped as "`public` without a `Sendable` conformance". **Found by rerunning PRD §8 Pass 1**: 11 of the 44 such skips across the four Validation packages were false. `ArgumentParser.ExitCode: Error, RawRepresentable, Hashable` was one of them, and it is the very type Pass 2 checks by hand, which only compiles because `Error` makes it `Sendable`.
 
 The seeds are the ten public protocols of `Swift` and `_Concurrency` that refine `Sendable`: `Actor`, `Clock`, `CodingKey`, `DurationProtocol`, `Error`, `Executor`, `InstantProtocol`, `SerialExecutor`, `TaskExecutor` and the deprecated `UnsafeSendable`. They were read from the macOS 27.0 SDK's `.swiftinterface` files as a fixed point over all 112 protocol declarations, not written from memory. Three details are easy to get wrong:

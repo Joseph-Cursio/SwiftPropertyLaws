@@ -16,8 +16,9 @@ PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftProperty
     - Scan.ReportType: `public` without a `Sendable` conformance — the law entry points require one
     - Type.CodingKeys: declared `private` — not nameable from another file
   types needing manual gen() (12):
-    [7] declaration not in this target
+    [5] user-defined init
     [5] class not Sendable (a check's inputs must be)
+    [2] declaration not in this target
       - Array
       - BodyStripper
       - ClassDeclSyntax
