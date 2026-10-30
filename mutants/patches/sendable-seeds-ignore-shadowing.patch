@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+index bf7b265..393f774 100644
+--- a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
++++ b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+@@ -79,7 +79,6 @@ enum SendableProtocols {
+         // inheritance clause instead, like any other protocol it declares.
+         var sendable = standardLibraryRefinements
+             .union(foundationRefinements)
+-            .subtracting(inherits.keys)
+             .union(["Sendable"])
+         var changed = true
+         while changed {

@@ -52,6 +52,7 @@ struct RoundTripSuggesterTests {
         let suggestions = RoundTripSuggester.suggest(from: map)
         try #require(suggestions.count == 1)
         #expect(suggestions[0].confidence == .high)
+        #expect(suggestions[0].evidence.contains("@Discoverable(group: \"ser\")"))
     }
 
     @Test func mismatchedGroupValuesDoNotPromote() throws {
@@ -69,6 +70,7 @@ struct RoundTripSuggesterTests {
         let lowered = RoundTripSuggester.suggest(from: map, minConfidence: .medium)
         try #require(lowered.count == 1)
         #expect(lowered[0].confidence == .medium)
+        #expect(lowered[0].evidence.contains("@Discoverable") == false)
     }
 
     // MARK: - MEDIUM confidence (signature only)
@@ -95,7 +97,45 @@ struct RoundTripSuggesterTests {
         try #require(suggestions.count == expectedCount)
         if expectedCount > 0 {
             #expect(suggestions[0].confidence == .medium)
+            // No curated pair to orient by, so the names' alphabetical order
+            // picks the forward function, not the declaration order.
+            #expect(suggestions[0].forward.name == "unwrap")
         }
+    }
+
+    /// An inversion needs both directions. `encode(Foo) -> Data` beside a
+    /// `decode` that maps back to the wrong type, or from the wrong one,
+    /// rests on its names alone, which is LOW.
+    @Test(arguments: [
+        ("Data", "Bar"),
+        ("Blob", "Foo")
+    ])
+    func halfAnInversionIsNotAnInversion(decodeParameter: String, decodeReturn: String) throws {
+        let map = makeMap(memberFunctions: [
+            "Codec": [
+                signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
+                signature(name: "decode", params: [decodeParameter], ret: decodeReturn, isStatic: true)
+            ]
+        ])
+        #expect(RoundTripSuggester.suggest(from: map).isEmpty)
+        let lowered = RoundTripSuggester.suggest(from: map, minConfidence: .low)
+        try #require(lowered.count == 1)
+        #expect(lowered[0].confidence == .low)
+    }
+
+    /// A curated pair needs both of its names. `encode` beside an unrelated
+    /// inverse is a signature-only pair, MEDIUM, whichever comes first.
+    @Test(arguments: [true, false])
+    func oneCuratedNameIsNotANamePair(encodeFirst: Bool) throws {
+        let encode = signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true)
+        let transform = signature(name: "transform", params: ["Data"], ret: "Foo", isStatic: true)
+        let map = makeMap(memberFunctions: [
+            "Codec": encodeFirst ? [encode, transform] : [transform, encode]
+        ])
+        #expect(RoundTripSuggester.suggest(from: map).isEmpty)
+        let lowered = RoundTripSuggester.suggest(from: map, minConfidence: .medium)
+        try #require(lowered.count == 1)
+        #expect(lowered[0].confidence == .medium)
     }
 
     // MARK: - LOW confidence (name pair only)
@@ -187,7 +227,8 @@ struct RoundTripSuggesterTests {
 
     @Test func suggestionsAreSortedByScopeThenForwardName() throws {
         // Scope sort: per-type before module. Within per-type: type name
-        // ASC. Within type: forward name ASC.
+        // ASC. The forward names run the other way (serialize, encode,
+        // compress), so a sort that compared them first would reverse it.
         let map = makeMap(
             memberFunctions: [
                 "Banana": [
@@ -195,13 +236,13 @@ struct RoundTripSuggesterTests {
                     signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true)
                 ],
                 "Apple": [
-                    signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
-                    signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true)
+                    signature(name: "serialize", params: ["Foo"], ret: "Data", isStatic: true),
+                    signature(name: "deserialize", params: ["Data"], ret: "Foo", isStatic: true)
                 ]
             ],
             topLevelFunctions: [
-                signature(name: "serialize", params: ["Bar"], ret: "Data"),
-                signature(name: "deserialize", params: ["Data"], ret: "Bar")
+                signature(name: "compress", params: ["Bar"], ret: "Zip"),
+                signature(name: "decompress", params: ["Zip"], ret: "Bar")
             ]
         )
         let suggestions = RoundTripSuggester.suggest(from: map)
@@ -211,6 +252,21 @@ struct RoundTripSuggesterTests {
         #expect(
             suggestions.map(\.scope) == [.type("Apple"), .type("Banana"), .module]
         )
+    }
+
+    /// Within one scope the forward name decides. `compress` sorts before
+    /// `encode`, but `decode` sorts before `decompress`, so the backward
+    /// names would give the opposite order.
+    @Test func withinAScopeTheForwardNameDecides() {
+        let map = makeMap(memberFunctions: [
+            "Codec": [
+                signature(name: "encode", params: ["Bar"], ret: "Data", isStatic: true),
+                signature(name: "decode", params: ["Data"], ret: "Bar", isStatic: true),
+                signature(name: "compress", params: ["Foo"], ret: "Zip", isStatic: true),
+                signature(name: "decompress", params: ["Zip"], ret: "Foo", isStatic: true)
+            ]
+        ])
+        #expect(RoundTripSuggester.suggest(from: map).map(\.forward.name) == ["compress", "encode"])
     }
 
     // MARK: - Empty / no-pair inputs

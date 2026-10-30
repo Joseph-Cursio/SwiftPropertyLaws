@@ -196,22 +196,25 @@ struct AdvisorySuggesterTests {
     // MARK: - Determinism
 
     @Test func suggestionsAreSortedByTypeNameThenProtocol() {
-        // Two types in unsorted dictionary order — output must be
-        // deterministic regardless of dictionary iteration order.
+        // Output must not depend on dictionary iteration order. The fixture
+        // makes every other order differ: Apple's protocol sorts after
+        // Banana's, so a sort by protocol alone reverses them, and Cherry has
+        // two suggestions, which the detectors produce Hashable first.
         let map = ConformanceMap(
             entries: [
+                makeEntry(typeName: "Cherry", conformances: []),
                 makeEntry(typeName: "Banana", conformances: []),
                 makeEntry(typeName: "Apple", conformances: [])
             ],
             parseFailures: [],
             witnesses: [
-                "Banana": WitnessSet(hasEqualEqualOperator: true),
-                "Apple": WitnessSet(hasLessThanOperator: true)
+                "Cherry": WitnessSet(hasHashIntoMethod: true, hasLessThanOperator: true),
+                "Banana": WitnessSet(hasLessThanOperator: true),
+                "Apple": WitnessSet(hasEqualEqualOperator: true)
             ]
         )
-        let suggestions = AdvisorySuggester.suggest(from: map)
-        let order = suggestions.map(\.typeName)
-        #expect(order == ["Apple", "Banana"])
+        let order = AdvisorySuggester.suggest(from: map).map { "\($0.typeName).\($0.suggestedProtocol)" }
+        #expect(order == ["Apple.equatable", "Banana.comparable", "Cherry.comparable", "Cherry.hashable"])
     }
 
     // MARK: - Empty input

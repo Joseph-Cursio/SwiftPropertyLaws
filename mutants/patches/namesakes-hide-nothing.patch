@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
+index 9cff811..a6a2b73 100644
+--- a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
++++ b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
+@@ -41,7 +41,7 @@ extension ModuleScanner.RecordingContext {
+     /// count because `Node.Scalar` in a dependency belongs to the
+     /// dependency's `Node`, not to the target's.
+     func hides(_ name: String) -> Bool {
+-        guard !hidden.isEmpty else { return false }
++        return false
+         var prefix = ""
+         for component in name.split(separator: ".") {
+             prefix = prefix.isEmpty ? String(component) : prefix + "." + component

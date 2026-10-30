@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift b/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift
+index e032cdc..8fa1c1a 100644
+--- a/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift
++++ b/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift
+@@ -69,7 +69,7 @@ enum ModuleScanner {
+             absorb(
+                 parsed,
+                 from: file,
+-                hiding: file.isContext ? declaredInTarget : [],
++                hiding: declaredInTarget,
+                 into: &perType,
+                 aliases: &aliases
+             )

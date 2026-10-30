@@ -1,0 +1,17 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
+index 9cff811..38bb49c 100644
+--- a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
++++ b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
+@@ -42,11 +42,6 @@ extension ModuleScanner.RecordingContext {
+     /// dependency's `Node`, not to the target's.
+     func hides(_ name: String) -> Bool {
+         guard !hidden.isEmpty else { return false }
+-        var prefix = ""
+-        for component in name.split(separator: ".") {
+-            prefix = prefix.isEmpty ? String(component) : prefix + "." + component
+-            if hidden.contains(prefix) { return true }
+-        }
+-        return false
++        return hidden.contains(name)
+     }
+ }

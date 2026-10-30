@@ -4,6 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**The discovery tool's mutants are kept in `mutants/`, and swift-mutation-testing found 14 more (2026-10-29).** The three entries below were mutation-tested by hand, because the corpus had no shape for the discovery tool, and those mutants were thrown away afterwards. They are now 19 patches in three shapes that `mutants/run-mutants.sh` reruns: `discovery-sendable` (10: the standard-library and Foundation seeds, qualifier stripping, shadowing and actors), `discovery-namesakes` (8) and `discovery-summary` (1, the tie-break). All 19 are killed by their named tests, and all 78 patches apply to `main`.
+
+[ericodx/swift-mutation-testing](https://github.com/ericodx/swift-mutation-testing) was then run over `Sources/PropertyLawDiscoveryTool` at its default operator tier: 121 mutants, of which 14 survived and 11 had no coverage. Every survivor marked something the tests did not check. **Two were tests that passed by coincidence:** the advisory and round-trip sort tests used fixtures in which sorting by the wrong key gave the same order. The rest were behaviour no test reached:
+- `static func gen()` detection,
+- a static method other than `==` taken for the Equatable witness,
+- a signature that inverts in one direction only,
+- a curated name pair matched on one of its names,
+- the `@Discoverable(group:)` evidence,
+- provenance order,
+- the alphabetical orientation of a signature-only pair,
+- the blank line between two emitted tests.
+
+With the new tests none survive, and the score went from 79.3% to 90.9%. The 11 uncovered mutants are all in `PropertyLawDiscoveryTool.main()` and the summary it prints, which no test calls.
+
+The tool copies the package to a sandbox and never mutates the checkout. The sandbox does not reuse `.build`, so every run starts with a cold build; the schema build took 61 s here, against a 120 s default timeout, so pass a longer one. Build the tool from source (`swift build -c release` in its checkout) and run, from this repo:
+
+```bash
+swift-mutation-testing . --sources-path Sources/PropertyLawDiscoveryTool --target PropertyLawDiscoveryToolTests --build-timeout 1800
+```
+
+Its verdict cache, `.swift-mutation-testing-cache/`, is git-ignored. The rest of `Sources` is 448 more mutants at the default tier (`PropertyLawKit` 242, `PropertyLawCore` 131), and 1,816 more at `--operator-tier experimental`.
+
 **A dependency's namesake no longer merges into a target type (2026-10-29).** The scan keys types by qualified name, and the target's own declaration of a name used to share its aggregate with any dependency type of the same name. Context was walked first, so the target's *members* won by arriving last, but conformances, provenances and witnesses accumulated from both. A memberless target type even took its namesake's members, because the rule was "last *non-empty* list wins". Found by Pass 1 through the plugin: Sitrep's `Node` got `Hashable` and `Comparable` checks from Yams' unrelated `Node`.
 
 The fix follows Swift's lookup, which tries the current module before any import. `ModuleScanner.typesDeclared(in:)` collects the qualified names the target declares, walking its already-parsed files once more. Context files are then absorbed with those names hidden: their declarations, extensions (dotted ones too), the types nested in either, and typealiases. A target *extension* of a dependency type is unaffected, because the target does not declare that name. Hiding is by qualified name, so the target's `Outer.Node` hides no top-level `Node`. The new code lives in `ModuleScanner+Namesakes.swift`, which keeps `ModuleScanner.swift` under the length lints. Eight mutants, eight killed:
@@ -32,7 +54,7 @@ The seeds are the ten public protocols of `Swift` and `_Concurrency` that refine
 
 The "other module" blind spot recorded in the 2026-08-08 entry below shrinks to *third-party* protocols. The standard library's are a fixed list, not a limit of syntax.
 
-Pass 1 after the fix: 59 skips, down from 70, and 72 checks, up from 66. Five types gained suites: `ExitCode`, and four Hummingbird error types. Mutation-tested ad hoc (the discovery tool has no shape in `mutants/`): 6 mutants, 6 killed. They were two dropped seeds, no shadowing, no `Swift.` stripping, no `_Concurrency.` stripping, and actors not counted.
+Pass 1 after the fix: 59 skips, down from 70, and 72 checks, up from 66. Five types gained suites: `ExitCode`, and four Hummingbird error types. Mutation-tested: 6 mutants, 6 killed, now kept in the corpus's `discovery-sendable` shape. They were two dropped seeds, no shadowing, no `Swift.` stripping, no `_Concurrency.` stripping, and actors not counted.
 
 **`GeneratorResolver` reads a spelling from the scope it was written in, and the leaf index is gone (2026-10-10, issue #63).** A bare name used to fall back to the one scanned type whose *last component* matched, wherever it was nested. That served the lexical case — `let c: Counted` inside `BitSet` means `BitSet.Counted` — and could not tell it from a bare name meaning **a type in a module the scan does not contain**. SwiftAssist's `SymbolSummary.init(from symbol: Symbol)` takes SwiftSourceKitClient's `Symbol`; the only scanned `Symbol` was `XcodeDocument.Symbol`, so the resolver built one and the emitted call did not compile — the one reference-oracle scaffold out of 67 in that census that still failed. The ambiguity rule could not catch it: the imported type is never scanned, so the universe saw one candidate. **One candidate is not a match.**
 

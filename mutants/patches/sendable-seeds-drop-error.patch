@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+index bf7b265..c63c628 100644
+--- a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
++++ b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+@@ -47,7 +47,7 @@ enum SendableProtocols {
+     /// `Executor`. `UnsafeSendable` is deprecated but still public.
+     /// `SendableMetatype` is not here: `Sendable` refines it, not the reverse.
+     static let standardLibraryRefinements: Set<String> = [
+-        "Actor", "Clock", "CodingKey", "DurationProtocol", "Error", "Executor",
++        "Actor", "Clock", "CodingKey", "DurationProtocol", "Executor",
+         "InstantProtocol", "SerialExecutor", "TaskExecutor", "UnsafeSendable"
+     ]
+ 

@@ -1,0 +1,14 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift b/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift
+index e032cdc..9976fe4 100644
+--- a/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift
++++ b/Sources/PropertyLawDiscoveryTool/ModuleScanner.swift
+@@ -110,8 +110,7 @@ enum ModuleScanner {
+             hidden: hidden
+         )
+         for statement in parsed.statements {
+-            if let alias = statement.item.as(TypeAliasDeclSyntax.self),
+-               !context.hides(alias.name.text) {
++            if let alias = statement.item.as(TypeAliasDeclSyntax.self) {
+                 aliases[alias.name.text] = alias.initializer.value.trimmedDescription
+             }
+             accumulate(statement: statement.item, context: context, into: &perType)
