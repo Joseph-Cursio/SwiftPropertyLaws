@@ -57,10 +57,9 @@ import PropertyBased
 /// required to exist on the same type and to mean the same thing, so a
 /// divergence is a bug rather than a debatable finding.
 ///
-/// `SetAlgebra` does not formally extend `Equatable`, but in practice every
-/// stdlib SetAlgebra type is `Equatable` and the laws above compare
-/// `Self == Self`. The signature requires `Equatable` rather than threading
-/// a caller-supplied predicate.
+/// `SetAlgebra` refines `Equatable`, so the laws above compare `Self == Self`
+/// directly rather than threading a caller-supplied predicate. The
+/// `& Equatable` in the signature restates that and is redundant.
 @discardableResult
 public func checkSetAlgebraPropertyLaws<
     Value: SetAlgebra & Equatable & Sendable,
