@@ -497,50 +497,53 @@ Both harnesses require `Invariant: Sendable` so the `Invariant.Type` metatype cr
 
 ## What this repo is
 
-A design / proposal repository for two related Swift packages:
+The shipped SwiftPropertyLaws package. Its products:
 
-- **SwiftPropertyLaws** — `PropertyLawKit` (a runtime library of property-based protocol law checks for Swift Standard Library protocols: `Equatable`, `Hashable`, `Comparable`, `Codable`, `Collection`, `SetAlgebra`) plus `PropertyLawMacro` (a SwiftSyntax-based layer that detects conformances and generates `checkXxxPropertyLaws(...)` test stubs). See `docs/Protocols/SwiftPropertyLaws PRD.md`.
-- **SwiftInferProperties** — downstream of SwiftPropertyLaws. `TemplateEngine` (signature-pattern matcher that proposes round-trip / idempotence / commutativity / etc. tests) and `TestLifter` (lifts existing XCTest / Swift Testing methods into generalized property tests). See `docs/SwiftInferProperties PRD.md`.
+- **`PropertyLawKit`** — the runtime library: property-based law checks for the Swift Standard Library protocols listed in PRD §4.3, and for the kit's own protocols (`Semigroup` through `Ring`, the `InteractionInvariant` family, `ValueSemantic`, `StableIdentity`, `DefensiveCopy`).
+- **`PropertyLawMacro`** — peer macros that emit a test suite beside the type they decorate: `@PropertyLawSuite()` for stdlib and algebraic conformances, `@InteractionInvariantTests`, `@ValueSemanticTests`, `@StableIdentityTests` and `@DefensiveCopyTests` for the other kit-defined families, and `@Discoverable(group:)` for round-trip discovery.
+- **`PropertyLawCore`** (dependency-free: `DerivationStrategist` and the emitters) and **`PropertyLawSyntaxSupport`** (SwiftSyntax helpers such as `SequenceInitializerNormalizer`) — published so SwiftInferProperties calls the same code instead of porting it.
+- **The discovery plugin** — `swift package propertylawcheck discover --target <name>`, a command plugin wrapping `PropertyLawDiscoveryTool`.
+- **Opt-in products**, each kept out of the main line so its dependency stays local: `PropertyLawComplex` (swift-numerics), `PropertyLawCollections` (swift-collections), `PropertyLawAsync` (swift-async-algorithms), `PropertyLawSyntax` (`SwiftParser`), and `PropertyLawMinimalTypes` (the weakest legal `Sequence` / `Collection` / `BidirectionalCollection`, for running a suite against something that is not `Array`).
 
-The intended dependency direction is one-way: `SwiftInferProperties → SwiftPropertyLaws (PropertyBackend) → swift-property-based`. v1 ships `swift-property-based` as the single backend; see the "Single-backend by design" note above.
+**SwiftInferProperties** is a separate downstream package in the sibling repo `~/xcode_projects/SwiftInferProperties`: a signature-driven `TemplateEngine`, a `TestLifter` that runs as the test-side pass inside `swift-infer discover`, and a `swift-infer` CLI (`discover` / `index` / `query` / `suggest-refactors` / `verify` / `drift` / `metrics`, plus an `*-interaction` family). `docs/SwiftInferProperties PRD.md` here is its original design doc; the shipped package's own PRD is `SwiftInferProperties/docs/SwiftInferProperties PRD v1.0.md` in that repo.
+
+The dependency direction is one-way: `SwiftInferProperties → SwiftPropertyLaws (PropertyBackend) → swift-property-based`. `swift-property-based` is the single backend; see the "Single-backend by design" note above.
 
 ## Where to look
 
 | Question | File |
 |---|---|
-| Product scope, milestones, success criteria | `docs/Protocols/SwiftPropertyLaws PRD.md` (v0.3, current), `docs/SwiftInferProperties PRD.md` |
-| What v0.3 changed vs v0.2 | Appendix A of the current PRD (§8 calibration + SetAlgebra symmetric-difference expansion) |
-| What v0.2 changed vs the original proposal | Appendix B of the current PRD (the original v0.1 PRD lives in git history) |
-| Which protocols and what protocol laws each one carries (with strictness tiers) | `docs/Protocols/Swift Standard Library Protocols.md` (reference) and §4.3 of the SwiftPropertyLaws PRD |
+| What the kit does and why, and which laws each protocol carries, with strictness tiers | `docs/Protocols/SwiftPropertyLaws PRD.md` (§4.3 for the law tables) |
+| What each stdlib protocol inherits and requires | `docs/Protocols/Swift Standard Library Protocols.md` |
+| What v0.3 changed vs v0.2 | Appendix A of the PRD |
+| What v0.2 changed vs the original proposal | Appendix B of the PRD (the original v0.1 PRD lives in git history) |
 | External pushback that drove v0.2 | `docs/ChatGPT critique.md`, `docs/Copilot critique.md`, `docs/Gemini critique.md` |
+| SwiftInferProperties | `docs/SwiftInferProperties PRD.md` here, and the sibling repo |
 
-The critiques drove the v0.1 → v0.2 revision. v0.2 closes most of what they raised; the section below is now load-bearing context, not a punch list of unresolved tensions.
+## Design decisions
 
-## Design decisions baked into v0.2
+A future Claude working on the package should follow these rather than re-litigate them. They live in the PRD; this is a quick map, and it describes what the code does.
 
-A future Claude implementing the package should follow these decisions rather than re-litigate them. They live in the PRD; this is a quick map.
-
-- **Strictness tiers per protocol law.** Strict / Conventional / Heuristic. Conventional and Heuristic violations do not fail tests by default — only when the caller passes `.strict`. PRD §4.2.
-- **Generator derivation is opt-in and visible.** `using:` requires an explicit `Gen<T>` by default; `.derived` walks a priority list (CaseIterable → memberwise-Arbitrary → RawRepresentable → Codable round-trip), and the *only* fallback when nothing matches is a non-compiling `.todo` stub. Silent green tests from weak generators are the failure mode being prevented. PRD §5.7.
-- **Layered PropertyLawMacro scope.** Core = conformance → test stubs (always on). Advisory = missing-conformance suggestions, cross-function discovery (off by default). Experimental = pattern warnings, Codable-derived generators (off by default). Don't put new features in Core without justification. PRD §5.2.
-- **Discovery is a Swift Package Plugin, not a macro.** The per-suite trait/macro is a macro; whole-module discovery is a build-tool plugin because macros can't read sibling files. PRD §9 Decision 4.
-- **`@PropertyLawSuite` is a Swift Testing custom Trait** (`@Test(.propertyLaws(...))`). Reuse the runner's reporting / filtering / parallelization rather than reinventing them. The freestanding `@PropertyLawSuite` macro form remains for non-Swift-Testing callers. PRD §9 Decision 5.
-- **`PropertyBackend` is public as of M4, single-backend by design.** Closure-shaped abstraction (`sample: (inout Xoshiro) -> Input`, `property: @Sendable (Input) async throws -> Bool`) per the M4 backend-survey seam recommendation. `SwiftPropertyBasedBackend` is the only backend v1 ships; the abstraction stays so future alternatives drop in without protocol changes.
-- **Pattern warnings, not contradiction detection.** §5.6 is a curated, named-pattern list (idempotent+involutive ⇒ identity, etc.). It does not aspire to soundness/completeness; new patterns require maintainer commits, not graph reasoning. PRD §5.6.
-- **Trial budget is part of the API.** `.sanity` (100) / `.standard` (1,000, default) / `.exhaustive` (10,000) / `.custom`. CI cost is a real constraint. PRD §4.4.
-- **Suppression is first-class.** Per-type, per-law, intentional-violation, and custom-equivalence APIs exist (PRD §4.7). This is the adoption-failure escape hatch.
-- **Validation gate before 1.0.** Must catch a real semantic bug in 5+ popular open-source Swift packages. PRD §8. Don't ship 1.0 without that.
-- **Framework self-test gate (every CI run).** Planted-bug suite asserts the framework catches every Strict violation; PropertyLawKit eats its own dog food. PRD §8.
+- **Strictness tiers per protocol law.** Strict / Conventional / Heuristic. Under `.default` only a Strict violation throws. A Conventional or Heuristic one is recorded as a Swift Testing warning on Swift ≥ 6.3, and below 6.3, where `Issue.Severity` does not exist, as an error that fails the test. `.strict` throws on every tier. PRD §4.2.
+- **The call site names its inputs; derivation lives in generated code.** Every `check…PropertyLaws` takes an explicit generator (`using:`) or, where offered, a bounded space (`overEvery:` / `sampling:`). The kit has no `.derived`. The macro and the plugin derive a generator through `DerivationStrategist`, in priority order: a user `static func gen()`, `CaseIterable`, memberwise, a user initializer, `Gen.always(T())` for a struct with no stored state, enum-case enumeration, and raw value last, because it is a filter that may not terminate. When nothing matches, the only fallback is a `.todo` that deliberately does not compile. Silent green tests from weak generators are the failure mode being prevented. PRD §5.7.
+- **Layered discovery scope.** Core = conformance → test stubs, always on. Advisory = missing-conformance suggestions (Equatable, Hashable, Comparable, Codable) and cross-function round-trip pairs, behind `--advisory`, written to stderr so the generated file stays byte-stable. There is no Experimental layer: pattern warnings and Codable-derived generators were not built. Don't put new features in Core without justification. PRD §5.2.
+- **Discovery is a Swift Package Plugin, not a macro.** A macro sees only its decoratee's syntax, so whole-module discovery is a command plugin. PRD §9 Decision 4.
+- **`@PropertyLawSuite()` is a peer macro on the type, not a Swift Testing trait.** It takes no arguments and emits a peer `struct <TypeName>PropertyLawTests` of `@Test` methods, one per conformance that survives the most-specific dedupe. The same limit decides this: a suite-level `@PropertyLawSuite(types:)` or a `@Test(.propertyLaws(...))` trait could not see the declarations of the types it names, so neither exists.
+- **`PropertyBackend` is public, single-backend by design.** Closure-shaped (`sample: (inout Xoshiro) -> Input`, `property: @Sendable (Input) async throws -> Bool`). `SwiftPropertyBasedBackend` is the only backend; the abstraction stays so an alternative can drop in without protocol changes.
+- **Trial budget is part of the API.** `.sanity` (100) / `.standard` (1,000, default) / `.thorough` (10,000) / `.custom(trials:)`. They are effort tiers, not coverage claims; only a walked space can say it covered everything, and it says so through `SpaceCoverage`. PRD §4.4.
+- **A bounded space is a second kind of input, not a generator.** `Enumeration` and `Every.*` order cases smallest-first, so a walk's first failure is the minimal one and needs no shrinker, and `.sampledFromSpace` keeps the index so a sampled failure shrinks toward index 0. When a law's antecedent is rare, walk a carrier rather than raising the budget. `LawCheckOptions.equalValuePairing` stays opt-in because its cost is quadratic on the most-run suites.
+- **Suppression is first-class.** `LawCheckOptions.suppressions` takes `LawSuppression.skip(_:reason:)` or `.intentionalViolation(…)` per law, the discovery plugin keeps a `// property-law-suppress: <protocol>_<TypeName>` marker across regeneration, and `sameResult:` / `elementSameResult:` inject an equivalence where `==` is the wrong oracle. This is the adoption-failure escape hatch. PRD §4.7.
+- **External validation is three passes, all shipped.** A discovery scan over ≥ 4 packages, composition with ≥ 1 external SwiftPM dependency, and git-archaeology recorded in `Validation/FINDINGS.md` whatever the outcome. PRD §8. Don't reinstate a bug-catch quota: v0.2 required catching a real bug in 5+ packages, and that could not be met.
+- **Framework self-test gate.** A planted-bug suite asserts the framework catches every Strict violation, and `mutants/` turns it into a regression corpus: each patch blinds one law or one claim and names the test that must fail (`mutants/run-mutants.sh`).
 - **Inheritance is implicit by default.** `checkHashablePropertyLaws` runs Equatable's laws automatically; `checkComparable` runs Equatable's; `checkCollection` runs Sequence's and IteratorProtocol's. Property tests are too slow to make "remember to chain inherited suites" the caller's responsibility — forgetting is a silent way to miss real bugs. Opt-out via `laws: .ownOnly`. The Discovery plugin emits the most-specific call per type (one `checkComparable`, not separate `checkEquatable` + `checkComparable`) so generated tests don't double-run inherited laws. PRD §4.3.
-- **Coverage scope is tiered, not exhaustive.** v1 = the 8 protocols in §4.3 (incl. `Sequence`/`IteratorProtocol`). v1.1 candidates and permanently-out-of-scope protocols are enumerated in §4.3 Coverage Scope, cross-referenced to `docs/Protocols/Swift Standard Library Protocols.md`. Don't quietly add new protocols to Core; add them to Coverage Scope first.
-- **Generic conformances need explicit bindings.** `@LawGenerator(bindings: [Container<Int>.self, Container<String>.self])` — the plugin does not enumerate the unbounded generic instantiation space. PRD §4.4 Generic Conformances.
+- **Coverage scope is listed, not open-ended.** PRD §4.3 lists every protocol the kit checks, and its Coverage Scope the ones deliberately left out. Don't quietly add a protocol to Core; add it to Coverage Scope first.
+- **Generic conformances are not enumerated.** The plugin does not choose an instantiation for a generic type, and it skips conditional conformances (`extension Box: Equatable where T: …`). Check those by hand at a concrete binding (`Box<Int>`). PRD §4.4 Generic Conformances.
 - **`Codable.partial(fields:)` uses `PartialKeyPath`, not strings.** Type-safe, refactor-safe. PRD §4.3.
-- **Replay seeds carry an environment fingerprint.** Swift version + backend version + generator-schema hash. A stale seed fails loudly instead of silently replaying as a different test. PRD §4.6.
-- **Near-miss is defined per-protocol.** Don't invent a global definition; consult the §4.6 near-miss table. Backends that can't track near-misses report `nearMisses: nil`, not `[]`.
-- **Generator registry is an actor.** Concurrency-safe under Swift 6 strict concurrency; not `static var`. PRD §4.5 Actor-Isolated Types.
+- **Replay seeds carry an environment fingerprint.** Swift version + backend identity + generator-schema hash. A stale seed fails loudly with `ReplayEnvironmentMismatch` instead of silently replaying as a different test. The schema hash is the fixed `"m1-no-registry"`, since there is no generator registry, so today only the first two can differ. PRD §4.6.
+- **Near-miss is defined per law, and `nil` means "not tracked".** Only the Codable laws and `Collection.countConsistency` collect near-misses; every other law reports `nearMisses: nil`, not `[]`.
 
 ## Build & test
 
-- `swift package clean && swift test` (per the global `~/CLAUDE.md`) on session start. The full suite runs in well under a second.
+- `swift package clean && swift test` (per the global `~/CLAUDE.md`) on session start. The clean build takes a few minutes; the test run itself takes seconds.
 - SwiftLint config lives at `.swiftlint.yml`; `swiftlint lint --quiet` should be silent.
-- `PropertyLawKit` and `PropertyLawMacro` are the shipped product targets (M1–M5 and M1–M3 respectively). `SwiftInferProperties` is **no longer proposal-only** — it has shipped as a separate downstream package (v1.41.0+, 38+ calibration cycles) living in the sibling repo at `~/xcode_projects/SwiftInferProperties`. It has a signature-driven `TemplateEngine`, a `TestLifter` test-side cross-validation engine (`Sources/SwiftInferTestLifter`, ~33 source files), and a `swift-infer` CLI with subcommands `discover` / `index` / `query` / `suggest-refactors` / `verify` / `drift` / `metrics` (plus an `*-interaction` family). `TestLifter` is not a standalone command — it runs as the test-side pass inside `swift-infer discover`. The forward-looking design doc is `docs/SwiftInferProperties PRD.md` here; the shipped package's own PRD is `SwiftInferProperties/docs/SwiftInferProperties PRD v1.0.md` in that repo.
+- **CI** runs on every push to `main`, every PR, and on demand (`.github/workflows/ci.yml`): `swift test` on macOS, plus iOS / tvOS / watchOS / visionOS builds of `PropertyLawKit` and `PropertyLawMacro`, all on `macos-15` with a 30-minute timeout. Its `latest-stable` Xcode is 26.3 (Swift 6.2.4), older than the local Swift 6.4, so CI exercises the pre-6.3 `#else` branches of `#if compiler(>=6.3)` and local runs exercise the 6.3+ ones. The opt-in products, SwiftLint and the `Validation` package are not in CI.
