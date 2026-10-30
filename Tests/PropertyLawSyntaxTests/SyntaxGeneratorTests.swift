@@ -67,6 +67,32 @@ struct SyntaxGeneratorTests {
                 "only \(Set(nodes.map(\.id)).count) identities across \(nodes.count) nodes")
     }
 
+    /// The loop stops at the first round that clears `defaultPoolSize`; the
+    /// round cap is only a backstop. The size test above bounds the pool from
+    /// below, so a loop that ran every round passed it.
+    @Test("the pool stops growing once it clears the default size")
+    func poolStopsAtTheDefaultSize() {
+        let count = SyntaxNodePool.allNodes.count
+        #expect(count >= Gen<Syntax>.defaultPoolSize)
+        #expect(count < 2 * Gen<Syntax>.defaultPoolSize, "the pool grew to \(count) nodes")
+    }
+
+    /// `typedNode`'s rotation relies on a tree leading with the template it
+    /// was asked for. A one-statement tree holds nothing else, so a tree that
+    /// led with another template lost the requested one entirely.
+    @Test("every pool tree leads with the template it was asked for")
+    func requestedTemplateLeads() {
+        let templates = Gen<Syntax>.syntaxSourceTemplates
+        for template in templates.indices {
+            for discriminator in 0 ..< 24 {
+                let first = templates[template]
+                    .replacingOccurrences(of: "$0", with: String(discriminator &* 31))
+                let source = SyntaxNodePool.source(template: template, discriminator: discriminator)
+                #expect(source.hasPrefix(first), "template \(template), discriminator \(discriminator)")
+            }
+        }
+    }
+
     /// The pool's trees differ in **shape**, not merely in tokens — identity
     /// keys on structural position, so same-shaped trees would contribute far
     /// fewer identities than they do nodes.
