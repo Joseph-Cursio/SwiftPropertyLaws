@@ -119,6 +119,14 @@ struct FoundationGeneratorsTests {
         }
     }
 
+    /// The checks above hold for a URL with no path at all, so a generator
+    /// that dropped every segment passed them.
+    @Test
+    func urlReachesTheBareHostAndEveryPathSegment() async throws {
+        let paths = Set(Self.sample(Gen<URL>.url(), seedTag: 2).map(\.path))
+        #expect(paths == ["", "/path", "/a/b", "/users/42", "/search", "/docs/guide"], "\(paths)")
+    }
+
     @Test
     func urlIsDeterministicUnderTheSameSeed() async throws {
         let runA = Self.sample(Gen<URL>.url(), seedTag: 77)
