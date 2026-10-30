@@ -1,6 +1,6 @@
 # Swift Standard Library Protocols
 
-A comprehensive reference of all ~54 public protocols in the Swift Standard Library, grouped by category.
+A comprehensive reference of all ~78 public protocols in the Swift Standard Library, grouped by category.
 
 -----
 
@@ -42,6 +42,16 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 - **Requirement:** `mutating func next() -> Element?`
 - Provides values one at a time. Returned by `Sequence.makeIterator()`.
 
+### `AsyncSequence`
+
+- **Requirement:** `func makeAsyncIterator() -> Self.AsyncIterator`
+- The asynchronous counterpart of `Sequence`, looped over with `for await...in` or `for try await...in`. Declared in `_Concurrency`, which every Swift file imports implicitly.
+
+### `AsyncIteratorProtocol`
+
+- **Requirement:** `mutating func next() async throws -> Element?`
+- Provides values one at a time, asynchronously. Returned by `AsyncSequence.makeAsyncIterator()`. Also declared in `_Concurrency`.
+
 ### `Collection`
 
 - **Inherits:** `Sequence`
@@ -74,7 +84,7 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 ### `StringProtocol`
 
-- **Inherits:** `BidirectionalCollection`, `Hashable`, `Comparable`
+- **Inherits:** `BidirectionalCollection`, `Hashable`, `Comparable`, `LosslessStringConvertible`, `ExpressibleByStringInterpolation`, `TextOutputStream`, `TextOutputStreamable`
 - **Key properties:** `var utf8: UTF8View`, `var utf16: UTF16View`, `var unicodeScalars: UnicodeScalarView`
 - Shared interface for `String` and `Substring`.
 
@@ -91,9 +101,20 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 ### `SetAlgebra`
 
-- **Inherits:** nothing in stdlib (every adopting type is also `Equatable` in practice; the comparison-based laws in `PropertyLawKit` require it).
-- **Requirements:** `init()`, `func contains(_ member: Element) -> Bool`, `func union(_ other: Self) -> Self`, `func intersection(_ other: Self) -> Self`, `func symmetricDifference(_ other: Self) -> Self`, `mutating func formUnion(_ other: Self)`, `mutating func formIntersection(_ other: Self)`, `mutating func formSymmetricDifference(_ other: Self)`, `mutating func insert(_ newMember: Element) -> (inserted: Bool, memberAfterInsert: Element)`, `mutating func remove(_ member: Element) -> Element?`, `mutating func update(with newMember: Element) -> Element?`.
-- A type representing a mathematical set, with union, intersection, and symmetric-difference operations. Adopters: `Set`, `OptionSet`, `IndexSet`, `CharacterSet`, plus third-party types like `OrderedSet`, `TreeSet`, `BitSet`. Note: SetAlgebra is filed under Apple's "Collections" documentation topic but does *not* inherit from `Collection` — `Set` adopts both protocols separately. PropertyLawKit covers nine SetAlgebra laws (see PRD §4.3 SetAlgebra), including four `symmetricDifference*` laws that close the algebraic identity for the operation.
+- **Inherits:** `Equatable`, `ExpressibleByArrayLiteral`
+- **Requirements:** `init()`, `func contains(_ member: Element) -> Bool`, `func union(_ other: Self) -> Self`, `func intersection(_ other: Self) -> Self`, `func symmetricDifference(_ other: Self) -> Self`, `mutating func formUnion(_ other: Self)`, `mutating func formIntersection(_ other: Self)`, `mutating func formSymmetricDifference(_ other: Self)`, `mutating func insert(_ newMember: Element) -> (inserted: Bool, memberAfterInsert: Element)`, `mutating func remove(_ member: Element) -> Element?`, `mutating func update(with newMember: Element) -> Element?`. Also required, with default implementations: `func subtracting(_ other: Self) -> Self`, `mutating func subtract(_ other: Self)`, `func isSubset(of other: Self) -> Bool`, `func isSuperset(of other: Self) -> Bool`, `func isDisjoint(with other: Self) -> Bool`, `var isEmpty: Bool`, `init<S: Sequence>(_ sequence: S)`.
+- A type representing a mathematical set, with union, intersection, and symmetric-difference operations. Adopters: `Set`, `OptionSet` types, `IndexSet`, `CharacterSet`, plus swift-collections' `TreeSet`, `BitSet` and `OrderedSet.UnorderedView` (`OrderedSet` itself does not conform). Note: SetAlgebra is filed under Apple's "Collections" documentation topic but does *not* inherit from `Collection` — `Set` adopts both protocols separately. For the laws PropertyLawKit checks, see PRD §4.3 SetAlgebra.
+
+### `OptionSet`
+
+- **Inherits:** `RawRepresentable`, `SetAlgebra`
+- **Requirement:** `init(rawValue: RawValue)`
+- A set of flags stored as bits of a raw value, where each element is itself an `OptionSet` value.
+
+### `RangeExpression`
+
+- **Requirements:** `associatedtype Bound: Comparable`, `func relative<C: Collection>(to collection: C) -> Range<Bound>`, `func contains(_ element: Bound) -> Bool`
+- A type that can describe a range of a collection's indices. Adopted by `Range`, `ClosedRange` and the partial ranges (`..<n`, `...n`, `n...`).
 
 -----
 
@@ -101,9 +122,9 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 ### `Numeric`
 
-- **Inherits:** `Equatable`, `ExpressibleByIntegerLiteral`
-- **Requirements:** `+`, `-`, `*`, `init(exactly:)`
-- Base protocol for all numeric types.
+- **Inherits:** `AdditiveArithmetic`, `ExpressibleByIntegerLiteral`
+- **Requirements:** `*`, `*=`, `init?(exactly:)`, `var magnitude: Magnitude` (`+` and `-` come from `AdditiveArithmetic`)
+- Base protocol for all numeric types that support multiplication.
 
 ### `SignedNumeric`
 
@@ -135,7 +156,7 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 ### `FixedWidthInteger`
 
-- **Inherits:** `BinaryInteger`
+- **Inherits:** `BinaryInteger`, `LosslessStringConvertible`
 - **Key properties/requirements:** `static var bitWidth: Int`, `static var max: Self`, `static var min: Self`, overflow operators (`&+`, `&-`, `&*`), `nonzeroBitCount`, `leadingZeroBitCount`
 - Integer types with a fixed bit width.
 
@@ -148,7 +169,7 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 ### `BinaryFloatingPoint`
 
-- **Inherits:** `FloatingPoint`
+- **Inherits:** `FloatingPoint`, `ExpressibleByFloatLiteral`
 - **Requirements:** `static var exponentBitCount: Int`, `static var significandBitCount: Int`
 - Floating-point types using binary encoding (`Float`, `Double`, `Float80`).
 
@@ -157,6 +178,21 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 - **Inherits:** `Comparable`
 - **Requirements:** `func distance(to other: Self) -> Stride`, `func advanced(by n: Stride) -> Self`
 - Types that can be stepped through in a `for` loop with `stride(from:to:by:)`.
+
+### `SIMD`
+
+- **Inherits:** `SIMDStorage`, `Hashable`, `Encodable`, `Decodable`, `CustomStringConvertible`, `ExpressibleByArrayLiteral`
+- A fixed-width vector of `Scalar` values with lane-wise operations. Adopted by `SIMD2` through `SIMD64`.
+
+### `SIMDStorage`
+
+- **Requirements:** `var scalarCount: Int`, `init()`, `subscript(index: Int) -> Scalar { get set }`
+- The storage beneath a `SIMD` vector: a fixed number of scalars addressed by index.
+
+### `SIMDScalar`
+
+- **Inherits:** `BitwiseCopyable`
+- Types that can be SIMD lanes. Supplies the storage type for each vector width (`SIMD2Storage` … `SIMD64Storage`) and a mask scalar type. Adopted by the integer types up to 64 bits, `Float16`, `Float` and `Double`.
 
 -----
 
@@ -187,8 +223,27 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 ### `CodingKey`
 
+- **Inherits:** `CustomStringConvertible`, `CustomDebugStringConvertible`, `Sendable`
 - **Requirements:** `var stringValue: String`, `var intValue: Int?`, `init?(stringValue:)`, `init?(intValue:)`
 - Keys used in encoding/decoding keyed containers.
+
+### `CodingKeyRepresentable`
+
+- **Requirements:** `var codingKey: CodingKey { get }`, `init?<T: CodingKey>(codingKey: T)`
+- Lets a type other than `String` or `Int` key a `Dictionary` that encodes as a keyed container rather than as an array of key/value pairs.
+
+### Coding containers
+
+The containers an `Encoder` or `Decoder` hands out. A custom encoder or decoder implements them.
+
+|Protocol                        |Role                                                         |
+|--------------------------------|-------------------------------------------------------------|
+|`KeyedEncodingContainerProtocol`|Encodes values under `CodingKey`s (wrapped by `KeyedEncodingContainer`)|
+|`UnkeyedEncodingContainer`      |Encodes an ordered sequence of values                        |
+|`SingleValueEncodingContainer`  |Encodes a single value                                       |
+|`KeyedDecodingContainerProtocol`|Decodes values by `CodingKey` (wrapped by `KeyedDecodingContainer`)|
+|`UnkeyedDecodingContainer`      |Decodes an ordered sequence of values                        |
+|`SingleValueDecodingContainer`  |Decodes a single value                                       |
 
 -----
 
@@ -220,6 +275,16 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 - **Requirement:** `mutating func write(_ string: String)`
 - A type that accepts strings written to it (e.g., a custom output buffer).
 
+### `StringInterpolationProtocol`
+
+- **Requirements:** `init(literalCapacity: Int, interpolationCount: Int)`, `mutating func appendLiteral(_ literal: StringLiteralType)`
+- The builder an `ExpressibleByStringInterpolation` type uses to assemble `"…\(value)…"`. Each `appendInterpolation` method it declares adds an interpolation form. The default is `DefaultStringInterpolation`.
+
+### `UnicodeCodec`
+
+- **Requirements:** `init()`, `mutating func decode<I: IteratorProtocol>(_ input: inout I) -> UnicodeDecodingResult`, `static func encode(_ input: Unicode.Scalar, into processCodeUnit: (CodeUnit) -> Void)`
+- A Unicode encoding scheme that translates between code units and scalars. Adopted by `Unicode.UTF8`, `Unicode.UTF16` and `Unicode.UTF32`.
+
 -----
 
 ## 6. Raw Value Representation
@@ -237,25 +302,34 @@ A comprehensive reference of all ~54 public protocols in the Swift Standard Libr
 
 - Protocol to which all class types implicitly conform.
 - Used to constrain generics to reference (class) types.
-
-### `AnyClass`
-
-- **Inherits:** `AnyObject`
-- The protocol for all metatypes.
+- `AnyClass` is not a protocol: it is a typealias for `AnyObject.Type`, the metatype of any class.
 
 ### `Sendable`
 
+- **Inherits:** `SendableMetatype`
 - Marks types that are safe to use in concurrent code (across actor boundaries). No required methods.
+
+### `SendableMetatype`
+
+- Marks types whose metatype (`T.Type`) can cross concurrency domains. `Sendable` refines it. No required methods.
+
+### `Copyable`
+
+- Marker protocol every type conforms to by default: its values can be copied. Suppressed with `~Copyable` to declare a noncopyable type.
+
+### `Escapable`
+
+- Marker protocol every type conforms to by default: its values can outlive the scope that produced them. Suppressed with `~Escapable` for types like `Span`.
+
+### `BitwiseCopyable`
+
+- Marker protocol for types whose values can be copied with a plain memory copy, with no retain, release or other copy work. No required methods.
 
 ### `Error`
 
+- **Inherits:** `Sendable`
 - **Requirement:** None required (beyond conformance)
-- Types that can be thrown and caught as errors. Commonly combined with `LocalizedError`.
-
-### `LocalizedError`
-
-- **Inherits:** `Error`
-- **Optional properties:** `var errorDescription: String?`, `var failureReason: String?`, `var recoverySuggestion: String?`, `var helpAnchor: String?`
+- Types that can be thrown and caught as errors. Foundation's `LocalizedError` (not a stdlib protocol) refines it with optional `errorDescription`, `failureReason`, `recoverySuggestion` and `helpAnchor` properties.
 
 -----
 
@@ -278,24 +352,22 @@ These protocols let custom types be initialized from literal syntax.
 
 -----
 
-## 9. Optionals & Result
-
-### `OptionalProtocol` *(internal)*
-
-- Internal to the standard library; `Optional<Wrapped>` conforms implicitly.
-
------
-
-## 10. Miscellaneous
-
-### `Sendable`
-
-- Marks types safe for concurrent use. No method requirements.
+## 9. Miscellaneous
 
 ### `CustomReflectable`
 
 - **Requirement:** `var customMirror: Mirror { get }`
 - Types that provide a custom reflection (used by `Mirror` for introspection).
+
+### `CustomLeafReflectable`
+
+- **Inherits:** `CustomReflectable`
+- A `CustomReflectable` type that is reflected as a leaf: its mirror stands alone, without any superclass representation.
+
+### `CustomPlaygroundDisplayConvertible`
+
+- **Requirement:** `var playgroundDescription: Any { get }`
+- Supplies the value an Xcode playground displays in place of the instance.
 
 ### `MirrorPath`
 
@@ -312,6 +384,23 @@ These protocols let custom types be initialized from literal syntax.
 - **Requirement:** `mutating func next() -> UInt64`
 - Custom random number generators used with `random(in:using:)` APIs.
 
+### `CaseIterable`
+
+- **Requirement:** `static var allCases: AllCases { get }` (where `AllCases: Collection` with `Self` elements; `[Self]` by default)
+- Types with a finite list of every value, usually enums without associated values, for which the compiler synthesizes `allCases`.
+
+### `InstantProtocol`
+
+- **Inherits:** `Comparable`, `Hashable`, `Sendable`
+- **Requirements:** `func advanced(by duration: Duration) -> Self`, `func duration(to other: Self) -> Duration`
+- A point in time, such as `ContinuousClock.Instant`. The `Clock` protocol that produces instants is declared in `_Concurrency`.
+
+### `DurationProtocol`
+
+- **Inherits:** `AdditiveArithmetic`, `Comparable`, `Sendable`
+- **Requirements:** `*` and `/` by an `Int` (plus `*=` and `/=`), `static func / (lhs: Self, rhs: Self) -> Double`
+- An elapsed time between two instants. The stdlib's concrete type is `Duration`.
+
 -----
 
 ## Summary by Category
@@ -319,56 +408,24 @@ These protocols let custom types be initialized from literal syntax.
 |Category                 |Count  |
 |-------------------------|-------|
 |Equality & Comparison    |4      |
-|Collections              |10     |
-|Numeric                  |10     |
-|Encoding & Decoding      |6      |
-|String Representation    |5      |
+|Collections              |15     |
+|Numeric                  |13     |
+|Encoding & Decoding      |12     |
+|String Representation    |7      |
 |Raw Value Representation |1      |
-|Memory & Reference       |5      |
+|Memory & Reference       |7      |
 |Literals (ExpressibleBy…)|10     |
-|Miscellaneous            |4      |
-|**Total**                |**~54**|
+|Miscellaneous            |9      |
+|**Total**                |**~78**|
+
+`Codable` is a typealias for `Decodable & Encodable` and is not counted.
 
 -----
 
-*Based on the Swift Standard Library as of Swift 6.x. The exact count can vary slightly across Swift versions as protocols are added, renamed, or deprecated.*
+*Based on the Swift Standard Library as of Swift 6.3, plus `AsyncSequence` and `AsyncIteratorProtocol` from the implicitly imported `_Concurrency` module. Left out: underscored protocols, the deprecated `UnsafeSendable`, and `_Concurrency`'s actor, executor and clock protocols. Swift 6.4 adds `BorrowingIteratorProtocol`, `Iterable`, `ConvertibleToBytes` and `ConvertibleFromBytes`, which are not listed here. The exact count can vary slightly across Swift versions as protocols are added, renamed, or deprecated.*
 
 -----
 
 ## Kit-defined Protocols
 
-PropertyLawKit also defines a small set of protocols where the Swift Standard Library leaves a useful gap. These are kit-owned (not stdlib), shipped from `import PropertyLawKit`, and verified by the kit's discovery plugin under the same `KnownProtocol`-driven dispatch as the stdlib protocols above.
-
-### `Semigroup` *(v1.8)*
-
-- **Inherits:** nothing
-- **Requirement:** `static func combine(_ lhs: Self, _ rhs: Self) -> Self`
-- A type with an associative binary `combine` operation. Stdlib has no Semigroup protocol; `AdditiveArithmetic` requires `+` / `-` / `zero` and doesn't fit the common merge-shape Swift case (types with `merge` / `combine` / `concat` / `union` operations that aren't arithmetic-`+`-shaped). Adopters that already conform to `AdditiveArithmetic` can also conform to Semigroup if the kit-side `combine` semantics align — the two are independent.
-
-### `Monoid` *(v1.8)*
-
-- **Inherits:** `Semigroup`
-- **Requirement:** `static var identity: Self { get }`
-- A `Semigroup` with a two-sided identity element. The `identity` name is chosen over `empty` / `zero` to avoid overlap with `RangeReplaceableCollection.init()` and `AdditiveArithmetic.zero`. SwiftInferProperties' RefactorBridge bridges user-named identities (`.empty`, `.zero`, `.none`, `.default`) to the canonical `.identity` via a one-line static aliasing in the conformance writeout.
-
-### `CommutativeMonoid` *(v1.9)*
-
-- **Inherits:** `Monoid`
-- **Requirement:** none beyond Monoid — marker protocol
-- A `Monoid` whose `combine` operation is commutative. Triggers the `combineCommutativity` law check on top of the inherited Monoid + Semigroup chain. Stdlib has no general CommutativeMonoid (only `AdditiveArithmetic` for `+`/`zero`-shaped commutative types).
-
-### `Group` *(v1.9)*
-
-- **Inherits:** `Monoid`
-- **Requirement:** `static func inverse(_ x: Self) -> Self`
-- A `Monoid` in which every element has a two-sided inverse. Two own Strict laws: `combineLeftInverse` and `combineRightInverse`. Static-method `inverse(_:)` form (not `inverted()` instance method, not `negated()`) keeps witness-extraction uniform with `combine(_:_:)` / `identity`. Group does NOT subsume `CommutativeMonoid` — non-commutative groups are valid (matrix groups, permutation groups), and the two are incomparable arms in the protocol DAG.
-
-### `Semilattice` *(v1.9)*
-
-- **Inherits:** `CommutativeMonoid`
-- **Requirement:** none beyond CommutativeMonoid — marker protocol
-- A `CommutativeMonoid` whose `combine` is idempotent (`combine(a, a) == a`). Bounded join-semilattices (`(Set<T>, ∪, ∅)`, `(Int, max, .min)`) and bounded meet-semilattices (`(Int, min, .max)`, `(Bool, &&, true)`) share this conformance — the law is symmetric.
-
-### Roadmap
-
-`Ring` is intentionally not yet shipped — two-op shape (additive group + multiplicative monoid + distributivity) doesn't fit the kit's single-op `combine`/`identity` pattern; designing a dual-witness or layered stack is reasonable v1.10+ work. SwiftInferProperties M8 still targets stdlib `Numeric` for the Ring promotion. `CommutativeGroup` is deferred — rare in idiomatic Swift since most everyday Abelian groups are integer/floating-point under `+` (already covered by `AdditiveArithmetic` / `Numeric`); SwiftInferProperties M8 emits separate `CommutativeMonoid` + `Group` proposals on the same type when both fire, which a future kit-side `CommutativeGroup` would collapse. `CommutativeSemigroup` is similarly deferred. `Functor` / `Applicative` / `Monad` are out of scope indefinitely.
+PropertyLawKit also defines protocols of its own where the Swift Standard Library leaves a gap: the algebraic `Semigroup`, `Monoid`, `CommutativeMonoid`, `Group`, `Semilattice` and `Ring`; the `InteractionInvariant` family; and `ValueSemantic`, `StableIdentity` and `DefensiveCopy`. They are not stdlib protocols and are not counted above. Their requirements, laws and status are in the "Kit-defined protocols" section of the [SwiftPropertyLaws PRD](SwiftPropertyLaws%20PRD.md).
