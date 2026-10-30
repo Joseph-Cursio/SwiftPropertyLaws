@@ -36,7 +36,7 @@ struct InteractionInvariantLawsTests {
         // `(showsA ? 1 : 0) + (showsB ? 1 : 0) <= 1` breaks; the
         // harness surfaces a violation with a counterexample
         // including the failing action prefix.
-        await #expect(throws: PropertyLawViolation.self) {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
             _ = try await checkInteractionInvariantPropertyLaws(
                 for: TwoFlagCardinality.self,
                 initialState: TwoFlagState(showsA: false, showsB: false),
@@ -44,6 +44,12 @@ struct InteractionInvariantLawsTests {
                 options: LawCheckOptions(budget: .sanity)
             )
         }
+        // Only `.showBoth` breaks the invariant, so the reported prefix ends
+        // with it. A re-walk that stopped at the first step where the
+        // invariant *held* reported a prefix ending in another action.
+        let text = violation?.results.first?.counterexample ?? ""
+        #expect(text.contains("Invariant violated at step"), "\(text)")
+        #expect(text.contains("showBoth]"), "\(text)")
     }
 
     // MARK: - State-predicate harness — initial-state violation
@@ -52,7 +58,7 @@ struct InteractionInvariantLawsTests {
         // The invariant fails on the *initial* state (both flags
         // start true). The harness should detect this even when
         // the action sequence is empty (length 0...0).
-        await #expect(throws: PropertyLawViolation.self) {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
             _ = try await checkInteractionInvariantPropertyLaws(
                 for: TwoFlagCardinality.self,
                 initialState: TwoFlagState(showsA: true, showsB: true),
@@ -61,6 +67,8 @@ struct InteractionInvariantLawsTests {
                 options: LawCheckOptions(budget: .sanity)
             )
         }
+        let text = violation?.results.first?.counterexample ?? ""
+        #expect(text.contains("Invariant violated by initial state"), "\(text)")
     }
 
     // MARK: - ActionIdempotence harness — positive control
@@ -90,7 +98,7 @@ struct InteractionInvariantLawsTests {
         // is idempotent, but the reducer increments by 1 each time
         // — applying twice yields a different state. The harness
         // surfaces a violation.
-        await #expect(throws: PropertyLawViolation.self) {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
             _ = try await checkActionIdempotenceInvariantPropertyLaws(
                 for: CounterIdempotenceLying.self,
                 initialState: CounterState(value: 0, sub: 0),
@@ -98,6 +106,8 @@ struct InteractionInvariantLawsTests {
                 options: LawCheckOptions(budget: .sanity)
             )
         }
+        let text = violation?.results.first?.counterexample ?? ""
+        #expect(text.contains("Action increment is NOT idempotent"), "\(text)")
     }
 
     // MARK: - ActionIdempotence harness — empty idempotentActions

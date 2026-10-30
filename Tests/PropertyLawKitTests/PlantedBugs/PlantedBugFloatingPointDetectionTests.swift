@@ -41,6 +41,10 @@ struct PlantedBugFloatingPointDetectionTests {
             expected.isSubset(of: laws),
             "missing arms: \(expected.subtracting(laws).sorted())"
         )
+        // The law skips non-finite values, so its counterexample is always a
+        // finite one. Inverting the formatter's guard labelled it "skipped".
+        let inverse = violation?.results.first { $0.protocolLaw == "FloatingPoint.additiveInverseFinite" }
+        #expect(inverse?.counterexample?.contains("skipped") == false, "\(inverse?.counterexample ?? "nil")")
     }
 
     // MARK: - BinaryFloatingPoint (4 own laws)

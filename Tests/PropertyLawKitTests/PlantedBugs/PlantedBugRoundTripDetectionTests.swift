@@ -153,6 +153,10 @@ struct PlantedBugRoundTripDetectionTests {
             laws.contains("CaseIterable.exactlyOnce"),
             "expected CaseIterable.exactlyOnce in violation set; got: \(laws)"
         )
+        // The duplicates are the cases listed more than once. Swapping the
+        // filter listed the cases that appear once, and nothing read it.
+        let text = violation?.results.first?.counterexample ?? ""
+        #expect(text.hasSuffix("duplicates: [DC(alpha): 2]"), "\(text)")
     }
 
     // MARK: - Codable round-trip planted bug + .partial mode
@@ -188,11 +192,19 @@ struct PlantedBugRoundTripDetectionTests {
             try await checkCodablePropertyLaws(
                 for: DroppingFieldRecord.self,
                 using: Gen<DroppingFieldRecord>.droppingFieldRecord(),
-                config: CodableLawConfig(mode: .partial(fields: [\DroppingFieldRecord.secret])),
+                config: CodableLawConfig(
+                    mode: .partial(fields: [\DroppingFieldRecord.id, \DroppingFieldRecord.secret])
+                ),
                 options: LawCheckOptions(budget: .sanity, enforcement: .strict)
             )
         }
         let laws = violation?.results.map(\.protocolLaw) ?? []
         #expect(laws.contains("Codable.roundTripFidelity[JSON]"))
+        // `id` survives the round trip and `secret` does not, so the
+        // counterexample has to name `secret`. With `secret` the only field
+        // listed, a formatter that named the first field that *matched* could
+        // not be told apart.
+        let text = violation?.results.first?.counterexample ?? ""
+        #expect(text.contains("field at \\DroppingFieldRecord.secret differs"), "\(text)")
     }
 }

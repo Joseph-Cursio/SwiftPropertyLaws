@@ -132,6 +132,11 @@ struct PlantedBugIntegerDetectionTests {
             expected.isSubset(of: laws),
             "missing arms: \(expected.subtracting(laws).sorted())"
         )
+        // Four formatters open with a "zero divisor (skipped)" guard, and the
+        // law never fails on a zero divisor. Inverting the guard made every
+        // real counterexample say "skipped", and the names above still matched.
+        let skipped = (violation?.results ?? []).filter { $0.counterexample?.contains("skipped") == true }
+        #expect(skipped.isEmpty, "\(skipped.map { "\($0.protocolLaw): \($0.counterexample ?? "")" })")
     }
 
     // MARK: - Per-arm coverage: FixedWidthInteger
