@@ -103,6 +103,91 @@ struct ExtensionOnlyAndSendableTests {
         #expect(map.skippedTypes.isEmpty)
     }
 
+    // MARK: - Sendable through the standard library
+
+    /// Spelled out rather than read back from
+    /// `SendableProtocols.standardLibraryRefinements`, so dropping a name from
+    /// that list fails its case here instead of shrinking the test with it.
+    @Test(
+        "a standard-library protocol that refines Sendable supplies it",
+        arguments: [
+            "Actor", "Clock", "CodingKey", "DurationProtocol", "Error", "Executor",
+            "InstantProtocol", "SerialExecutor", "TaskExecutor", "UnsafeSendable"
+        ]
+    )
+    func standardLibraryRefinementSuppliesSendable(protocolName: String) {
+        let map = scan(["S.swift": """
+        public struct Node: \(protocolName), Equatable {
+            public let a: Int
+        }
+        """])
+        #expect(map.skippedTypes.isEmpty)
+        #expect(map.entries.map(\.typeName).contains("Node"))
+    }
+
+    /// The Pass 1 shape: `ArgumentParser.ExitCode` reaches `Sendable` only
+    /// through `Error`, and was skipped as not `Sendable` before the seeds.
+    @Test("a module-local protocol refining Error supplies Sendable")
+    func moduleProtocolRefiningError() {
+        let map = scan(["S.swift": """
+        public protocol AppError: Error {}
+        public struct Failure: AppError, Equatable {
+            public let code: Int
+        }
+        """])
+        #expect(map.skippedTypes.isEmpty)
+    }
+
+    /// Hummingbird declares a type named `Error`, so its conformances say
+    /// `Swift.Error`.
+    @Test("module-qualified Swift spellings are recognized")
+    func qualifiedSpellings() {
+        let map = scan(["S.swift": """
+        public struct Failure: Swift.Error, Equatable { public let a: Int }
+        public struct Point: Equatable, Swift.Sendable { public let b: Int }
+        public struct Tick: _Concurrency.Clock, Equatable { public let c: Int }
+        """])
+        #expect(map.skippedTypes.isEmpty)
+    }
+
+    /// At module scope a module's own `Clock` hides the standard library's, so
+    /// the seed must not vouch for it.
+    @Test("a module's own protocol shadows a standard-library seed")
+    func moduleProtocolShadowsSeed() {
+        let map = scan(["S.swift": """
+        public protocol Clock {}
+        public struct Wall: Clock, Equatable {
+            public let a: Int
+        }
+        """])
+        #expect(map.skippedTypes.map(\.reason) == [.notSendable])
+    }
+
+    /// And the shadowing protocol is still judged on its own clause.
+    @Test("a shadowing protocol that refines Sendable itself still supplies it")
+    func shadowingProtocolRefiningSendable() {
+        let map = scan(["S.swift": """
+        public protocol Clock: Sendable {}
+        public struct Wall: Clock, Equatable {
+            public let a: Int
+        }
+        """])
+        #expect(map.skippedTypes.isEmpty)
+    }
+
+    @Test("an actor is Sendable whatever its inheritance clause says")
+    func actorIsSendable() {
+        let map = scan(["S.swift": """
+        public actor Counter: Hashable {
+            public let id: Int
+            public static func == (lhs: Counter, rhs: Counter) -> Bool { lhs.id == rhs.id }
+            public nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
+        }
+        """])
+        #expect(map.skippedTypes.isEmpty)
+        #expect(map.entries.map(\.typeName).contains("Counter"))
+    }
+
     // MARK: - Extension-only types
 
     @Test("a type only extended here is reported as undeclared, not as memberless")

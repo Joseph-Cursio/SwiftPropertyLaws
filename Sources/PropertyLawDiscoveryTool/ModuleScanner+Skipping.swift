@@ -96,16 +96,21 @@ extension ModuleScanner {
     /// `: SyntaxProtocol, SyntaxHashable`, never naming `Sendable` itself. See
     /// `SendableProtocols` for the fixed point that replaced it.
     ///
-    /// **Residual false positive**, much smaller: a protocol declared in
-    /// *another* module that refines `Sendable`, which a one-module syntactic
-    /// scan cannot see. Such a type is reported as skipped when its suite would
-    /// have compiled. That direction costs coverage; the other emits a file
-    /// that doesn't build, taking the whole test target with it.
+    /// **An actor is always `Sendable`**, whatever its inheritance clause says,
+    /// so it never reaches the protocol match.
+    ///
+    /// **Residual false positive**, much smaller: a protocol declared in a
+    /// *third-party* module that refines `Sendable`, which a one-module
+    /// syntactic scan cannot see. (The standard library's are seeded; see
+    /// `SendableProtocols.standardLibraryRefinements`.) Such a type is reported
+    /// as skipped when its suite would have compiled. That direction costs
+    /// coverage; the other emits a file that doesn't build, taking the whole
+    /// test target with it.
     static func declaresSendable(
         _ aggregate: TypeAggregate,
         _ sendableProtocols: Set<String>
     ) -> Bool {
-        SendableProtocols.satisfiesSendable(
+        aggregate.typeKind == .actor || SendableProtocols.satisfiesSendable(
             inheritedNames: aggregate.inheritedNames, refining: sendableProtocols
         )
     }
