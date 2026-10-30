@@ -20,11 +20,6 @@ public struct MinimalIndex: Comparable, Hashable, Sendable {
     internal let owner: Int
     internal let offset: Int
 
-    internal init(owner: Int, offset: Int) {
-        self.owner = owner
-        self.offset = offset
-    }
-
     private static func requireSameOwner(
         _ lhs: MinimalIndex,
         _ rhs: MinimalIndex,
