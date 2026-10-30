@@ -58,10 +58,21 @@ struct StrictWeakOrderingLawsTests {
         // 25 draws — so at `.sanity` this test used to report a vacuous pass
         // roughly one run in twelve, which is the flake this carrier removes.
         // Over the walk the qualifying triples are there by construction.
-        try await checkStrictWeakOrderingLaws(overEvery: declSpace(), by: byLineThenColumn)
-        try await checkComparatorDiscriminates(
-            overEvery: declSpace(), by: byLineThenColumn, distinct: { $0 != $1 })
-        try await checkComparatorIsCongruent(overEvery: declSpace(), by: byLineThenColumn)
+        //
+        // Discrimination and congruence are Conventional, so a violation of
+        // either is a warning and would not fail this test. Inverting either
+        // law's guard made this comparator fail it, and nothing noticed. The
+        // results are read instead.
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkStrictWeakOrderingLaws(overEvery: declSpace(), by: byLineThenColumn)
+            results += try await checkComparatorDiscriminates(
+                overEvery: declSpace(), by: byLineThenColumn, distinct: { $0 != $1 })
+            results += try await checkComparatorIsCongruent(overEvery: declSpace(), by: byLineThenColumn)
+        }
+        #expect(results.count == 6)
+        #expect(results.allSatisfy { !$0.isViolation })
+        #expect(warnings.isEmpty)
     }
 
     // MARK: - One violator per law
@@ -252,6 +263,31 @@ struct StrictWeakOrderingLawsTests {
         }
         #expect(failed(results, "StrictWeakOrdering.congruence"),
                 "a comparator reading a field `==` ignores must fail congruence")
+        #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.congruence"])
+    }
+
+    /// The comparator above reads `tag` on both sides, so `x == y` changes
+    /// both `compare(x, p)` and `compare(p, x)`. This one reads `tag` only on
+    /// the right, so `compare(x, p)` agrees with `compare(y, p)` and only
+    /// `compare(p, x)` and `compare(p, y)` differ. A law that checked one side
+    /// passes it.
+    @Test("congruence catches a comparator that reads an ignored field on one side only")
+    func comparatorReadingInvisibleFieldOnOneSideFails() async throws {
+        struct Tagged: Equatable, Sendable, CustomStringConvertible {
+            let key: Int
+            let tag: Int
+            static func == (lhs: Tagged, rhs: Tagged) -> Bool { lhs.key == rhs.key }
+            var description: String { "Tagged(key: \(key), tag: \(tag))" }
+        }
+        let space = Every.elements("tagged", in: (0...2).flatMap { key in
+            (0...3).map { Tagged(key: key, tag: $0) }
+        })
+
+        var results: [CheckResult] = []
+        let warnings = try await recordedWarnings {
+            results = try await checkComparatorIsCongruent(overEvery: space, by: { $0.key < $1.tag })
+        }
+        #expect(failed(results, "StrictWeakOrdering.congruence"))
         #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.congruence"])
     }
 
