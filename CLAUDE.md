@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**Discovery counts the standard library's `Sendable` refinements and actors as `Sendable` (2026-10-29).** The skip rule's fixed point (`SendableProtocols`) was seeded with `Sendable` alone, so a `public` type whose only route to `Sendable` was `Error` was skipped as "`public` without a `Sendable` conformance". **Found by rerunning PRD §8 Pass 1**: 11 of the 44 such skips across the four Validation packages were false. `ArgumentParser.ExitCode: Error, RawRepresentable, Hashable` was one of them, and it is the very type Pass 2 checks by hand, which only compiles because `Error` makes it `Sendable`.
+
+The seeds are the ten public protocols of `Swift` and `_Concurrency` that refine `Sendable`: `Actor`, `Clock`, `CodingKey`, `DurationProtocol`, `Error`, `Executor`, `InstantProtocol`, `SerialExecutor`, `TaskExecutor` and the deprecated `UnsafeSendable`. They were read from the macOS 27.0 SDK's `.swiftinterface` files as a fixed point over all 112 protocol declarations, not written from memory. Three details are easy to get wrong:
+- **A module's own protocol of a seed's name shadows the seed**, and is judged by its own clause, as Swift's lookup would.
+- **`Swift.` and `_Concurrency.` qualifiers are stripped.** Hummingbird writes `Swift.Error` because it declares a type named `Error`.
+- **An actor is `Sendable` whatever its clause says.**
+
+The "other module" blind spot recorded in the 2026-08-08 entry below shrinks to *third-party* protocols. The standard library's are a fixed list, not a limit of syntax.
+
+Pass 1 after the fix: 59 skips, down from 70, and 72 checks, up from 66. Five types gained suites: `ExitCode`, and four Hummingbird error types. Mutation-tested ad hoc (the discovery tool has no shape in `mutants/`): 6 mutants, 6 killed. They were two dropped seeds, no shadowing, no `Swift.` stripping, no `_Concurrency.` stripping, and actors not counted.
+
 **`GeneratorResolver` reads a spelling from the scope it was written in, and the leaf index is gone (2026-10-10, issue #63).** A bare name used to fall back to the one scanned type whose *last component* matched, wherever it was nested. That served the lexical case — `let c: Counted` inside `BitSet` means `BitSet.Counted` — and could not tell it from a bare name meaning **a type in a module the scan does not contain**. SwiftAssist's `SymbolSummary.init(from symbol: Symbol)` takes SwiftSourceKitClient's `Symbol`; the only scanned `Symbol` was `XcodeDocument.Symbol`, so the resolver built one and the emitted call did not compile — the one reference-oracle scaffold out of 67 in that census that still failed. The ambiguity rule could not catch it: the imported type is never scanned, so the universe saw one candidate. **One candidate is not a match.**
 
 Lookup is now Swift's unqualified lookup over the flat universe: from inside `A.B`, the spelling `X` tries `A.B.X`, `A.X`, then `X`; a dotted spelling walks the same chain (`Inner.Kind` inside `Outer` reaches `Outer.Inner.Kind`). Ambiguity is checked at each scope before moving outward, because Swift stops at the innermost declaration. A name the chain does not reach is `.notInUniverse`.

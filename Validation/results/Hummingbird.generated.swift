@@ -2,27 +2,23 @@
 // `// property-law-suppress: <protocol>_<TypeName>` markers.
 //
 // Target: Hummingbird
-// Types detected: 139
+// Types detected: 145
 // Re-run: swift package propertylawcheck discover --target Hummingbird
 //
-// Detected but skipped — a suite for these would not compile (35):
+// Detected but skipped — a suite for these would not compile (29):
 //   - Application: `public` without a `Sendable` conformance — the law entry points require one
 //   - ApplicationRequestContextSource: `public` without a `Sendable` conformance — the law entry points require one
 //   - CacheControl.CacheControlValue.Value: declared `private` — not nameable from another file
 //   - CacheControl.Entry: declared `private` — not nameable from another file
-//   - Cookie.ValidationError: `public` without a `Sendable` conformance — the law entry points require one
 //   - EditedResponse: `public` without a `Sendable` conformance — the law entry points require one
-//   - Environment.Error: `public` without a `Sendable` conformance — the law entry points require one
 //   - EventLoopGroupProvider: `public` without a `Sendable` conformance — the law entry points require one
 //   - FileMiddleware.FileResult: declared `private` — not nameable from another file
 //   - FileMiddleware.GetFileAttributesAction: declared `private` — not nameable from another file
 //   - HTTPError.CodableFormat: declared `fileprivate` — not nameable from another file
 //   - HTTPHeadersExtractor: declared `private` — not nameable from another file
 //   - LogRequestsMiddleware.HeaderFilter._Internal: declared `fileprivate` — not nameable from another file
-//   - MemoryPersistDriver: `public` without a `Sendable` conformance — the law entry points require one
 //   - MiddlewareFixedTypeBuilder: `public` without a `Sendable` conformance — the law entry points require one
 //   - MiddlewareGroup: `public` without a `Sendable` conformance — the law entry points require one
-//   - PersistError: `public` without a `Sendable` conformance — the law entry points require one
 //   - PersistError.Internal: declared `private` — not nameable from another file
 //   - RouteCollection: `public` without a `Sendable` conformance — the law entry points require one
 //   - RouteCollection.RouteDefinition: declared `fileprivate` — not nameable from another file
@@ -31,13 +27,11 @@
 //   - RouterGroup: `public` without a `Sendable` conformance — the law entry points require one
 //   - RouterPathTrieBuilder: `public` without a `Sendable` conformance — the law entry points require one
 //   - RouterPathTrieBuilder.Node: `public` without a `Sendable` conformance — the law entry points require one
-//   - RouterValidationError: `public` without a `Sendable` conformance — the law entry points require one
 //   - SpanWrapper: declared `private` — not nameable from another file
 //   - URLEncodedFormDecoder._Options: declared `fileprivate` — not nameable from another file
 //   - URLEncodedFormDecodingStorage: declared `private` — not nameable from another file
 //   - URLEncodedFormEncoder._Options: declared `fileprivate` — not nameable from another file
 //   - URLEncodedFormEncoderStorage: declared `private` — not nameable from another file
-//   - URLEncodedFormError: `public` without a `Sendable` conformance — the law entry points require one
 //   - URLEncodedFormError.Code.Internal: declared `fileprivate` — not nameable from another file
 //   - _URLEncodedFormDecoder: declared `private` — not nameable from another file
 //   - _URLEncodedFormEncoder: declared `private` — not nameable from another file
@@ -152,6 +146,9 @@ import Foundation
 // Cookie.SameSite — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
+// Cookie.ValidationError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:18 (primary)
+// No emit-able stdlib conformance recognized.
+
 // Cookie.ValidationError.Reason — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/HTTP/Cookie.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
@@ -181,6 +178,16 @@ import Foundation
 
 // Environment — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:32 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:244 (extension)
 // No emit-able stdlib conformance recognized.
+
+// Environment.Error — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:33 (primary)
+@Suite struct Environment_ErrorPropertyLawTests {
+    @Test func equatable_Environment_Error() async throws {
+        try await checkEquatablePropertyLaws(
+            for: Environment.Error.self,
+            using: Environment.Error.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
+        )
+    }
+}
 
 // Environment.Error.Code — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Environment.swift:34 (primary)
 // No emit-able stdlib conformance recognized.
@@ -324,6 +331,9 @@ import Foundation
     }
 }
 
+// MemoryPersistDriver — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:15 (primary)
+// No emit-able stdlib conformance recognized.
+
 // MemoryPersistDriver.Configuration — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/MemoryPersistDriver.swift:17 (primary)
 // No emit-able stdlib conformance recognized.
 
@@ -379,6 +389,16 @@ import Foundation
 
 // PersistDriver — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/PersistDriver.swift:54 (extension)
 // No emit-able stdlib conformance recognized.
+
+// PersistError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Storage/PersistError.swift:10 (primary)
+@Suite struct PersistErrorPropertyLawTests {
+    @Test func equatable_PersistError() async throws {
+        try await checkEquatablePropertyLaws(
+            for: PersistError.self,
+            using: PersistError.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
+        )
+    }
+}
 
 // PreludeService — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/PreludeService.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
@@ -514,6 +534,41 @@ import Foundation
 // RouterTrie.ResolveContext.MatchResult — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Trie/Trie+resolve.swift:154 (primary)
 // No emit-able stdlib conformance recognized.
 
+// RouterValidationError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Router/Router+validation.swift:93 (primary)
+@Suite struct RouterValidationErrorPropertyLawTests {
+    @Test func equatable_RouterValidationError() async throws {
+        try await checkEquatablePropertyLaws(
+            for: RouterValidationError.self,
+            using: zip(Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }, Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) })
+            .map { RouterValidationError(path: $0.0, override: $0.1) }
+        )
+    }
+}
+
 // Sequence<UInt8> — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Utils/HexDigest.swift:9 (extension)
 // No emit-able stdlib conformance recognized.
 
@@ -622,6 +677,16 @@ import Foundation
 
 // URLEncodedFormEncoder.DateEncodingStrategy — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:19 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormEncoder.swift:404 (extension)
 // No emit-able stdlib conformance recognized.
+
+// URLEncodedFormError — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:16 (primary), /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:59 (extension)
+@Suite struct URLEncodedFormErrorPropertyLawTests {
+    @Test func equatable_URLEncodedFormError() async throws {
+        try await checkEquatablePropertyLaws(
+            for: URLEncodedFormError.self,
+            using: URLEncodedFormError.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
+        )
+    }
+}
 
 // URLEncodedFormError.Code — /Users/josephcursio/xcode_projects/Hummingbird/Sources/Hummingbird/Codable/URLEncodedForm/URLEncodedFormNode.swift:17 (primary)
 @Suite struct URLEncodedFormError_CodePropertyLawTests {

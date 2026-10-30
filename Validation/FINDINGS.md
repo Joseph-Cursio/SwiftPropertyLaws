@@ -2,52 +2,42 @@
 
 PRD §8's external validation gate has three passes. Pass 1 scans real packages with the discovery tool, Pass 2 runs the kit's law checks against external types, and Pass 3 searches package histories for bugs the kit should have caught. This file records what each pass found and how to rerun it.
 
-**All three passes were last run on 2026-10-29, with SwiftPropertyLaws at `de77415`.** Passes 2 and 3 need Swift 6.3 or earlier; see [Running Passes 2 and 3](#running-passes-2-and-3).
+**All three passes were last run on 2026-10-29.** Passes 2 and 3 need Swift 6.3 or earlier; see [Running Passes 2 and 3](#running-passes-2-and-3).
 
 ## Pass 1: discovery scan
 
 `Validation/run.sh` runs `PropertyLawDiscoveryTool` over one target's sources and writes the generated file and the tool's summary to `Validation/results/<Target>.{generated.swift,summary.txt}`. It does not add the kit to the scanned package and does not run any law check. It shows that the tool handles code its authors didn't write: no crashes, output that parses, the most-specific dedupe, and a `.todo` list that names every type needing a hand-written `gen()`.
 
-| Package | Scanned at | Source files | Types detected | Skipped, no suite | Suites | Checks | Derived generator | `.todo` |
+| Package | Scanned at | Source files | Types in the file | Skipped | Suites | Checks | Derived generator | `.todo` |
 |---|---|---|---|---|---|---|---|---|
-| `swift-argument-parser` (`ArgumentParser`) | `1.8.2-39-gefd239f` | 52 | 131 | 11 | 27 | 34 | 29 | 5 |
-| `Hummingbird` (`Hummingbird`) | `2.27.0-1-g0806106` | 75 | 139 | 35 | 18 | 21 | 10 | 11 |
-| `swift-aws-lambda-runtime` (`AWSLambdaRuntime`) | `3.0.2` | 43 | 38 | 12 | 9 | 11 | 6 | 5 |
+| `swift-argument-parser` (`ArgumentParser`) | `1.8.2-39-gefd239f` | 52 | 134 | 8 | 28 | 36 | 31 | 5 |
+| `Hummingbird` (`Hummingbird`) | `2.27.0-1-g0806106` | 75 | 145 | 29 | 22 | 25 | 11 | 14 |
+| `swift-aws-lambda-runtime` (`AWSLambdaRuntime`) | `3.0.2` | 43 | 40 | 10 | 9 | 11 | 6 | 5 |
 | `Sitrep` (`SitrepCore`) | `4.0.0-4-gae446f9` | 12 | 16 | 12 | 0 | 0 | 0 | 0 |
-| **Total** | | **182** | **324** | **70** | **54** | **66** | **45** | **21** |
+| **Total** | | **182** | **335** | **59** | **59** | **72** | **48** | **24** |
 
-"Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Each of the three non-empty files has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`).
+Every type the scan sees is either written into the file or skipped. "Types in the file" is the tool's own "types detected" count: each one gets a suite, or a comment stub when it has no stdlib conformance the kit checks. "Skipped" types are listed in the file's header instead, with the reason a suite for them would not compile. "Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Each of the three files with checks has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`).
 
 ### What the checks cover
 
-- **ArgumentParser:** 19 Hashable, 7 Equatable, 5 Comparable (`Name`, `InputOrigin.Element` and the `SplitArguments` index types), 2 RawRepresentable (`CompletionShell`, `SplitArguments.InputIndex`), and 1 RandomAccessCollection (`ArgumentSet`, which runs the whole collection chain).
-- **Hummingbird:** 11 Equatable, 4 Hashable, 2 RawRepresentable (`MediaType.Category`, `MediaType.FileExtension`), 2 Sequence (the two split-string sequences), 1 Collection (`RouterPath`) and 1 Codable (`MediaType`).
+- **ArgumentParser:** 20 Hashable, 7 Equatable, 5 Comparable (`Name`, `InputOrigin.Element` and the `SplitArguments` index types), 3 RawRepresentable (`CompletionShell`, `ExitCode`, `SplitArguments.InputIndex`), and 1 RandomAccessCollection (`ArgumentSet`, which runs the whole collection chain).
+- **Hummingbird:** 15 Equatable (four of them on error types: `Environment.Error`, `PersistError`, `RouterValidationError`, `URLEncodedFormError`), 4 Hashable, 2 RawRepresentable (`MediaType.Category`, `MediaType.FileExtension`), 2 Sequence (the two split-string sequences), 1 Collection (`RouterPath`) and 1 Codable (`MediaType`).
 - **AWSLambdaRuntime:** 6 Codable (`ClientApplication`, `ClientContext`, `ErrorResponse`, `JSONLogHandler.LogEntry`, `LambdaRequestID`, `StreamingLambdaStatusAndHeadersResponse`) and 5 Hashable.
-- **SitrepCore:** none. Every detected type is skipped or has no stdlib conformance the kit checks.
+- **SitrepCore:** none. Every type is skipped or has no stdlib conformance the kit checks.
 
-### Why 70 types get no suite
-
-The tool detects a type and then declines to emit its suite when the suite could not compile:
+### Why 59 types are skipped
 
 - **26 are `private` or `fileprivate`**, so they can't be named from the generated file. Most are synthesized `CodingKeys` enums.
-- **44 are `public` with no `Sendable` conformance the tool can see.** Swift infers `Sendable` only for non-public types, and every check requires it.
+- **33 are `public` with no `Sendable` conformance the tool can see.** Swift infers `Sendable` only for non-public types, and every check requires it. Some of these really are not `Sendable`: SitrepCore's nine are public `Codable` structs with no `Sendable` at all, and ArgumentParser's five property wrappers are `Sendable` only conditionally (`extension Flag: Sendable where Value: Sendable`). Others may conform to a protocol from a dependency that refines `Sendable`. `run.sh` passes no context files, so the scan cannot see those protocols.
 
-**Finding: 11 of those 44 are `Sendable` after all.** The tool's set of protocols that refine `Sendable` is computed from the scanned module alone, so it misses the ones the standard library declares:
-
-- **`Error`**: `ExitCode`, `CleanExit` and `ValidationError` in ArgumentParser, and `Cookie.ValidationError`, `Environment.Error`, `PersistError`, `RouterValidationError` and `URLEncodedFormError` in Hummingbird.
-- **`Clock` and `InstantProtocol`**: `LambdaClock` and `LambdaClock.Instant` in AWSLambdaRuntime.
-- **An actor**, which is always `Sendable`: Hummingbird's `MemoryPersistDriver`.
-
-Suites for these types would have compiled. Pass 2 runs `checkHashablePropertyLaws` against `ExitCode`, which compiles only because `ExitCode: Error` makes it `Sendable`. This is a coverage loss, not a correctness one: the tool errs toward skipping. It is not fixed here.
-
-The other 33 skips are correct. SitrepCore's nine are public `Codable` structs with no `Sendable` at all, and ArgumentParser's property wrappers are `Sendable` only conditionally (`extension Flag: Sendable where Value: Sendable`).
+The tool counts the standard library's `Sendable` refinements (`Error`, `CodingKey`, `Clock`, `InstantProtocol`, `DurationProtocol`, `Actor` and the executor protocols) and actors as `Sendable`. **This pass is what found that it didn't.** The first rescan skipped 11 types that are `Sendable` through `Error`, `Clock` or `InstantProtocol`, or by being an actor, including `ExitCode`, which Pass 2 checks by hand. Five of them now get suites. The rest have no stdlib conformance the kit checks.
 
 ### Where generators fail to derive
 
-204 detected types would need a hand-written `gen()`, most of them types that get no check anyway. The two largest buckets:
+209 types would need a hand-written `gen()`, most of them types that get no check anyway. The two largest buckets:
 
-- **75 are "declaration not in this target".** That is an artifact of how `run.sh` scans: it passes one target's files and no `--context-files`, so a type the target only extends looks undeclared. The discovery plugin passes dependency sources as context automatically.
-- **61 have a user-defined `init`** that no tier could call with derivable arguments.
+- **75 are "declaration not in this target".** That is an artifact of how `run.sh` scans. It passes one target's files and no `--context-files`, so a type the target only extends looks undeclared. The discovery plugin passes dependency sources as context automatically.
+- **62 have a "user-defined init"**: no tier could call any of the type's initializers with derivable arguments.
 
 The full breakdown per package is at the top of each `.summary.txt`.
 
