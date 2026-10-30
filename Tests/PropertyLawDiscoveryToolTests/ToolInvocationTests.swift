@@ -35,6 +35,14 @@ struct ToolInvocationTests {
         #expect(invocation.target == "MyModule")
     }
 
+    /// `--source-files` and `--context-files` read paths up to the next argument
+    /// starting `--`, so a flag spelled any other way would be swallowed as a
+    /// path whenever it followed one of them.
+    @Test(arguments: ToolFlag.allCases)
+    func everyFlagStartsWithTwoDashes(flag: ToolFlag) {
+        #expect(flag.rawValue.hasPrefix("--"))
+    }
+
     @Test func missingTargetThrows() {
         #expect(throws: InvocationError.self) {
             _ = try ToolInvocation(arguments: ["--output", "/tmp/out.swift"])

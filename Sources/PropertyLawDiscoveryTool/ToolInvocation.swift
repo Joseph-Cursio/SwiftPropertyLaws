@@ -71,20 +71,23 @@ struct ToolInvocation: Sendable {
         into builder: inout Builder
     ) throws -> Int {
         let arg = arguments[index]
-        switch arg {
-        case "--target":
+        guard let flag = ToolFlag(rawValue: arg) else {
+            throw InvocationError.unknownArgument(arg)
+        }
+        switch flag {
+        case .target:
             builder.target = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
-        case "--output":
+        case .output:
             builder.outputPath = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
-        case "--scaffold-out":
+        case .scaffoldOut:
             builder.scaffoldOutputPath = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
-        case "--advisory":
+        case .advisory:
             builder.advisory = true
             return index + 1
-        case "--advisory-min":
+        case .advisoryMin:
             let raw = try requireValue(after: arg, arguments: arguments, at: index)
             guard let level = SuggestionConfidence(rawValue: raw) else {
                 throw InvocationError.invalidValue(
@@ -93,17 +96,15 @@ struct ToolInvocation: Sendable {
             }
             builder.advisoryMin = level
             return index + 2
-        case "--source-files":
+        case .sourceFiles:
             return consumeSourceFiles(arguments: arguments, from: index + 1, into: &builder)
-        case "--context-files":
+        case .contextFiles:
             return consumeContextFiles(arguments: arguments, from: index + 1, into: &builder)
-        case "--extra-import":
+        case .extraImport:
             builder.extraImports.append(
                 try requireValue(after: arg, arguments: arguments, at: index)
             )
             return index + 2
-        default:
-            throw InvocationError.unknownArgument(arg)
         }
     }
 
