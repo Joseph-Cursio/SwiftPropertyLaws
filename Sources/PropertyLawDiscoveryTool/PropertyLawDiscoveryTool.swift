@@ -163,9 +163,7 @@ struct PropertyLawDiscoveryTool {
             for entry in todoEntries {
                 buckets[Self.todoCategory(for: entry.derivationStrategy), default: 0] += 1
             }
-            for (category, count) in buckets.sorted(by: { $0.value > $1.value }) {
-                lines.append("    [\(count)] \(category)")
-            }
+            lines.append(contentsOf: Self.bucketLines(buckets))
             // List names only for small result sets to keep output scannable.
             if todoEntries.count <= 25 {
                 for entry in todoEntries {
@@ -184,6 +182,18 @@ struct PropertyLawDiscoveryTool {
     /// reason that happens to contain an earlier arm's substring is swallowed by
     /// it. `TodoCategoryTests` pins every arm against the strings the strategist
     /// actually produces. Internal rather than private for that reason.
+    /// The summary's gap buckets, largest first and ties by name.
+    ///
+    /// Sorting by count alone left ties in `Dictionary` order, which Swift
+    /// randomizes per process, so two runs over the same sources could write
+    /// different summaries. Rerunning PRD §8 Pass 1 showed it: the committed
+    /// `.summary.txt` files changed between runs with nothing scanned changing.
+    static func bucketLines(_ buckets: [String: Int]) -> [String] {
+        buckets
+            .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+            .map { "    [\($0.value)] \($0.key)" }
+    }
+
     static func todoCategory(for strategy: DerivationStrategy) -> String {
         guard case .todo(let reason) = strategy else { return "n/a" }
         for (needle, category) in categoryTable where reason.contains(needle) {

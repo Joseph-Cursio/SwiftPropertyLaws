@@ -145,11 +145,10 @@ struct ContextFileTests {
 
     // MARK: - Ordering and back-compat
 
-    /// **Context is walked first, and that ordering is load-bearing** when a
-    /// name is declared on both sides — a different module's same-named type.
-    /// `record` lets the last non-empty member list win, so target-last means
-    /// the target's own declaration is the one that survives. Reversing the two
-    /// lists generates the *context* type's shape under the target's name.
+    /// A name declared on both sides is a different module's same-named type.
+    /// The target's declaration is the only one recorded: the context's is
+    /// hidden (`ModuleScanner.typesDeclared(in:)`), so this no longer rests on
+    /// context being walked first. The namesake tests below pin the rest.
     @Test("a name declared in both takes the target's declaration")
     func targetDeclarationWins() {
         let map = scan(
@@ -171,6 +170,126 @@ struct ContextFileTests {
         }
         #expect(members.map(\.name) == ["mine"])
         #expect(foreign.conformances.contains(.equatable))
+    }
+
+    // MARK: - A dependency's namesake
+
+    /// The PRD §8 Pass 1 shape. Sitrep declares its own `Node`, and its
+    /// dependency Yams declares an unrelated `Node` that is `Hashable` and
+    /// `Comparable`. Inside the target the name means the target's type, so
+    /// none of the dependency's conformances or provenance belong to it.
+    @Test("a dependency's namesake lends the target type nothing")
+    func namesakeLendsNoConformances() {
+        let map = scan(
+            target: ["T.swift": """
+            public struct Node: Equatable, Sendable {
+                public let name: String
+            }
+            """],
+            context: ["Yams.swift": """
+            public enum Node: Hashable, Comparable, Sendable {
+                case scalar(String)
+                public static func < (lhs: Node, rhs: Node) -> Bool { false }
+            }
+            extension Node: CustomStringConvertible {
+                public var description: String { "" }
+            }
+            """]
+        )
+        guard let node = map.entries.first(where: { $0.typeName == "Node" }) else {
+            Issue.record("Node should be an entry")
+            return
+        }
+        #expect(node.conformances == [.equatable])
+        #expect(node.provenances.map(\.filePath).allSatisfy { !$0.contains("/c_") })
+    }
+
+    /// Members used to survive only by walk order, and only when the target's
+    /// list was non-empty: the last *non-empty* list won, so a memberless target
+    /// type took its namesake's members and derived `Token(raw:)`, which does
+    /// not exist.
+    @Test("a memberless target type does not take its namesake's members")
+    func memberlessTargetKeepsItsOwnShape() {
+        let map = scan(
+            target: ["T.swift": "public struct Token: Equatable, Sendable {}"],
+            context: ["F.swift": """
+            public struct Token: Sendable {
+                public let raw: String
+            }
+            """]
+        )
+        #expect(map.shapesByName["Token"]?.storedMembers.isEmpty == true)
+        guard case .initializerBased(let arguments) = map.entries
+            .first(where: { $0.typeName == "Token" })?.derivationStrategy else {
+            Issue.record("expected the stateless `Token()` derivation")
+            return
+        }
+        #expect(arguments.isEmpty)
+    }
+
+    /// `Node.Scalar` in the dependency belongs to the dependency's `Node`,
+    /// whether it is declared inside it, inside an extension of it, or
+    /// extended by its dotted name.
+    @Test("types nested in a hidden namesake are hidden with it")
+    func nestedInNamesakeIsHidden() {
+        let map = scan(
+            target: ["T.swift": "public struct Node: Equatable, Sendable { public let a: Int }"],
+            context: ["Yams.swift": """
+            public enum Node: Hashable, Sendable {
+                case scalar
+                public struct Scalar: Hashable, Sendable { public let value: String }
+            }
+            extension Node {
+                public struct Mapping: Hashable, Sendable { public let count: Int }
+            }
+            extension Node.Sequence: CustomStringConvertible {
+                public var description: String { "" }
+            }
+            """]
+        )
+        #expect(map.shapesByName["Node.Scalar"] == nil)
+        #expect(map.shapesByName["Node.Mapping"] == nil)
+        #expect(map.shapesByName["Node.Sequence"] == nil)
+    }
+
+    /// A typealias names a type too. Left in, the dependency's `Node = String`
+    /// would resolve a target member typed `Node` as a `String`.
+    @Test("a dependency's typealias of a target type's name is hidden")
+    func namesakeAliasIsHidden() {
+        let map = scan(
+            target: ["T.swift": "public struct Node: Equatable, Sendable { public let a: Int }"],
+            context: ["F.swift": "public typealias Node = String"]
+        )
+        #expect(map.aliases["Node"] == nil)
+    }
+
+    /// Hiding is by qualified name. The target's `Outer.Node` says nothing
+    /// about a top-level `Node`, which here is the dependency's type the target
+    /// extends, so its declaration must still arrive.
+    @Test("a namesake nested elsewhere in the target hides nothing")
+    func nestedTargetTypeHidesNoTopLevelNamesake() {
+        let map = scan(
+            target: ["T.swift": """
+            public struct Outer: Equatable, Sendable {
+                public struct Node: Equatable, Sendable { public let a: Int }
+                public let a: Int
+            }
+            extension Node: CustomStringConvertible {
+                public var description: String { "" }
+            }
+            """],
+            context: ["F.swift": """
+            public struct Node: Hashable, Sendable {
+                public let b: String
+            }
+            """]
+        )
+        guard let node = map.entries.first(where: { $0.typeName == "Node" }) else {
+            Issue.record("the extended dependency type should be an entry")
+            return
+        }
+        #expect(node.conformances.contains(.hashable))
+        #expect(map.entries.contains { $0.typeName == "Outer.Node" })
     }
 
     /// Omitting context reproduces the previous behaviour exactly.

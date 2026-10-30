@@ -54,22 +54,8 @@ import SwiftSyntax
 // Function.ThrowingStatus — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Function.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Node — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Encoder.swift:346 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Alias.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Mapping.swift:9 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Scalar.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.Sequence.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:12 (primary), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:23 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:63 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:216 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:252 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:264 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:277 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:284 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:291 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Node.swift:300 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:11 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/Representer.swift:29 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/YamlAnchorProviding.swift:24 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/Yams/Sources/Yams/YamlTagProviding.swift:24 (extension), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Node.swift:14 (primary)
-@Suite struct NodePropertyLawTests {
-    @Test func hashable_Node() async throws {
-        try await checkHashablePropertyLaws(
-            for: Node.self,
-            using: Node.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
-        )
-    }
-
-    @Test func comparable_Node() async throws {
-        try await checkComparablePropertyLaws(
-            for: Node.self,
-            using: Node.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
-        )
-    }
-}
+// Node — /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/Node.swift:14 (primary)
+// No emit-able stdlib conformance recognized.
 
 // ProtocolDeclSyntax — /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/CustomTraits.swift:57 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/RenamedChildrenCompatibility.swift:6373 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/SyntaxTraits.swift:821 (extension), /Users/josephcursio/xcode_projects/Sitrep/.build/checkouts/swift-syntax/Sources/SwiftSyntax/generated/syntaxNodes/SyntaxNodesOP.swift:4322 (primary), /Users/josephcursio/xcode_projects/Sitrep/Sources/SitrepCore/FileVisitor.swift:244 (extension)
 // No emit-able stdlib conformance recognized.
