@@ -192,6 +192,55 @@ struct UnsoundInitializerDerivationTests {
         ))
     }
 
+    // MARK: - Stated preconditions
+
+    /// `_HeapNode`, reduced: `init(offset:level:)` asserts `offset >= 0`, and
+    /// `init(offset:)` asserts nothing but forwards to it.
+    private let asserting = InitializerSignature(
+        parameters: [InitializerParameter(label: "offset", typeName: "Int"),
+                     InitializerParameter(label: "level", typeName: "Int")],
+        assertsPrecondition: true
+    )
+    private let forwarding = InitializerSignature(
+        parameters: [InitializerParameter(label: "offset", typeName: "Int")],
+        delegatesToSelf: true
+    )
+
+    private func derivedLabels(_ initializers: [InitializerSignature]) -> [String?]? {
+        guard case .initializerBased(let arguments) = DerivationStrategist.strategy(
+            for: shape("HeapNode", initializers)
+        ) else { return nil }
+        return arguments.map(\.label)
+    }
+
+    /// No test declined an asserting initializer before these. The guards were
+    /// only ever reached by inverting them, which declines every ordinary
+    /// initializer and fails everything else.
+    @Test("an initializer that asserts a precondition does not derive")
+    func assertingInitializerDeclines() {
+        #expect(derivedLabels([asserting]) == nil)
+    }
+
+    @Test("an initializer forwarding to an asserting one does not derive")
+    func forwardingToAnAssertingInitializerDeclines() {
+        #expect(derivedLabels([forwarding, asserting]) == nil)
+    }
+
+    /// The forwarding rule needs an asserting initializer on the type. Without
+    /// one, there is no precondition to inherit.
+    @Test("a forwarding initializer derives when nothing on the type asserts")
+    func forwardingWithNothingAssertingDerives() {
+        #expect(derivedLabels([forwarding]) == ["offset"])
+    }
+
+    /// …and it declines only the forwarding initializer. A sibling that
+    /// neither asserts nor forwards still derives.
+    @Test("an initializer that neither asserts nor forwards derives beside one that asserts")
+    func plainInitializerBesideAnAssertingOneDerives() {
+        let plain = InitializerSignature(parameters: [InitializerParameter(label: "value", typeName: "Int")])
+        #expect(derivedLabels([plain, asserting]) == ["value"])
+    }
+
     // MARK: - The two gates are independent
 
     /// Each witness must be caught by its OWN rule. If either passed only because the other
