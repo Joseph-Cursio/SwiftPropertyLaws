@@ -38,4 +38,17 @@ struct GeneratorPlanTests {
         #expect(GeneratorPlan.dictionary(key: int, value: date).requiredImports == ["Foundation"])
         #expect(GeneratorPlan.dictionary(key: int, value: int).requiredImports == [])
     }
+
+    /// A dictionary is complete only when both its key and its value are, and
+    /// self-referential when either is.
+    @Test func dictionaryNeedsBothSidesCompleteAndEitherSideRecursive() {
+        let hole = GeneratorPlan.hole(typeName: "Widget", reason: "not in the universe")
+        let point = GeneratorPlan.selfReference(typeName: "Node", helperName: "__genNode")
+        #expect(GeneratorPlan.dictionary(key: int, value: int).isComplete)
+        #expect(!GeneratorPlan.dictionary(key: hole, value: int).isComplete)
+        #expect(!GeneratorPlan.dictionary(key: int, value: hole).isComplete)
+        #expect(!GeneratorPlan.dictionary(key: int, value: int).containsSelfReference)
+        #expect(GeneratorPlan.dictionary(key: int, value: point).containsSelfReference)
+        #expect(GeneratorPlan.dictionary(key: point, value: int).containsSelfReference)
+    }
 }
