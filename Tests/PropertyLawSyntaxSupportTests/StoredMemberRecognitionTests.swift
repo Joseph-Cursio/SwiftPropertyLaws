@@ -43,6 +43,20 @@ struct StoredMemberRecognitionTests {
         #expect(parsed.map(\.name) == ["stored"])
     }
 
+    /// A type property belongs to no instance, so the memberwise initializer
+    /// does not take it.
+    @Test("static and class properties are not stored")
+    func typePropertiesAreSkipped() throws {
+        let parsed = try members("""
+        struct S {
+            static let shared: Int = 0
+            class var label: String = ""
+            let stored: Int
+        }
+        """)
+        #expect(parsed.map(\.name) == ["stored"])
+    }
+
     @Test("a tuple pattern records one member per element")
     func tuplePatternIsSplit() throws {
         let parsed = try members("""

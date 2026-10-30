@@ -214,7 +214,7 @@ let package = Package(
                 "PropertyLawCore",
                 .product(name: "PropertyBased", package: "swift-property-based"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax")
+                .product(name: "SwiftSyntaxMacrosGenericTestSupport", package: "swift-syntax")
             ]
         ),
 

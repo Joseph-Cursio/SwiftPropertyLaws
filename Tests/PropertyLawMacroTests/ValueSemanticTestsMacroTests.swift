@@ -1,5 +1,5 @@
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosTestSupport
+import SwiftSyntaxMacrosGenericTestSupport
 import Testing
 @testable import PropertyLawMacroImpl
 
@@ -18,14 +18,18 @@ struct ValueSemanticTestsMacroTests {
             @ValueSemanticTests
             struct Buffer: ValueSemantic {
                 static func makeProbe() -> Buffer { Buffer() }
-                enum Mutation: CaseIterable, Sendable { case appendOne }
+                enum Mutation: CaseIterable, Sendable {
+                    case appendOne
+                }
                 static func apply(_ mutation: Mutation, to target: inout Buffer) {}
             }
             """,
             expandedSource: """
             struct Buffer: ValueSemantic {
                 static func makeProbe() -> Buffer { Buffer() }
-                enum Mutation: CaseIterable, Sendable { case appendOne }
+                enum Mutation: CaseIterable, Sendable {
+                    case appendOne
+                }
                 static func apply(_ mutation: Mutation, to target: inout Buffer) {}
             }
 

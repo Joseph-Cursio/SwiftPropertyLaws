@@ -1,5 +1,5 @@
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosTestSupport
+import SwiftSyntaxMacrosGenericTestSupport
 import Testing
 @testable import PropertyLawMacroImpl
 
@@ -20,18 +20,18 @@ struct MacroExpansionMultiTypeTests {
 
             struct BagPropertyLawTests {
                 @Test func equatable_Bag() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Bag.self,
-                            using: Bag.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Bag.self,
+                        using: Gen.always(Bag())
+                    )
+                }
 
                 @Test func setAlgebra_Bag() async throws {
-                        try await checkSetAlgebraPropertyLaws(
-                            for: Bag.self,
-                            using: Bag.gen()
-                        )
-                    }
+                    try await checkSetAlgebraPropertyLaws(
+                        for: Bag.self,
+                        using: Gen.always(Bag())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -53,18 +53,7 @@ struct MacroExpansionMultiTypeTests {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: """
-                        Type has no recognized stdlib protocol conformance — no \
-                        law checks emitted. Recognized protocols: Equatable, \
-                        Hashable, Comparable, Codable, IteratorProtocol, Sequence, \
-                        Collection, BidirectionalCollection, RandomAccessCollection, \
-                        MutableCollection, RangeReplaceableCollection, SetAlgebra, \
-                        Strideable, RawRepresentable, LosslessStringConvertible, \
-                        Identifiable, CaseIterable. Conformances declared via \
-                        extensions outside the type's primary declaration aren't \
-                        visible to the macro (it sees only the decoratee's syntax); \
-                        whole-module discovery (PRD §5.3) handles those cases.
-                        """,
+                    message: PropertyLawDiagnostic.noKnownConformance.message,
                     line: 1,
                     column: 1,
                     severity: .warning
@@ -91,11 +80,13 @@ struct MacroExpansionMultiTypeTests {
 
             struct FooPropertyLawTests {
                 @Test func equatable_Foo() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Foo.self,
-                            using: Foo.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Foo.self,
+                        using: Gen<Int>.int().map {
+                            Foo(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -117,18 +108,22 @@ struct MacroExpansionMultiTypeTests {
 
             struct RecordPropertyLawTests {
                 @Test func equatable_Record() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Record.self,
-                            using: Record.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Record.self,
+                        using: Gen<Int>.int().map {
+                            Record(id: $0)
+                        }
+                    )
+                }
 
                 @Test func codable_Record() async throws {
-                        try await checkCodablePropertyLaws(
-                            for: Record.self,
-                            using: Record.gen()
-                        )
-                    }
+                    try await checkCodablePropertyLaws(
+                        for: Record.self,
+                        using: Gen<Int>.int().map {
+                            Record(id: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -153,20 +148,28 @@ struct MacroExpansionMultiTypeTests {
 
             struct DirectionPropertyLawTests {
                 @Test func equatable_Direction() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Direction.self,
-                            using: Gen<Character>.letterOrNumber.string(of: 0...8)
-                                .compactMap { Direction(rawValue: $0) }
+                    try await checkEquatablePropertyLaws(
+                        for: Direction.self,
+                        using: Gen.oneOf(
+                Gen.always(Direction.north).eraseToAny(),
+                Gen.always(Direction.south).eraseToAny(),
+                Gen.always(Direction.east).eraseToAny(),
+                Gen.always(Direction.west).eraseToAny()
                         )
-                    }
+                    )
+                }
 
                 @Test func codable_Direction() async throws {
-                        try await checkCodablePropertyLaws(
-                            for: Direction.self,
-                            using: Gen<Character>.letterOrNumber.string(of: 0...8)
-                                .compactMap { Direction(rawValue: $0) }
+                    try await checkCodablePropertyLaws(
+                        for: Direction.self,
+                        using: Gen.oneOf(
+                Gen.always(Direction.north).eraseToAny(),
+                Gen.always(Direction.south).eraseToAny(),
+                Gen.always(Direction.east).eraseToAny(),
+                Gen.always(Direction.west).eraseToAny()
                         )
-                    }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -188,11 +191,13 @@ struct MacroExpansionMultiTypeTests {
 
             struct StatusPropertyLawTests {
                 @Test func equatable_Status() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Status.self,
-                            using: Gen<Status?>.element(of: Status.allCases).compactMap { $0 }
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Status.self,
+                        using: Gen<Status?>.element(of: Status.allCases).compactMap {
+                            $0
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -225,11 +230,11 @@ struct MacroExpansionMultiTypeTests {
 
             struct StatusPropertyLawTests {
                 @Test func equatable_Status() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Status.self,
-                            using: Status.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Status.self,
+                        using: Status.gen()
+                    )
+                }
             }
             """,
             macros: testMacros

@@ -100,6 +100,38 @@ struct MinimalCodableTests {
         #expect(try codec.decode(codec.encode(Maybe(value: 9))) == Maybe(value: 9))
     }
 
+    /// Synthesized `Codable` never asks an unkeyed container for `decodeNil()`:
+    /// `[Int?]` decodes each element through a single-value container. Only a
+    /// hand-written `init(from:)` does, as this one does.
+    private struct Sparse: Codable, Equatable, Sendable {
+        var values: [Int?]
+
+        init(values: [Int?]) { self.values = values }
+
+        func encode(to encoder: any Encoder) throws {
+            var container = encoder.unkeyedContainer()
+            for value in values {
+                if let value { try container.encode(value) } else { try container.encodeNil() }
+            }
+        }
+
+        init(from decoder: any Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+            // A fixed count, so a `decodeNil()` that answers true without
+            // consuming anything gives wrong values instead of looping forever.
+            values = try (0 ..< (container.count ?? 0)).map { _ in
+                try container.decodeNil() ? nil : container.decode(Int.self)
+            }
+        }
+    }
+
+    @Test("decodeNil reads a null and leaves a value for decode")
+    func unkeyedDecodeNilRoundTrips() throws {
+        let codec = CodableCodec<Sparse>.minimal
+        let original = Sparse(values: [1, nil, 3])
+        #expect(try codec.decode(codec.encode(original)) == original)
+    }
+
     // MARK: - Plugged into the existing law suite
 
     /// The payoff: the kit's own Codable law, run through an encoder that does not convert
