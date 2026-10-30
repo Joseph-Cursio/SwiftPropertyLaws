@@ -38,6 +38,9 @@ extension ModuleScanner {
     ) {
         if let primary = primaryDecl(from: statement) {
             let qualified = (namespace + [primary.name]).joined(separator: ".")
+            // A dependency's namesake of a target type, with everything nested
+            // in it. See `RecordingContext.hidden`.
+            guard !context.hides(qualified) else { return }
             record(
                 RecordRequest(
                     name: qualified,
@@ -87,6 +90,9 @@ extension ModuleScanner {
         into perType: inout [String: TypeAggregate]
     ) {
         let extensionNamespace = namespace + [extensionDecl.extendedType.trimmedDescription]
+        // Hidden before the deferred descent, so the extension's nested types
+        // go with it.
+        guard !context.hides(extensionNamespace.joined(separator: ".")) else { return }
         defer {
             descend(
                 into: extensionDecl.memberBlock,

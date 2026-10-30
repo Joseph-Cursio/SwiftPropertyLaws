@@ -43,6 +43,7 @@ enum ModuleScanner {
         var topLevelFunctions: [FunctionSignature] = []
         var aliases: [String: String] = [:]
         var parsedFiles: [SourceFileSyntax] = []
+        var parsedByFile: [(file: ScannedFile, tree: SourceFileSyntax)] = []
 
         // Sorted input → sorted scan order → deterministic output. Context
         // files are walked first so a target extension always lands on an
@@ -60,8 +61,18 @@ enum ModuleScanner {
             }
             let parsed = Parser.parse(source: source)
             parsedFiles.append(parsed)
+            parsedByFile.append((file, parsed))
             topLevelFunctions.append(contentsOf: RoundTripFinder.findTopLevel(in: parsed))
-            absorb(parsed, from: file, into: &perType, aliases: &aliases)
+        }
+        let declaredInTarget = typesDeclared(in: parsedByFile.filter { !$0.file.isContext })
+        for (file, parsed) in parsedByFile {
+            absorb(
+                parsed,
+                from: file,
+                hiding: file.isContext ? declaredInTarget : [],
+                into: &perType,
+                aliases: &aliases
+            )
         }
         let shapes = makeShapes(from: perType)
         // Protocols that refine `Sendable`, so a type conforming to one of them
@@ -82,37 +93,38 @@ enum ModuleScanner {
         )
     }
 
-    /// Walks one parsed file's top-level statements into the aggregate.
-    private static func absorb(
+    /// Walks one parsed file's top-level statements into the aggregate,
+    /// leaving out every declaration and extension of a name in `hidden`.
+    static func absorb(
         _ parsed: SourceFileSyntax,
         from file: ScannedFile,
+        hiding hidden: Set<String>,
         into perType: inout [String: TypeAggregate],
         aliases: inout [String: String]
     ) {
-        let converter = SourceLocationConverter(fileName: file.path, tree: parsed)
+        let context = RecordingContext(
+            filePath: file.path,
+            converter: SourceLocationConverter(fileName: file.path, tree: parsed),
+            isContext: file.isContext,
+            moduleName: file.module,
+            hidden: hidden
+        )
         for statement in parsed.statements {
-            if let alias = statement.item.as(TypeAliasDeclSyntax.self) {
+            if let alias = statement.item.as(TypeAliasDeclSyntax.self),
+               !context.hides(alias.name.text) {
                 aliases[alias.name.text] = alias.initializer.value.trimmedDescription
             }
-            accumulate(
-                statement: statement.item,
-                context: RecordingContext(
-                    filePath: file.path,
-                    converter: converter,
-                    isContext: file.isContext,
-                    moduleName: file.module
-                ),
-                into: &perType
-            )
+            accumulate(statement: statement.item, context: context, into: &perType)
         }
     }
 
     /// Context first, then target sources — both sorted, so the scan order and
     /// therefore the output are deterministic.
     ///
-    /// Context-first is load-bearing when a name is declared on both sides:
-    /// `record` lets the last non-empty member list win, so target-last means
-    /// the target's own declaration survives.
+    /// A name declared on both sides no longer depends on this order: the
+    /// context's declaration is hidden outright (`typesDeclared(in:)`). The
+    /// order still decides how a target *extension* of a dependency's type
+    /// meets that type's declaration.
     static func orderedFiles(
         sourceFiles: [String],
         contextFiles: [String]
@@ -232,6 +244,10 @@ enum ModuleScanner {
         /// (`--context-files SwiftSyntax=/path/File.swift`). `nil` for target
         /// files and for unattributed context.
         let moduleName: String?
+        /// Names the target declares itself. In a context file each one is a
+        /// different type that happens to share the name, so it is not
+        /// recorded. Empty for target files. See `typesDeclared(in:)`.
+        var hidden: Set<String> = []
     }
 
     private static func makeEntries(
