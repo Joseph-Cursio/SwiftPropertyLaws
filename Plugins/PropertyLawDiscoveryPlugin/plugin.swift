@@ -14,7 +14,7 @@ import PackagePlugin
 struct PropertyLawDiscoveryPlugin: CommandPlugin {
 
     func performCommand(context: PluginContext, arguments: [String]) async throws {
-        let parsed = try parse(arguments: arguments)
+        let parsed = try ParsedArguments(arguments: arguments)
 
         guard parsed.subcommand == "discover" else {
             throw PluginError.unknownSubcommand(parsed.subcommand)
@@ -34,27 +34,17 @@ struct PropertyLawDiscoveryPlugin: CommandPlugin {
         let tool = try context.tool(named: "PropertyLawDiscoveryTool")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: tool.path.string)
-        var toolArgs: [String] = [
-            "--target", target,
-            "--output", outputPath
-        ]
-        if parsed.advisory { toolArgs.append("--advisory") }
-        if let minLevel = parsed.advisoryMin {
-            toolArgs.append(contentsOf: ["--advisory-min", minLevel])
-        }
-        toolArgs.append("--source-files")
-        toolArgs.append(contentsOf: sourceFiles)
         // Dependency sources, for declarations only. Without them a type this
         // target merely *extends* is invisible — no members, no initializers,
         // not even its kind — and its diagnostic can only say so. Measured on
         // swift-syntax: `SwiftParser` had 114 such types scanned alone and 9
         // with its dependencies as context.
-        let contextFiles = dependencySourceFilePaths(of: resolvedTarget)
-        if !contextFiles.isEmpty {
-            toolArgs.append("--context-files")
-            toolArgs.append(contentsOf: contextFiles)
-        }
-        process.arguments = toolArgs
+        process.arguments = parsed.toolArguments(
+            target: target,
+            outputPath: outputPath,
+            sourceFiles: sourceFiles,
+            contextFiles: dependencySourceFilePaths(of: resolvedTarget)
+        )
         let status: Int32 = try await withCheckedThrowingContinuation { continuation in
             process.terminationHandler = { proc in
                 continuation.resume(returning: proc.terminationStatus)
@@ -130,83 +120,6 @@ struct PropertyLawDiscoveryPlugin: CommandPlugin {
             .map { $0.path.string }
             .sorted()
     }
-
-    /// Subcommand + flags parsed from the plugin's invocation argv.
-    private struct ParsedArguments {
-        let subcommand: String
-        let target: String?
-        let outputPath: String?
-        let advisory: Bool
-        let advisoryMin: String?
-    }
-
-    private func parse(arguments: [String]) throws -> ParsedArguments {
-        guard let subcommand = arguments.first else {
-            throw PluginError.missingSubcommand
-        }
-        let rest = Array(arguments.dropFirst())
-        var target: String?
-        var outputPath: String?
-        var advisory = false
-        var advisoryMin: String?
-        var index = 0
-        while index < rest.count {
-            switch rest[index] {
-            case "--target":
-                index += 1
-                guard index < rest.count else { throw PluginError.missingFlag("--target") }
-                target = rest[index]
-            case "--output":
-                index += 1
-                guard index < rest.count else { throw PluginError.missingFlag("--output") }
-                outputPath = rest[index]
-            case "--advisory":
-                advisory = true
-            case "--advisory-min":
-                index += 1
-                guard index < rest.count else {
-                    throw PluginError.missingFlag("--advisory-min")
-                }
-                advisoryMin = rest[index]
-            default:
-                throw PluginError.unknownArgument(rest[index])
-            }
-            index += 1
-        }
-        return ParsedArguments(
-            subcommand: subcommand,
-            target: target,
-            outputPath: outputPath,
-            advisory: advisory,
-            advisoryMin: advisoryMin
-        )
-    }
 }
 
 import Foundation
-
-enum PluginError: Error, CustomStringConvertible {
-    case missingSubcommand
-    case unknownSubcommand(String)
-    case missingFlag(String)
-    case unknownArgument(String)
-    case unknownTarget(String)
-    case toolFailed(status: Int32)
-
-    var description: String {
-        switch self {
-        case .missingSubcommand:
-            return "missing subcommand. Try: swift package propertylawcheck discover --target <name>"
-        case .unknownSubcommand(let name):
-            return "unknown subcommand: \(name). Available: discover"
-        case .missingFlag(let flag):
-            return "missing required flag \(flag)"
-        case .unknownArgument(let arg):
-            return "unknown argument: \(arg)"
-        case .unknownTarget(let name):
-            return "no target named \(name) in this package"
-        case .toolFailed(let status):
-            return "PropertyLawDiscoveryTool exited with status \(status)"
-        }
-    }
-}

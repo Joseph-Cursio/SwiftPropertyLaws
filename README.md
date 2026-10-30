@@ -170,6 +170,16 @@ swift package --allow-writing-to-package-directory propertylawcheck discover --t
 
 Walks every `.swift` file in the target, aggregates type declarations and extensions across files, and emits `Tests/MyModuleTests/PropertyLawTests.generated.swift` with one `@Suite struct` per recognized type.
 
+Options:
+
+| Flag | Effect |
+|---|---|
+| `--output <path>` | Write the generated file somewhere other than the default. |
+| `--extra-import <Module>` | Add `import <Module>` to the generated file. Repeatable. Use it for a package that supplies generators the emitted code calls, e.g. `--extra-import PropertyLawSyntax` so an emitted `Syntax.gen()` resolves. Never inferred, and the target's own module is ignored. |
+| `--scaffold-out <path>` | Also write best-effort `gen()` stubs for types that derive only partly, with `<#…#>` placeholders, to a separate file for review. |
+| `--advisory` | Print missing-conformance and round-trip suggestions to stderr. The generated file is unchanged. |
+| `--advisory-min <low\|medium\|high>` | Confidence floor for `--advisory`. Defaults to `high`. |
+
 Idempotent: re-running with no source changes produces byte-identical output. Suppression markers in the generated file (`// property-law-suppress: <protocol>_<TypeName>`) survive regeneration — the user marks a check as deliberately skipped, the next run keeps it skipped.
 
 ## Strictness tiers

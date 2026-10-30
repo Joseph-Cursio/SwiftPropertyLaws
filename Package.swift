@@ -255,6 +255,15 @@ let package = Package(
                 .product(name: "SwiftParser", package: "swift-syntax")
             ]
         ),
+        // The plugin's argument parsing. A plugin target cannot be a
+        // dependency, so this target compiles the plugin's two
+        // `PackagePlugin`-free files itself, through symlinks into
+        // `Plugins/PropertyLawDiscoveryPlugin`. It depends on the tool so the
+        // argv the plugin forwards can be read back by the tool's own parser.
+        .testTarget(
+            name: "PropertyLawDiscoveryPluginTests",
+            dependencies: ["PropertyLawDiscoveryTool"]
+        ),
 
         // v2.1.0 — opt-in Complex<RealType> generator helpers. Lives in
         // its own product so `swift-numerics` stays out of the main
