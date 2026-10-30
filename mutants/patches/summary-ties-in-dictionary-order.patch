@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift b/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift
+index 798e347..9824091 100644
+--- a/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift
++++ b/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift
+@@ -190,7 +190,7 @@ struct PropertyLawDiscoveryTool {
+     /// `.summary.txt` files changed between runs with nothing scanned changing.
+     static func bucketLines(_ buckets: [String: Int]) -> [String] {
+         buckets
+-            .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
++            .sorted { $0.value > $1.value }
+             .map { "    [\($0.value)] \($0.key)" }
+     }
+ 

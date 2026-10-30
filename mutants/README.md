@@ -80,6 +80,25 @@ Requires a clean working tree.
 | `default-enforcement-escalates-every-tier` | enforcement-reporting | killed | `unstableHasherDoesNotThrowByDefault` |
 | `suppressed-violation-is-reported` | enforcement-reporting | killed | `suppressedAndExpectedViolationsStayQuiet` |
 | `strict-violation-is-also-recorded` | enforcement-reporting | killed | `aStrictViolationIsThrownRatherThanMerelyRecorded` |
+| `sendable-seeds-drop-error` | discovery-sendable | killed | `standardLibraryRefinementSuppliesSendable` |
+| `sendable-seeds-drop-task-executor` | discovery-sendable | killed | `standardLibraryRefinementSuppliesSendable` |
+| `sendable-seeds-ignore-shadowing` | discovery-sendable | killed | `moduleProtocolShadowsSeed` |
+| `sendable-keeps-swift-qualifier` | discovery-sendable | killed | `qualifiedSpellings` |
+| `sendable-keeps-concurrency-qualifier` | discovery-sendable | killed | `qualifiedSpellings` |
+| `sendable-keeps-foundation-qualifier` | discovery-sendable | killed | `qualifiedSpellings` |
+| `actor-is-not-sendable` | discovery-sendable | killed | `actorIsSendable` |
+| `foundation-seeds-unused` | discovery-sendable | killed | `foundationRefinementSuppliesSendable` |
+| `foundation-seeds-drop-localized-error` | discovery-sendable | killed | `foundationRefinementSuppliesSendable` |
+| `foundation-nested-seed-unqualified` | discovery-sendable | killed | `foundationRefinementSuppliesSendable` |
+| `namesakes-hide-nothing` | discovery-namesakes | killed | `namesakeLendsNoConformances` |
+| `namesakes-hide-exact-name-only` | discovery-namesakes | killed | `nestedInNamesakeIsHidden` |
+| `namesakes-declared-by-leaf-name` | discovery-namesakes | killed | `nestedTargetTypeHidesNoTopLevelNamesake` |
+| `namesakes-count-target-extensions` | discovery-namesakes | killed | `withContext` |
+| `namesakes-hide-target-files-too` | discovery-namesakes | killed | `targetDeclarationWins` |
+| `namesakes-declaration-not-hidden` | discovery-namesakes | killed | `memberlessTargetKeepsItsOwnShape` |
+| `namesakes-extension-not-hidden` | discovery-namesakes | killed | `nestedInNamesakeIsHidden` |
+| `namesakes-alias-not-hidden` | discovery-namesakes | killed | `namesakeAliasIsHidden` |
+| `summary-ties-in-dictionary-order` | discovery-summary | killed | `tiesSortByName` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -234,3 +253,25 @@ against the original suite, all six tests whose purpose is "does not throw by
 default" passed it, each absorbing the throw as a known issue. The last two
 would survive a severity change made without its tests: a warning does not
 fail a test, so "nothing is recorded" has to be asserted rather than assumed.
+
+**`discovery-sendable`, `discovery-namesakes` and `discovery-summary` guard the
+discovery tool rather than the kit.** A law mutant leaves a planted violator
+uncaught. These change what the tool writes for a scanned package, which shows
+only when someone compiles or reads the generated file. Each was first run by
+hand when its fix landed, on 2026-10-29, and is kept here so that a later change
+to the scanner reruns it.
+
+- **`discovery-sendable`** guards the rule that decides whether a `public` type
+  is `Sendable`, since a suite for a type that is not cannot type-check. Nine of
+  its ten mutants make the tool skip a type that is `Sendable`: a dropped seed,
+  a qualifier left on, an actor judged by its inheritance clause. A skip loses
+  coverage and fails nothing, so no other test notices.
+  `sendable-seeds-ignore-shadowing` errs the other way. It vouches for a
+  module's own `protocol Clock {}`, so the generated file does not compile.
+- **`discovery-namesakes`** guards the hiding of a dependency's same-named type.
+  Five of its mutants hide too little and bring back the Sitrep/Yams `Node`
+  merge in some form. The other three hide too much: a dependency type the
+  target extends loses its declaration, or the target's own declarations vanish.
+- **`discovery-summary`** has one mutant, and no single scan shows it: it only
+  makes two identical runs disagree. Its killer has ten tied buckets, so the
+  mutant passes only if `Dictionary` happens to iterate them in name order.

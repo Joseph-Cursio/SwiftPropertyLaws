@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Declarations.swift b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Declarations.swift
+index e43076c..720c714 100644
+--- a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Declarations.swift
++++ b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Declarations.swift
+@@ -40,7 +40,6 @@ extension ModuleScanner {
+             let qualified = (namespace + [primary.name]).joined(separator: ".")
+             // A dependency's namesake of a target type, with everything nested
+             // in it. See `RecordingContext.hidden`.
+-            guard !context.hides(qualified) else { return }
+             record(
+                 RecordRequest(
+                     name: qualified,

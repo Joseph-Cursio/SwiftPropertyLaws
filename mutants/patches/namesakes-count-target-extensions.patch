@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
+index 9cff811..7146d88 100644
+--- a/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
++++ b/Sources/PropertyLawDiscoveryTool/ModuleScanner+Namesakes.swift
+@@ -31,7 +31,7 @@ extension ModuleScanner {
+         for (file, parsed) in targetFiles {
+             absorb(parsed, from: file, hiding: [], into: &declared, aliases: &unusedAliases)
+         }
+-        return Set(declared.filter { $0.value.typeKind != nil }.keys)
++        return Set(declared.keys)
+     }
+ }
+ 

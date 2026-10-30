@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+index bf7b265..cacdf75 100644
+--- a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
++++ b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+@@ -78,7 +78,6 @@ enum SendableProtocols {
+         // name, so a seed the module redeclares is judged by the module's
+         // inheritance clause instead, like any other protocol it declares.
+         var sendable = standardLibraryRefinements
+-            .union(foundationRefinements)
+             .subtracting(inherits.keys)
+             .union(["Sendable"])
+         var changed = true

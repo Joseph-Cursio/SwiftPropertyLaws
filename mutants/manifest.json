@@ -473,6 +473,158 @@
       "expected": "killed",
       "test": "aStrictViolationIsThrownRatherThanMerelyRecorded",
       "label": "A Strict violation is thrown and also recorded as a warning, so it is reported twice. Survives the original guard once the severity is a warning."
+    },
+    {
+      "id": "sendable-seeds-drop-error",
+      "patch": "patches/sendable-seeds-drop-error.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "standardLibraryRefinementSuppliesSendable",
+      "label": "`Error` is dropped from the standard library's Sendable seeds, so a public type whose only route to Sendable is `Error` (ArgumentParser's `ExitCode`) is skipped as not Sendable again."
+    },
+    {
+      "id": "sendable-seeds-drop-task-executor",
+      "patch": "patches/sendable-seeds-drop-task-executor.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "standardLibraryRefinementSuppliesSendable",
+      "label": "`TaskExecutor` is dropped from the seeds. The test spells each seed out, so a dropped name fails its case instead of shrinking the test with it."
+    },
+    {
+      "id": "sendable-seeds-ignore-shadowing",
+      "patch": "patches/sendable-seeds-ignore-shadowing.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "moduleProtocolShadowsSeed",
+      "label": "A module's own protocol named like a seed (`protocol Clock {}`) no longer shadows it, so the seed vouches for a protocol that does not refine Sendable and the emitted suite would not type-check."
+    },
+    {
+      "id": "sendable-keeps-swift-qualifier",
+      "patch": "patches/sendable-keeps-swift-qualifier.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "qualifiedSpellings",
+      "label": "`Swift.` is no longer stripped, so Hummingbird's `Swift.Error` spelling stops counting."
+    },
+    {
+      "id": "sendable-keeps-concurrency-qualifier",
+      "patch": "patches/sendable-keeps-concurrency-qualifier.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "qualifiedSpellings",
+      "label": "`_Concurrency.` is no longer stripped, so `_Concurrency.Clock` stops counting."
+    },
+    {
+      "id": "sendable-keeps-foundation-qualifier",
+      "patch": "patches/sendable-keeps-foundation-qualifier.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "qualifiedSpellings",
+      "label": "`Foundation.` is no longer stripped, so `Foundation.LocalizedError` stops counting."
+    },
+    {
+      "id": "actor-is-not-sendable",
+      "patch": "patches/actor-is-not-sendable.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "actorIsSendable",
+      "label": "An actor is judged by its inheritance clause like any other type, so an actor that does not name Sendable is skipped."
+    },
+    {
+      "id": "foundation-seeds-unused",
+      "patch": "patches/foundation-seeds-unused.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "foundationRefinementSuppliesSendable",
+      "label": "The Foundation seeds are declared but never joined into the fixed point, so `struct AppError: LocalizedError` is skipped again."
+    },
+    {
+      "id": "foundation-seeds-drop-localized-error",
+      "patch": "patches/foundation-seeds-drop-localized-error.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "foundationRefinementSuppliesSendable",
+      "label": "`LocalizedError` is dropped from the Foundation seeds."
+    },
+    {
+      "id": "foundation-nested-seed-unqualified",
+      "patch": "patches/foundation-nested-seed-unqualified.patch",
+      "shape": "discovery-sendable",
+      "expected": "killed",
+      "test": "foundationRefinementSuppliesSendable",
+      "label": "`NotificationCenter.AsyncMessage` is seeded under its leaf name, which no conformance spells, so the seed never matches."
+    },
+    {
+      "id": "namesakes-hide-nothing",
+      "patch": "patches/namesakes-hide-nothing.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "namesakeLendsNoConformances",
+      "label": "Nothing is hidden, so a dependency's namesake merges into the target type again: Sitrep's `Node` gets Yams' `Hashable` and `Comparable` conformances."
+    },
+    {
+      "id": "namesakes-hide-exact-name-only",
+      "patch": "patches/namesakes-hide-exact-name-only.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "nestedInNamesakeIsHidden",
+      "label": "Only the exact hidden name is hidden, not the types nested under it, so the dependency's `Node.Scalar` and `Node.Mapping` survive."
+    },
+    {
+      "id": "namesakes-declared-by-leaf-name",
+      "patch": "patches/namesakes-declared-by-leaf-name.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "nestedTargetTypeHidesNoTopLevelNamesake",
+      "label": "The target's declared names are reduced to their leaf, so the target's `Outer.Node` hides a dependency's top-level `Node` that the target extends."
+    },
+    {
+      "id": "namesakes-count-target-extensions",
+      "patch": "patches/namesakes-count-target-extensions.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "withContext",
+      "label": "A type the target only extends counts as declared, so its dependency declaration is hidden and the extended type stops deriving."
+    },
+    {
+      "id": "namesakes-hide-target-files-too",
+      "patch": "patches/namesakes-hide-target-files-too.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "targetDeclarationWins",
+      "label": "Target files are absorbed with their own names hidden, so the target's declarations vanish along with the dependency's."
+    },
+    {
+      "id": "namesakes-declaration-not-hidden",
+      "patch": "patches/namesakes-declaration-not-hidden.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "memberlessTargetKeepsItsOwnShape",
+      "label": "A dependency's declaration of a hidden name is still recorded, so a memberless target type takes its namesake's members again."
+    },
+    {
+      "id": "namesakes-extension-not-hidden",
+      "patch": "patches/namesakes-extension-not-hidden.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "nestedInNamesakeIsHidden",
+      "label": "A dependency's extension of a hidden name is still recorded, so its `extension Node.Sequence` lands in the target's namespace."
+    },
+    {
+      "id": "namesakes-alias-not-hidden",
+      "patch": "patches/namesakes-alias-not-hidden.patch",
+      "shape": "discovery-namesakes",
+      "expected": "killed",
+      "test": "namesakeAliasIsHidden",
+      "label": "A dependency's typealias of a hidden name is still recorded, so a target member typed `Node` would resolve as the alias's `String`."
+    },
+    {
+      "id": "summary-ties-in-dictionary-order",
+      "patch": "patches/summary-ties-in-dictionary-order.patch",
+      "shape": "discovery-summary",
+      "expected": "killed",
+      "test": "tiesSortByName",
+      "label": "The summary's gap buckets sort by count alone, so ties come out in Dictionary order, which Swift randomizes per process, and the committed `.summary.txt` files change between identical runs."
     }
   ]
 }

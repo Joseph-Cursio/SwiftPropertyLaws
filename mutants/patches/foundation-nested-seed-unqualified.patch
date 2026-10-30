@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+index bf7b265..63cd6a1 100644
+--- a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
++++ b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
+@@ -63,7 +63,7 @@ enum SendableProtocols {
+     /// which have no laws to check, and an actor is `Sendable` already.
+     static let foundationRefinements: Set<String> = [
+         "CustomNSError", "LocalizedError", "RecoverableError",
+-        "AttributedStringProtocol", "NotificationCenter.AsyncMessage",
++        "AttributedStringProtocol", "AsyncMessage",
+         "SortComparator", "StandardPredicateExpression"
+     ]
+ 
