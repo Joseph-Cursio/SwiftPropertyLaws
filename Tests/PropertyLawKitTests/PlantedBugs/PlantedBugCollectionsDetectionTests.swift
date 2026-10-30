@@ -199,7 +199,7 @@ struct PlantedBugCollectionsDetectionTests {
             "SetAlgebra.deMorganForUnion", "SetAlgebra.deMorganForIntersection"
         ]
         #expect(
-            fired.intersection(nonMutatingLaws).isEmpty,
+            fired.isDisjoint(with: nonMutatingLaws),
             """
             the pre-existing laws are stated over the non-mutating operations \
             and should not fire here; got: \
