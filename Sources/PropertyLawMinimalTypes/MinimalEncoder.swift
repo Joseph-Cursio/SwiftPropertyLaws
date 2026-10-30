@@ -52,28 +52,10 @@ final class BoxedEncoder: Encoder {
 /// and signedness a value was encoded with survive into the tree.
 enum PrimitiveEncoding {
     static func value(_ value: some Encodable, codingPath: [any CodingKey]) throws -> MinimalCodableValue {
-        switch value {
-        case let payload as Bool: .bool(payload)
-        case let payload as Int: .int(payload)
-        case let payload as Int8: .int8(payload)
-        case let payload as Int16: .int16(payload)
-        case let payload as Int32: .int32(payload)
-        case let payload as Int64: .int64(payload)
-        case let payload as UInt: .uint(payload)
-        case let payload as UInt8: .uint8(payload)
-        case let payload as UInt16: .uint16(payload)
-        case let payload as UInt32: .uint32(payload)
-        case let payload as UInt64: .uint64(payload)
-        case let payload as Float: .float(payload)
-        case let payload as Double: .double(payload)
-        case let payload as String: .string(payload)
-        default:
-            try {
-                let nested = BoxedEncoder(codingPath: codingPath)
-                try value.encode(to: nested)
-                return nested.finalize()
-            }()
-        }
+        if let leaf = value as? any MinimalLeaf { return leaf.minimalValue }
+        let nested = BoxedEncoder(codingPath: codingPath)
+        try value.encode(to: nested)
+        return nested.finalize()
     }
 }
 
