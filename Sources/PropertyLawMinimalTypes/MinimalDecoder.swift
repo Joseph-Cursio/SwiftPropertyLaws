@@ -85,7 +85,11 @@ enum PrimitiveReading {
         }
     }
 
-    static func value<T: Decodable>(_ type: T.Type, from value: MinimalCodableValue, at path: [any CodingKey]) throws -> T {
+    static func value<T: Decodable>(
+        _ type: T.Type,
+        from value: MinimalCodableValue,
+        at path: [any CodingKey]
+    ) throws -> T {
         if let primitive = try primitive(T.self, from: value, at: path) { return primitive }
         if isLeaf(T.self) {
             throw MinimalDecodingError(
