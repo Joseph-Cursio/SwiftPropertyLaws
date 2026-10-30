@@ -5,10 +5,7 @@ import Testing
 /// in either the macro impl's `generatorExpression` or the discovery
 /// plugin's `GeneratedFileEmitter.generatorExpression` — both delegate to
 /// `MemberwiseEmitter.expression` so a single source of truth is fixed
-/// here. (The `assertMacroExpansion`-based tests in
-/// `MacroExpansionTests` and `EmitterGoldenTests` rely on
-/// `XCTFail`-based string equality which Swift Testing's `@Test` doesn't
-/// always pick up — this file is the actual drift guard.)
+/// here.
 struct MemberwiseEmitterTests {
 
     @Test func singleMemberEmitsPlainMap() {
