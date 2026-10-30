@@ -169,4 +169,47 @@ struct PlantedBugIntegerDetectionTests {
             "missing arms: \(expected.subtracting(laws).sorted())"
         )
     }
+
+    // MARK: - One fault at a time
+
+    private func violatedLaws<Fault: IntegerFault>(
+        _ fault: Fault.Type,
+        binaryInteger: Bool = false
+    ) async -> Set<String> {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            if binaryInteger {
+                try await checkBinaryIntegerPropertyLaws(
+                    using: singleFaultIntegers(fault), options: LawCheckOptions(budget: .sanity), laws: .ownOnly)
+            } else {
+                try await checkFixedWidthIntegerPropertyLaws(
+                    using: singleFaultIntegers(fault), options: LawCheckOptions(budget: .sanity), laws: .ownOnly)
+            }
+        }
+        return Set(violation?.results.map(\.protocolLaw) ?? [])
+    }
+
+    /// `ChaoticFixedWidth` breaks every check in these laws, so it cannot show
+    /// that each check is needed. Each of these faults breaks one check and
+    /// leaves the rest of its law true.
+    @Test func eachReportingOverflowCheckIsNeededOnItsOwn() async {
+        #expect(await violatedLaws(AddingZeroOverflows.self)
+            == ["FixedWidthInteger.addingReportingOverflowConsistency"])
+        #expect(await violatedLaws(SubtractingZeroOverflows.self)
+            == ["FixedWidthInteger.subtractingReportingOverflowConsistency"])
+        #expect(await violatedLaws(MultiplyingByOneOverflows.self)
+            == ["FixedWidthInteger.multipliedReportingOverflowConsistency"])
+    }
+
+    /// `max &+ 1 == min` holds and `min &- 1 == min`. The wrapping law has to
+    /// check both boundaries.
+    @Test func eachWrapAroundBoundaryIsChecked() async {
+        #expect(await violatedLaws(MinMinusOneSaturates.self)
+            == ["FixedWidthInteger.wrappingArithmeticDoesNotTrap"])
+    }
+
+    /// The quotient is right and the remainder is not.
+    @Test func quotientAndRemainderAreCheckedSeparately() async {
+        #expect(await violatedLaws(RemainderOffByOne.self, binaryInteger: true)
+            == ["BinaryInteger.quotientAndRemainderConsistency"])
+    }
 }
