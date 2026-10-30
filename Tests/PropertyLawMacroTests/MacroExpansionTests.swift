@@ -18,6 +18,25 @@ nonisolated(unsafe) let testMacros: [String: Macro.Type] = [
 
 struct MacroExpansionTests {
 
+    /// The warning for a type whose only initializers are ones derivation
+    /// declines, such as a failable `init?(rawValue:)`.
+    private static func noUsableInitializer(_ typeName: String) -> DiagnosticSpec {
+        DiagnosticSpec(
+            message: """
+                Cannot derive a generator for `\(typeName)`: the type's user \
+                `init(...)` declarations don't support derivation — each is \
+                failable, throwing, access-restricted, parameterless, over 100 \
+                parameters, or unsafe to call with independently drawn \
+                arguments (a capacity hint, a private-storage label, or a \
+                stated precondition). Provide `static func gen() -> \
+                Generator<\(typeName), some SendableSequenceType>`.
+                """,
+            line: 1,
+            column: 1,
+            severity: .warning
+        )
+    }
+
     @Test func equatableConformancesEmitsPeerSuite() {
         assertMacroExpansion(
             """
@@ -33,11 +52,13 @@ struct MacroExpansionTests {
 
             struct FooPropertyLawTests {
                 @Test func equatable_Foo() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Foo.self,
-                            using: Foo.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Foo.self,
+                        using: Gen<Int>.int().map {
+                            Foo(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -59,11 +80,13 @@ struct MacroExpansionTests {
 
             struct FooPropertyLawTests {
                 @Test func hashable_Foo() async throws {
-                        try await checkHashablePropertyLaws(
-                            for: Foo.self,
-                            using: Foo.gen()
-                        )
-                    }
+                    try await checkHashablePropertyLaws(
+                        for: Foo.self,
+                        using: Gen<Int>.int().map {
+                            Foo(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -87,11 +110,13 @@ struct MacroExpansionTests {
 
             struct FooPropertyLawTests {
                 @Test func comparable_Foo() async throws {
-                        try await checkComparablePropertyLaws(
-                            for: Foo.self,
-                            using: Foo.gen()
-                        )
-                    }
+                    try await checkComparablePropertyLaws(
+                        for: Foo.self,
+                        using: Gen<Int>.int().map {
+                            Foo(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -115,11 +140,14 @@ struct MacroExpansionTests {
 
             struct UserPropertyLawTests {
                 @Test func identifiable_User() async throws {
-                        try await checkIdentifiablePropertyLaws(
-                            for: User.self,
-                            using: User.gen()
-                        )
-                    }
+                    try await checkIdentifiablePropertyLaws(
+                        for: User.self,
+                        using: zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0 ... 8))
+                        .map {
+                            User(id: $0.0, name: $0.1)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -145,20 +173,23 @@ struct MacroExpansionTests {
 
             struct SlugPropertyLawTests {
                 @Test func equatable_Slug() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Slug.self,
-                            using: Slug.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Slug.self,
+                        using: Slug.gen()  // TODO: no generator derived — supply `static func gen()` \
+            (this line will not compile)
+                    )
+                }
 
                 @Test func losslessStringConvertible_Slug() async throws {
-                        try await checkLosslessStringConvertiblePropertyLaws(
-                            for: Slug.self,
-                            using: Slug.gen()
-                        )
-                    }
+                    try await checkLosslessStringConvertiblePropertyLaws(
+                        for: Slug.self,
+                        using: Slug.gen()  // TODO: no generator derived — supply `static func gen()` \
+            (this line will not compile)
+                    )
+                }
             }
             """,
+            diagnostics: [Self.noUsableInitializer("Slug")],
             macros: testMacros
         )
     }
@@ -185,20 +216,23 @@ struct MacroExpansionTests {
 
             struct TokenPropertyLawTests {
                 @Test func equatable_Token() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Token.self,
-                            using: Token.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Token.self,
+                        using: Token.gen()  // TODO: no generator derived — supply `static func gen()` \
+            (this line will not compile)
+                    )
+                }
 
                 @Test func rawRepresentable_Token() async throws {
-                        try await checkRawRepresentablePropertyLaws(
-                            for: Token.self,
-                            using: Token.gen()
-                        )
-                    }
+                    try await checkRawRepresentablePropertyLaws(
+                        for: Token.self,
+                        using: Token.gen()  // TODO: no generator derived — supply `static func gen()` \
+            (this line will not compile)
+                    )
+                }
             }
             """,
+            diagnostics: [Self.noUsableInitializer("Token")],
             macros: testMacros
         )
     }
@@ -230,11 +264,13 @@ struct MacroExpansionTests {
 
             struct FooPropertyLawTests {
                 @Test func comparable_Foo() async throws {
-                        try await checkComparablePropertyLaws(
-                            for: Foo.self,
-                            using: Foo.gen()
-                        )
-                    }
+                    try await checkComparablePropertyLaws(
+                        for: Foo.self,
+                        using: Gen<Int>.int().map {
+                            Foo(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -256,18 +292,22 @@ struct MacroExpansionTests {
 
             struct RecordPropertyLawTests {
                 @Test func equatable_Record() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Record.self,
-                            using: Record.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Record.self,
+                        using: Gen<Int>.int().map {
+                            Record(id: $0)
+                        }
+                    )
+                }
 
                 @Test func codable_Record() async throws {
-                        try await checkCodablePropertyLaws(
-                            for: Record.self,
-                            using: Record.gen()
-                        )
-                    }
+                    try await checkCodablePropertyLaws(
+                        for: Record.self,
+                        using: Gen<Int>.int().map {
+                            Record(id: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -295,11 +335,11 @@ struct MacroExpansionTests {
 
             struct PagesPropertyLawTests {
                 @Test func collection_Pages() async throws {
-                        try await checkCollectionPropertyLaws(
-                            for: Pages.self,
-                            using: Pages.gen()
-                        )
-                    }
+                    try await checkCollectionPropertyLaws(
+                        for: Pages.self,
+                        using: Gen.always(Pages())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -332,11 +372,11 @@ struct MacroExpansionTests {
 
             struct PagesPropertyLawTests {
                 @Test func randomAccessCollection_Pages() async throws {
-                        try await checkRandomAccessCollectionPropertyLaws(
-                            for: Pages.self,
-                            using: Pages.gen()
-                        )
-                    }
+                    try await checkRandomAccessCollectionPropertyLaws(
+                        for: Pages.self,
+                        using: Gen.always(Pages())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -375,11 +415,13 @@ struct MacroExpansionTests {
 
             struct QuaternionPropertyLawTests {
                 @Test func signedNumeric_Quaternion() async throws {
-                        try await checkSignedNumericPropertyLaws(
-                            for: Quaternion.self,
-                            using: Quaternion.gen()
-                        )
-                    }
+                    try await checkSignedNumericPropertyLaws(
+                        for: Quaternion.self,
+                        using: Gen<Int>.int().map {
+                            Quaternion(integerLiteral: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -401,11 +443,11 @@ struct MacroExpansionTests {
 
             struct WideIntPropertyLawTests {
                 @Test func signedInteger_WideInt() async throws {
-                        try await checkSignedIntegerPropertyLaws(
-                            for: WideInt.self,
-                            using: WideInt.gen()
-                        )
-                    }
+                    try await checkSignedIntegerPropertyLaws(
+                        for: WideInt.self,
+                        using: Gen.always(WideInt())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -428,11 +470,11 @@ struct MacroExpansionTests {
 
             struct CharBufferPropertyLawTests {
                 @Test func stringProtocol_CharBuffer() async throws {
-                        try await checkStringProtocolPropertyLaws(
-                            for: CharBuffer.self,
-                            using: CharBuffer.gen()
-                        )
-                    }
+                    try await checkStringProtocolPropertyLaws(
+                        for: CharBuffer.self,
+                        using: Gen.always(CharBuffer())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -453,11 +495,11 @@ struct MacroExpansionTests {
 
             struct QuadPropertyLawTests {
                 @Test func binaryFloatingPoint_Quad() async throws {
-                        try await checkBinaryFloatingPointPropertyLaws(
-                            for: Quad.self,
-                            using: Quad.gen()
-                        )
-                    }
+                    try await checkBinaryFloatingPointPropertyLaws(
+                        for: Quad.self,
+                        using: Gen.always(Quad())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -478,11 +520,11 @@ struct MacroExpansionTests {
 
             struct QuadPropertyLawTests {
                 @Test func floatingPoint_Quad() async throws {
-                        try await checkFloatingPointPropertyLaws(
-                            for: Quad.self,
-                            using: Quad.gen()
-                        )
-                    }
+                    try await checkFloatingPointPropertyLaws(
+                        for: Quad.self,
+                        using: Gen.always(Quad())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -504,19 +546,19 @@ struct MacroExpansionTests {
             struct Word: FixedWidthInteger, SignedInteger {}
 
             struct WordPropertyLawTests {
-                @Test func fixedWidthInteger_Word() async throws {
-                        try await checkFixedWidthIntegerPropertyLaws(
-                            for: Word.self,
-                            using: Word.gen()
-                        )
-                    }
-
                 @Test func signedInteger_Word() async throws {
-                        try await checkSignedIntegerPropertyLaws(
-                            for: Word.self,
-                            using: Word.gen()
-                        )
-                    }
+                    try await checkSignedIntegerPropertyLaws(
+                        for: Word.self,
+                        using: Gen.always(Word())
+                    )
+                }
+
+                @Test func fixedWidthInteger_Word() async throws {
+                    try await checkFixedWidthIntegerPropertyLaws(
+                        for: Word.self,
+                        using: Gen.always(Word())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -536,11 +578,11 @@ struct MacroExpansionTests {
 
             struct BigUIntPropertyLawTests {
                 @Test func unsignedInteger_BigUInt() async throws {
-                        try await checkUnsignedIntegerPropertyLaws(
-                            for: BigUInt.self,
-                            using: BigUInt.gen()
-                        )
-                    }
+                    try await checkUnsignedIntegerPropertyLaws(
+                        for: BigUInt.self,
+                        using: Gen.always(BigUInt())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -577,25 +619,25 @@ struct MacroExpansionTests {
 
             struct BufferPropertyLawTests {
                 @Test func randomAccessCollection_Buffer() async throws {
-                        try await checkRandomAccessCollectionPropertyLaws(
-                            for: Buffer.self,
-                            using: Buffer.gen()
-                        )
-                    }
+                    try await checkRandomAccessCollectionPropertyLaws(
+                        for: Buffer.self,
+                        using: Gen.always(Buffer())
+                    )
+                }
 
                 @Test func mutableCollection_Buffer() async throws {
-                        try await checkMutableCollectionPropertyLaws(
-                            for: Buffer.self,
-                            using: Buffer.gen()
-                        )
-                    }
+                    try await checkMutableCollectionPropertyLaws(
+                        for: Buffer.self,
+                        using: Gen.always(Buffer())
+                    )
+                }
 
                 @Test func rangeReplaceableCollection_Buffer() async throws {
-                        try await checkRangeReplaceableCollectionPropertyLaws(
-                            for: Buffer.self,
-                            using: Buffer.gen()
-                        )
-                    }
+                    try await checkRangeReplaceableCollectionPropertyLaws(
+                        for: Buffer.self,
+                        using: Gen.always(Buffer())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -619,11 +661,13 @@ struct MacroExpansionTests {
 
             struct CounterPropertyLawTests {
                 @Test func semigroup_Counter() async throws {
-                        try await checkSemigroupPropertyLaws(
-                            for: Counter.self,
-                            using: Counter.gen()
-                        )
-                    }
+                    try await checkSemigroupPropertyLaws(
+                        for: Counter.self,
+                        using: Gen<Int>.int().map {
+                            Counter(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -644,11 +688,11 @@ struct MacroExpansionTests {
 
             struct TallyPropertyLawTests {
                 @Test func monoid_Tally() async throws {
-                        try await checkMonoidPropertyLaws(
-                            for: Tally.self,
-                            using: Tally.gen()
-                        )
-                    }
+                    try await checkMonoidPropertyLaws(
+                        for: Tally.self,
+                        using: Gen.always(Tally())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -668,11 +712,11 @@ struct MacroExpansionTests {
 
             struct TallyPropertyLawTests {
                 @Test func monoid_Tally() async throws {
-                        try await checkMonoidPropertyLaws(
-                            for: Tally.self,
-                            using: Tally.gen()
-                        )
-                    }
+                    try await checkMonoidPropertyLaws(
+                        for: Tally.self,
+                        using: Gen.always(Tally())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -695,11 +739,11 @@ struct MacroExpansionTests {
 
             struct TallyPropertyLawTests {
                 @Test func commutativeMonoid_Tally() async throws {
-                        try await checkCommutativeMonoidPropertyLaws(
-                            for: Tally.self,
-                            using: Tally.gen()
-                        )
-                    }
+                    try await checkCommutativeMonoidPropertyLaws(
+                        for: Tally.self,
+                        using: Gen.always(Tally())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -717,11 +761,11 @@ struct MacroExpansionTests {
 
             struct TallyPropertyLawTests {
                 @Test func commutativeMonoid_Tally() async throws {
-                        try await checkCommutativeMonoidPropertyLaws(
-                            for: Tally.self,
-                            using: Tally.gen()
-                        )
-                    }
+                    try await checkCommutativeMonoidPropertyLaws(
+                        for: Tally.self,
+                        using: Gen.always(Tally())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -742,11 +786,11 @@ struct MacroExpansionTests {
 
             struct AdditiveIntPropertyLawTests {
                 @Test func group_AdditiveInt() async throws {
-                        try await checkGroupPropertyLaws(
-                            for: AdditiveInt.self,
-                            using: AdditiveInt.gen()
-                        )
-                    }
+                    try await checkGroupPropertyLaws(
+                        for: AdditiveInt.self,
+                        using: Gen.always(AdditiveInt())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -767,17 +811,18 @@ struct MacroExpansionTests {
 
             struct AdditiveIntPropertyLawTests {
                 @Test func commutativeMonoid_AdditiveInt() async throws {
-                        try await checkCommutativeMonoidPropertyLaws(
-                            for: AdditiveInt.self,
-                            using: AdditiveInt.gen()
-                        )
-                    }
+                    try await checkCommutativeMonoidPropertyLaws(
+                        for: AdditiveInt.self,
+                        using: Gen.always(AdditiveInt())
+                    )
+                }
+
                 @Test func group_AdditiveInt() async throws {
-                        try await checkGroupPropertyLaws(
-                            for: AdditiveInt.self,
-                            using: AdditiveInt.gen()
-                        )
-                    }
+                    try await checkGroupPropertyLaws(
+                        for: AdditiveInt.self,
+                        using: Gen.always(AdditiveInt())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -798,11 +843,11 @@ struct MacroExpansionTests {
 
             struct MaxIntPropertyLawTests {
                 @Test func semilattice_MaxInt() async throws {
-                        try await checkSemilatticePropertyLaws(
-                            for: MaxInt.self,
-                            using: MaxInt.gen()
-                        )
-                    }
+                    try await checkSemilatticePropertyLaws(
+                        for: MaxInt.self,
+                        using: Gen.always(MaxInt())
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -820,11 +865,11 @@ struct MacroExpansionTests {
 
             struct MaxIntPropertyLawTests {
                 @Test func semilattice_MaxInt() async throws {
-                        try await checkSemilatticePropertyLaws(
-                            for: MaxInt.self,
-                            using: MaxInt.gen()
-                        )
-                    }
+                    try await checkSemilatticePropertyLaws(
+                        for: MaxInt.self,
+                        using: Gen.always(MaxInt())
+                    )
+                }
             }
             """,
             macros: testMacros

@@ -4,12 +4,6 @@ import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import PropertyLawMacroImpl
 
-// One test per derivation-strategy diagnostic; the suite legitimately
-// grows past SwiftLint's default body-length threshold as derivation
-// strategies ship. Disable is paired with an explicit re-enable at
-// end of file.
-// swiftlint:disable type_body_length
-
 struct DiagnosticsTests {
 
     /// Direct `#expect` pin on the dynamic `noKnownConformance` message.
@@ -43,18 +37,7 @@ struct DiagnosticsTests {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: """
-                        Type has no recognized stdlib protocol conformance — no \
-                        law checks emitted. Recognized protocols: Equatable, \
-                        Hashable, Comparable, Codable, IteratorProtocol, Sequence, \
-                        Collection, BidirectionalCollection, RandomAccessCollection, \
-                        MutableCollection, RangeReplaceableCollection, SetAlgebra, \
-                        Strideable, RawRepresentable, LosslessStringConvertible, \
-                        Identifiable, CaseIterable. Conformances declared via \
-                        extensions outside the type's primary declaration aren't \
-                        visible to the macro (it sees only the decoratee's syntax); \
-                        whole-module discovery (PRD §5.3) handles those cases.
-                        """,
+                    message: PropertyLawDiagnostic.noKnownConformance.message,
                     line: 1,
                     column: 1,
                     severity: .warning
@@ -79,18 +62,7 @@ struct DiagnosticsTests {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: """
-                        Type has no recognized stdlib protocol conformance — no \
-                        law checks emitted. Recognized protocols: Equatable, \
-                        Hashable, Comparable, Codable, IteratorProtocol, Sequence, \
-                        Collection, BidirectionalCollection, RandomAccessCollection, \
-                        MutableCollection, RangeReplaceableCollection, SetAlgebra, \
-                        Strideable, RawRepresentable, LosslessStringConvertible, \
-                        Identifiable, CaseIterable. Conformances declared via \
-                        extensions outside the type's primary declaration aren't \
-                        visible to the macro (it sees only the decoratee's syntax); \
-                        whole-module discovery (PRD §5.3) handles those cases.
-                        """,
+                    message: PropertyLawDiagnostic.noKnownConformance.message,
                     line: 1,
                     column: 1,
                     severity: .warning
@@ -121,11 +93,13 @@ struct DiagnosticsTests {
 
             struct FooPropertyLawTests {
                 @Test func equatable_Foo() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Foo.self,
-                            using: Gen<Int>.int().map { Foo(value: $0) }
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Foo.self,
+                        using: Gen<Int>.int().map {
+                            Foo(value: $0)
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -150,11 +124,12 @@ struct DiagnosticsTests {
 
             struct DocPropertyLawTests {
                 @Test func equatable_Doc() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Doc.self,
-                            using: Doc.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Doc.self,
+                        using: Doc.gen()  // TODO: no generator derived — supply `static func gen()` \
+            (this line will not compile)
+                    )
+                }
             }
             """,
             diagnostics: [
@@ -178,9 +153,10 @@ struct DiagnosticsTests {
         )
     }
 
-    @Test func structWithUserInitFiresCannotDeriveWarning() {
+    @Test func structWithUserInitDerivesThroughIt() {
         // A user-defined init suppresses Swift's synthesized memberwise
-        // init — strategist falls through and the macro warns.
+        // init, so the strategist derives through the user's init instead.
+        // This test was written when that fell through to a warning.
         assertMacroExpansion(
             """
             @PropertyLawSuite
@@ -197,32 +173,22 @@ struct DiagnosticsTests {
 
             struct WrappedPropertyLawTests {
                 @Test func equatable_Wrapped() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Wrapped.self,
-                            using: Wrapped.gen()
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Wrapped.self,
+                        using: Gen<Character>.letterOrNumber.string(of: 0 ... 8).map {
+                            Wrapped(raw: $0)
+                        }
+                    )
+                }
             }
             """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: """
-                        Cannot derive a generator for `Wrapped`: the type declares \
-                        a user `init(...)` in its primary body, which suppresses \
-                        Swift's synthesized memberwise initializer. Provide \
-                        `static func gen() -> Generator<Wrapped, some \
-                        SendableSequenceType>`.
-                        """,
-                    line: 1,
-                    column: 1,
-                    severity: .warning
-                )
-            ],
             macros: testMacros
         )
     }
 
-    @Test func enumWithoutCaseIterableOrRawTypeFiresCannotDeriveWarning() {
+    /// Written when an enum that was neither `CaseIterable` nor raw-valued
+    /// fell through to a warning. Enumerating its cases derives it now.
+    @Test func enumWithoutCaseIterableOrRawTypeDerivesFromItsCases() {
         assertMacroExpansion(
             """
             @PropertyLawSuite
@@ -237,26 +203,16 @@ struct DiagnosticsTests {
 
             struct EitherPropertyLawTests {
                 @Test func equatable_Either() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Either.self,
-                            using: Either.gen()
+                    try await checkEquatablePropertyLaws(
+                        for: Either.self,
+                        using: Gen.oneOf(
+                Gen.always(Either.left).eraseToAny(),
+                Gen.always(Either.right).eraseToAny()
                         )
-                    }
+                    )
+                }
             }
             """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: """
-                        Cannot derive a generator for `Either`: not `CaseIterable` \
-                        and no recognized stdlib raw type. Provide `static func \
-                        gen() -> Generator<Either, some SendableSequenceType>` or \
-                        add `: CaseIterable`.
-                        """,
-                    line: 1,
-                    column: 1,
-                    severity: .warning
-                )
-            ],
             macros: testMacros
         )
     }
@@ -277,11 +233,13 @@ struct DiagnosticsTests {
 
             struct StatusPropertyLawTests {
                 @Test func equatable_Status() async throws {
-                        try await checkEquatablePropertyLaws(
-                            for: Status.self,
-                            using: Gen<Status?>.element(of: Status.allCases).compactMap { $0 }
-                        )
-                    }
+                    try await checkEquatablePropertyLaws(
+                        for: Status.self,
+                        using: Gen<Status?>.element(of: Status.allCases).compactMap {
+                            $0
+                        }
+                    )
+                }
             }
             """,
             macros: testMacros
@@ -305,18 +263,7 @@ struct DiagnosticsTests {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: """
-                        Type has no recognized stdlib protocol conformance — no \
-                        law checks emitted. Recognized protocols: Equatable, \
-                        Hashable, Comparable, Codable, IteratorProtocol, Sequence, \
-                        Collection, BidirectionalCollection, RandomAccessCollection, \
-                        MutableCollection, RangeReplaceableCollection, SetAlgebra, \
-                        Strideable, RawRepresentable, LosslessStringConvertible, \
-                        Identifiable, CaseIterable. Conformances declared via \
-                        extensions outside the type's primary declaration aren't \
-                        visible to the macro (it sees only the decoratee's syntax); \
-                        whole-module discovery (PRD §5.3) handles those cases.
-                        """,
+                    message: PropertyLawDiagnostic.noKnownConformance.message,
                     line: 1,
                     column: 1,
                     severity: .warning
@@ -326,5 +273,3 @@ struct DiagnosticsTests {
         )
     }
 }
-
-// swiftlint:enable type_body_length
