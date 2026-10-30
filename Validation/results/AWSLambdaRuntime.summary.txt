@@ -1,15 +1,13 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/AWSLambdaRuntime.generated.swift
   target: AWSLambdaRuntime
   source files scanned: 43
-  types detected: 38
-  detected but skipped, no suite emitted (12):
+  types detected: 40
+  detected but skipped, no suite emitted (10):
     - ClientApplication.CodingKeys: declared `private` — not nameable from another file
     - ClientContext.CodingKeys: declared `private` — not nameable from another file
     - ClosureHandler: `public` without a `Sendable` conformance — the law entry points require one
     - JSONLogHandler: `public` without a `Sendable` conformance — the law entry points require one
     - Lambda: `public` without a `Sendable` conformance — the law entry points require one
-    - LambdaClock: `public` without a `Sendable` conformance — the law entry points require one
-    - LambdaClock.Instant: `public` without a `Sendable` conformance — the law entry points require one
     - LambdaCodableAdapter: `public` without a `Sendable` conformance — the law entry points require one
     - LambdaCodableResponseWriter: `public` without a `Sendable` conformance — the law entry points require one
     - LambdaHandlerAdapter: `public` without a `Sendable` conformance — the law entry points require one
@@ -22,8 +20,8 @@ PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftProperty
     [3] caseless enum (uninhabited)
     [2] class with no callable initializer
     [1] non-struct (class/actor/enum-payload)
-    [1] access-restricted initializer (private/fileprivate)
     [1] class not Sendable (a check's inputs must be)
+    [1] access-restricted initializer (private/fileprivate)
       - AmazonHeaders
       - ByteBuffer
       - Consts

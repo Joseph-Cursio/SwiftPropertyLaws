@@ -2,17 +2,15 @@
 // `// property-law-suppress: <protocol>_<TypeName>` markers.
 //
 // Target: AWSLambdaRuntime
-// Types detected: 38
+// Types detected: 40
 // Re-run: swift package propertylawcheck discover --target AWSLambdaRuntime
 //
-// Detected but skipped — a suite for these would not compile (12):
+// Detected but skipped — a suite for these would not compile (10):
 //   - ClientApplication.CodingKeys: declared `private` — not nameable from another file
 //   - ClientContext.CodingKeys: declared `private` — not nameable from another file
 //   - ClosureHandler: `public` without a `Sendable` conformance — the law entry points require one
 //   - JSONLogHandler: `public` without a `Sendable` conformance — the law entry points require one
 //   - Lambda: `public` without a `Sendable` conformance — the law entry points require one
-//   - LambdaClock: `public` without a `Sendable` conformance — the law entry points require one
-//   - LambdaClock.Instant: `public` without a `Sendable` conformance — the law entry points require one
 //   - LambdaCodableAdapter: `public` without a `Sendable` conformance — the law entry points require one
 //   - LambdaCodableResponseWriter: `public` without a `Sendable` conformance — the law entry points require one
 //   - LambdaHandlerAdapter: `public` without a `Sendable` conformance — the law entry points require one
@@ -129,6 +127,12 @@ import Foundation
 // No emit-able stdlib conformance recognized.
 
 // LambdaChannelHandler.State.LambdaState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:35 (primary)
+// No emit-able stdlib conformance recognized.
+
+// LambdaClock — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:55 (primary)
+// No emit-able stdlib conformance recognized.
+
+// LambdaClock.Instant — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:68 (primary)
 // No emit-able stdlib conformance recognized.
 
 // LambdaContext — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:87 (primary)

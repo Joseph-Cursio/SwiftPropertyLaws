@@ -2,21 +2,18 @@
 // `// property-law-suppress: <protocol>_<TypeName>` markers.
 //
 // Target: ArgumentParser
-// Types detected: 131
+// Types detected: 134
 // Re-run: swift package propertylawcheck discover --target ArgumentParser
 //
-// Detected but skipped — a suite for these would not compile (11):
+// Detected but skipped — a suite for these would not compile (8):
 //   - Argument: `public` without a `Sendable` conformance — the law entry points require one
-//   - CleanExit: `public` without a `Sendable` conformance — the law entry points require one
 //   - CodingKeyValidator.Validator: declared `private` — not nameable from another file
-//   - ExitCode: `public` without a `Sendable` conformance — the law entry points require one
 //   - Flag: `public` without a `Sendable` conformance — the law entry points require one
 //   - Mutex._Buffer: declared `private` — not nameable from another file
 //   - Mutex._Lock: declared `private` — not nameable from another file
 //   - Option: `public` without a `Sendable` conformance — the law entry points require one
 //   - OptionGroup: `public` without a `Sendable` conformance — the law entry points require one
 //   - ParentCommand: `public` without a `Sendable` conformance — the law entry points require one
-//   - ValidationError: `public` without a `Sendable` conformance — the law entry points require one
 
 import Testing
 import PropertyLawKit
@@ -170,6 +167,9 @@ import PropertyLawKit
 // Character — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/StringExtensions.swift:260 (extension)
 // No emit-able stdlib conformance recognized.
 
+// CleanExit — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:70 (primary)
+// No emit-able stdlib conformance recognized.
+
 // CleanExit.Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:71 (primary)
 // No emit-able stdlib conformance recognized.
 
@@ -267,6 +267,23 @@ import PropertyLawKit
 
 // ErrorMessageGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:174 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:179 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:254 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:273 (extension)
 // No emit-able stdlib conformance recognized.
+
+// ExitCode — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:35 (primary)
+@Suite struct ExitCodePropertyLawTests {
+    @Test func hashable_ExitCode() async throws {
+        try await checkHashablePropertyLaws(
+            for: ExitCode.self,
+            using: Gen<Int32>.int32().map { ExitCode($0) }
+        )
+    }
+
+    @Test func rawRepresentable_ExitCode() async throws {
+        try await checkRawRepresentablePropertyLaws(
+            for: ExitCode.self,
+            using: Gen<Int32>.int32().map { ExitCode($0) }
+        )
+    }
+}
 
 // ExpressibleByArgument — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:48 (extension)
 // No emit-able stdlib conformance recognized.
@@ -841,6 +858,9 @@ import PropertyLawKit
 // No emit-able stdlib conformance recognized.
 
 // UsageGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:12 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:17 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:40 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ValidationError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
 // ValidatorErrorKind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:44 (primary)
