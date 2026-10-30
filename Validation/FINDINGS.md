@@ -1,145 +1,140 @@
-# Validation findings (PRD §8 — first pass)
+# Validation findings (PRD §8)
 
-PRD §8 calls for catching at least one real semantic conformance bug in 5+ popular open-source Swift packages before 1.0. This document records the first-pass survey: scan-only validation that exercises the discovery plugin's whole-module pipeline against real-world Swift codebases and identifies which types would be law-checked if those projects adopted the kit.
+PRD §8's external validation gate has three passes. Pass 1 scans real packages with the discovery tool, Pass 2 runs the kit's law checks against external types, and Pass 3 searches package histories for bugs the kit should have caught. This file records what each pass found and how to rerun it.
 
-## What this pass covers
+**All three passes were last run on 2026-10-29, with SwiftPropertyLaws at `de77415`.** Passes 2 and 3 need Swift 6.3 or earlier; see [Running Passes 2 and 3](#running-passes-2-and-3).
 
-| Package | Source files scanned | Types detected | `@Suite struct`s emitted |
-|---|---|---|---|
-| `swift-argument-parser` (Apple) | 49 | 99 | 15 |
-| `Hummingbird` (community Swift server framework) | 74 | 100 | 10 |
-| `swift-aws-lambda-runtime` (Apple/SSWG) | 43 | 35 | 8 |
-| `Sitrep` (small utility) | 1 file (SitrepCore) | 18 | 2 |
+## Pass 1: discovery scan
 
-Generated files live in `Validation/results/<TargetName>.generated.swift`; per-target summaries (types that would need a manual `gen()` method) live in `Validation/results/<TargetName>.summary.txt`.
+`Validation/run.sh` runs `PropertyLawDiscoveryTool` over one target's sources and writes the generated file and the tool's summary to `Validation/results/<Target>.{generated.swift,summary.txt}`. It does not add the kit to the scanned package and does not run any law check. It shows that the tool handles code its authors didn't write: no crashes, output that parses, the most-specific dedupe, and a `.todo` list that names every type needing a hand-written `gen()`.
 
-## What this pass *doesn't* do
+| Package | Scanned at | Source files | Types detected | Skipped, no suite | Suites | Checks | Derived generator | `.todo` |
+|---|---|---|---|---|---|---|---|---|
+| `swift-argument-parser` (`ArgumentParser`) | `1.8.2-39-gefd239f` | 52 | 131 | 11 | 27 | 34 | 29 | 5 |
+| `Hummingbird` (`Hummingbird`) | `2.27.0-1-g0806106` | 75 | 139 | 35 | 18 | 21 | 10 | 11 |
+| `swift-aws-lambda-runtime` (`AWSLambdaRuntime`) | `3.0.2` | 43 | 38 | 12 | 9 | 11 | 6 | 5 |
+| `Sitrep` (`SitrepCore`) | `4.0.0-4-gae446f9` | 12 | 16 | 12 | 0 | 0 | 0 | 0 |
+| **Total** | | **182** | **324** | **70** | **54** | **66** | **45** | **21** |
 
-This is **scan-only** validation. It proves:
+"Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Each of the three non-empty files has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`).
 
-1. The discovery plugin handles real-world Swift codebases without crashing or producing malformed output.
-2. The most-specific-conformance dedupe works against codebases the kit's authors didn't write.
-3. The `.todo` telemetry surfaces every type that would need a manual `gen()`.
-4. Output is sensible — emitted `@Test` shapes look like what a maintainer would write themselves.
+### What the checks cover
 
-It does **not** run the kit's `checkXxxPropertyLaws` against these packages. Doing so requires per-package work that's outside the scope of this first pass:
+- **ArgumentParser:** 19 Hashable, 7 Equatable, 5 Comparable (`Name`, `InputOrigin.Element` and the `SplitArguments` index types), 2 RawRepresentable (`CompletionShell`, `SplitArguments.InputIndex`), and 1 RandomAccessCollection (`ArgumentSet`, which runs the whole collection chain).
+- **Hummingbird:** 11 Equatable, 4 Hashable, 2 RawRepresentable (`MediaType.Category`, `MediaType.FileExtension`), 2 Sequence (the two split-string sequences), 1 Collection (`RouterPath`) and 1 Codable (`MediaType`).
+- **AWSLambdaRuntime:** 6 Codable (`ClientApplication`, `ClientContext`, `ErrorResponse`, `JSONLogHandler.LogEntry`, `LambdaRequestID`, `StreamingLambdaStatusAndHeadersResponse`) and 5 Hashable.
+- **SitrepCore:** none. Every detected type is skipped or has no stdlib conformance the kit checks.
 
-1. Adding `SwiftPropertyLaws` + `swift-property-based` as dependencies to each target package's manifest.
-2. Writing a `gen()` static method per surveyed type (M3 derivation only auto-handles `CaseIterable` enums and `RawRepresentable` enums with stdlib raw types — those are the minority).
-3. Compiling + running the generated tests under each backend's trial budget.
+### Why 70 types get no suite
 
-That's the next-pass deliverable when the validation gate is the active priority.
+The tool detects a type and then declines to emit its suite when the suite could not compile:
 
-## What surfaced — sample types worth following up
+- **26 are `private` or `fileprivate`**, so they can't be named from the generated file. Most are synthesized `CodingKeys` enums.
+- **44 are `public` with no `Sendable` conformance the tool can see.** Swift infers `Sendable` only for non-public types, and every check requires it.
 
-### `swift-argument-parser`
+**Finding: 11 of those 44 are `Sendable` after all.** The tool's set of protocols that refine `Sendable` is computed from the scanned module alone, so it misses the ones the standard library declares:
 
-Notable `Hashable` conformers (the most-specific dedupe shows Hashable subsuming Equatable):
+- **`Error`**: `ExitCode`, `CleanExit` and `ValidationError` in ArgumentParser, and `Cookie.ValidationError`, `Environment.Error`, `PersistError`, `RouterValidationError` and `URLEncodedFormError` in Hummingbird.
+- **`Clock` and `InstantProtocol`**: `LambdaClock` and `LambdaClock.Instant` in AWSLambdaRuntime.
+- **An actor**, which is always `Sendable`: Hummingbird's `MemoryPersistDriver`.
 
-- `ExitCode` — the public exit-code wrapper. Custom `Hashable` would be the most likely place for a hash/equality-consistency bug.
-- `CompletionShell` — completion-shell selector enum. `Hashable` likely synthesized.
-- `Name`, `InputKey`, `InputOrigin` — internal name-tracking types. Custom `Hashable` plausible.
-- `FlagExclusivity`, `FlagInversion`, `ArgumentVisibility` — likely `RawRepresentable` enums; M3 would auto-derive their generators.
+Suites for these types would have compiled. Pass 2 runs `checkHashablePropertyLaws` against `ExitCode`, which compiles only because `ExitCode: Error` makes it `Sendable`. This is a coverage loss, not a correctness one: the tool errs toward skipping. It is not fixed here.
 
-### `Hummingbird`
+The other 33 skips are correct. SitrepCore's nine are public `Codable` structs with no `Sendable` at all, and ArgumentParser's property wrappers are `Sendable` only conditionally (`extension Flag: Sendable where Value: Sendable`).
 
-Notable `Codable` conformers (round-trip the most likely failure-mode in server-side code):
+### Where generators fail to derive
 
-- `MediaType` — HTTP MIME-type model. Codable + custom (de)serialization heuristics are a typical place for round-trip drift.
-- `URLEncodedFormNode`, `URLEncodedFormError` — form-decoding internals. Custom Codable common in URL-encoded form handling.
-- `RouterPath`, `RouterValidationError` — routing AST. Custom equality plausible.
+204 detected types would need a hand-written `gen()`, most of them types that get no check anyway. The two largest buckets:
 
-### `swift-aws-lambda-runtime`
+- **75 are "declaration not in this target".** That is an artifact of how `run.sh` scans: it passes one target's files and no `--context-files`, so a type the target only extends looks undeclared. The discovery plugin passes dependency sources as context automatically.
+- **61 have a user-defined `init`** that no tier could call with derivable arguments.
 
-Server-side Swift; less-explored Codable surface than Hummingbird. Eight emitted suites suggest most types are internal-state / actor-shaped and don't expose stdlib conformances directly.
+The full breakdown per package is at the top of each `.summary.txt`.
 
-### `Sitrep`
-
-Small target; only `Configuration` and `Report` surfaced. Both look like data-class wrappers — a quick hand-survey turned up nothing surprising.
-
-## Honest assessment
-
-After scanning four real-world Swift packages with combined ~209 source files and ~252 declared types, the discovery plugin emitted ~35 `@Suite struct`s' worth of law-check scaffolding. None of the scaffolding looks malformed; the dedupe rules behaved as documented; provenance comments correctly traced types back to their declaring files.
-
-**No conformance bugs were caught in this pass — none were possible to catch, because the kit's checks weren't actually run.** That's the architectural ceiling on scan-only validation, not a comment on the surveyed packages. Apple's `swift-argument-parser` and well-tested community packages like `Hummingbird` are precisely the case where finding a real bug would be unexpected — they're tested heavily, including with property-based approaches in some cases.
-
-The PRD §8 1.0 gate ("must catch a real semantic conformance bug in 5+ popular Swift packages") remains open. Closing it requires the next-pass work above: actual integration of `PropertyLawKit` into one or more of these packages' test targets and running the checks at full budget.
-
-## What this pass does justify
-
-- The discovery plugin works on real codebases, not just the kit's own fixtures.
-- The most-specific-conformance dedupe is correct against varied real-world type shapes.
-- The `.todo` telemetry list is concise enough to be actionable (e.g. ArgumentParser surfaced 99 types, 84 of which would need a manual `gen()` — manageable for a maintainer to triage).
-- Generated output is human-readable and would survive code-review without churn.
-
-## How to re-run pass 1 (scan-only)
+### Rerun Pass 1
 
 ```bash
-Validation/run.sh <path-to-package> <target-name>
-# e.g.
 Validation/run.sh ~/xcode_projects/swift-argument-parser ArgumentParser
 Validation/run.sh ~/xcode_projects/Hummingbird Hummingbird
+Validation/run.sh ~/xcode_projects/swift-aws-lambda-runtime AWSLambdaRuntime
+Validation/run.sh ~/xcode_projects/Sitrep SitrepCore
+git diff Validation/results/
 ```
 
-Output lands in `Validation/results/<TargetName>.{generated.swift,summary.txt}`.
+`run.sh` builds the tool in release mode first. Record the scanned revision of each package in the table above. The results are only comparable between runs at the same upstream revision.
 
-## Pass 2: actual law checks against an external package
+## Pass 2: law checks against external code
 
-`Validation/Package.swift` is a separate SwiftPM package that depends on the parent (via local path) and on `swift-argument-parser` (via remote). It runs the kit's `checkXxxPropertyLaws` against public types from ArgumentParser. Kept separate so the external dep doesn't leak into the kit's main manifest — consumers of `SwiftPropertyLaws` never see ArgumentParser.
+`Validation/Package.swift` is a separate SwiftPM package. It depends on the kit by local path and on the external packages by URL, so no consumer of `SwiftPropertyLaws` ever sees those dependencies. Each test writes a generator for an external type and calls a `check…PropertyLaws` suite on it.
 
-```bash
-cd Validation && swift test
-```
-
-### Targets exercised
-
-| Type | Source | Law checked | Trial budget | Result |
+| Test file | Type | Suite | Suppressions | Result |
 |---|---|---|---|---|
-| `ArgumentParser.ExitCode` | wrapper around `Int32`, `RawRepresentable + Hashable` | `Hashable` (Equatable + equality consistency + stability + distribution) | `.standard` (1,000) | passed |
-| `ArgumentParser.ExitCode` | as above | `RawRepresentable` (round-trip) — added 2026-04-29 | `.standard` (1,000) | passed |
-| `ArgumentParser.ArgumentVisibility` | three-static-instance struct, `Hashable` | `Hashable` (full inherited suite) | `.standard` (1,000) | passed |
-| `ArgumentParser.CompletionShell` | closed-set String-backed `RawRepresentable` (zsh/bash/fish) — added 2026-04-29 | `RawRepresentable` (round-trip) | `.standard` (1,000) | passed |
+| `ExternalPackageTests` | `ArgumentParser.ExitCode` | Hashable (full chain) | `Hashable.distribution` (skipped) | passed |
+| | `ArgumentParser.ExitCode` | RawRepresentable | none | passed |
+| | `ArgumentParser.ArgumentVisibility` | Hashable (full chain) | `Hashable.distribution` (skipped) | passed |
+| | `ArgumentParser.CompletionShell` | RawRepresentable | none | passed |
+| `StdlibNumericLawsTests` | `Int32` | FixedWidthInteger (with BinaryInteger, Numeric, AdditiveArithmetic), SignedInteger | none | passed |
+| | `UInt` | FixedWidthInteger, UnsignedInteger | none | passed |
+| | `Double` | BinaryFloatingPoint, finite-only and with NaN (`allowNaN: true`) | none | passed |
+| `StdlibStringProtocolLawsTests` | `String`, `Substring` | StringProtocol | none | passed |
+| `BigIntLawsTests` | `BigInt` | BinaryInteger, SignedInteger | none | passed |
+| | `BigUInt` | BinaryInteger, UnsignedInteger | `bitwiseDoubleNegation`, `bitwiseDeMorgan` | passed with documented exceptions |
+| `DecimalLawsTests` | `Foundation.Decimal` | SignedNumeric, Numeric (own), AdditiveArithmetic | none | passed |
+| `ComplexLawsTests` | `Complex<Double>` | Numeric (own) | `additionAssociativity`, `multiplicationAssociativity`, `leftDistributivity`, `rightDistributivity`, `subtractionInverse` | passed with documented exceptions |
+| | `Complex<Double>` | SignedNumeric (own) | none | passed |
 
-All four conformances satisfy every Strict-tier law the kit checks. The two RawRepresentable checks were added alongside the v1.1 RawRepresentable law shipping; both pass at `.standard` budget against the public surface.
+That is 21 law-suite tests, all at `.standard` (1,000 trials), plus `complexCommutativityIsExactOnNonFiniteInputs`, a plain assertion that `Complex` addition and multiplication commute exactly even on non-finite values. All 22 pass, as do Pass 3's two, on both Swift 6.2.4 and Swift 6.3.3.
 
-### What pass 2 actually proves
+### Why two Hashable checks skip `Hashable.distribution`
 
-1. **The kit composes cleanly with an external Swift package.** SwiftPM resolves both deps, the test target links against ArgumentParser + PropertyLawKit, generators reference public ArgumentParser API, and the kit's checks run unmodified against types the kit's authors didn't write.
-2. **The pipeline shape works for an adopter.** A maintainer wanting to validate their own types follows the same recipe: separate test package OR test target with both deps, write `gen()`, call `checkXxxPropertyLaws`. The Validation/Package.swift is a worked example.
-3. **At least one Strict-tier `Hashable` law check has run end-to-end against external Apple OSS code.** That's a concrete artifact, even though the result is "the laws hold."
+`Hashable.distribution` is the Heuristic law that fails when fewer than 10% of the draws produce distinct hash values. `ArgumentVisibility` has exactly three values, and the `ExitCode` generator draws from ten fixed codes, so 1,000 draws can give at most 3 and 10 distinct hashes. The ratio is capped by the size of the domain, not by the quality of the hash, so the law is skipped for these two types, with that reason recorded. Every Strict Hashable and Equatable law still runs on both.
 
-### What pass 2 still doesn't do
+**These two tests used to pass only because the kit was silent.** Until `6025bd6` (2026-07-13), a Conventional or Heuristic violation under `.default` was dropped without a word, so this one went unseen. Now it is recorded: as a warning on Swift 6.3 and later, and as an error that fails the test on Swift 6.2, where Swift Testing has no warning severity. On 6.2.4 the two tests failed until the law was skipped. The heuristic has no notion of a small domain, so any closed-set type will trip it the same way.
 
-The PRD §8 1.0 gate ("at least one real semantic conformance bug in 5+ popular Swift packages") remains open in the literal sense — no bug was caught. Closing it requires either:
+### Finding: `BigUInt`'s bitwise NOT does not satisfy De Morgan's law
 
-- Surveying enough types/packages that one eventually surfaces a real bug (statistical play; takes patience because well-tested OSS is mostly clean).
-- Targeting types specifically *suspected* of having issues — places where custom equality or Codable round-trip is implemented manually, where the prior-art property test coverage is thin.
+`BigUInt` stores its value as a word array whose length depends on the value. `~BigUInt(0)` is `0`, while `~x` for a non-zero `x` flips a whole 64-bit word. So `~(x & y)` and `~x | ~y` can disagree:
 
-For v1's purposes, the validation infrastructure is shipped and a non-trivial slice of it is exercised against real external code. Bug-hunting can happen incrementally as the kit gets adopted.
+```
+x = 406803, y = 51776           (replay seed JJV3lDSZMUfh1OXBSpPuu+SMxMVOzze42idwOvk3nK4=)
+x & y     = 0
+~(x & y)  = 0
+~x | ~y   = 18446744073709551615 (= UInt64.max)
+```
 
-## Pass 3: git-archaeology + retroactive validation
+`~~x == x` fails for the same reason. Signed `BigInt` is unaffected, because its `~x` is `-(x + 1)`, which does not depend on storage. The two laws are suppressed as `intentionalViolation` with their reasons recorded. A regression in any *other* law would still fail. The full write-up is [`findings/BigUInt-bitwise-divergence.md`](findings/BigUInt-bitwise-divergence.md).
 
-Pass 2 confirmed the kit composes with external code but did not catch a real bug. Pass 3 inverts the search: instead of running the kit forward against current code and hoping a bug surfaces, scan the *git history* of popular Swift packages for fix commits that look like protocol-law violations, then check out the pre-fix SHA and try to retroactively catch the bug.
+### `Complex<Double>` needs its rounding laws suppressed
 
-### Survey scope
+Its components are `Double`, so chained arithmetic rounds the way `Double`'s does, and the exact-equality associativity, distributivity and subtraction-inverse laws fail under random sampling. That is rounding, not a bug in `Complex`. These laws fail by unbounded amounts under cancellation, so no equivalence oracle rescues them, and suppression is the answer. Commutativity is exact, and it stays checked.
 
-Searched four full-history Swift packages — combined ~5,200 commits:
+### What Pass 2 shows
+
+The kit composes with external SwiftPM packages, and its Strict laws run end to end against types its authors didn't write, stdlib reference implementations included. One run found a genuine divergence (`BigUInt`). The rest found the laws holding, which is the expected result for heavily tested code.
+
+## Pass 3: git archaeology
+
+Pass 3 searches the history of popular packages for commits that fix what looks like a protocol-law violation, then checks out the parent of the fix and asks whether the kit would have caught it.
+
+### Survey
+
+Five full-history packages, about 6,400 commits in all:
 
 | Package | Commits | Conformance fixes worth inspecting |
 |---|---|---|
-| `swift-argument-parser` | 515 | 0 (synthesized + parser/decoder bugs only) |
+| `swift-argument-parser` | 515 | 0 (synthesized conformances; parser and decoder bugs only) |
 | `swift-aws-lambda-runtime` | 434 | 0 (correct on arrival; no patches) |
 | `swift-collections` | 1,873 | 1 candidate (`35349601`) |
 | `swift-nio` | 2,605 | 0 (internal types or non-law methods) |
-| `hummingbird` | 973 | 0 (Codable surface is small) |
+| `hummingbird` | 973 | 0 (small Codable surface) |
 
-Search strategy: `git log --grep="hash|equ|codable|encode|decode|comparable|round.?trip|symmet|transit|consist"`, then diff inspection on every promising candidate. Rejection categories that came up repeatedly:
+The search ran `git log --grep="hash|equ|codable|encode|decode|comparable|round.?trip|symmet|transit|consist"` and inspected the diff of every promising hit. The common reasons for rejecting a hit:
 
-- *Adding* missing conformance (not a bug fix)
-- Bugs in `internal`/`fileprivate` types (no public surface to test)
-- Bugs in custom `KeyedDecodingContainerProtocol` implementations (decoder internals, not a value type's `init(from:)`/`encode(to:)`)
-- Pure refactors that preserved semantics
-- Bugs in user-named methods (e.g. `BitSet.isEqualSet(to:)`) that aren't the protocol's `==` / `hash(into:)` / `<` / Codable round-trip
+- It *added* a missing conformance rather than fixing one.
+- The bug was in an `internal` or `fileprivate` type, with no public surface to test.
+- It was in a custom `KeyedDecodingContainerProtocol`, which is decoder internals rather than a value type's `init(from:)` or `encode(to:)`.
+- It was a refactor that preserved semantics.
+- It was in a user-named method (such as `BitSet.isEqualSet(to:)`) rather than the protocol's `==`, `hash(into:)`, `<` or Codable round trip.
 
 ### The candidate: `swift-collections@35349601`
 
@@ -154,239 +149,37 @@ Search strategy: `git log --grep="hash|equ|codable|encode|decode|comparable|roun
 + }
 ```
 
-Apple added a regression test in the same commit:
+The fix was on a method `SetAlgebra` requires, behind a public type (`TreeSet`), and its message names a real algebraic violation.
 
-```swift
-let left: TreeSet<Int> = [1, 3]
-let right: TreeSet<Int> = [2, 3]
-let result = left.symmetricDifference(right)
-expectEqualSets(result, [1, 2])
-```
-
-This is on a public type (`TreeSet`), the bug is on a SetAlgebra-required method, the description names a real algebraic violation. Worth wiring up.
-
-**Kit-coverage gap discovered along the way.** The kit's original five-law SetAlgebra suite — `unionIdempotence`, `intersectionIdempotence`, `unionCommutativity`, `intersectionCommutativity`, `emptyIdentity` — does not exercise `symmetricDifference` at all. Even with the bug observable, none of those laws would have fired on it. Closing this gap meant adding four `symmetricDifference*` laws to PRD §4.3 SetAlgebra:
-
-- `symmetricDifferenceSelfIsEmpty` — `x △ x == .empty`
-- `symmetricDifferenceEmptyIdentity` — `x △ .empty == x`
-- `symmetricDifferenceCommutativity` — `x △ y == y △ x`
-- `symmetricDifferenceDefinition` — `x △ y == x.union(y).subtracting(x.intersection(y))`
-
-The new laws ship in `SetAlgebraLaws.swift` and are guarded by a `BuggySymmetricDifference` planted bug whose `symmetricDifference` returns the intersection (mirroring the exact pre-fix shape).
+**It exposed a gap in the kit.** At the time, the SetAlgebra suite had five laws and none of them exercised `symmetricDifference`. Four were added (`symmetricDifferenceSelfIsEmpty`, `symmetricDifferenceEmptyIdentity`, `symmetricDifferenceCommutativity`, `symmetricDifferenceDefinition`), guarded by a `BuggySymmetricDifference` planted bug that returns the intersection. The suite has since grown to 19 laws (PRD §4.3).
 
 ### What Pass 3 found
 
-`Validation/Tests/ValidationPass3Tests/SwiftCollectionsRetroactiveTests.swift` pins `swift-collections` to revision `8e5e4a8f` — the parent of `35349601`, where the buggy `_Bitmap.symmetricDifference` is in place. Running the kit there produced an unexpected result: **`TreeSet<Int>` passes every kit law, including all four new `symmetricDifference*` laws.**
+`ValidationPass3Tests` pins `swift-collections` to `8e5e4a8f`, the parent of the fix, with the buggy `_Bitmap.symmetricDifference` in place. **`TreeSet<Int>` passes every SetAlgebra law there**, and Apple's own regression input (`[1, 3]` △ `[2, 3]`) also gives the correct `[1, 2]`.
 
-Apple's own regression test inputs (`[1,3].symmetricDifference([2,3])`) also produce the *correct* answer `[1,2]` at the buggy SHA — not the intersection `[3]` the bug would suggest.
+The reason is that the buggy method is dead code. `TreeSet.symmetricDifference` dispatches through `_HashNode._symmetricDifference` to the `_symmetricDifference_slow*` paths, which build the result by structural traversal. Nothing calls `_Bitmap.symmetricDifference`. Apple's commit fixed a real typo on sight, but in unreachable code. The test asserts what is true: the kit reports no violation at the buggy SHA, so it does not false-positive on dead code. If `swift-collections` ever routes a public path through that method, `treeSetPassesAllLawsAtBuggySHA` will start failing, and the pin should be re-evaluated.
 
-Tracing the public dispatch:
+### What it means
 
-- `TreeSet.symmetricDifference` calls `_HashNode.symmetricDifference`
-- `_HashNode.symmetricDifference` calls `_HashNode._symmetricDifference`
-- `_symmetricDifference` calls `_symmetricDifference_slow*`
-- The slow-path implementations build the result element-by-element via structural traversal in `_HashNode+Structural symmetricDifference.swift`
+Across about 6,400 commits, one candidate survived filtering, and it was not observable through the public API. Well-tested Swift packages lean on synthesized conformances, and their hand-written conformances tend to land correct. That leaves almost no historical kit-detectable bugs to find. This evidence is why PRD §8 measures the gate by these three passes rather than by a quota of bugs caught. The kit's value is *prevention*, catching a broken conformance as it is written, not retroactive discovery.
 
-`_Bitmap.symmetricDifference` is **never called** from this path. A grep across `Sources/HashTreeCollections/` confirms it has no callers outside its own definition. The buggy method is dead code at this SHA.
+## Running Passes 2 and 3
 
-Apple's commit was correct fix-on-sight cleanup of a real typo, but the typo was in unreachable code. The "regression test" added in the fix commit guards against future code that might begin calling `_Bitmap.symmetricDifference` — not against an observable user-facing bug.
+On Swift 6.4, `cd Validation && swift test` fails before compiling anything. Pass 3 needs `swift-collections` at exactly `8e5e4a8f`, and the package pins it by revision. That revision's manifest declares no traits (`traits: [], //_traits`), yet one of its build settings is conditioned on the trait `UnstableSortedCollections`. The Swift 6.4 package manager rejects this:
 
-The Pass 3 test target therefore asserts what's empirically true: at the buggy SHA, the kit reports no violation, faithfully reflecting the public semantics. This is the kit doing its job — *not* false-positiving on dead code.
+```
+error: 'swift-collections': Trait 'UnstableSortedCollections' referenced in the build settings condition for target '…' is not defined in the package
+```
 
-### What this means for PRD §8
+The pin applies to the whole package, so Pass 2 fails with it, even though Pass 2 never uses `swift-collections`.
 
-The §8 1.0 gate as written ("must catch a real semantic conformance bug in 5+ popular Swift packages") may be miscalibrated. The empirical evidence:
-
-1. Across four full-history Apple/SSWG/community Swift packages (~5,200 commits), exactly one candidate fix-commit looked plausible.
-2. That one candidate, on closer inspection, was a fix to dead code — the bug was never observable through the public API.
-3. The kit *correctly* reports no violation at the buggy SHA. There is no false-positive failure mode here.
-
-Combined with the structural reasons Apple-maintained Swift code is mostly clean — heavy reliance on synthesized conformances, hand-written impls landing correct on first commit, scrutiny in code review — the conclusion is that closing §8 against well-tested packages is unlikely *not* because the kit is weak, but because the population of historical kit-detectable bugs in well-tested packages is approximately empty.
-
-**Proposed §8 rewrite (open for discussion, not yet committed):** Replace the bug-catch criterion with the following:
-
-- The kit's planted-bug self-test gate (already required by §8) catches every Strict-tier law violation across all 8 covered protocols. ✓ (currently 26 planted-bug detection tests)
-- Pass 1 (scan-only discovery against ≥4 real packages) demonstrates the discovery plugin handles real codebases. ✓
-- Pass 2 (actual law checks against ≥1 external package's public types) demonstrates the kit composes with external SwiftPM deps. ✓
-- Pass 3 (git-archaeology) documents the search effort and any candidate bugs found, regardless of whether the kit catches them. ✓
-- The kit ships v1 honestly: the value prop is *prevention* (catch bugs in new code as it's written), not retroactive *discovery* in already-shipped code.
-
-The current §8 wording was an aspirational stretch goal in PRD v0.2; the Pass 3 evidence is grounds for a v0.3 PRD revision that calibrates §8 to reality.
-
-### How to re-run Pass 3
+Swift 6.3.3 and 6.2.4 accept the manifest. But neither can compile a package manifest against Xcode 27's macOS 27.0 SDK (`unknown argument: '-target-arch-variant'`), so they need an older SDK. The Command Line Tools ship the macOS 26.5 SDK, and that combination works:
 
 ```bash
-cd Validation && swift test --filter SwiftCollectionsRetroactiveTests
+cd Validation
+SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk swiftly run swift test +6.3.3
 ```
 
-If `swift-collections` ever gains a public observation path through `_Bitmap.symmetricDifference`, the `treeSetPassesAllLawsAtBuggySHA` test will start failing — re-evaluate at that point.
+Add `--filter SwiftCollectionsRetroactiveTests` for Pass 3 alone. Use `+6.3.3` rather than `+6.2.4` when you have the choice: Swift 6.2 has no warning severity, so it fails a test over a Heuristic violation that 6.3 only reports. Neither pass runs in CI.
 
-## Revalidation 2026-04-29 — v1.1 + v1.2 + v1.3 against the same packages
-
-After v1.1 (Strideable, RawRepresentable, LosslessStringConvertible, Identifiable, CaseIterable), v1.2 (BidirectionalCollection, RandomAccessCollection, MutableCollection, RangeReplaceableCollection), and v1.3 (Strategy 3 memberwise-Arbitrary derivation) shipped, Pass 1 was rerun against all four packages. Pass 3 was not rerun — none of the new laws apply to `_Bitmap.symmetricDifference`'s dispatch path; the archaeology result is unchanged.
-
-Cloned package SHAs at rescan time:
-
-| Package | Source pin |
-|---|---|
-| `swift-argument-parser` | `1.6.1-2-gd075877` (already on disk) |
-| `Hummingbird` | `581594a` (HEAD of `main`) |
-| `swift-aws-lambda-runtime` | `f3bd0ae` (HEAD of `main`) |
-| `Sitrep` | `4.0.0` |
-
-### Suite/test deltas (path-noise filtered)
-
-| Package | Suites before → after | New `@Test` checks emitted | New types deriving `gen()` |
-|---|---|---|---|
-| `swift-argument-parser` | 15 → **16** | `randomAccessCollection_ArgumentSet`, `rawRepresentable_CompletionShell`, `rawRepresentable_ExitCode` | `GenerateCompletions` |
-| `Hummingbird` | 10 → 10 | — | — |
-| `swift-aws-lambda-runtime` | 8 → 8 | — | `ErrorResponse`, `Request`, `Response` |
-| `Sitrep` (`SitrepCore`) | 2 → 2 | — | — |
-
-Three new emitted law-checks (all in ArgumentParser), four new derived generators (one in ArgumentParser, three in AWSLambdaRuntime). The ArgumentSet `RandomAccessCollection` check transitively re-runs Bidirectional + Collection + Sequence + Iterator — a single new `@Test func` exercises the whole chain.
-
-### Why Hummingbird and SitrepCore yielded zero new checks
-
-The v1.1 round-trip cluster fires on inheritance clauses spelling `: RawRepresentable`, `: Identifiable`, etc. Hummingbird's public surface is dominated by HTTP / routing types whose conformances are `Codable`, `Hashable`, or `Sendable` — none of which the new laws add coverage for. SitrepCore is small (18 types) and similarly doesn't surface the new clauses. This is consistent with §8's broader finding: the population of `:Strideable` / `:RawRepresentable` types on real-world Swift codebases is concentrated in a few enums per package.
-
-### Upstream package churn (separate from law deltas)
-
-- Hummingbird: 74 → 73 source files; `Data` no longer surfaces as a detected type (upstream rename/removal between Pass 1 and revalidation).
-- SitrepCore: typename refactoring at `4.0.0` — `SwiftSourceComment/Function/Node/Type` and `VisitedFile` were renamed to `Comment / Function / Node / Type / File`.
-
-Neither churn affected the suite or law-check counts.
-
-### How to re-run the revalidation
-
-```bash
-swift build --product PropertyLawDiscoveryTool -c release
-Validation/run.sh ~/xcode_projects/swift-argument-parser ArgumentParser
-Validation/run.sh ~/xcode_projects/Hummingbird Hummingbird
-Validation/run.sh ~/xcode_projects/swift-aws-lambda-runtime AWSLambdaRuntime
-Validation/run.sh ~/xcode_projects/Sitrep SitrepCore
-git diff Validation/results/
-```
-
-## Pass 2 expansion 2026-04-29 — v1.4 stdlib numeric coverage
-
-The original Pass 2 (commit `599c843` and earlier) only ran the kit's laws against types from `swift-argument-parser` (`ExitCode`, `ArgumentVisibility`, `CompletionShell`). The v1.4 cluster shipped a new layer of laws — `AdditiveArithmetic` / `Numeric` / `SignedNumeric` / `BinaryInteger` / `SignedInteger` / `UnsignedInteger` / `FixedWidthInteger` / `FloatingPoint` / `BinaryFloatingPoint` — whose canonical reference implementations are stdlib `Int*` / `UInt*` / `Double` / `Float`. Pass 2 now exercises those reference implementations directly.
-
-`Validation/Tests/ValidationPass2Tests/StdlibNumericLawsTests.swift`:
-
-| Type | Laws checked | Trial budget | Result |
-|---|---|---|---|
-| `Int32` | `checkFixedWidthIntegerPropertyLaws` (which transitively runs BinaryInteger + Numeric + AdditiveArithmetic) | `.standard` (1,000) | passed |
-| `Int32` | `checkSignedIntegerPropertyLaws` (sibling chain to FixedWidthInteger) | `.standard` (1,000) | passed |
-| `UInt` | `checkFixedWidthIntegerPropertyLaws` | `.standard` (1,000) | passed |
-| `UInt` | `checkUnsignedIntegerPropertyLaws` | `.standard` (1,000) | passed |
-| `Double` | `checkBinaryFloatingPointPropertyLaws` (finite-only generator, `allowNaN: false`) | `.standard` (1,000) | passed |
-| `Double` | `checkBinaryFloatingPointPropertyLaws` (NaN-injecting generator, `allowNaN: true` — exercises NaN-domain laws) | `.standard` (1,000) | passed |
-
-This is the **first time the kit's own laws run end-to-end against stdlib types** — significant for the §8 closure narrative. Apple's reference implementations satisfy every Strict-tier law the v1.4 cluster checks, including the IEEE-754 NaN-domain laws under `allowNaN: true`. As with the original Pass 2, "no bug found" is the predicted result for the most heavily-tested numeric implementations on the planet, but the assertion is now real rather than asymptotic.
-
-The Pass 2 sub-package's `swift test` now runs 12 tests across 3 suites in ≈ 130 ms.
-
-## Revalidation 2026-04-29 (later) — v1.4 numeric/integer/FloatingPoint cluster
-
-After v1.4 (AdditiveArithmetic, Numeric, SignedNumeric, BinaryInteger, SignedInteger, UnsignedInteger, FixedWidthInteger, FloatingPoint, BinaryFloatingPoint — 9 new protocols, 61 new Strict-tier laws) shipped, Pass 1 was rerun against all four packages with the v1.4 plugin against the same SHAs as the v1.1/v1.2/v1.3 revalidation earlier in the day.
-
-### Result: byte-identical output across all four packages
-
-| Package | Suites before → after | New `@Test` checks emitted |
-|---|---|---|
-| `swift-argument-parser` | 16 → 16 | — |
-| `Hummingbird` | 10 → 10 | — |
-| `swift-aws-lambda-runtime` | 8 → 8 | — |
-| `Sitrep` (`SitrepCore`) | 2 → 2 | — |
-
-**`git diff Validation/results/` returned empty** — the rescan produced bit-identical output to the committed results from earlier in the day. Zero new emit-able conformances across ~252 declared types in ~209 source files.
-
-### Why this null result was predicted
-
-The plan agent's M5 §6 (`docs/Protocols/v1.4 plan.md`) called this:
-
-> Searching the four packages for inheritance clauses spelling any of the nine new protocols would pick up almost nothing:
->
-> - `: AdditiveArithmetic`, `: Numeric`, `: SignedNumeric`, `: BinaryInteger`, `: SignedInteger`, `: UnsignedInteger`, `: FixedWidthInteger` — these are essentially never adopted by app code. They exist to constrain stdlib generic algorithms; the only types that adopt them are stdlib's own `Int`/`UInt` family. Custom-precision integer libraries (Numerics, BigInt) are the rare exceptions.
-> - `: FloatingPoint`, `: BinaryFloatingPoint` — same story; only `Float`/`Double`/`Float80`/`Float16` conform.
-
-Confirmed empirically. The v1.4 cluster's value isn't in surfacing new app-code conformers — it's in being *available* when a custom-precision numeric type is written, *and* in giving the kit's own laws something to run against stdlib types directly via the Pass 2 expansion above.
-
-### What this means for the §8 closure narrative
-
-The revalidation reinforces the v0.3 §8 calibration: well-tested code rarely contains kit-detectable bugs in the specific protocols the kit covers. The v1.4 cluster's contribution to PRD §8 is:
-
-1. **Pass 1 scope coverage.** All 18 protocols the kit covers in v1.4.0 are exercised by the discovery plugin. The fact that the plugin emits zero new checks for these packages doesn't mean the plugin is broken — it means the packages don't declare the protocols, which is the predicted state of mainstream Swift code.
-2. **Pass 2 stdlib coverage.** Six new tests in `StdlibNumericLawsTests.swift` exercise the v1.4 laws against `Int32` / `UInt` / `Double` at `.standard` budget. All pass. First time the kit's own laws have run against stdlib types via the validation harness — addresses the long-standing gap where Pass 2 only exercised ArgumentParser-specific types.
-
-## Pass 2 expansion 2026-04-29 — custom-precision numeric coverage
-
-After v1.4 shipped, three external libraries were wired into Pass 2 to test the kit's algebraic / integer / FloatingPoint laws against the canonical non-stdlib implementations of those protocols.
-
-`Validation/Package.swift` gains two new deps:
-- `attaswift/BigInt` (5.7.0) — arbitrary-precision integers
-- `apple/swift-numerics` (1.1.1) — `Complex<RealType>`
-
-### `attaswift/BigInt` — `BigInt` and `BigUInt`
-
-`Validation/Tests/ValidationPass2Tests/BigIntLawsTests.swift`:
-
-| Type | Law check | Suppressions | Result |
-|---|---|---|---|
-| `BigInt` | `checkBinaryIntegerPropertyLaws` (16 own + inherited Numeric + AdditiveArithmetic) | none | passed @ `.standard` |
-| `BigInt` | `checkSignedIntegerPropertyLaws` (1 own + inherited BinaryInteger + SignedNumeric) | none | passed @ `.standard` |
-| `BigUInt` | `checkBinaryIntegerPropertyLaws` | `bitwiseDoubleNegation`, `bitwiseDeMorgan` (as `intentionalViolation`) | passed with documented exceptions |
-| `BigUInt` | `checkUnsignedIntegerPropertyLaws` | same | passed with documented exceptions |
-
-**Real finding: `BigUInt.~` does not satisfy De Morgan's law.** Counterexample (replay seed `JJV3lDSZMUfh1OXBSpPuu+SMxMVOzze42idwOvk3nK4=`):
-
-```
-x = 406803, y = 51776
-x & y = 0
-~(x & y) = 0
-~x | ~y = 18446744073709551615  (= UInt64.max)
-```
-
-The root cause is that `BigUInt`'s bitwise NOT depends on the underlying word-array storage size, not on a fixed bit-width. `~BigUInt(0)` returns `BigUInt(0)` (zero-word storage) while `~BigUInt(x)` for non-zero `x` flips a full 64-bit word. De Morgan's law requires consistent bit-width semantics on both sides; arbitrary-precision unsigned types fundamentally don't have that.
-
-`BigInt` (signed) is unaffected because `~x = -(x+1)` is an arithmetic identity that doesn't depend on storage. The `bigInt*` tests pass without suppressions.
-
-This is the **first property-based test of `attaswift/BigInt`'s protocol conformance** as far as we can tell — the package is 10+ years old and has unit tests but no published property-based suite that targets the protocol-level laws. The De Morgan / double-negation finding is genuine: callers using `BigUInt` for bitwise operations should not assume stdlib's fixed-width De Morgan identities transfer cleanly.
-
-The suppression-based test shape — `intentionalViolation` for the bit-width-dependent laws, with explicit reasons in the suppression record — is the PRD §4.7 escape hatch working as designed: the violations are *expected*, the test suite still passes, and a future regression that causes a *different* law to fail (one not on the suppression list) would still fail loudly.
-
-### `Foundation.Decimal`
-
-`Validation/Tests/ValidationPass2Tests/DecimalLawsTests.swift`:
-
-| Type | Law check | Suppressions | Result |
-|---|---|---|---|
-| `Decimal` | `checkSignedNumericPropertyLaws` (4 own + inherited Numeric + AdditiveArithmetic) | none | passed @ `.standard` |
-| `Decimal` | `checkNumericPropertyLaws` (own only) | none | passed @ `.standard` |
-| `Decimal` | `checkAdditiveArithmeticPropertyLaws` (5 own) | none | passed @ `.standard` |
-
-`Decimal`'s 128-bit mantissa with exact decimal arithmetic (no IEEE-754 rounding for in-range integer values) means the algebraic laws hold cleanly for bounded magnitudes. This is the kind of "exact-equality numeric type" that v1.4 M1's exact-equality assumption was written for.
-
-### `apple/swift-numerics` `Complex<Double>`
-
-`Validation/Tests/ValidationPass2Tests/ComplexLawsTests.swift`:
-
-| Type | Law check | Suppressions | Result |
-|---|---|---|---|
-| `Complex<Double>` | `checkNumericPropertyLaws` (own only) | `multiplicationAssociativity`, `leftDistributivity`, `rightDistributivity`, `additionAssociativity`, `subtractionInverse` (as `intentionalViolation`) | passed with documented exceptions |
-| `Complex<Double>` | `checkSignedNumericPropertyLaws` (own only) | none | passed @ `.standard` |
-
-`Complex<Double>` is the empirical demonstration of why M1's doc-comments redirect FP users to M4. Its underlying components are `Double`, so multiplication and three-way addition round in IEEE-754 the same way `Double` does — the kit's exact-equality algebraic laws fire spurious violations under random sampling. **This is not a bug in `Complex<Double>`** (the laws hold to within rounding tolerance, which is what users of complex floating-point arithmetic actually rely on); it's a documentation case for "if you have a Numeric whose components are FloatingPoint, expect to suppress the rounding-sensitive laws and rely on the negation/inverse laws that don't depend on chained arithmetic."
-
-`Complex` itself doesn't conform to `FloatingPoint` (no `.infinity` / `.nan` on the type — only on `RealType`), so `checkFloatingPointPropertyLaws` doesn't apply. The kit currently has no protocol-level abstraction for "Numeric-on-floating-point-components"; explicit per-call suppression is the pragmatic v1.4 answer.
-
-### Summary
-
-| Library | Pass | Real findings |
-|---|---|---|
-| `attaswift/BigInt` (`BigInt`) | clean — 0 suppressions | — |
-| `attaswift/BigInt` (`BigUInt`) | passes with 2 documented suppressions | bitwise-NOT inconsistent across word-size boundaries (genuine algebraic divergence) |
-| `Foundation.Decimal` | clean — 0 suppressions | — |
-| `apple/swift-numerics` (`Complex<Double>`) | passes with 5 FP-rounding suppressions | rounding-sensitive law failures predicted by M1 docs |
-
-**One genuine algebraic finding** on `BigUInt` — the kit caught a real divergence between fixed-width and arbitrary-precision bitwise semantics that's not documented in the BigInt package's README. Total Pass 2 sub-package now runs 21 tests across 6 suites in ≈ 200 ms.
+Moving Pass 3 into its own package would let Pass 2 build on Swift 6.4 again. That hasn't been done.

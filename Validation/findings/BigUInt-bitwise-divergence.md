@@ -9,7 +9,7 @@
 
 ## What the kit found
 
-Running `checkBinaryIntegerProtocolLaws(for: BigUInt.self, ...)` at `.standard` budget (1,000 trials) fires a Strict-tier violation on `BinaryInteger.bitwiseDeMorgan` within the first ~600 trials.
+Running `checkBinaryIntegerPropertyLaws(for: BigUInt.self, ...)` at `.standard` budget (1,000 trials) fires a Strict-tier violation on `BinaryInteger.bitwiseDeMorgan` within the first ~600 trials.
 
 **Counterexample** (replay seed `JJV3lDSZMUfh1OXBSpPuu+SMxMVOzze42idwOvk3nK4=`):
 

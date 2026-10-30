@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Validation harness for the PRD §8 1.0 gate. Runs
+# Pass 1 of the PRD §8 external validation gate. Runs
 # PropertyLawDiscoveryTool against an external Swift package's source
 # files without requiring SwiftPropertyLaws to be added as a dep on
 # the target.
