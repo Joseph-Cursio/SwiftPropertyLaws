@@ -56,10 +56,10 @@ The full breakdown per package is at the top of each `.summary.txt`.
 ### Rerun Pass 1
 
 ```bash
-Validation/run.sh ~/xcode_projects/swift-argument-parser ArgumentParser
-Validation/run.sh ~/xcode_projects/Hummingbird Hummingbird
-Validation/run.sh ~/xcode_projects/swift-aws-lambda-runtime AWSLambdaRuntime
-Validation/run.sh ~/xcode_projects/Sitrep SitrepCore
+Validation/run.sh ~/github_projects/swift-argument-parser ArgumentParser
+Validation/run.sh ~/github_projects/Hummingbird Hummingbird
+Validation/run.sh ~/github_projects/swift-aws-lambda-runtime AWSLambdaRuntime
+Validation/run.sh ~/github_projects/Sitrep SitrepCore
 git diff Validation/results/
 ```
 
