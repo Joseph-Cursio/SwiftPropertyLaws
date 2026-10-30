@@ -40,6 +40,22 @@ struct SampledSpaceTests {
                 "got \(sampled.counterexample ?? "nil")")
     }
 
+    /// **The last step to index 0.** Halving ends on `index - 1` for any index
+    /// of 2 or more, so the explicit `index - 1` candidate matters only at 1.
+    /// The witness above sits at 56 and never needs it. A law that fails
+    /// everywhere has its minimal case at index 0, and dropping that candidate
+    /// left the shrink stuck at 1.
+    @Test func aFailureEverywhereShrinksToTheFirstCase() async {
+        let failure = await runUnaryLaw(
+            "Spike.neverHolds",
+            source: .sampledFromSpace(Every.elements("value", in: Array(0 ..< 64))),
+            options: LawCheckOptions(budget: .sanity),
+            property: { (_: Int) in false },
+            formatCounterexample: { value, _ in "\(value)" }
+        )
+        #expect(failure.counterexample == "value=0 — 0", "got \(failure.counterexample ?? "nil")")
+    }
+
     /// **A denominator, which no other sampled path in the kit reports.**
     @Test func samplingReportsDistinctCoverageWhereTheBridgeReportsNone() async throws {
         let space = Every.subsets("subset", of: 6)
