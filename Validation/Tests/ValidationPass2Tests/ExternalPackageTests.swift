@@ -23,13 +23,32 @@ import PropertyLawKit
 /// the kit's Strict-tier checks would surface it.
 struct ExternalPackageTests {
 
+    /// `Hashable.distribution` asks what fraction of the draws produced distinct
+    /// hash values, and fails below 10%. Over a domain of a few values that
+    /// ratio is bounded by the domain's size rather than by the hash, so the
+    /// law says nothing about these types and is skipped for them. Every
+    /// Strict Hashable and Equatable law still runs.
+    private static let hashDistribution = LawIdentifier(
+        protocolName: "Hashable",
+        lawName: "distribution"
+    )
+
     // MARK: - ExitCode
 
     @Test func exitCodeHashableLawsHold() async throws {
         try await checkHashablePropertyLaws(
             for: ExitCode.self,
             using: Gen<ExitCode>.exitCode(),
-            options: LawCheckOptions(budget: .standard)
+            options: LawCheckOptions(
+                budget: .standard,
+                suppressions: [
+                    .skip(
+                        Self.hashDistribution,
+                        reason: "the generator draws from ten fixed exit codes, "
+                            + "so ten distinct hashes is the most there can be"
+                    )
+                ]
+            )
         )
     }
 
@@ -47,7 +66,16 @@ struct ExternalPackageTests {
         try await checkHashablePropertyLaws(
             for: ArgumentVisibility.self,
             using: Gen<ArgumentVisibility>.argumentVisibility(),
-            options: LawCheckOptions(budget: .standard)
+            options: LawCheckOptions(
+                budget: .standard,
+                suppressions: [
+                    .skip(
+                        Self.hashDistribution,
+                        reason: "ArgumentVisibility has exactly three values, "
+                            + "so three distinct hashes is the most there can be"
+                    )
+                ]
+            )
         )
     }
 
