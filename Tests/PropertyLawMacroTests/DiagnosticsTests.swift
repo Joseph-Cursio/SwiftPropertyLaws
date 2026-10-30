@@ -1,6 +1,6 @@
 import PropertyLawCore
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosGenericTestSupport
+import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import PropertyLawMacroImpl
 
