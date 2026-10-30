@@ -1,103 +1,23 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/ArgumentParser.generated.swift
   target: ArgumentParser
-  source files scanned: 49
-  types detected: 99
-  types needing manual gen() (98):
-    - Argument
-    - ArgumentArrayParsingStrategy
-    - ArgumentDecoder
-    - ArgumentDefinition
-    - ArgumentDiscussion
-    - ArgumentHelp
-    - ArgumentInfoV0
-    - ArgumentSet
-    - ArgumentSetProvider
-    - ArgumentVisibility
-    - Array
-    - ArrayParsingStrategy
-    - ArrayWrapper
-    - AsyncMainProtocol
-    - AsyncParsableCommand
-    - AutodetectedGenerateCompletions
-    - Bare
-    - Bool
-    - CleanExit
-    - CodingKeyValidator
-    - Collection
-    - CommandConfiguration
-    - CommandError
-    - CommandGroup
-    - CommandInfoV0
-    - CommandLine
-    - CommandParser
-    - CompletionKind
-    - CompletionKindV0
-    - CompletionShell
-    - CompletionsGenerator
-    - DecodedArguments
-    - Double
-    - DumpHelpGenerator
-    - Element
-    - EnumerableFlag
-    - ErrorMessageGenerator
-    - ExitCode
-    - ExpressibleByArgument
-    - Flag
-    - FlagExclusivity
-    - FlagInversion
-    - Float
-    - HelpCommand
-    - HelpGenerator
-    - HelpRequested
-    - Index
-    - InputKey
-    - InputOrigin
-    - Int
-    - Int16
-    - Int32
-    - Int64
-    - Int8
-    - InternalParseError
-    - Kind
-    - KindV0
-    - LenientParser
-    - MessageInfo
-    - MutableCollection
-    - Mutex
-    - Name
-    - NameInfoV0
-    - NameSpecification
-    - NonsenseFlagsValidator
-    - Option
-    - OptionGroup
-    - Optional
-    - ParsableArguments
-    - ParsableArgumentsValidationError
-    - ParsableCommand
-    - Parsed
-    - ParsedArgument
-    - ParsedArgumentsContainer
-    - ParsedValues
-    - ParsedWrapper
-    - ParserError
-    - ParsingStrategyV0
-    - Platform
-    - PositionalArgumentsValidator
-    - Representation
-    - SendableBox
-    - SingleValueDecoder
-    - SingleValueParsingStrategy
-    - SplitArguments
-    - String
-    - ToolInfoV0
-    - Tree
-    - UInt
-    - UInt16
-    - UInt32
-    - UInt64
-    - UInt8
-    - UniqueNamesValidator
-    - UsageGenerator
-    - ValidationError
-    - ValidatorErrorKind
-    - _WrappedParsableCommand
+  source files scanned: 52
+  types detected: 131
+  detected but skipped, no suite emitted (11):
+    - Argument: `public` without a `Sendable` conformance — the law entry points require one
+    - CleanExit: `public` without a `Sendable` conformance — the law entry points require one
+    - CodingKeyValidator.Validator: declared `private` — not nameable from another file
+    - ExitCode: `public` without a `Sendable` conformance — the law entry points require one
+    - Flag: `public` without a `Sendable` conformance — the law entry points require one
+    - Mutex._Buffer: declared `private` — not nameable from another file
+    - Mutex._Lock: declared `private` — not nameable from another file
+    - Option: `public` without a `Sendable` conformance — the law entry points require one
+    - OptionGroup: `public` without a `Sendable` conformance — the law entry points require one
+    - ParentCommand: `public` without a `Sendable` conformance — the law entry points require one
+    - ValidationError: `public` without a `Sendable` conformance — the law entry points require one
+  types needing manual gen() (78):
+    [36] declaration not in this target
+    [14] unsupported member type (nested/custom)
+    [13] user-defined init
+    [8] enum payload type unresolved
+    [4] caseless enum (uninhabited)
+    [3] class not Sendable (a check's inputs must be)

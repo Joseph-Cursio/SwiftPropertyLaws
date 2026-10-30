@@ -2,21 +2,40 @@
 // `// property-law-suppress: <protocol>_<TypeName>` markers.
 //
 // Target: ArgumentParser
-// Types detected: 99
+// Types detected: 131
 // Re-run: swift package propertylawcheck discover --target ArgumentParser
+//
+// Detected but skipped — a suite for these would not compile (11):
+//   - Argument: `public` without a `Sendable` conformance — the law entry points require one
+//   - CleanExit: `public` without a `Sendable` conformance — the law entry points require one
+//   - CodingKeyValidator.Validator: declared `private` — not nameable from another file
+//   - ExitCode: `public` without a `Sendable` conformance — the law entry points require one
+//   - Flag: `public` without a `Sendable` conformance — the law entry points require one
+//   - Mutex._Buffer: declared `private` — not nameable from another file
+//   - Mutex._Lock: declared `private` — not nameable from another file
+//   - Option: `public` without a `Sendable` conformance — the law entry points require one
+//   - OptionGroup: `public` without a `Sendable` conformance — the law entry points require one
+//   - ParentCommand: `public` without a `Sendable` conformance — the law entry points require one
+//   - ValidationError: `public` without a `Sendable` conformance — the law entry points require one
 
 import Testing
 import PropertyLawKit
-
-// Argument — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:44 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:94 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:383 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:462 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:548 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:647 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:714 (extension)
-// No emit-able stdlib conformance recognized.
+@testable import ArgumentParser
 
 // ArgumentArrayParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:110 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift:313 (extension)
 @Suite struct ArgumentArrayParsingStrategyPropertyLawTests {
     @Test func hashable_ArgumentArrayParsingStrategy() async throws {
         try await checkHashablePropertyLaws(
             for: ArgumentArrayParsingStrategy.self,
-            using: ArgumentArrayParsingStrategy.gen()
+            using: Gen.oneOf(
+    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+).map { ArgumentArrayParsingStrategy(base: $0) }
         )
     }
 }
@@ -24,15 +43,33 @@ import PropertyLawKit
 // ArgumentDecoder — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:31 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:63 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:71 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ArgumentDefinition — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:645 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:12 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:146 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:168 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:182 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:217 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:81 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:510 (extension)
+// ArgumentDecoder.Error — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:72 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ArgumentDiscussion — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentDiscussion.swift:83 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentDiscussion.swift:118 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentDiscussion.swift:120 (extension)
+// ArgumentDefinition — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:76 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:662 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:12 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:153 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:181 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:195 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:233 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:75 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:498 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentDefinition.Help — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:45 (primary)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentDefinition.Help.Options — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:46 (primary)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentDefinition.Kind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:33 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:223 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentDefinition.ParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:87 (primary)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentDefinition.Update — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:15 (primary)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentDiscussion — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentDiscussion.swift:103 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentDiscussion.swift:138 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentDiscussion.swift:140 (extension)
 @Suite struct ArgumentDiscussionPropertyLawTests {
     @Test func hashable_ArgumentDiscussion() async throws {
         try await checkHashablePropertyLaws(
             for: ArgumentDiscussion.self,
-            using: ArgumentDiscussion.gen()
+            using: ArgumentDiscussion.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
@@ -40,20 +77,32 @@ import PropertyLawKit
 // ArgumentHelp — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentHelp.swift:13 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentHelp.swift:90 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentHelp.swift:92 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ArgumentInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift:414 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:189 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:269 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:249 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:104 (extension)
+// ArgumentInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift:404 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:243 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:276 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:254 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:95 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ArgumentSet — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:284 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:53 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:61 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:71 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:208 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:218 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:138 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/PositionalArgumentsValidator.swift:78 (extension)
+// ArgumentInfoV0.CompletionKindV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:190 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentInfoV0.KindV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:136 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentInfoV0.NameInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:265 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:294 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:177 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentInfoV0.ParsingStrategyV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:156 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArgumentSet — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:301 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:53 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:61 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:71 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:208 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:218 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:136 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/PositionalArgumentsValidator.swift:78 (extension)
 @Suite struct ArgumentSetPropertyLawTests {
     @Test func randomAccessCollection_ArgumentSet() async throws {
         try await checkRandomAccessCollectionPropertyLaws(
             for: ArgumentSet.self,
-            using: ArgumentSet.gen()
+            using: __genArgumentSet(4).array(of: 0...8).map { ArgumentSet(sets: $0) }
         )
     }
 }
 
-// ArgumentSetProvider — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:280 (extension)
+// ArgumentSetProvider — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:297 (extension)
 // No emit-able stdlib conformance recognized.
 
 // ArgumentVisibility — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:13 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:34 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:55 (extension)
@@ -61,20 +110,35 @@ import PropertyLawKit
     @Test func hashable_ArgumentVisibility() async throws {
         try await checkHashablePropertyLaws(
             for: ArgumentVisibility.self,
-            using: ArgumentVisibility.gen()
+            using: Gen.oneOf(
+    Gen.always(ArgumentVisibility.Representation.`default`).eraseToAny(),
+    Gen.always(ArgumentVisibility.Representation.hidden).eraseToAny(),
+    Gen.always(ArgumentVisibility.Representation.`private`).eraseToAny()
+).map { ArgumentVisibility(base: $0) }
         )
     }
 }
 
-// Array — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:422 (extension)
+// ArgumentVisibility.Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:16 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:36 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ArrayParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:168 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:246 (extension)
+// Array — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:439 (extension)
+// No emit-able stdlib conformance recognized.
+
+// ArrayParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:207 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:285 (extension)
 @Suite struct ArrayParsingStrategyPropertyLawTests {
     @Test func hashable_ArrayParsingStrategy() async throws {
         try await checkHashablePropertyLaws(
             for: ArrayParsingStrategy.self,
-            using: ArrayParsingStrategy.gen()
+            using: Gen.oneOf(
+    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+).map { ArrayParsingStrategy(base: $0) }
         )
     }
 }
@@ -82,151 +146,212 @@ import PropertyLawKit
 // ArrayWrapper — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:304 (primary)
 // No emit-able stdlib conformance recognized.
 
-// AsyncMainProtocol — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/AsyncParsableCommand.swift:77 (extension)
+// AsyncCompletionsValidator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/AsyncCompletionsValidator.swift:14 (primary)
+// No emit-able stdlib conformance recognized.
+
+// AsyncCompletionsValidator.Error — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/AsyncCompletionsValidator.swift:16 (primary)
+// No emit-able stdlib conformance recognized.
+
+// AsyncMainProtocol — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/AsyncParsableCommand.swift:105 (extension)
 // No emit-able stdlib conformance recognized.
 
 // AsyncParsableCommand — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/AsyncParsableCommand.swift:26 (extension)
 // No emit-able stdlib conformance recognized.
 
-// AutodetectedGenerateCompletions — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:344 (primary)
+// AutodetectedGenerateCompletions — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:439 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Bare — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:364 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:366 (extension)
+// Bare — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:381 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:383 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Bool — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:139 (extension)
+// Bool — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:150 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CleanExit — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:70 (primary)
+// Character — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/StringExtensions.swift:260 (extension)
+// No emit-able stdlib conformance recognized.
+
+// CleanExit.Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:71 (primary)
 // No emit-able stdlib conformance recognized.
 
 // CodingKeyValidator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/CodingKeyValidator.swift:13 (primary)
 // No emit-able stdlib conformance recognized.
 
+// CodingKeyValidator.InvalidDecoderError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/CodingKeyValidator.swift:80 (primary)
+// No emit-able stdlib conformance recognized.
+
+// CodingKeyValidator.MissingKeysError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/CodingKeyValidator.swift:47 (primary)
+// No emit-able stdlib conformance recognized.
+
+// CodingKeyValidator.Validator.ValidationResult — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/CodingKeyValidator.swift:17 (primary)
+// No emit-able stdlib conformance recognized.
+
 // Collection — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/CollectionExtensions.swift:12 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CommandConfiguration — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift:13 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift:175 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:412 (extension)
+// CommandConfiguration — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift:13 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift:193 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:430 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CommandError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:26 (primary)
+// CommandError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
 // CommandGroup — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/CommandGroup.swift:13 (primary)
 // No emit-able stdlib conformance recognized.
 
-// CommandInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift:24 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:167 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:24 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:24 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:67 (extension)
+// CommandInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift:20 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:221 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:20 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:20 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:57 (extension)
 // No emit-able stdlib conformance recognized.
 
 // CommandLine — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:12 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CommandParser — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:35 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:84 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:348 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:595 (extension)
+// CommandParser — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:76 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:443 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:634 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CompletionKind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:36 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:219 (extension)
+// CompletionKind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:36 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:209 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CompletionKindV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:197 (extension)
+// CompletionKind.Kind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:37 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:210 (extension)
 // No emit-able stdlib conformance recognized.
 
-// CompletionShell — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:19 (primary)
+// CompletionShell — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:15 (primary)
 @Suite struct CompletionShellPropertyLawTests {
     @Test func hashable_CompletionShell() async throws {
         try await checkHashablePropertyLaws(
             for: CompletionShell.self,
-            using: CompletionShell.gen()
+            using: CompletionShell.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 
     @Test func rawRepresentable_CompletionShell() async throws {
         try await checkRawRepresentablePropertyLaws(
             for: CompletionShell.self,
-            using: CompletionShell.gen()
+            using: CompletionShell.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
 
-// CompletionsGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:114 (primary)
+// CompletionsGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:98 (primary)
 // No emit-able stdlib conformance recognized.
 
 // DecodedArguments — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:17 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Double — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:137 (extension)
+// DefaultAsFlagParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:168 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:203 (extension)
+@Suite struct DefaultAsFlagParsingStrategyPropertyLawTests {
+    @Test func hashable_DefaultAsFlagParsingStrategy() async throws {
+        try await checkHashablePropertyLaws(
+            for: DefaultAsFlagParsingStrategy.self,
+            using: Gen.oneOf(
+    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+).map { DefaultAsFlagParsingStrategy(base: $0) }
+        )
+    }
+}
+
+// Double — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:148 (extension)
 // No emit-able stdlib conformance recognized.
 
-// DumpHelpGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:20 (primary)
-// No emit-able stdlib conformance recognized.
-
-// Element — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:156 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/InputOrigin.swift:116 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:195 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:240 (extension)
+// DumpHelpGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
 // EnumerableFlag — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/EnumerableFlag.swift:75 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ErrorMessageGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:176 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:181 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:261 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:280 (extension)
+// Error — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Foundation.swift:18 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ExitCode — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:35 (primary)
-@Suite struct ExitCodePropertyLawTests {
-    @Test func hashable_ExitCode() async throws {
-        try await checkHashablePropertyLaws(
-            for: ExitCode.self,
-            using: ExitCode.gen()
-        )
-    }
-
-    @Test func rawRepresentable_ExitCode() async throws {
-        try await checkRawRepresentablePropertyLaws(
-            for: ExitCode.self,
-            using: ExitCode.gen()
-        )
-    }
-}
+// ErrorMessageGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:174 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:179 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:254 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:273 (extension)
+// No emit-able stdlib conformance recognized.
 
 // ExpressibleByArgument — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:48 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Flag — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:71 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:121 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:524 (extension)
-// No emit-able stdlib conformance recognized.
-
-// FlagExclusivity — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:171 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:196 (extension)
+// FlagExclusivity — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:172 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:197 (extension)
 @Suite struct FlagExclusivityPropertyLawTests {
     @Test func hashable_FlagExclusivity() async throws {
         try await checkHashablePropertyLaws(
             for: FlagExclusivity.self,
-            using: FlagExclusivity.gen()
+            using: Gen.oneOf(
+    Gen.always(FlagExclusivity.Representation.exclusive).eraseToAny(),
+    Gen.always(FlagExclusivity.Representation.chooseFirst).eraseToAny(),
+    Gen.always(FlagExclusivity.Representation.chooseLast).eraseToAny()
+).map { FlagExclusivity(base: $0) }
         )
     }
 }
 
-// FlagInversion — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:135 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:168 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:185 (extension)
+// FlagExclusivity.Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:173 (primary)
+// No emit-able stdlib conformance recognized.
+
+// FlagInversion — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:135 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:169 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:283 (extension)
 @Suite struct FlagInversionPropertyLawTests {
     @Test func hashable_FlagInversion() async throws {
         try await checkHashablePropertyLaws(
             for: FlagInversion.self,
-            using: FlagInversion.gen()
+            using: Gen.oneOf(
+    Gen.always(FlagInversion.Representation.prefixedNo).eraseToAny(),
+    Gen.always(FlagInversion.Representation.prefixedEnableDisable).eraseToAny()
+).map { FlagInversion(base: $0) }
         )
     }
 }
 
-// Float — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:136 (extension)
+// FlagInversion.Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift:136 (primary)
 // No emit-able stdlib conformance recognized.
 
-// GenerateCompletions — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:340 (primary)
+// Float — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:147 (extension)
+// No emit-able stdlib conformance recognized.
+
+// GenerateCompletions — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:435 (primary)
 // No emit-able stdlib conformance recognized.
 
 // HelpCommand — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpCommand.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
+// HelpCommand.CodingKeys — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpCommand.swift:51 (primary)
+// No emit-able stdlib conformance recognized.
+
 // HelpGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
-// HelpRequested — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:31 (primary)
+// HelpGenerator.DiscussionSection — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:146 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Index — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:210 (extension)
+// HelpGenerator.Section — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:17 (primary)
+// No emit-able stdlib conformance recognized.
+
+// HelpGenerator.Section.Element — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:18 (primary)
+@Suite struct HelpGenerator_Section_ElementPropertyLawTests {
+    @Test func hashable_HelpGenerator_Section_Element() async throws {
+        try await checkHashablePropertyLaws(
+            for: HelpGenerator.Section.Element.self,
+            using: HelpGenerator.Section.Element.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
+        )
+    }
+}
+
+// HelpGenerator.Section.Header — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:108 (primary)
+@Suite struct HelpGenerator_Section_HeaderPropertyLawTests {
+    @Test func equatable_HelpGenerator_Section_Header() async throws {
+        try await checkEquatablePropertyLaws(
+            for: HelpGenerator.Section.Header.self,
+            using: Gen.oneOf(
+    Gen.always(HelpGenerator.Section.Header.positionalArguments).eraseToAny(),
+    Gen.always(HelpGenerator.Section.Header.subcommands).eraseToAny(),
+    Gen.always(HelpGenerator.Section.Header.options).eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { HelpGenerator.Section.Header.title($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { HelpGenerator.Section.Header.groupedSubcommands($0) }.eraseToAny()
+)
+        )
+    }
+}
+
+// HelpRequested — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:17 (primary)
 // No emit-able stdlib conformance recognized.
 
 // InputKey — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/InputKey.swift:18 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/InputKey.swift:56 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/InputKey.swift:62 (extension)
@@ -234,7 +359,8 @@ import PropertyLawKit
     @Test func hashable_InputKey() async throws {
         try await checkHashablePropertyLaws(
             for: InputKey.self,
-            using: InputKey.gen()
+            using: zip(Gen<Character>.letterOrNumber.string(of: 0...8), __genInputKey(4).optional)
+            .map { InputKey(name: $0.0, parent: $0.1) }
         )
     }
 }
@@ -244,45 +370,80 @@ import PropertyLawKit
     @Test func equatable_InputOrigin() async throws {
         try await checkEquatablePropertyLaws(
             for: InputOrigin.self,
-            using: InputOrigin.gen()
+            using: Gen.oneOf(
+    Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
+    zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+).array(of: 0...8).map { InputOrigin(elements: $0) }
         )
     }
 }
 
-// Int — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:125 (extension)
+// InputOrigin.Element — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/InputOrigin.swift:31 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/InputOrigin.swift:116 (extension)
+@Suite struct InputOrigin_ElementPropertyLawTests {
+    @Test func hashable_InputOrigin_Element() async throws {
+        try await checkHashablePropertyLaws(
+            for: InputOrigin.Element.self,
+            using: Gen.oneOf(
+    Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
+    zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+)
+        )
+    }
+
+    @Test func comparable_InputOrigin_Element() async throws {
+        try await checkComparablePropertyLaws(
+            for: InputOrigin.Element.self,
+            using: Gen.oneOf(
+    Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
+    zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+)
+        )
+    }
+}
+
+// Int — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:136 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Int16 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:127 (extension)
+// Int16 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:138 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Int32 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:128 (extension)
+// Int32 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:139 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Int64 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:129 (extension)
+// Int64 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:140 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Int8 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:126 (extension)
+// Int8 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:137 (extension)
 // No emit-able stdlib conformance recognized.
 
-// InternalParseError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ParserError.swift:44 (primary)
+// InternalParseError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ParserError.swift:45 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Kind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift:220 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:207 (extension)
-// No emit-able stdlib conformance recognized.
-
-// KindV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:145 (extension)
+// JSONEncoder — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Foundation.swift:36 (primary)
 // No emit-able stdlib conformance recognized.
 
 // LenientParser — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift:255 (primary)
 // No emit-able stdlib conformance recognized.
 
-// MessageInfo — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/MessageInfo.swift:20 (primary)
+// MessageInfo — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/MessageInfo.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
 // MutableCollection — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/CollectionExtensions.swift:18 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Mutex — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Mutex.swift:25 (primary)
+// Mutex — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Mutex.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
 // Name — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:12 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:23 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:41 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:47 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:49 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:68 (extension)
@@ -290,40 +451,96 @@ import PropertyLawKit
     @Test func hashable_Name() async throws {
         try await checkHashablePropertyLaws(
             for: Name.self,
-            using: Name.gen()
+            using: Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+)
         )
     }
 
     @Test func comparable_Name() async throws {
         try await checkComparablePropertyLaws(
             for: Name.self,
-            using: Name.gen()
+            using: Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+)
         )
     }
 }
 
-// NameInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:211 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:297 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:184 (extension)
+// Name.Case — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift:50 (primary)
+@Suite struct Name_CasePropertyLawTests {
+    @Test func equatable_Name_Case() async throws {
+        try await checkEquatablePropertyLaws(
+            for: Name.Case.self,
+            using: Gen.oneOf(
+    Gen.always(Name.Case.long).eraseToAny(),
+    Gen.always(Name.Case.short).eraseToAny(),
+    Gen.always(Name.Case.longWithSingleDash).eraseToAny()
+)
+        )
+    }
+}
+
+// NameSpecification — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:33 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:122 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:169 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:189 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:276 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:436 (extension)
 // No emit-able stdlib conformance recognized.
 
-// NameSpecification — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:14 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:93 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:95 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:178 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift:418 (extension)
-// No emit-able stdlib conformance recognized.
+// NameSpecification.Element — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:35 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:124 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:250 (extension)
+@Suite struct NameSpecification_ElementPropertyLawTests {
+    @Test func hashable_NameSpecification_Element() async throws {
+        try await checkHashablePropertyLaws(
+            for: NameSpecification.Element.self,
+            using: Gen.oneOf(
+    Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
+            .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
+    Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
+            .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
+).map { NameSpecification.Element(base: $0) }
+        )
+    }
+}
+
+// NameSpecification.Element.Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift:36 (primary)
+@Suite struct NameSpecification_Element_RepresentationPropertyLawTests {
+    @Test func hashable_NameSpecification_Element_Representation() async throws {
+        try await checkHashablePropertyLaws(
+            for: NameSpecification.Element.Representation.self,
+            using: Gen.oneOf(
+    Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
+            .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
+    Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
+            .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
+)
+        )
+    }
+}
 
 // NonsenseFlagsValidator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/NonsenseFlagsValidator.swift:13 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Option — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:51 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:99 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:363 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:458 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:586 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:712 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:798 (extension)
+// NonsenseFlagsValidator.Error — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/NonsenseFlagsValidator.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
-// OptionGroup — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/OptionGroup.swift:33 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/OptionGroup.swift:115 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/OptionGroup.swift:127 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/OptionGroup.swift:143 (extension)
+// Optional — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:412 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Optional — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift:395 (extension)
+// ParsableArguments — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:59 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:82 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/AsyncCompletionsValidator.swift:63 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:12 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ParsableArguments — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:50 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:66 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:12 (extension)
-// No emit-able stdlib conformance recognized.
-
-// ParsableArgumentsValidationError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:44 (primary)
+// ParsableArgumentsValidationError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:53 (primary)
 // No emit-able stdlib conformance recognized.
 
 // ParsableCommand — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableCommand.swift:37 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableCommand.swift:54 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableCommand.swift:184 (extension)
@@ -332,12 +549,26 @@ import PropertyLawKit
 // Parsed — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Parsed.swift:12 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ParsedArgument — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:15 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:670 (extension)
+// ParsedArgument — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:15 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:720 (extension)
 @Suite struct ParsedArgumentPropertyLawTests {
     @Test func equatable_ParsedArgument() async throws {
         try await checkEquatablePropertyLaws(
             for: ParsedArgument.self,
-            using: ParsedArgument.gen()
+            using: Gen.oneOf(
+    Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+).map { ParsedArgument.name($0) }.eraseToAny(),
+    zip(Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+), Gen<Character>.letterOrNumber.string(of: 0...8))
+            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+)
         )
     }
 }
@@ -348,54 +579,231 @@ import PropertyLawKit
 // ParsedValues — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ParsedValues.swift:15 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ParsedValues.swift:36 (extension)
 // No emit-able stdlib conformance recognized.
 
+// ParsedValues.Element — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ParsedValues.swift:16 (primary)
+// No emit-able stdlib conformance recognized.
+
 // ParsedWrapper — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/Parsed.swift:53 (extension)
 // No emit-able stdlib conformance recognized.
 
 // ParserError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ParserError.swift:13 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ParsingStrategyV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:163 (extension)
+// Platform — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:33 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:37 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:118 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:143 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:168 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:189 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:211 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Platform — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:33 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:37 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:62 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:87 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:108 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:130 (extension)
+// Platform.Environment — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:38 (primary)
+// No emit-able stdlib conformance recognized.
+
+// Platform.Environment.Key — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:39 (primary)
+// No emit-able stdlib conformance recognized.
+
+// Platform.StandardError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift:191 (primary)
 // No emit-able stdlib conformance recognized.
 
 // PositionalArgumentsValidator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/PositionalArgumentsValidator.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// Representation — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift:36 (extension)
-// No emit-able stdlib conformance recognized.
-
-// SendableBox — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:571 (primary)
+// PositionalArgumentsValidator.Error — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/PositionalArgumentsValidator.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
 // SingleValueDecoder — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:173 (primary)
 // No emit-able stdlib conformance recognized.
 
-// SingleValueParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:116 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:164 (extension)
+// SingleValueDecoder.SingleValueContainer — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:224 (primary)
+// No emit-able stdlib conformance recognized.
+
+// SingleValueDecoder.UnkeyedContainer — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift:250 (primary)
+// No emit-able stdlib conformance recognized.
+
+// SingleValueParsingStrategy — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:116 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift:202 (extension)
 @Suite struct SingleValueParsingStrategyPropertyLawTests {
     @Test func hashable_SingleValueParsingStrategy() async throws {
         try await checkHashablePropertyLaws(
             for: SingleValueParsingStrategy.self,
-            using: SingleValueParsingStrategy.gen()
+            using: Gen.oneOf(
+    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+).map { SingleValueParsingStrategy(base: $0) }
         )
     }
 }
 
-// SplitArguments — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:628 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:84 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:193 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:219 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:256 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:639 (extension)
+// SplitArguments — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift:667 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:89 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:198 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:224 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:261 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:689 (extension)
 @Suite struct SplitArgumentsPropertyLawTests {
     @Test func equatable_SplitArguments() async throws {
         try await checkEquatablePropertyLaws(
             for: SplitArguments.self,
-            using: SplitArguments.gen()
+            using: zip(zip(Gen.oneOf(
+    Gen.oneOf(
+    Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+).map { ParsedArgument.name($0) }.eraseToAny(),
+    zip(Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+), Gen<Character>.letterOrNumber.string(of: 0...8))
+            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
+    Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
+), zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) })
+            .map { SplitArguments.Element(value: $0.0, index: $0.1) }.array(of: 0...8), Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8))
+            .map { SplitArguments(_elements: $0.0, firstUnused: $0.1, originalInput: $0.2) }
         )
     }
 }
 
-// String — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:154 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:310 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:270 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:100 (extension)
+// SplitArguments.Element — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:90 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:200 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:245 (extension)
+@Suite struct SplitArguments_ElementPropertyLawTests {
+    @Test func equatable_SplitArguments_Element() async throws {
+        try await checkEquatablePropertyLaws(
+            for: SplitArguments.Element.self,
+            using: zip(Gen.oneOf(
+    Gen.oneOf(
+    Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+).map { ParsedArgument.name($0) }.eraseToAny(),
+    zip(Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+), Gen<Character>.letterOrNumber.string(of: 0...8))
+            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
+    Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
+), zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) })
+            .map { SplitArguments.Element(value: $0.0, index: $0.1) }
+        )
+    }
+}
+
+// SplitArguments.Element.Value — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:91 (primary)
+@Suite struct SplitArguments_Element_ValuePropertyLawTests {
+    @Test func equatable_SplitArguments_Element_Value() async throws {
+        try await checkEquatablePropertyLaws(
+            for: SplitArguments.Element.Value.self,
+            using: Gen.oneOf(
+    Gen.oneOf(
+    Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+).map { ParsedArgument.name($0) }.eraseToAny(),
+    zip(Gen.oneOf(
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+), Gen<Character>.letterOrNumber.string(of: 0...8))
+            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+    Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
+    Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
+)
+        )
+    }
+}
+
+// SplitArguments.Index — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:161 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:215 (extension)
+@Suite struct SplitArguments_IndexPropertyLawTests {
+    @Test func hashable_SplitArguments_Index() async throws {
+        try await checkHashablePropertyLaws(
+            for: SplitArguments.Index.self,
+            using: zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }
+        )
+    }
+
+    @Test func comparable_SplitArguments_Index() async throws {
+        try await checkComparablePropertyLaws(
+            for: SplitArguments.Index.self,
+            using: zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+))
+            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }
+        )
+    }
+}
+
+// SplitArguments.InputIndex — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:127 (primary)
+@Suite struct SplitArguments_InputIndexPropertyLawTests {
+    @Test func hashable_SplitArguments_InputIndex() async throws {
+        try await checkHashablePropertyLaws(
+            for: SplitArguments.InputIndex.self,
+            using: Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }
+        )
+    }
+
+    @Test func comparable_SplitArguments_InputIndex() async throws {
+        try await checkComparablePropertyLaws(
+            for: SplitArguments.InputIndex.self,
+            using: Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }
+        )
+    }
+
+    @Test func rawRepresentable_SplitArguments_InputIndex() async throws {
+        try await checkRawRepresentablePropertyLaws(
+            for: SplitArguments.InputIndex.self,
+            using: Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }
+        )
+    }
+}
+
+// SplitArguments.SubIndex — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift:144 (primary)
+@Suite struct SplitArguments_SubIndexPropertyLawTests {
+    @Test func hashable_SplitArguments_SubIndex() async throws {
+        try await checkHashablePropertyLaws(
+            for: SplitArguments.SubIndex.self,
+            using: Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+)
+        )
+    }
+
+    @Test func comparable_SplitArguments_SubIndex() async throws {
+        try await checkComparablePropertyLaws(
+            for: SplitArguments.SubIndex.self,
+            using: Gen.oneOf(
+    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+)
+        )
+    }
+}
+
+// String — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift:138 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:307 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:275 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:100 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ToolInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift:18 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:18 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:18 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:55 (extension)
+// ToolInfoV0 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift:14 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift:14 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift:14 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift:45 (extension)
 // No emit-able stdlib conformance recognized.
 
 // Tree — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Tree.swift:12 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Tree.swift:33 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Tree.swift:43 (extension)
@@ -403,37 +811,40 @@ import PropertyLawKit
     @Test func hashable_Tree() async throws {
         try await checkHashablePropertyLaws(
             for: Tree.self,
-            using: Tree.gen()
+            using: Tree.gen()  // TODO: no generator derived — supply `static func gen()` (this line will not compile)
         )
     }
 }
 
-// UInt — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:130 (extension)
+// Tree.InitializationError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Utilities/Tree.swift:108 (primary)
 // No emit-able stdlib conformance recognized.
 
-// UInt16 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:132 (extension)
+// UInt — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:141 (extension)
 // No emit-able stdlib conformance recognized.
 
-// UInt32 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:133 (extension)
+// UInt16 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:143 (extension)
 // No emit-able stdlib conformance recognized.
 
-// UInt64 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:134 (extension)
+// UInt32 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:144 (extension)
 // No emit-able stdlib conformance recognized.
 
-// UInt8 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:131 (extension)
+// UInt64 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:145 (extension)
+// No emit-able stdlib conformance recognized.
+
+// UInt8 — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift:142 (extension)
 // No emit-able stdlib conformance recognized.
 
 // UniqueNamesValidator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/UniqueNamesValidator.swift:14 (primary)
 // No emit-able stdlib conformance recognized.
 
-// UsageGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:18 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:23 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:46 (extension)
+// UniqueNamesValidator.Error — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/UniqueNamesValidator.swift:15 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ValidationError — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift:14 (primary)
+// UsageGenerator — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:12 (primary), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:17 (extension), /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift:40 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ValidatorErrorKind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:35 (primary)
+// ValidatorErrorKind — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Validators/ParsableArgumentsValidation.swift:44 (primary)
 // No emit-able stdlib conformance recognized.
 
-// _WrappedParsableCommand — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:32 (primary)
+// _WrappedParsableCommand — /Users/josephcursio/xcode_projects/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift:40 (primary)
 // No emit-able stdlib conformance recognized.
