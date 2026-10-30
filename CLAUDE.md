@@ -4,6 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**swift-mutation-testing over `PropertyLawCore`: 86.9% → 96.9% (2026-10-29).** 131 mutants at the default tier, against `PropertyLawCoreTests` only. The first run left 7 survivors and 10 that no Core test reached. Six were real gaps:
+- **No test declined an initializer that asserts a precondition.** The only checks were the inverted guards, which decline every ordinary initializer and fail everything. The rule for an initializer forwarding to an asserting sibling (`_HeapNode`) was untested in both directions.
+- **One half of `Codable` was never tested alone.** Every fixture that wrote `Encodable` also wrote `Decodable`, so `KnownProtocol.set(from:)` pairing on either half passed the Core, macro *and* discovery-tool tests. A type that is only `Encodable` would get a Codable suite it cannot compile.
+- Tabs and newlines inside a type spelling. `trimmedDescription` trims only the ends, so a dictionary type written across lines arrives with its line break inside.
+- The `.todo` reason for a `Sendable` class, which was checked only for being non-`nil`.
+- The indentation of a recursive type's helper. Every test read it with `contains`.
+- `GeneratorPlan`'s dictionary arms of `isComplete` and `containsSelfReference`. They are public and nothing in either repo calls them.
+
+Four remain. Three are in `QualifiedTypeName`, which only the discovery-tool tests reach. Each was applied by hand and those tests kill it. **The fourth cannot change behaviour:** `isDeclined` rejects a parameterless initializer before it calls `isCapacityOnly`, and every initializer `isCapacityOnly` matches, `isCapacityWithFlagsOnly` matches too, so that call is redundant. Two `KnownProtocol` mutants the tool reported as uncovered fail to build when applied by hand. They count as killed: the library builds, but `EndToEndTests` stops compiling once the macro emits a check the type cannot satisfy.
+
+**A mutant reported "no coverage" for one test target may still be killed by another.** The tool takes one `--target`, so a leaf module shared by several targets needs the hand check.
+
 **The discovery tool's mutants are kept in `mutants/`, and swift-mutation-testing found 14 more (2026-10-29).** The three entries below were mutation-tested by hand, because the corpus had no shape for the discovery tool, and those mutants were thrown away afterwards. They are now 19 patches in three shapes that `mutants/run-mutants.sh` reruns: `discovery-sendable` (10: the standard-library and Foundation seeds, qualifier stripping, shadowing and actors), `discovery-namesakes` (8) and `discovery-summary` (1, the tie-break). All 19 are killed by their named tests, and all 78 patches apply to `main`.
 
 [ericodx/swift-mutation-testing](https://github.com/ericodx/swift-mutation-testing) was then run over `Sources/PropertyLawDiscoveryTool` at its default operator tier: 121 mutants, of which 14 survived and 11 had no coverage. Every survivor marked something the tests did not check. **Two were tests that passed by coincidence:** the advisory and round-trip sort tests used fixtures in which sorting by the wrong key gave the same order. The rest were behaviour no test reached:
@@ -24,7 +36,7 @@ The tool copies the package to a sandbox and never mutates the checkout. The san
 swift-mutation-testing . --sources-path Sources/PropertyLawDiscoveryTool --target PropertyLawDiscoveryToolTests --build-timeout 1800
 ```
 
-Its verdict cache, `.swift-mutation-testing-cache/`, is git-ignored. The rest of `Sources` is 448 more mutants at the default tier (`PropertyLawKit` 242, `PropertyLawCore` 131), and 1,816 more at `--operator-tier experimental`.
+Its verdict cache, `.swift-mutation-testing-cache/`, is git-ignored. `PropertyLawCore` has since been run (see the entry above); `PropertyLawKit` is 242 more mutants at the default tier. At `--operator-tier experimental`, the rest of `Sources` beyond this target is 1,816 more.
 
 **A dependency's namesake no longer merges into a target type (2026-10-29).** The scan keys types by qualified name, and the target's own declaration of a name used to share its aggregate with any dependency type of the same name. Context was walked first, so the target's *members* won by arriving last, but conformances, provenances and witnesses accumulated from both. A memberless target type even took its namesake's members, because the rule was "last *non-empty* list wins". Found by Pass 1 through the plugin: Sitrep's `Node` got `Hashable` and `Comparable` checks from Yams' unrelated `Node`.
 
