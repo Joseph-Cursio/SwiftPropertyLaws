@@ -32,6 +32,25 @@ struct StableIdentityLawsTests {
             )
         }
     }
+
+    /// Every non-empty script changes the identity, so a script of four or
+    /// more mutations must shrink to one. No other test read the script, so a
+    /// shrinker that returned nothing passed.
+    @Test func instabilityShrinksToASingleMutation() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkStableIdentityPropertyLaws(
+                for: UnstableId.self,
+                length: 4...8,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+        let counterexamples = (violation?.results ?? []).compactMap { result -> String? in
+            guard case .failed(let counterexample) = result.outcome else { return nil }
+            return counterexample
+        }
+        #expect(counterexamples.count == 2)
+        #expect(counterexamples.allSatisfy { $0.contains("after mutation [rename]") }, "\(counterexamples)")
+    }
 }
 
 // MARK: - Fixtures: stable identity (positive control)

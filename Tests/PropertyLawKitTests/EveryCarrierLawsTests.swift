@@ -103,6 +103,28 @@ struct EveryCarrierLawsTests {
         #expect(result?.coverage?.isComplete == false)
     }
 
+    /// The test above fails at the eighth carrier, by which time every law was
+    /// already recorded from an earlier one. A law fails on its *first*
+    /// appearance only when the first carrier fails, and that path has to stop
+    /// the walk too. When it did not, this walk went on through all four.
+    @Test("a walk whose first carrier fails stops there")
+    func aFailingFirstCarrierStopsTheWalk() async {
+        var reported: CheckResult?
+        do {
+            _ = try await checkEveryCarrier(of: Every.elements(
+                "length",
+                in: (7 ... 10).map { LyingCount(elements: Array(0 ..< $0)) },
+                size: { $0.elements.count }
+            )) { carrier, options in
+                try await checkCollectionPropertyLaws(using: Gen.always(carrier), options: options)
+            }
+        } catch let violation as PropertyLawViolation {
+            reported = violation.results.first { $0.isViolation }
+        } catch {}
+        #expect(reported?.counterexample?.hasPrefix("length=count 7 — ") == true)
+        #expect(reported?.coverage?.casesRun == 1, "got \(String(describing: reported?.coverage))")
+    }
+
     /// The control: pointed at any single carrier other than the seventh, the
     /// same suite passes. This is what makes the test above a statement about
     /// carrier coverage rather than about the laws.

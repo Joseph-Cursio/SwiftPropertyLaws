@@ -104,6 +104,10 @@ struct NaNGeneratorSeedingTests {
         let samples = Self.drawDoubles(count: 2_000)
         let nanCount = samples.filter(\.isNaN).count
         #expect((50...150).contains(nanCount), "expected ~100 NaN in 2000, got \(nanCount)")
+        // The `Float` overload is written separately, and swapping its
+        // ternary, which made 19 draws in 20 NaN, passed every other test.
+        let floatNaNCount = Self.drawFloats(count: 2_000).filter(\.isNaN).count
+        #expect((50...150).contains(floatNaNCount), "expected ~100 NaN in 2000, got \(floatNaNCount)")
     }
 
     /// Different seeds must produce different streams — otherwise "reproducible"

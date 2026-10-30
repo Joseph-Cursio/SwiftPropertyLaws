@@ -4,6 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**swift-mutation-testing over `PropertyLawKit`: 84.7% → 100% (2026-10-30).** 242 mutants at the default tier, against `PropertyLawKitTests`, and none uncovered. Pass `--timeout 300`: a mutant whose tests outrun the per-mutant timeout counts as killed, so a timeout shorter than the slowest test inflates the score. All 37 survivors were tests that could not fail on the behaviour they named:
+- **A violator that breaks every check cannot show that each check is needed.** `ChaoticFixedWidth` breaks every check of the three `reportingOverflow` laws and the wrapping law, so 11 mutants that turned one `&&` into `||` survived. `SingleFaultInteger<Fault>` breaks one check per fault, and each test asserts that exactly one law fails.
+- **A planted-bug test that accepts any one of several laws lets each of them be switched off.** The bidirectional test now requires all three. New violators break `swapAt` on one side only, `insert(_:at:)` alone, and an iterator once after `nil`.
+- **A Conventional violation is a warning, so a test that only expects no throw cannot fail on one.** `correctComparatorPasses` stayed green with `discrimination` or `congruence` broken. It now asserts that no warning was recorded.
+- **No test checked that a shrinker reaches the minimum.** That covered the three mutation-script shrinkers (`ValueSemantic`, `StableIdentity`, `DefensiveCopy`) and a sampled space's last step to index 0.
+- **Counterexample text no test read.** A comment said `ChaoticInteger` exercised all 15 `BinaryInteger` formatters, but the test read only law names, and inverting a "skipped" guard labelled every real counterexample "skipped". The `CaseIterable`, `Codable` partial-mode, `FloatingPoint` and `InteractionInvariant` messages had the same gap.
+- The `floatWithNaN()` rate, the paths `Gen.url()` draws, and a carrier walk whose first carrier fails.
+
+`NoOpReplaceSubrange`'s comment said it broke every `RangeReplaceableCollection` law. Measured, it breaks one, and the comment now says so. **The two timeouts are real hangs:** each negates a loop condition (`SpaceSampling.swift:57`, `EnumerationCombinators.swift:126`). 546 kit tests.
+
 **swift-mutation-testing over `PropertyLawCore`: 86.9% → 96.9% (2026-10-29).** 131 mutants at the default tier, against `PropertyLawCoreTests` only. The first run left 7 survivors and 10 that no Core test reached. Six were real gaps:
 - **No test declined an initializer that asserts a precondition.** The only checks were the inverted guards, which decline every ordinary initializer and fail everything. The rule for an initializer forwarding to an asserting sibling (`_HeapNode`) was untested in both directions.
 - **One half of `Codable` was never tested alone.** Every fixture that wrote `Encodable` also wrote `Decodable`, so `KnownProtocol.set(from:)` pairing on either half passed the Core, macro *and* discovery-tool tests. A type that is only `Encodable` would get a Codable suite it cannot compile.
@@ -36,7 +46,7 @@ The tool copies the package to a sandbox and never mutates the checkout. The san
 swift-mutation-testing . --sources-path Sources/PropertyLawDiscoveryTool --target PropertyLawDiscoveryToolTests --build-timeout 1800
 ```
 
-Its verdict cache, `.swift-mutation-testing-cache/`, is git-ignored. `PropertyLawCore` has since been run (see the entry above); `PropertyLawKit` is 242 more mutants at the default tier. At `--operator-tier experimental`, the rest of `Sources` beyond this target is 1,816 more.
+Its verdict cache, `.swift-mutation-testing-cache/`, is git-ignored. `PropertyLawCore` and `PropertyLawKit` have since been run (see the entries above). At `--operator-tier experimental`, the rest of `Sources` beyond this target is 1,816 more.
 
 **A dependency's namesake no longer merges into a target type (2026-10-29).** The scan keys types by qualified name, and the target's own declaration of a name used to share its aggregate with any dependency type of the same name. Context was walked first, so the target's *members* won by arriving last, but conformances, provenances and witnesses accumulated from both. A memberless target type even took its namesake's members, because the rule was "last *non-empty* list wins". Found by Pass 1 through the plugin: Sitrep's `Node` got `Hashable` and `Comparable` checks from Yams' unrelated `Node`.
 
