@@ -26,6 +26,9 @@ enum GeneratedFileEmitter {
     /// identically when a project mixes both forms.
     private static let testEmissionOrder = KnownProtocol.allCases
 
+    /// Imported by every generated file, first and in this order.
+    private static let fixedImports = ["Testing", "PropertyLawKit"]
+
     static func emit(
         target: String,
         map: ConformanceMap,
@@ -35,8 +38,9 @@ enum GeneratedFileEmitter {
         var lines: [String] = []
         lines.append(contentsOf: headerLines(target: target, map: map))
         lines.append("")
-        lines.append("import Testing")
-        lines.append("import PropertyLawKit")
+        for module in fixedImports {
+            lines.append("import \(module)")
+        }
         // **The module under test, imported `@testable`.** Without this line
         // the file names types it never imported and nothing it emits compiles
         // — the suites went out referencing `Foo` with only `Testing` and
@@ -76,8 +80,11 @@ enum GeneratedFileEmitter {
         }
         // Sorted and unioned for deterministic output; empty for a
         // stdlib-only target with no context, so existing files are unchanged.
-        for module in foreignModules.union(generatorImports)
-            .union(extraImports).subtracting([target]).sorted() {
+        // Less the modules already imported above, which any of the three
+        // sources can name too: a target extending a type declared in
+        // `PropertyLawKit` used to import it twice.
+        for module in foreignModules.union(generatorImports).union(extraImports)
+            .subtracting(fixedImports).subtracting([target]).sorted() {
             lines.append("import \(module)")
         }
         for entry in map.entries {
