@@ -129,4 +129,46 @@ struct PluginArgumentsTests {
         #expect(invocation.sourceFiles == ["/a.swift", "/b.swift"])
         #expect(invocation.contextFiles == ["Dep=/dep.swift"])
     }
+
+    // MARK: - Parity with the tool's flags
+
+    /// The tool flags the plugin fills in itself, from the `PluginContext`.
+    static let suppliedByThePlugin: [ToolFlag] = [.sourceFiles, .contextFiles]
+
+    /// Every other flag the tool takes must be one a user can give the plugin,
+    /// and must reach the tool.
+    ///
+    /// The plugin parses its argv with its own `switch` of string literals,
+    /// because it cannot import `ToolFlag`, so this is what holds the two lists
+    /// together: a flag added to the tool fails here until the plugin forwards
+    /// it. It would have failed the day `--extra-import` and `--scaffold-out`
+    /// were added.
+    @Test(arguments: ToolFlag.allCases.filter { !suppliedByThePlugin.contains($0) })
+    func everyFlagAUserGivesTheToolPassesThroughThePlugin(flag: ToolFlag) throws {
+        let parsed = try parsedAsAUserWouldPass(flag)
+        let arguments = parsed.toolArguments(
+            target: "MyModule", outputPath: "/tmp/out.swift", sourceFiles: [], contextFiles: []
+        )
+        #expect(arguments.contains(flag.rawValue))
+    }
+
+    /// Keeps the exemption above honest: a flag stays on that list only while
+    /// the plugin really does refuse it from a user.
+    @Test(arguments: suppliedByThePlugin)
+    func theFlagsThePluginSuppliesAreNotTakenFromAUser(flag: ToolFlag) {
+        #expect(throws: PluginError.unknownArgument(flag.rawValue)) {
+            _ = try ParsedArguments(arguments: ["discover", flag.rawValue, "/a.swift"])
+        }
+    }
+
+    /// The plugin's argv for `flag` alone, with a value after it if it takes
+    /// one. Only the plugin's parser knows which flags do, so this passes a
+    /// value and drops it again if the value is what was rejected.
+    private func parsedAsAUserWouldPass(_ flag: ToolFlag) throws -> ParsedArguments {
+        do {
+            return try ParsedArguments(arguments: ["discover", flag.rawValue, "value"])
+        } catch PluginError.unknownArgument("value") {
+            return try ParsedArguments(arguments: ["discover", flag.rawValue])
+        }
+    }
 }
