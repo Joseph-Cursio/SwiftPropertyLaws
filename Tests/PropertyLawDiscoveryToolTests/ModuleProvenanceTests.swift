@@ -135,6 +135,41 @@ struct ModuleProvenanceTests {
         #expect(output.contains("@testable import MyTarget"))
     }
 
+    /// `Testing` and `PropertyLawKit` are written unconditionally, ahead of the
+    /// inferred imports, so the inferred set has to leave them out. It did not:
+    /// a target extending a type declared in `PropertyLawKit` got `import
+    /// PropertyLawKit` twice, as `PropertyLawMinimalTypes` does.
+    @Test("a fixed import inferred from a context module is not repeated")
+    func fixedImportInferredIsNotRepeated() {
+        let map = scan(
+            target: ["E.swift": "extension Foreign: Equatable {}"],
+            context: [ContextFile(module: "PropertyLawKit", name: "F.swift", source: foreignPublic)]
+        )
+        let output = GeneratedFileEmitter.emit(target: "MyTarget", map: map)
+        #expect(importLines(in: output) == [
+            "import Testing", "import PropertyLawKit", "@testable import MyTarget"
+        ])
+    }
+
+    @Test("a fixed import asked for with --extra-import is not repeated")
+    func fixedImportRequestedIsNotRepeated() {
+        let map = scan(
+            target: ["T.swift": "public struct Mine: Equatable, Sendable { public let a: Int }"]
+        )
+        let output = GeneratedFileEmitter.emit(
+            target: "MyTarget", map: map, extraImports: ["PropertyLawKit", "Testing"]
+        )
+        #expect(importLines(in: output) == [
+            "import Testing", "import PropertyLawKit", "@testable import MyTarget"
+        ])
+    }
+
+    private func importLines(in output: String) -> [String] {
+        output.split(separator: "\n").map(String.init).filter {
+            $0.hasPrefix("import ") || $0.hasPrefix("@testable import ")
+        }
+    }
+
     @Test("extraImports are emitted and deduplicated with inferred ones")
     func extraImportsEmitted() {
         let map = scan(
