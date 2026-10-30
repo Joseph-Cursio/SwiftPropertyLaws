@@ -41,6 +41,36 @@ struct MinimalCodableTests {
         #expect(try MinimalDecoder.decode(Int64.self, from: tree) == 5)
     }
 
+    /// All fourteen leaf types, each with the case it must encode to. A type the codec does not
+    /// treat as a leaf never encodes at all: it asks for a single-value container, which hands
+    /// it straight back, so the call recurses until the stack runs out.
+    @Test("Every leaf type encodes to its own case and decodes back from it")
+    func everyLeafTypeRoundTripsThroughItsOwnCase() throws {
+        try expectLeaf(true, encodesTo: .bool(true))
+        try expectLeaf(-5 as Int, encodesTo: .int(-5))
+        try expectLeaf(-5 as Int8, encodesTo: .int8(-5))
+        try expectLeaf(-5 as Int16, encodesTo: .int16(-5))
+        try expectLeaf(-5 as Int32, encodesTo: .int32(-5))
+        try expectLeaf(-5 as Int64, encodesTo: .int64(-5))
+        try expectLeaf(5 as UInt, encodesTo: .uint(5))
+        try expectLeaf(5 as UInt8, encodesTo: .uint8(5))
+        try expectLeaf(5 as UInt16, encodesTo: .uint16(5))
+        try expectLeaf(5 as UInt32, encodesTo: .uint32(5))
+        try expectLeaf(5 as UInt64, encodesTo: .uint64(5))
+        try expectLeaf(1.5 as Float, encodesTo: .float(1.5))
+        try expectLeaf(1.5 as Double, encodesTo: .double(1.5))
+        try expectLeaf("five", encodesTo: .string("five"))
+    }
+
+    private func expectLeaf<T: Codable & Equatable>(
+        _ value: T,
+        encodesTo expected: MinimalCodableValue,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) throws {
+        #expect(try MinimalEncoder.encode(value) == expected, sourceLocation: sourceLocation)
+        #expect(try MinimalDecoder.decode(T.self, from: expected) == value, sourceLocation: sourceLocation)
+    }
+
     @Test("A struct encodes to a dictionary of its keys")
     func structEncodesToDictionary() throws {
         let tree = try MinimalEncoder.encode(Point(x: 1, y: 2))
