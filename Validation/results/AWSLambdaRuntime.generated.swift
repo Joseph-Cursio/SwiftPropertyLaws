@@ -22,10 +22,10 @@ import PropertyLawKit
 import Foundation
 import NIOCore
 
-// AmazonHeaders — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:36 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:80 (extension)
+// AmazonHeaders — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:36 (primary), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:80 (extension)
 // No emit-able stdlib conformance recognized.
 
-// ByteBuffer — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:21 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:658 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:698 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:870 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:1075 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:79 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:213 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:290 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:314 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:318 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1301 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1322 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1427 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1491 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1515 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1525 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1527 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1553 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift:15 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-int.swift:15 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:15 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:32 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:75 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-multi-int.swift:17 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-quicBinaryEncodingStrategy.swift:15 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-views.swift:284 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/Codec.swift:349 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/NIOPooledRecvBufferAllocator.swift:214 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPEncoder.swift:439 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:529 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:109 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:320 (extension)
+// ByteBuffer — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:21 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:658 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:698 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:870 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift:1075 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:79 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:213 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:290 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift:314 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:318 (primary), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1301 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1322 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1427 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1491 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1515 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1525 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1527 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift:1553 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift:15 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-int.swift:15 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:15 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:32 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift:75 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-multi-int.swift:17 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-quicBinaryEncodingStrategy.swift:15 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-views.swift:284 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/Codec.swift:349 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/NIOPooledRecvBufferAllocator.swift:214 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPEncoder.swift:439 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:529 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:109 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:320 (extension)
 @Suite struct ByteBufferPropertyLawTests {
     @Test func hashable_ByteBuffer() async throws {
         try await checkHashablePropertyLaws(
@@ -42,7 +42,7 @@ import NIOCore
     }
 }
 
-// ClientApplication — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:22 (primary)
+// ClientApplication — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:22 (primary)
 @Suite struct ClientApplicationPropertyLawTests {
     @Test func codable_ClientApplication() async throws {
         try await checkCodablePropertyLaws(
@@ -53,7 +53,7 @@ import NIOCore
     }
 }
 
-// ClientContext — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:58 (primary)
+// ClientContext — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:58 (primary)
 @Suite struct ClientContextPropertyLawTests {
     @Test func codable_ClientContext() async throws {
         try await checkCodablePropertyLaws(
@@ -65,10 +65,10 @@ import NIOCore
     }
 }
 
-// Consts — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:19 (primary)
+// Consts — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:19 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ControlPlaneRequest — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:19 (primary)
+// ControlPlaneRequest — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:19 (primary)
 @Suite struct ControlPlaneRequestPropertyLawTests {
     @Test func hashable_ControlPlaneRequest() async throws {
         try await checkHashablePropertyLaws(
@@ -78,10 +78,10 @@ import NIOCore
     }
 }
 
-// ControlPlaneRequestEncoder — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:18 (primary)
+// ControlPlaneRequestEncoder — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// ControlPlaneResponse — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:27 (primary)
+// ControlPlaneResponse — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:27 (primary)
 @Suite struct ControlPlaneResponsePropertyLawTests {
     @Test func hashable_ControlPlaneResponse() async throws {
         try await checkHashablePropertyLaws(
@@ -91,7 +91,7 @@ import NIOCore
     }
 }
 
-// ErrorResponse — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:78 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:83 (extension)
+// ErrorResponse — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:78 (primary), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:83 (extension)
 @Suite struct ErrorResponsePropertyLawTests {
     @Test func hashable_ErrorResponse() async throws {
         try await checkHashablePropertyLaws(
@@ -110,10 +110,10 @@ import NIOCore
     }
 }
 
-// Invocation — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClientProtocol.swift:34 (primary)
+// Invocation — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClientProtocol.swift:34 (primary)
 // No emit-able stdlib conformance recognized.
 
-// InvocationMetadata — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:34 (primary)
+// InvocationMetadata — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequest.swift:34 (primary)
 @Suite struct InvocationMetadataPropertyLawTests {
     @Test func hashable_InvocationMetadata() async throws {
         try await checkHashablePropertyLaws(
@@ -123,10 +123,10 @@ import NIOCore
     }
 }
 
-// JSONLogHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/JSONLogHandler.swift:40 (primary)
+// JSONLogHandler — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/JSONLogHandler.swift:40 (primary)
 // No emit-able stdlib conformance recognized.
 
-// JSONLogHandler.LogEntry — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/JSONLogHandler.swift:168 (primary)
+// JSONLogHandler.LogEntry — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/JSONLogHandler.swift:168 (primary)
 @Suite struct JSONLogHandler_LogEntryPropertyLawTests {
     @Test func codable_JSONLogHandler_LogEntry() async throws {
         try await checkCodablePropertyLaws(
@@ -137,28 +137,28 @@ import NIOCore
     }
 }
 
-// LambdaChannelHandler — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:26 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:359 (extension)
+// LambdaChannelHandler — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:26 (primary), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:359 (extension)
 // No emit-able stdlib conformance recognized.
 
-// LambdaChannelHandler.State — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:30 (primary)
+// LambdaChannelHandler.State — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:30 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaChannelHandler.State.LambdaState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:35 (primary)
+// LambdaChannelHandler.State.LambdaState — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient+ChannelHandler.swift:35 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaClock — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:55 (primary)
+// LambdaClock — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:55 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaClock.Instant — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:68 (primary)
+// LambdaClock.Instant — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaClock.swift:68 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaContext — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:87 (primary)
+// LambdaContext — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:87 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaContext._Storage — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:93 (primary)
+// LambdaContext._Storage — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaContext.swift:93 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRequestID — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:118 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:130 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:139 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:145 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:151 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:167 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:176 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:266 (extension)
+// LambdaRequestID — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:21 (primary), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:118 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:130 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:139 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:145 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:151 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:167 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:176 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:266 (extension)
 @Suite struct LambdaRequestIDPropertyLawTests {
     @Test func hashable_LambdaRequestID() async throws {
         try await checkHashablePropertyLaws(
@@ -175,46 +175,46 @@ import NIOCore
     }
 }
 
-// LambdaResponseStreamWriter — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaResponseStreamWriter+Headers.swift:56 (extension)
+// LambdaResponseStreamWriter — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaResponseStreamWriter+Headers.swift:56 (extension)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntime — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Handler.swift:19 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime.swift:41 (primary)
+// LambdaRuntime — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Handler.swift:19 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime.swift:41 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeClient — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:21 (primary), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:512 (extension)
+// LambdaRuntimeClient — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:21 (primary), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:512 (extension)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeClient.ClosingState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:91 (primary)
+// LambdaRuntimeClient.ClosingState — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:91 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeClient.Configuration — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:27 (primary)
+// LambdaRuntimeClient.Configuration — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:27 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeClient.LambdaState — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:78 (primary)
+// LambdaRuntimeClient.LambdaState — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:78 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeClient.Writer — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:39 (primary)
+// LambdaRuntimeClient.Writer — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/LambdaRuntimeClient.swift:39 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeError — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRuntimeError.swift:16 (primary)
+// LambdaRuntimeError — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRuntimeError.swift:16 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LambdaRuntimeError.Code — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRuntimeError.swift:18 (primary)
+// LambdaRuntimeError.Code — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRuntimeError.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LoggingConfiguration — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/LoggingConfiguration.swift:18 (primary)
+// LoggingConfiguration — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/LoggingConfiguration.swift:18 (primary)
 // No emit-able stdlib conformance recognized.
 
-// LoggingConfiguration.LogFormat — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/LoggingConfiguration.swift:20 (primary)
+// LoggingConfiguration.LogFormat — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Logging/LoggingConfiguration.swift:20 (primary)
 // No emit-able stdlib conformance recognized.
 
-// SendingStorage — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:109 (primary)
+// SendingStorage — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:109 (primary)
 // No emit-able stdlib conformance recognized.
 
-// SendingStorage.ValueAlreadySentError — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:112 (primary)
+// SendingStorage.ValueAlreadySentError — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:112 (primary)
 // No emit-able stdlib conformance recognized.
 
-// StreamingLambdaStatusAndHeadersResponse — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaResponseStreamWriter+Headers.swift:29 (primary)
+// StreamingLambdaStatusAndHeadersResponse — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaResponseStreamWriter+Headers.swift:29 (primary)
 @Suite struct StreamingLambdaStatusAndHeadersResponsePropertyLawTests {
     @Test func codable_StreamingLambdaStatusAndHeadersResponse() async throws {
         try await checkCodablePropertyLaws(
@@ -225,14 +225,14 @@ import NIOCore
     }
 }
 
-// String — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-collections/Sources/InternalCollectionsUtilities/String+Padding.swift:14 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-conversions.swift:31 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/ByteCollectionUtils.swift:70 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift:15 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:590 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:18 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:198 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:228 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:95 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:46 (extension)
+// String — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-collections/Sources/InternalCollectionsUtilities/String+Padding.swift:14 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-conversions.swift:31 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/ByteCollectionUtils.swift:70 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift:15 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift:590 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:18 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:198 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-nio/Sources/_NIOBase64/Base64.swift:228 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/HTTPClient/ControlPlaneRequestEncoder.swift:95 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Utils.swift:46 (extension)
 // No emit-able stdlib conformance recognized.
 
-// UnsafeRawBufferPointer — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/.build/checkouts/swift-collections/Sources/InternalCollectionsUtilities/UnsafeRawBufferPointer+Extras.swift:14 (extension), /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:373 (extension)
+// UnsafeRawBufferPointer — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/.build/checkouts/swift-collections/Sources/InternalCollectionsUtilities/UnsafeRawBufferPointer+Extras.swift:14 (extension), /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/LambdaRequestID.swift:373 (extension)
 // No emit-able stdlib conformance recognized.
 
-// Version — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Version.swift:23 (primary)
+// Version — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Version.swift:23 (primary)
 // No emit-able stdlib conformance recognized.
 
-// VoidEncoder — /Users/josephcursio/xcode_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Codable.swift:42 (primary)
+// VoidEncoder — /Users/josephcursio/github_projects/swift-aws-lambda-runtime/Sources/AWSLambdaRuntime/Runtime/LambdaRuntime+Codable.swift:42 (primary)
 // No emit-able stdlib conformance recognized.
