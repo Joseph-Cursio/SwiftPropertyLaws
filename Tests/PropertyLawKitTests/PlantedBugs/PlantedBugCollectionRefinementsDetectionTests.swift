@@ -19,16 +19,15 @@ struct PlantedBugRefinementsDetectionTests {
                 laws: .ownOnly
             )
         }
-        let laws = violation?.results.map(\.protocolLaw) ?? []
-        let bidiLaws = Set(laws).intersection([
+        // A stuck `index(before:)` breaks all three laws. Accepting any one of
+        // them let swift-mutation-testing blind `indexAfterBeforeRoundTrip`
+        // twice over while the other two kept this test green.
+        let laws = Set(violation?.results.map(\.protocolLaw) ?? [])
+        #expect(laws == [
             "BidirectionalCollection.indexBeforeAfterRoundTrip",
             "BidirectionalCollection.indexAfterBeforeRoundTrip",
             "BidirectionalCollection.reverseTraversalConsistency"
         ])
-        #expect(
-            !bidiLaws.isEmpty,
-            "expected at least one bidirectional law to fire; got: \(laws)"
-        )
     }
 
     // MARK: - RandomAccessCollection Strict-tier planted bug
@@ -67,6 +66,22 @@ struct PlantedBugRefinementsDetectionTests {
         )
     }
 
+    /// The no-op setter leaves both sides unchanged, so a law that checked
+    /// only one side would still catch it. This swap gets `c[i]` right and
+    /// `c[j]` wrong.
+    @Test func detectsOneSidedSwapViolation() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkMutableCollectionPropertyLaws(
+                for: OneSidedSwapCollection.self,
+                using: Gen<OneSidedSwapCollection>.oneSidedSwap(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(laws.contains("MutableCollection.swapAtSwapsValues"), "got: \(laws)")
+    }
+
     // MARK: - RangeReplaceableCollection Strict-tier planted bug
 
     @Test func detectsNoOpReplaceSubrangeViolation() async throws {
@@ -83,5 +98,20 @@ struct PlantedBugRefinementsDetectionTests {
             laws.contains("RangeReplaceableCollection.replaceSubrangeAppliesEdit"),
             "expected replaceSubrangeAppliesEdit; got: \(laws)"
         )
+    }
+
+    /// No other planted collection breaks this law, so it could be switched
+    /// off without a test noticing.
+    @Test func detectsAppendingInsertViolation() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkRangeReplaceableCollectionPropertyLaws(
+                for: AppendingInsertCollection.self,
+                using: Gen<AppendingInsertCollection>.appendingInsert(),
+                options: LawCheckOptions(budget: .sanity),
+                laws: .ownOnly
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(laws == ["RangeReplaceableCollection.removeAtInsertRoundTrip"])
     }
 }

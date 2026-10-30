@@ -31,6 +31,21 @@ struct IteratorPropertyLawsTests {
         )
     }
 
+    /// With a one-element payload the iterator yields once after `nil` and
+    /// then stays at `nil`. Longer payloads yield on both later calls, so they
+    /// cannot show that the law checks each call on its own.
+    @Test func detectsASingleElementAfterNil() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            try await checkIteratorProtocolPropertyLaws(
+                for: ResumingAfterNilSequence.self,
+                using: Gen<Int>.int(in: 0...10).map { ResumingAfterNilSequence(payload: [$0]) },
+                options: LawCheckOptions(budget: .sanity, enforcement: .strict)
+            )
+        }
+        let laws = violation?.results.map(\.protocolLaw) ?? []
+        #expect(laws.contains("IteratorProtocol.terminationStability"), "got: \(laws)")
+    }
+
     @Test func detectsInfiniteIterator() async throws {
         let violation = await #expect(throws: PropertyLawViolation.self) {
             try await checkIteratorProtocolPropertyLaws(
