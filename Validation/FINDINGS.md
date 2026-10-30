@@ -13,16 +13,16 @@ PRD §8's external validation gate has three passes. Pass 1 scans real packages 
 | `swift-argument-parser` (`ArgumentParser`) | `1.8.2-39-gefd239f` | 52 | 127 | 15 | 28 | 36 | 31 | 5 |
 | `Hummingbird` (`Hummingbird`) | `2.27.0-1-g0806106` | 75 | 146 | 28 | 26 | 33 | 16 | 17 |
 | `swift-aws-lambda-runtime` (`AWSLambdaRuntime`) | `3.0.2` | 31 | 39 | 9 | 10 | 13 | 6 | 7 |
-| `Sitrep` (`SitrepCore`) | `4.0.0-4-gae446f9` | 12 | 16 | 12 | 1 | 2 | 0 | 2 |
-| **Total** | | **170** | **328** | **64** | **65** | **84** | **53** | **31** |
+| `Sitrep` (`SitrepCore`) | `4.0.0-4-gae446f9` | 12 | 16 | 12 | 0 | 0 | 0 | 0 |
+| **Total** | | **170** | **328** | **64** | **64** | **82** | **53** | **29** |
 
-Every type the scan sees in the target is either written into the file or skipped. "Types in the file" is the tool's own "types detected" count: each one gets a suite, or a comment stub when it has no stdlib conformance the kit checks. "Skipped" types are listed in the file's header instead, with the reason a suite for them would not compile. "Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Every file with checks has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`). "Source files" is the target's list as SwiftPM sees it. For AWSLambdaRuntime that is 31, not the 43 `.swift` files under its source directory.
+Every type the scan sees in the target is either written into the file or skipped. "Types in the file" is the tool's own "types detected" count: each one gets a suite, or a comment stub when it has no stdlib conformance the kit checks. "Skipped" types are listed in the file's header instead, with the reason a suite for them would not compile. "Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Each of the three files with checks has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`). "Source files" is the target's list as SwiftPM sees it. For AWSLambdaRuntime that is 31, not the 43 `.swift` files under its source directory.
 
 ### What Pass 1 found
 
 **The plugin could not run in any other package.** It was a plugin target but not a plugin product. A dependent package cannot see a command plugin that isn't vended as a product, so the README's `swift package propertylawcheck discover` failed with "Unknown subcommand or plugin name". It is now a product. Pass 1 had called the tool directly, which is how this went unnoticed.
 
-**A target type and a dependency type with the same name are merged.** Sitrep declares a `Node` of its own, and its dependency Yams declares a different `Node`, an enum that is `Hashable` and `Comparable`. The scan keys types by bare name, so Sitrep's `Node` picked up Yams' conformances, and the file has `hashable_Node` and `comparable_Node` checks for conformances Sitrep's `Node` does not have. Here they carry `.todo` generators. A derivable generator would have produced a check that fails to compile, taking the test target with it. This is the only collision in these four packages. **Not fixed yet.**
+**A target type and a dependency type with the same name were merged.** Sitrep declares a `Node` of its own, and its dependency Yams declares a different `Node`, an enum that is `Hashable` and `Comparable`. The scan keyed types by name alone, so Sitrep's `Node` picked up Yams' conformances and got `hashable_Node` and `comparable_Node` checks for conformances it does not have. Here they carried `.todo` generators. A derivable generator would have produced a check that fails to compile, taking the test target with it. This was the only collision in these four packages. **Fixed:** inside a target, its own declaration is the one a name means, as in Swift's lookup, so the scan now ignores a dependency's declarations, extensions, nested types and typealiases of any name the target declares.
 
 **Context resolves third-party `Sendable` refinements.** Hummingbird's `Application` is `Sendable` through swift-service-lifecycle's `Service`, and AWSLambdaRuntime's `JSONLogHandler` through swift-log's `LogHandler`. Both are seen only with dependency sources as context. The tool also seeds the standard library's and Foundation's refinements, which have no sources to pass (`Error`, `Clock`, `LocalizedError` and others), and treats actors as `Sendable`.
 
@@ -31,7 +31,7 @@ Every type the scan sees in the target is either written into the file or skippe
 - **ArgumentParser:** 20 Hashable, 7 Equatable, 5 Comparable (`Name`, `InputOrigin.Element` and the `SplitArguments` index types), 3 RawRepresentable (`CompletionShell`, `ExitCode`, `SplitArguments.InputIndex`), and 1 RandomAccessCollection (`ArgumentSet`, which runs the whole collection chain).
 - **Hummingbird:** 15 Equatable, 8 Hashable, 2 Sequence, 2 RawRepresentable, 2 Codable, and one each of Collection, MutableCollection, RandomAccessCollection and RangeReplaceableCollection. Some are on dependency types the target extends, such as swift-nio's `ByteBuffer` and swift-http-types' `HTTPFields` and `HTTPResponse.Status`. The generated file imports their modules.
 - **AWSLambdaRuntime:** 7 Codable and 6 Hashable, including `ByteBuffer` again.
-- **SitrepCore:** only the two collision checks on `Node` above.
+- **SitrepCore:** none. Every type is skipped or has no stdlib conformance the kit checks.
 
 ### Why 64 types are skipped
 
@@ -63,7 +63,7 @@ Validation/run.sh ~/xcode_projects/Sitrep SitrepCore
 git diff Validation/results/
 ```
 
-The first run per package resolves its dependencies into the copy and builds the plugin's tool, under a minute each here. Later runs are incremental. Record the scanned revision of each package in the table above. Results are only comparable between runs at the same upstream revision.
+The first run per package resolves its dependencies into the copy and builds the plugin's tool, under a minute each here. Later runs are incremental. Two runs over the same revisions produce byte-identical results. Record the scanned revision of each package in the table above. Results are only comparable between runs at the same upstream revision.
 
 ## Pass 2: law checks against external code
 

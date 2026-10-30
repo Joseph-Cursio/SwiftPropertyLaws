@@ -35,10 +35,10 @@ PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftProperty
     [43] user-defined init
     [20] declaration not in this target
     [5] unsupported member type (nested/custom)
+    [3] access-restricted initializer (private/fileprivate)
+    [3] class not Sendable (a check's inputs must be)
     [3] class with no callable initializer
     [3] enum payload type unresolved
-    [3] class not Sendable (a check's inputs must be)
-    [3] access-restricted initializer (private/fileprivate)
     [2] access-restricted member (private/fileprivate)
     [2] caseless enum (uninhabited)
     [1] non-struct (class/actor/enum-payload)
