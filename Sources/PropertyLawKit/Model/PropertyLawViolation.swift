@@ -27,8 +27,8 @@ public struct PropertyLawViolation: Error, Sendable, CustomStringConvertible {
     ///
     /// So the violation is now **visible**, recorded as a Swift Testing issue of `.warning` severity:
     /// the run prints it and the test still passes. Silence was never the tier's meaning; not
-    /// failing the build was — PRD §4.2 says "warning by default; failure when `.strict` is
-    /// requested".
+    /// failing the build was — PRD §4.2 asks for a warning by default and a failure only when
+    /// `.strict` is requested.
     ///
     /// **The severity is the whole of that, and the first fix got it wrong.** `Issue.record`
     /// defaults to `.error`, and an error-severity issue marks the test failed whether or not

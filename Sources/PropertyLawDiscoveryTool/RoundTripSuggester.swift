@@ -16,8 +16,8 @@ enum RoundTripSuggester {
     /// inside each tuple is `(forward, backward)` — the suggestion
     /// presents the forward-named function first.
     ///
-    /// Adding a new pair requires a maintainer commit, matching the
-    /// PRD §5.6 stance for pattern lists. Avoid silent drift.
+    /// Adding a new pair requires a maintainer commit (PRD §5.5): the
+    /// list is curated, so it must not drift silently.
     static let namePairs: [(forward: String, backward: String)] = [
         ("encode", "decode"),
         ("serialize", "deserialize"),

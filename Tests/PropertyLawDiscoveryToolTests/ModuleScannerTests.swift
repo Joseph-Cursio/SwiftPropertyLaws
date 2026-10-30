@@ -201,8 +201,8 @@ struct ModuleScannerTests {
     @Test func conditionalConformanceExtensionsAreSkipped() throws {
         // PRD §4.4: conditional conformances (`extension Foo: Equatable
         // where T: Equatable`) aren't unconditional — emitting an
-        // unconditional check would be wrong. M3 handles via
-        // @LawGenerator(bindings:).
+        // unconditional check would be wrong. A bound instantiation is
+        // checked by hand at the call site.
         let dir = try makeFixtureDir([
             "Container.swift": """
                 struct Container<T> {
