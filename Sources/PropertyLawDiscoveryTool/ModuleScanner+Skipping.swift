@@ -99,10 +99,11 @@ extension ModuleScanner {
     /// **An actor is always `Sendable`**, whatever its inheritance clause says,
     /// so it never reaches the protocol match.
     ///
-    /// **Residual false positive**, much smaller: a protocol declared in a
-    /// *third-party* module that refines `Sendable`, which a one-module
-    /// syntactic scan cannot see. (The standard library's are seeded; see
-    /// `SendableProtocols.standardLibraryRefinements`.) Such a type is reported
+    /// **Residual false positive**, much smaller: a protocol that refines
+    /// `Sendable` in a module whose sources the scan was not given, such as an
+    /// SDK framework other than Foundation or a binary target. (The standard
+    /// library's and Foundation's are seeded, and the plugin passes SwiftPM
+    /// dependencies' sources as context; see `SendableProtocols`.) Such a type is reported
     /// as skipped when its suite would have compiled. That direction costs
     /// coverage; the other emits a file that doesn't build, taking the whole
     /// test target with it.
