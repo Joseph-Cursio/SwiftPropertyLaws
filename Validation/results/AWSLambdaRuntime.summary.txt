@@ -1,12 +1,11 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/AWSLambdaRuntime.generated.swift
   target: AWSLambdaRuntime
-  source files scanned: 43
-  types detected: 40
-  detected but skipped, no suite emitted (10):
+  source files scanned: 31
+  types detected: 39
+  detected but skipped, no suite emitted (9):
     - ClientApplication.CodingKeys: declared `private` — not nameable from another file
     - ClientContext.CodingKeys: declared `private` — not nameable from another file
     - ClosureHandler: `public` without a `Sendable` conformance — the law entry points require one
-    - JSONLogHandler: `public` without a `Sendable` conformance — the law entry points require one
     - Lambda: `public` without a `Sendable` conformance — the law entry points require one
     - LambdaCodableAdapter: `public` without a `Sendable` conformance — the law entry points require one
     - LambdaCodableResponseWriter: `public` without a `Sendable` conformance — the law entry points require one
@@ -14,14 +13,14 @@ PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftProperty
     - LambdaRuntimeClient.ConnectionState: declared `private` — not nameable from another file
     - StreamingClosureHandler: `public` without a `Sendable` conformance — the law entry points require one
   types needing manual gen() (23):
-    [6] user-defined init
+    [7] user-defined init
     [5] enum payload type unresolved
-    [4] declaration not in this target
+    [3] declaration not in this target
     [3] caseless enum (uninhabited)
     [2] class with no callable initializer
     [1] non-struct (class/actor/enum-payload)
-    [1] class not Sendable (a check's inputs must be)
     [1] access-restricted initializer (private/fileprivate)
+    [1] class not Sendable (a check's inputs must be)
       - AmazonHeaders
       - ByteBuffer
       - Consts

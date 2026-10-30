@@ -1,9 +1,8 @@
 PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftPropertyLaws/Validation/results/Hummingbird.generated.swift
   target: Hummingbird
   source files scanned: 75
-  types detected: 145
-  detected but skipped, no suite emitted (29):
-    - Application: `public` without a `Sendable` conformance — the law entry points require one
+  types detected: 146
+  detected but skipped, no suite emitted (28):
     - ApplicationRequestContextSource: `public` without a `Sendable` conformance — the law entry points require one
     - CacheControl.CacheControlValue.Value: declared `private` — not nameable from another file
     - CacheControl.Entry: declared `private` — not nameable from another file
@@ -32,14 +31,14 @@ PropertyLawDiscoveryTool: wrote /Users/josephcursio/xcode_projects/SwiftProperty
     - URLEncodedFormError.Code.Internal: declared `fileprivate` — not nameable from another file
     - _URLEncodedFormDecoder: declared `private` — not nameable from another file
     - _URLEncodedFormEncoder: declared `private` — not nameable from another file
-  types needing manual gen() (95):
+  types needing manual gen() (85):
     [43] user-defined init
-    [28] declaration not in this target
-    [7] unsupported member type (nested/custom)
-    [3] access-restricted initializer (private/fileprivate)
-    [3] class not Sendable (a check's inputs must be)
-    [3] enum payload type unresolved
+    [20] declaration not in this target
+    [5] unsupported member type (nested/custom)
     [3] class with no callable initializer
-    [2] caseless enum (uninhabited)
+    [3] enum payload type unresolved
+    [3] class not Sendable (a check's inputs must be)
+    [3] access-restricted initializer (private/fileprivate)
     [2] access-restricted member (private/fileprivate)
+    [2] caseless enum (uninhabited)
     [1] non-struct (class/actor/enum-payload)

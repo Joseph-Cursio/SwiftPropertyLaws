@@ -6,38 +6,50 @@ PRD §8's external validation gate has three passes. Pass 1 scans real packages 
 
 ## Pass 1: discovery scan
 
-`Validation/run.sh` runs `PropertyLawDiscoveryTool` over one target's sources and writes the generated file and the tool's summary to `Validation/results/<Target>.{generated.swift,summary.txt}`. It does not add the kit to the scanned package and does not run any law check. It shows that the tool handles code its authors didn't write: no crashes, output that parses, the most-specific dedupe, and a `.todo` list that names every type needing a hand-written `gen()`.
+`Validation/run.sh` runs the discovery plugin, `swift package propertylawcheck discover`, the way an adopter would. It copies the package to `.build/validation-pass1/<Target>/`, adds SwiftPropertyLaws to the copy's dependencies, and runs the plugin there, so the scan gets the target's own files and its transitive dependencies' sources as context. The external checkout is not touched. The generated file and the tool's summary land in `Validation/results/<Target>.{generated.swift,summary.txt}`, with paths pointed back at the original checkout. No law check runs.
 
 | Package | Scanned at | Source files | Types in the file | Skipped | Suites | Checks | Derived generator | `.todo` |
 |---|---|---|---|---|---|---|---|---|
-| `swift-argument-parser` (`ArgumentParser`) | `1.8.2-39-gefd239f` | 52 | 134 | 8 | 28 | 36 | 31 | 5 |
-| `Hummingbird` (`Hummingbird`) | `2.27.0-1-g0806106` | 75 | 145 | 29 | 22 | 25 | 11 | 14 |
-| `swift-aws-lambda-runtime` (`AWSLambdaRuntime`) | `3.0.2` | 43 | 40 | 10 | 9 | 11 | 6 | 5 |
-| `Sitrep` (`SitrepCore`) | `4.0.0-4-gae446f9` | 12 | 16 | 12 | 0 | 0 | 0 | 0 |
-| **Total** | | **182** | **335** | **59** | **59** | **72** | **48** | **24** |
+| `swift-argument-parser` (`ArgumentParser`) | `1.8.2-39-gefd239f` | 52 | 127 | 15 | 28 | 36 | 31 | 5 |
+| `Hummingbird` (`Hummingbird`) | `2.27.0-1-g0806106` | 75 | 146 | 28 | 26 | 33 | 16 | 17 |
+| `swift-aws-lambda-runtime` (`AWSLambdaRuntime`) | `3.0.2` | 31 | 39 | 9 | 10 | 13 | 6 | 7 |
+| `Sitrep` (`SitrepCore`) | `4.0.0-4-gae446f9` | 12 | 16 | 12 | 1 | 2 | 0 | 2 |
+| **Total** | | **170** | **328** | **64** | **65** | **84** | **53** | **31** |
 
-Every type the scan sees is either written into the file or skipped. "Types in the file" is the tool's own "types detected" count: each one gets a suite, or a comment stub when it has no stdlib conformance the kit checks. "Skipped" types are listed in the file's header instead, with the reason a suite for them would not compile. "Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Each of the three files with checks has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`).
+Every type the scan sees in the target is either written into the file or skipped. "Types in the file" is the tool's own "types detected" count: each one gets a suite, or a comment stub when it has no stdlib conformance the kit checks. "Skipped" types are listed in the file's header instead, with the reason a suite for them would not compile. "Checks" counts emitted `@Test` methods, one per protocol that survives the most-specific dedupe. A check whose generator did not derive carries the deliberate `.todo` that does not compile (PRD §5.7). Every file with checks has at least one, so none of them compiles until those types get a `gen()`. All four files parse (`swiftc -parse`). "Source files" is the target's list as SwiftPM sees it. For AWSLambdaRuntime that is 31, not the 43 `.swift` files under its source directory.
+
+### What Pass 1 found
+
+**The plugin could not run in any other package.** It was a plugin target but not a plugin product. A dependent package cannot see a command plugin that isn't vended as a product, so the README's `swift package propertylawcheck discover` failed with "Unknown subcommand or plugin name". It is now a product. Pass 1 had called the tool directly, which is how this went unnoticed.
+
+**A target type and a dependency type with the same name are merged.** Sitrep declares a `Node` of its own, and its dependency Yams declares a different `Node`, an enum that is `Hashable` and `Comparable`. The scan keys types by bare name, so Sitrep's `Node` picked up Yams' conformances, and the file has `hashable_Node` and `comparable_Node` checks for conformances Sitrep's `Node` does not have. Here they carry `.todo` generators. A derivable generator would have produced a check that fails to compile, taking the test target with it. This is the only collision in these four packages. **Not fixed yet.**
+
+**Context resolves third-party `Sendable` refinements.** Hummingbird's `Application` is `Sendable` through swift-service-lifecycle's `Service`, and AWSLambdaRuntime's `JSONLogHandler` through swift-log's `LogHandler`. Both are seen only with dependency sources as context. The tool also seeds the standard library's and Foundation's refinements, which have no sources to pass (`Error`, `Clock`, `LocalizedError` and others), and treats actors as `Sendable`.
 
 ### What the checks cover
 
 - **ArgumentParser:** 20 Hashable, 7 Equatable, 5 Comparable (`Name`, `InputOrigin.Element` and the `SplitArguments` index types), 3 RawRepresentable (`CompletionShell`, `ExitCode`, `SplitArguments.InputIndex`), and 1 RandomAccessCollection (`ArgumentSet`, which runs the whole collection chain).
-- **Hummingbird:** 15 Equatable (four of them on error types: `Environment.Error`, `PersistError`, `RouterValidationError`, `URLEncodedFormError`), 4 Hashable, 2 RawRepresentable (`MediaType.Category`, `MediaType.FileExtension`), 2 Sequence (the two split-string sequences), 1 Collection (`RouterPath`) and 1 Codable (`MediaType`).
-- **AWSLambdaRuntime:** 6 Codable (`ClientApplication`, `ClientContext`, `ErrorResponse`, `JSONLogHandler.LogEntry`, `LambdaRequestID`, `StreamingLambdaStatusAndHeadersResponse`) and 5 Hashable.
-- **SitrepCore:** none. Every type is skipped or has no stdlib conformance the kit checks.
+- **Hummingbird:** 15 Equatable, 8 Hashable, 2 Sequence, 2 RawRepresentable, 2 Codable, and one each of Collection, MutableCollection, RandomAccessCollection and RangeReplaceableCollection. Some are on dependency types the target extends, such as swift-nio's `ByteBuffer` and swift-http-types' `HTTPFields` and `HTTPResponse.Status`. The generated file imports their modules.
+- **AWSLambdaRuntime:** 7 Codable and 6 Hashable, including `ByteBuffer` again.
+- **SitrepCore:** only the two collision checks on `Node` above.
 
-### Why 59 types are skipped
+### Why 64 types are skipped
 
 - **26 are `private` or `fileprivate`**, so they can't be named from the generated file. Most are synthesized `CodingKeys` enums.
-- **33 are `public` with no `Sendable` conformance the tool can see.** Swift infers `Sendable` only for non-public types, and every check requires it. Some of these really are not `Sendable`: SitrepCore's nine are public `Codable` structs with no `Sendable` at all, and ArgumentParser's five property wrappers are `Sendable` only conditionally (`extension Flag: Sendable where Value: Sendable`). Others may conform to a protocol from a dependency that refines `Sendable`. `run.sh` passes no context files, so the scan cannot see those protocols.
-
-The tool counts the standard library's `Sendable` refinements (`Error`, `CodingKey`, `Clock`, `InstantProtocol`, `DurationProtocol`, `Actor` and the executor protocols) and actors as `Sendable`. **This pass is what found that it didn't.** The first rescan skipped 11 types that are `Sendable` through `Error`, `Clock` or `InstantProtocol`, or by being an actor, including `ExitCode`, which Pass 2 checks by hand. Five of them now get suites. The rest have no stdlib conformance the kit checks.
+- **38 are `public` with no `Sendable` conformance.** Swift infers `Sendable` only for non-public types, and every check requires it. Each one was checked against the protocols it conforms to, and none is `Sendable`:
+  - SitrepCore's nine public `Codable` structs.
+  - ArgumentParser's property wrappers, which are `Sendable` only conditionally (`extension Flag: Sendable where Value: Sendable`).
+  - Seven `ArgumentParserToolInfo` types.
+  - Hummingbird's routers, builders and middleware groups.
+  - AWSLambdaRuntime's handler adapters.
+  - The `Lambda` namespace enum.
 
 ### Where generators fail to derive
 
-209 types would need a hand-written `gen()`, most of them types that get no check anyway. The two largest buckets:
+192 types would need a hand-written `gen()`, most of them types that get no check anyway. The two largest buckets:
 
-- **75 are "declaration not in this target".** That is an artifact of how `run.sh` scans. It passes one target's files and no `--context-files`, so a type the target only extends looks undeclared. The discovery plugin passes dependency sources as context automatically.
-- **62 have a "user-defined init"**: no tier could call any of the type's initializers with derivable arguments.
+- **68 have a "user-defined init"**: no tier could call any of the type's initializers with derivable arguments.
+- **54 are "declaration not in this target"**: the target extends them, but no source the scan has declares them, as with the standard library's `Array` and `String`.
 
 The full breakdown per package is at the top of each `.summary.txt`.
 
@@ -51,7 +63,7 @@ Validation/run.sh ~/xcode_projects/Sitrep SitrepCore
 git diff Validation/results/
 ```
 
-`run.sh` builds the tool in release mode first. Record the scanned revision of each package in the table above. The results are only comparable between runs at the same upstream revision.
+The first run per package resolves its dependencies into the copy and builds the plugin's tool, under a minute each here. Later runs are incremental. Record the scanned revision of each package in the table above. Results are only comparable between runs at the same upstream revision.
 
 ## Pass 2: law checks against external code
 
