@@ -72,7 +72,19 @@ struct SendableClassDerivationTests {
 
     @Test func sendableClassWithoutAnInitializerDoesNotShareOneInstance() {
         let shape = classShape("Cache", inheritedTypes: ["Sendable"], initializers: [])
-        #expect(reason(shape) != nil, "Gen.always(Cache()) would hand every draw the same instance")
+        let text = reason(shape)
+        #expect(text != nil, "Gen.always(Cache()) would hand every draw the same instance")
+        #expect(text?.contains("declares no initializer the generator could call") == true)
+    }
+
+    /// A `Sendable` class whose initializer does not derive is reported the
+    /// way a struct with a user `init` is, naming the parameter that failed.
+    @Test func sendableClassWithAnUnresolvedParameterNamesIt() {
+        let widgetInit = InitializerSignature(parameters: [
+            InitializerParameter(label: "widget", typeName: "Widget")
+        ])
+        let text = reason(classShape("Panel", inheritedTypes: ["Sendable"], initializers: [widgetInit]))
+        #expect(text?.contains("`init(widget:)` takes `widget: Widget`, which resolves to no generator") == true)
     }
 
     @Test func sendableIsMatchedAsAWholeWordOnly() {

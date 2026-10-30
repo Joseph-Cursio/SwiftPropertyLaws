@@ -156,6 +156,25 @@ struct RecursiveGeneratorTests {
         #expect(RecursiveGeneratorEmitter.baseArm(expression: expression, typeName: "Node") == nil)
     }
 
+    /// A memberwise expression continues `.map` on its own line. The first
+    /// line stays on the `return` and the later ones move in by eight spaces,
+    /// to sit inside the function. The other tests read the declaration with
+    /// `contains`, which also holds when the first line is the one indented.
+    @Test("a multi-line expression stays on its `return`, and its continuation moves in")
+    func continuationLinesAreReindented() throws {
+        let node = shape("DirectoryNode", [("name", "String"), ("children", "[DirectoryNode]")])
+        let declaration = try #require(
+            resolve("DirectoryNode", [node])?.plan.supportingDeclarations.first
+        )
+        let lines = declaration.split(separator: "\n").map(String.init)
+        let returns = lines.filter { $0.contains("return ") }
+        #expect(returns.count == 2)
+        #expect(returns.allSatisfy { $0.contains("return zip(") })
+        let continuations = lines.filter { $0.contains(".map { DirectoryNode(") }
+        #expect(continuations.count == 2)
+        #expect(continuations.allSatisfy { $0.hasPrefix(String(repeating: " ", count: 20) + ".map") })
+    }
+
     @Test("the helper name cannot collide with user code")
     func helperNameIsReserved() {
         #expect(RecursiveGeneratorEmitter.helperName(for: "Node") == "__genNode")

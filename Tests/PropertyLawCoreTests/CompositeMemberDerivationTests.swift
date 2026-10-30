@@ -113,6 +113,20 @@ struct CompositeMemberDerivationTests {
         )
     }
 
+    /// The scanner reads a spelling with `trimmedDescription`, which trims only
+    /// the ends, so a dictionary type written across lines arrives with its
+    /// newline and indentation inside it. Each component is trimmed of tabs
+    /// and newlines as well as spaces; a trim of spaces alone passed every
+    /// other test here.
+    @Test(arguments: ["[String:\n    Int]", "[String:\tInt]", "[String\n: Int]", "[String\t: Int]"])
+    func dictionaryComponentsAreTrimmedOfTabsAndNewlines(spelling: String) {
+        #expect(
+            DerivationStrategist.memberGenerator(forTypeName: spelling)
+                == "zip(Gen<Character>.letterOrNumber.string(of: 0...8), "
+                + "Gen<Int>.int()).dictionary(ofAtMost: 0...8)"
+        )
+    }
+
     // MARK: - Unsupported (still nil → .todo at the strategy level)
 
     @Test func customElementTypeIsUnresolved() {
