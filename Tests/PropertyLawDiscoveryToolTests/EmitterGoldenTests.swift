@@ -51,7 +51,7 @@ struct EmitterGoldenTests {
         #expect(output.contains("checkEquatablePropertyLaws") == false)
     }
 
-    @Test func emitsCodableAndEquatable() {
+    @Test func emitsCodableAndEquatable() throws {
         let output = GeneratedFileEmitter.emit(
             target: "MyModule",
             map: ConformanceMap(
@@ -64,6 +64,12 @@ struct EmitterGoldenTests {
         let equatableRange = output.range(of: "equatable_Record")!
         let codableRange = output.range(of: "codable_Record")!
         #expect(equatableRange.lowerBound < codableRange.lowerBound)
+        // One blank line between two tests, and none after the opening brace.
+        let lines = output.components(separatedBy: "\n")
+        let opening = try #require(lines.firstIndex(of: "@Suite struct RecordPropertyLawTests {"))
+        #expect(lines[opening + 1].hasPrefix("    @Test func equatable_Record()"))
+        let codable = try #require(lines.firstIndex { $0.hasPrefix("    @Test func codable_Record()") })
+        #expect(lines[codable - 2 ... codable - 1] == ["    }", ""])
     }
 
     // MARK: - Provenance comments
