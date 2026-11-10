@@ -47,7 +47,7 @@ public func checkStringProtocolPropertyLaws<
             await checkHasSuffixEmpty(generator: generator, options: options),
             await checkLowercasedIdempotent(generator: generator, options: options),
             await checkUppercasedIdempotent(generator: generator, options: options),
-            await checkUtf8ViewInvariance(generator: generator, options: options)
+            await checkUtf8ViewInvariance(generator: generator, options: options),
         ])
         return results
     }
@@ -87,7 +87,7 @@ private func checkStringInitRoundTrip<
 
 func stringInitRoundTripCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     let once = String(sample)
     let twice = String(String(sample))
@@ -113,7 +113,7 @@ private func checkCountMatchesStringInit<
 
 func countMatchesStringInitCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     "x = \(sample); x.count = \(sample.count), "
         + "String(x).count = \(String(sample).count)"
@@ -137,7 +137,7 @@ private func checkIsEmptyMatchesCountZero<
 
 func isEmptyMatchesCountZeroCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     "x = \(sample); x.isEmpty = \(sample.isEmpty), x.count == 0 = \(sample.count == 0)"
 }
@@ -162,7 +162,7 @@ private func checkHasPrefixEmpty<
 
 func hasPrefixEmptyCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     let result = sample.hasPrefix("")
     return "x = \(sample); x.hasPrefix(empty) = \(result)"
@@ -186,7 +186,7 @@ private func checkHasSuffixEmpty<
 
 func hasSuffixEmptyCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     let result = sample.hasSuffix("")
     return "x = \(sample); x.hasSuffix(empty) = \(result)"
@@ -216,7 +216,7 @@ private func checkLowercasedIdempotent<
 
 func lowercasedIdempotentCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     let once = sample.lowercased()
     let twice = once.lowercased()
@@ -246,7 +246,7 @@ private func checkUppercasedIdempotent<
 
 func uppercasedIdempotentCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     let once = sample.uppercased()
     let twice = once.uppercased()
@@ -280,7 +280,7 @@ private func checkUtf8ViewInvariance<
 
 func utf8ViewInvarianceCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
-    _ error: ErrorBox?
+    _: ErrorBox?
 ) -> String {
     let viaSelf = Array(sample.utf8)
     let viaString = Array(String(sample).utf8)

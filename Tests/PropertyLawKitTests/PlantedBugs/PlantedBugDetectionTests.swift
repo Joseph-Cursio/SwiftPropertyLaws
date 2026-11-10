@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// PRD §8 framework self-test gate, relational half. Each test plants a
 /// violation and asserts the framework catches it. If any of these regress
@@ -78,7 +78,7 @@ struct PlantedBugDetectionTests {
     }
 
     // Note: Equatable.negationConsistency is structurally unviolable in Swift
-    // (see PlantedEquatableViolators.swift), so there is no planted-bug test
+    // (see Gen+PlantedEquatableViolators.swift), so there is no planted-bug test
     // for it. The framework still runs the check as defensive documentation.
 
     // MARK: - Hashable Strict-tier planted bug

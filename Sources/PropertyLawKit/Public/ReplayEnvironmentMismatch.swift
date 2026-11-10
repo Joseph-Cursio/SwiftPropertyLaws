@@ -1,3 +1,32 @@
+/// Replay-strictness policy for `LawCheckOptions.expectedReplayEnvironment`.
+/// Defaults to `.exact`; relaxations are escape hatches for legitimate
+/// toolchain bumps where the seed is still expected to be deterministic.
+public enum EnvironmentRelaxation: Sendable, Hashable {
+    /// Every fingerprint field must match.
+    case exact
+
+    /// Only the backend identity must match. Useful when bumping the Swift
+    /// toolchain across a CI run on a backend whose RNG didn't change.
+    case matchBackendOnly
+
+    /// Only the Swift version must match. Useful when swapping backends in
+    /// development and the test is generator-schema-stable.
+    case matchSwiftVersionOnly
+
+    func matches(expected: Environment, actual: Environment) -> Bool {
+        switch self {
+        case .exact:
+            return expected == actual
+
+        case .matchBackendOnly:
+            return expected.backendIdentity == actual.backendIdentity
+
+        case .matchSwiftVersionOnly:
+            return expected.swiftVersion == actual.swiftVersion
+        }
+    }
+}
+
 /// Thrown when a caller asks the kit to replay against an environment
 /// fingerprint that doesn't match the live one (PRD §4.6).
 ///
@@ -31,32 +60,5 @@ public struct ReplayEnvironmentMismatch: Error, Sendable, CustomStringConvertibl
         }
         let body = diffs.isEmpty ? "<no field-level diff>" : diffs.joined(separator: "; ")
         return "ReplayEnvironmentMismatch — \(body)"
-    }
-}
-
-/// Replay-strictness policy for `LawCheckOptions.expectedReplayEnvironment`.
-/// Defaults to `.exact`; relaxations are escape hatches for legitimate
-/// toolchain bumps where the seed is still expected to be deterministic.
-public enum EnvironmentRelaxation: Sendable, Hashable {
-    /// Every fingerprint field must match.
-    case exact
-
-    /// Only the backend identity must match. Useful when bumping the Swift
-    /// toolchain across a CI run on a backend whose RNG didn't change.
-    case matchBackendOnly
-
-    /// Only the Swift version must match. Useful when swapping backends in
-    /// development and the test is generator-schema-stable.
-    case matchSwiftVersionOnly
-
-    func matches(expected: Environment, actual: Environment) -> Bool {
-        switch self {
-        case .exact:
-            return expected == actual
-        case .matchBackendOnly:
-            return expected.backendIdentity == actual.backendIdentity
-        case .matchSwiftVersionOnly:
-            return expected.swiftVersion == actual.swiftVersion
-        }
     }
 }

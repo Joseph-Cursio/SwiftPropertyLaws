@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// PRD §5.5 round-trip discovery (M5) — scanner-side recording. The
 /// suggester logic that pairs these up lives in `RoundTripSuggesterTests`;
@@ -15,7 +15,7 @@ struct ModuleScannerRoundTripTests {
                     static func encode(_ x: Foo) -> Data { Data() }
                     static func decode(_ d: Data) -> Foo { fatalError() }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -44,7 +44,7 @@ struct ModuleScannerRoundTripTests {
                 extension Codec {
                     static func decode(_ d: Data) -> Foo { fatalError() }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -61,7 +61,7 @@ struct ModuleScannerRoundTripTests {
             "Pair.swift": """
                 func serialize(_ x: Foo) -> Data { Data() }
                 func deserialize(_ d: Data) -> Foo { fatalError() }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -88,7 +88,7 @@ struct ModuleScannerRoundTripTests {
 
                     static func untagged(_ x: Foo) -> Data { Data() }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -108,7 +108,7 @@ struct ModuleScannerRoundTripTests {
                 struct Plain {
                     let value: Int
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -127,7 +127,7 @@ struct ModuleScannerRoundTripTests {
                     static func unwrap<T>(_ w: Wrapped<T>) -> T { fatalError() }
                     static func plain(_ d: Data) -> Foo { fatalError() }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 

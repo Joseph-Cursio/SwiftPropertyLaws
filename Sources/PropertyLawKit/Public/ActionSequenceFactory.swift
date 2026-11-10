@@ -75,7 +75,7 @@ public enum ActionSequenceFactory {
     /// `CaseIterable` conformance at the call site, not a hidden
     /// `.todo`-stubbed generator.
     public static func actionSequence<Action: CaseIterable & Sendable>(
-        forCaseIterable actionType: Action.Type,
+        forCaseIterable _: Action.Type,
         length: ClosedRange<Int> = defaultLength,
         statefulGuards: [any StatefulGuard<Action>] = []
     ) -> Generator<[Action], some SendableSequenceType>

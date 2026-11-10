@@ -53,7 +53,7 @@ where
                 length: length,
                 statefulGuards: statefulGuards,
                 options: options
-            )
+            ),
         ]
     }
 }
@@ -96,7 +96,7 @@ where
                 length: length,
                 statefulGuards: statefulGuards,
                 options: options
-            )
+            ),
         ]
     }
 }
@@ -183,7 +183,7 @@ where
                 reducer: reducer,
                 source: .enumerated(space),
                 options: options
-            )
+            ),
         ]
     }
 }
@@ -194,7 +194,7 @@ private func checkInvariantHoldsAfterEachStep<
     Invariant: InteractionInvariant & Sendable,
     Action: Sendable
 >(
-    invariant: Invariant.Type,
+    invariant _: Invariant.Type,
     initialState: Invariant.State,
     reducer: @escaping @Sendable (Invariant.State, Action) -> Invariant.State,
     source: InputSource<[Action]>,
@@ -225,14 +225,14 @@ where Invariant.State: Sendable {
     )
 }
 
-/// v2.4.0 — per-action idempotence check.  Sample an action
+/// v2.4.0 — per-action idempotence check  Sample an action
 /// sequence, apply it to drive the reducer to an arbitrary
 /// reachable state, then for each `a ∈ idempotentActions` assert
 /// `reducer(reducer(s, a), a) == reducer(s, a)`.
 private func checkActionIdempotenceDoubleApplication<
     Invariant: ActionIdempotenceInvariant & Sendable
 >(
-    invariant: Invariant.Type,
+    invariant _: Invariant.Type,
     initialState: Invariant.State,
     reducer: @escaping @Sendable (Invariant.State, Invariant.Action) -> Invariant.State,
     length: ClosedRange<Int>,
@@ -293,7 +293,7 @@ private func formatInvariantViolation<
     Invariant: InteractionInvariant,
     Action
 >(
-    of invariantType: Invariant.Type,
+    of _: Invariant.Type,
     initialState: Invariant.State,
     reducer: (Invariant.State, Action) -> Invariant.State,
     actions: [Action]
@@ -325,7 +325,7 @@ private func formatInvariantViolation<
 private func formatActionIdempotenceViolation<
     Invariant: ActionIdempotenceInvariant
 >(
-    of invariantType: Invariant.Type,
+    of _: Invariant.Type,
     initialState: Invariant.State,
     reducer: (Invariant.State, Invariant.Action) -> Invariant.State,
     actions: [Invariant.Action]

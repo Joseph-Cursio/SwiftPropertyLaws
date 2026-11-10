@@ -1,5 +1,21 @@
 import Foundation
 
+enum InvocationError: Error, CustomStringConvertible {
+    case missingValue(String)
+    case unknownArgument(String)
+    case invalidValue(flag: String, value: String, allowed: String)
+
+    var description: String {
+        switch self {
+        case .missingValue(let flag): return "missing value for \(flag)"
+        case .unknownArgument(let arg): return "unknown argument: \(arg)"
+
+        case let .invalidValue(flag, value, allowed):
+            return "invalid value '\(value)' for \(flag); allowed: \(allowed)"
+        }
+    }
+}
+
 /// Argv-parsed invocation. Plugin → tool argv shape:
 /// `--target <name> --output <path> [--advisory] [--advisory-min <level>]
 ///  --source-files <p1> <p2> ...`
@@ -33,14 +49,14 @@ struct ToolInvocation: Sendable {
     }
 
     private init(builder: Builder) throws {
-        guard let target = builder.target else {
+        guard let targetValue = builder.target else {
             throw InvocationError.missingValue("--target")
         }
-        guard let outputPath = builder.outputPath else {
+        guard let outputValue = builder.outputPath else {
             throw InvocationError.missingValue("--output")
         }
-        self.target = target
-        self.outputPath = outputPath
+        self.target = targetValue
+        self.outputPath = outputValue
         self.sourceFiles = builder.sourceFiles
         self.contextFiles = builder.contextFiles
         self.extraImports = builder.extraImports
@@ -78,15 +94,19 @@ struct ToolInvocation: Sendable {
         case .target:
             builder.target = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
+
         case .output:
             builder.outputPath = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
+
         case .scaffoldOut:
             builder.scaffoldOutputPath = try requireValue(after: arg, arguments: arguments, at: index)
             return index + 2
+
         case .advisory:
             builder.advisory = true
             return index + 1
+
         case .advisoryMin:
             let raw = try requireValue(after: arg, arguments: arguments, at: index)
             guard let level = SuggestionConfidence(rawValue: raw) else {
@@ -96,10 +116,13 @@ struct ToolInvocation: Sendable {
             }
             builder.advisoryMin = level
             return index + 2
+
         case .sourceFiles:
             return consumeSourceFiles(arguments: arguments, from: index + 1, into: &builder)
+
         case .contextFiles:
             return consumeContextFiles(arguments: arguments, from: index + 1, into: &builder)
+
         case .extraImport:
             builder.extraImports.append(
                 try requireValue(after: arg, arguments: arguments, at: index)
@@ -150,20 +173,5 @@ struct ToolInvocation: Sendable {
             index += 1
         }
         return index
-    }
-}
-
-enum InvocationError: Error, CustomStringConvertible {
-    case missingValue(String)
-    case unknownArgument(String)
-    case invalidValue(flag: String, value: String, allowed: String)
-
-    var description: String {
-        switch self {
-        case .missingValue(let flag): return "missing value for \(flag)"
-        case .unknownArgument(let arg): return "unknown argument: \(arg)"
-        case .invalidValue(let flag, let value, let allowed):
-            return "invalid value '\(value)' for \(flag); allowed: \(allowed)"
-        }
     }
 }

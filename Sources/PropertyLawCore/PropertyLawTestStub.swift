@@ -29,7 +29,7 @@ package enum PropertyLawTestStub {
             "            for: \(typeName).self,",
             "            using: \(generatorExpr)",
             "        )",
-            "    }"
+            "    }",
         ]
     }
 }

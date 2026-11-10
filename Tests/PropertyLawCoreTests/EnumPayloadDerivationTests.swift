@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Tier 4: enums with cases (payload-bearing or plain, but not
 /// `CaseIterable`/raw) now derive a `Gen.oneOf(...)` over per-case
@@ -77,7 +77,7 @@ struct EnumPayloadDerivationTests {
     @Test func mixedPlainAndPayloadCases() {
         let shape = enumShape("Shape", cases: [
             EnumCase(name: "empty"),
-            EnumCase(name: "circle", associatedValues: [value("radius", "Int")])
+            EnumCase(name: "circle", associatedValues: [value("radius", "Int")]),
         ])
         let expected = """
             Gen.oneOf(

@@ -2,7 +2,7 @@
 // to generate, and the generator expression each one maps to.
 //
 // Split out of `DerivationStrategy.swift` when that file passed SwiftLint's
-// 400-line ceiling — the same move that produced `TodoReason.swift`. This is
+// 400-line ceiling — the same move that produced `DerivationStrategist+TodoReason.swift`. This is
 // the table half of the strategist: adding support for a new raw type is a
 // change here and nowhere else, and it is the file to open when asking "why
 // didn't `Foo` derive?"
@@ -64,8 +64,8 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     /// module qualifier, and any other prefix may name a user module — `MyModule.String` is a
     /// user type that must not be handed this table's `String` generator.
     public init?(typeName: String) {
-        let candidate = RawType.unqualified(typeName)
-        guard let match = RawType.allCases.first(where: { $0.rawValue == candidate }) else {
+        let candidate = Self.unqualified(typeName)
+        guard let match = Self.allCases.first(where: { $0.rawValue == candidate }) else {
             return nil
         }
         self = match
@@ -145,13 +145,13 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     /// See ``subjectBaseline(_:)`` for what the tokens are for and why they go where they go.
     public func edgeBiasedGeneratorExpression(subjectTokens: [String]) -> String? {
         guard self == .string else { return nil }
-        let edges = RawType.stringEdgeCases
-            .map(RawType.swiftStringLiteral)
+        let edges = Self.stringEdgeCases
+            .map(Self.swiftStringLiteral)
             .joined(separator: ", ")
         let token = "Gen<String?>.element(of: [\(edges)] as [String]).map { $0! }"
         let filler = "Gen<Character>.letterOrNumber.string(of: 0...4)"
         return "Gen.frequency("
-            + "(3.0, \(RawType.subjectBaseline(subjectTokens))), "
+            + "(3.0, \(Self.subjectBaseline(subjectTokens))), "
             + "(1.0, \(token)), "
             + "(3.0, \(token).map { $0 + $0 }), "
             + "(1.0, zip(\(token), \(filler)).map { $0 + $1 })"
@@ -212,12 +212,12 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
     /// its alphanumeric baseline. `subjectTokens: []` is byte-identical to the property.
     public func hostileGeneratorExpression(subjectTokens: [String]) -> String? {
         guard self == .string else { return nil }
-        let hostile = RawType.hostileTokens
-            .map(RawType.swiftStringLiteral)
+        let hostile = Self.hostileTokens
+            .map(Self.swiftStringLiteral)
             .joined(separator: ", ")
         let token = "Gen<String?>.element(of: [\(hostile)] as [String]).map { $0! }"
         return "Gen.frequency("
-            + "(3.0, \(RawType.subjectBaseline(subjectTokens))), "
+            + "(3.0, \(Self.subjectBaseline(subjectTokens))), "
             + "(3.0, \(token)), "
             + "(2.0, \(token).map { $0 + $0 }), "
             + "(1.0, Gen<Character>.latin1.string(of: 0...24)), "
@@ -254,7 +254,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         var seen: Set<String> = []
         let tokens = subjectTokens.filter { !$0.isEmpty && seen.insert($0).inserted }.prefix(subjectTokenCap)
         guard !tokens.isEmpty else { return baseline }
-        let literals = tokens.map(RawType.swiftStringLiteral).joined(separator: ", ")
+        let literals = tokens.map(Self.swiftStringLiteral).joined(separator: ", ")
         let subject = "Gen<String?>.element(of: [\(literals)] as [String]).map { $0! }"
         let short = "Gen<Character>.letterOrNumber.string(of: 0...4)"
         let embedded = "zip(zip(\(short), \(subject)).map { $0 + $1 }, \(short)).map { $0 + $1 }"
@@ -274,7 +274,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         "[", "]", "[[", "]]", "[[a]]", "[[a|b]]",
         "{", "}", "<", ">", "(", ")",
         "\"", "'", "\\", "|", "&", ";", "%", "$",
-        "\u{0}", "\u{7F}"
+        "\u{0}", "\u{7F}",
     ]
 
     /// Curated **tokens** mixed with random strings, and composed rather than only drawn whole:
@@ -327,6 +327,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
             case "\n": out += "\\n"
             case "\t": out += "\\t"
             case "\r": out += "\\r"
+
             default:
                 // A scalar Swift source cannot carry literally — control codes, DEL, and the
                 // other non-printables — becomes its escape rather than its byte. NUL is

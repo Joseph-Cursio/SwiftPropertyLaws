@@ -1,7 +1,7 @@
+@testable import PropertyLawSyntaxSupport
 import SwiftParser
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntaxSupport
 
 /// Three swift-collections carriers took down the whole generated suite on the same shape —
 /// `_DequeSlot`, `_HeapNode` and `_HashTable.Bucket`, each `assert(offset >= 0)` in an
@@ -85,12 +85,10 @@ struct InitializerPreconditionDetectorTests {
             struct Wrapper { init(x: Int) { let y = x * 2; assert(y != 0); self.y = y } }
             """))
     }
-}
 
-/// `_HeapNode` is why delegation is tracked: its `init(offset:)` asserts nothing and forwards
-/// to `init(offset:level:)`, which asserts `offset >= 0`. A body-only check calls the first
-/// one clean, derivation picks it, and the generated suite aborts anyway.
-extension InitializerPreconditionDetectorTests {
+    // `_HeapNode` is why delegation is tracked: its `init(offset:)` asserts nothing and forwards
+    // to `init(offset:level:)`, which asserts `offset >= 0`. A body-only check calls the first
+    // one clean, derivation picks it, and the generated suite aborts anyway.
 
     private func delegates(_ source: String) -> Bool {
         let file = Parser.parse(source: source)

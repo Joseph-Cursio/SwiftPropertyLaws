@@ -20,7 +20,7 @@ struct DequeLayoutTests {
         var rng = Xoshiro(seed: (1, 2, 3, 4))
         let generator = Gen<Int>.int(in: 0 ..< 100).array(of: 0 ... 12).map { Deque($0) }
         var wrapped = 0
-        for _ in 0 ..< 1000 where !isContiguous(generator.run(using: &rng)) { wrapped += 1 }
+        for _ in 0 ..< 1_000 where !isContiguous(generator.run(using: &rng)) { wrapped += 1 }
         #expect(wrapped == 0, "expected the array path to produce no wrapped buffers at all")
     }
 
@@ -32,7 +32,6 @@ struct DequeLayoutTests {
         let wrapped = space.indices.filter { !isContiguous(space[$0]) }.count
         #expect(space.count == 107, "6 capacities: 1 + 3 + 6 + 10 + 21 + 66 arrangements")
         #expect(wrapped > 0, "a space that reaches no wrapped layout closes nothing")
-
     }
 
     @Test("layouts are ordered smallest deque first")

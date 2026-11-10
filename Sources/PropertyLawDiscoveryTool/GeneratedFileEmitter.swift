@@ -83,8 +83,13 @@ enum GeneratedFileEmitter {
         // Less the modules already imported above, which any of the three
         // sources can name too: a target extending a type declared in
         // `PropertyLawKit` used to import it twice.
-        for module in foreignModules.union(generatorImports).union(extraImports)
-            .subtracting(fixedImports).subtracting([target]).sorted() {
+        let imports = foreignModules
+            .union(generatorImports)
+            .union(extraImports)
+            .subtracting(fixedImports)
+            .subtracting([target])
+            .sorted()
+        for module in imports {
             lines.append("import \(module)")
         }
         for entry in map.entries {
@@ -209,9 +214,9 @@ enum GeneratedFileEmitter {
         // Marker preserved verbatim; the test body is replaced with a
         // comment-only stub so the surrounding suite still compiles and
         // the marker survives the next regeneration.
-        return [
+        [
             "    // property-law-suppress: \(suppressionKey)",
-            "    // (\(conformance.checkFunctionName) for \(typeName) suppressed by user marker)"
+            "    // (\(conformance.checkFunctionName) for \(typeName) suppressed by user marker)",
         ]
     }
 }

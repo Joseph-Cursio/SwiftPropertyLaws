@@ -1,7 +1,7 @@
 import Foundation
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// Two reasons a detected type gets no suite, both of which mean the emitted
 /// code would not compile:

@@ -33,11 +33,11 @@ extension ModuleScanner {
         in perType: [String: TypeAggregate],
         sendableProtocols: Set<String>
     ) -> [SkippedType] {
-        perType.keys.sorted().compactMap { typeName in
+        perType.sorted { $0.key < $1.key }.compactMap { typeName, aggregate in
             // Context-only types are not this target's to test or to report.
-            guard perType[typeName]!.seenInTarget else { return nil }
+            guard aggregate.seenInTarget else { return nil }
             guard let reason = skipReason(
-                for: perType[typeName]!, sendableProtocols: sendableProtocols
+                for: aggregate, sendableProtocols: sendableProtocols
             ) else { return nil }
             return SkippedType(typeName: typeName, reason: reason)
         }

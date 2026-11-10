@@ -1,7 +1,7 @@
 import Foundation
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 private struct Invoice: Codable, Equatable, Sendable {
     let identifier: Int
@@ -9,57 +9,10 @@ private struct Invoice: Codable, Equatable, Sendable {
     let memo: String
 }
 
-extension Gen where Value == Invoice {
-    static func invoice() -> Generator<Invoice, some SendableSequenceType> {
-        zip(
-            Gen<Int>.int(in: 0...10_000),
-            Gen<Int>.int(in: -1_000...1_000),
-            Gen<Character>.letterOrNumber.string(of: 0...8)
-        ).map { identifier, amount, memo in
-            Invoice(identifier: identifier, amount: amount, memo: memo)
-        }
-    }
-}
-
 /// The road-test's shape: a client DTO whose `Date` is carried over the wire as ISO-8601.
 private struct FileResponse: Codable, Equatable, Sendable {
     let name: String
     let modifiedAt: Date
-}
-
-extension Gen where Value == FileResponse {
-    /// Dates with **sub-second precision** — which is the whole point. A stock `.iso8601` formatter
-    /// emits whole seconds, so the fractional part cannot survive the round trip.
-    static func fileResponse() -> Generator<FileResponse, some SendableSequenceType> {
-        zip(
-            Gen<Character>.letterOrNumber.string(of: 1...8),
-            Gen<Int>.int(in: 1...999)
-        ).map { name, milliseconds in
-            FileResponse(
-                name: name,
-                modifiedAt: Date(timeIntervalSince1970: 1_700_000_000 + Double(milliseconds) / 1000)
-            )
-        }
-    }
-}
-
-extension CodableCodec where T == FileResponse {
-    /// Lossy by accident, not by design — the codec an app actually ships.
-    static var iso8601: Self {
-        Self(
-            identifier: "JSON(iso8601)",
-            encode: { value in
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                return try encoder.encode(value)
-            },
-            decode: { data in
-                let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
-                return try decoder.decode(FileResponse.self, from: data)
-            }
-        )
-    }
 }
 
 struct CodableLawsTests {
@@ -158,5 +111,52 @@ struct CodableLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         #expect(results[0].isViolation == false)
+    }
+}
+
+extension Gen where Value == Invoice {
+    static func invoice() -> Generator<Invoice, some SendableSequenceType> {
+        zip(
+            Gen<Int>.int(in: 0...10_000),
+            Gen<Int>.int(in: -1_000...1_000),
+            Gen<Character>.letterOrNumber.string(of: 0...8)
+        ).map { identifier, amount, memo in
+            Invoice(identifier: identifier, amount: amount, memo: memo)
+        }
+    }
+}
+
+extension Gen where Value == FileResponse {
+    /// Dates with **sub-second precision** — which is the whole point. A stock `.iso8601` formatter
+    /// emits whole seconds, so the fractional part cannot survive the round trip.
+    static func fileResponse() -> Generator<FileResponse, some SendableSequenceType> {
+        zip(
+            Gen<Character>.letterOrNumber.string(of: 1...8),
+            Gen<Int>.int(in: 1...999)
+        ).map { name, milliseconds in
+            FileResponse(
+                name: name,
+                modifiedAt: Date(timeIntervalSince1970: 1_700_000_000 + Double(milliseconds) / 1_000)
+            )
+        }
+    }
+}
+
+extension CodableCodec where T == FileResponse {
+    /// Lossy by accident, not by design — the codec an app actually ships.
+    static var iso8601: Self {
+        Self(
+            identifier: "JSON(iso8601)",
+            encode: { value in
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                return try encoder.encode(value)
+            },
+            decode: { data in
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                return try decoder.decode(FileResponse.self, from: data)
+            }
+        )
     }
 }

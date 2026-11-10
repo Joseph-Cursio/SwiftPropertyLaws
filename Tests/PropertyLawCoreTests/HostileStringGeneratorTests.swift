@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// v4.6 — `RawType.hostileGeneratorExpression`, the draw a **totality** law needs.
 ///

@@ -52,11 +52,12 @@ public func checkInvariantIsFalsifiable<
     Invariant: InteractionInvariant & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for invariant: Invariant.Type = Invariant.self,
+    for _: Invariant.Type = Invariant.self,
     using generator: Generator<Invariant.State, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult]
 where Invariant.State: Sendable {
+    // swiftlint:disable:next closure_body_length - the closure is the suite's law list
     try await runPropertyLawSuite(options: options) {
         [
             await AggregateDriver.run(
@@ -91,7 +92,7 @@ where Invariant.State: Sendable {
                     that violates it; widen the generator before changing the predicate.
                     """
                 )
-            }
+            },
         ]
     }
 }

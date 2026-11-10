@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 struct ToolInvocationTests {
 
@@ -7,7 +7,7 @@ struct ToolInvocationTests {
         let invocation = try ToolInvocation(arguments: [
             "--target", "MyModule",
             "--output", "/tmp/out.swift",
-            "--source-files", "/a/b.swift", "/a/c.swift"
+            "--source-files", "/a/b.swift", "/a/c.swift",
         ])
         #expect(invocation.target == "MyModule")
         #expect(invocation.outputPath == "/tmp/out.swift")
@@ -18,9 +18,9 @@ struct ToolInvocationTests {
         let invocation = try ToolInvocation(arguments: [
             "--target", "MyModule",
             "--output", "/tmp/out.swift",
-            "--source-files"
+            "--source-files",
         ])
-        #expect(invocation.sourceFiles == [])
+        #expect(invocation.sourceFiles.isEmpty)
     }
 
     @Test func sourceFilesTerminatesAtNextFlag() throws {
@@ -29,7 +29,7 @@ struct ToolInvocationTests {
         let invocation = try ToolInvocation(arguments: [
             "--source-files", "/x.swift", "/y.swift",
             "--target", "MyModule",
-            "--output", "/tmp/out.swift"
+            "--output", "/tmp/out.swift",
         ])
         #expect(invocation.sourceFiles == ["/x.swift", "/y.swift"])
         #expect(invocation.target == "MyModule")
@@ -60,7 +60,7 @@ struct ToolInvocationTests {
             _ = try ToolInvocation(arguments: [
                 "--target", "MyModule",
                 "--output", "/tmp/out.swift",
-                "--unknown-flag", "x"
+                "--unknown-flag", "x",
             ])
         }
     }
@@ -87,7 +87,7 @@ struct ToolInvocationTests {
         #expect(throws: InvocationError.self) {
             _ = try ToolInvocation(arguments: [
                 "--target", "MyModule", "--output", "/tmp/out.swift",
-                "--source-files", "/a.swift", flag
+                "--source-files", "/a.swift", flag,
             ])
         }
     }
@@ -101,7 +101,7 @@ struct ToolInvocationTests {
             "--scaffold-out", "/tmp/scaffold.swift",
             "--advisory-min", "low",
             "--extra-import", "PropertyLawSyntax",
-            "--source-files", "/a.swift"
+            "--source-files", "/a.swift",
         ])
         #expect(invocation.target == "MyModule")
         #expect(invocation.outputPath == "/tmp/out.swift")
@@ -116,7 +116,7 @@ struct ToolInvocationTests {
         let invocation = try ToolInvocation(arguments: [
             "--target", "MyModule",
             "--output", "/tmp/out.swift",
-            "--source-files", "/a.swift"
+            "--source-files", "/a.swift",
         ])
         #expect(invocation.advisory == false)
         #expect(invocation.advisoryMinConfidence == .high)
@@ -127,7 +127,7 @@ struct ToolInvocationTests {
             "--target", "MyModule",
             "--output", "/tmp/out.swift",
             "--advisory",
-            "--source-files", "/a.swift"
+            "--source-files", "/a.swift",
         ])
         #expect(invocation.advisory)
         #expect(invocation.advisoryMinConfidence == .high)
@@ -137,14 +137,14 @@ struct ToolInvocationTests {
         let lowInvocation = try ToolInvocation(arguments: [
             "--target", "M", "--output", "/tmp/o.swift",
             "--advisory", "--advisory-min", "low",
-            "--source-files"
+            "--source-files",
         ])
         #expect(lowInvocation.advisoryMinConfidence == .low)
 
         let mediumInvocation = try ToolInvocation(arguments: [
             "--target", "M", "--output", "/tmp/o.swift",
             "--advisory", "--advisory-min", "medium",
-            "--source-files"
+            "--source-files",
         ])
         #expect(mediumInvocation.advisoryMinConfidence == .medium)
     }
@@ -154,7 +154,7 @@ struct ToolInvocationTests {
             _ = try ToolInvocation(arguments: [
                 "--target", "M", "--output", "/tmp/o.swift",
                 "--advisory-min", "totally-invalid",
-                "--source-files"
+                "--source-files",
             ])
         }
     }
@@ -163,7 +163,7 @@ struct ToolInvocationTests {
         #expect(throws: InvocationError.self) {
             _ = try ToolInvocation(arguments: [
                 "--target", "M", "--output", "/tmp/o.swift",
-                "--advisory-min"
+                "--advisory-min",
             ])
         }
     }

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// Coverage + regression suite for `LawIdentifier` and the per-protocol
 /// law enums (`EquatableLaw`, `HashableLaw`, ..., `SetAlgebraLaw`).
@@ -228,7 +228,7 @@ struct LawIdentifierTests {
             .equatable(.reflexivity),
             .equatable(.reflexivity), // duplicate — Set should dedupe
             .hashable(.equalityConsistency),
-            .setAlgebra(.symmetricDifferenceDefinition)
+            .setAlgebra(.symmetricDifferenceDefinition),
         ]
         #expect(ids.count == 3)
         #expect(ids.contains(.equatable(.reflexivity)))

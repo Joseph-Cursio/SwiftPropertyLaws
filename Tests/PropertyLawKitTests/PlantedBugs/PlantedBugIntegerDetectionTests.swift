@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// PRD §8 framework self-test gate — v1.4 numeric cluster (M2 share).
 struct PlantedBugIntegerDetectionTests {
@@ -126,7 +126,7 @@ struct PlantedBugIntegerDetectionTests {
             "BinaryInteger.bitwiseAndDistributesOverOr",
             "BinaryInteger.bitwiseDeMorgan",
             "BinaryInteger.shiftByZeroIdentity",
-            "BinaryInteger.trailingZeroBitCountRange"
+            "BinaryInteger.trailingZeroBitCountRange",
         ]
         #expect(
             expected.isSubset(of: laws),
@@ -167,7 +167,7 @@ struct PlantedBugIntegerDetectionTests {
             "FixedWidthInteger.dividedReportingOverflowOnDivByZero",
             "FixedWidthInteger.wrappingArithmeticDoesNotTrap",
             "FixedWidthInteger.minMaxBoundsAreReachable",
-            "FixedWidthInteger.nonzeroBitCountRange"
+            "FixedWidthInteger.nonzeroBitCountRange",
         ]
         #expect(
             expected.isSubset(of: laws),
@@ -184,10 +184,12 @@ struct PlantedBugIntegerDetectionTests {
         let violation = await #expect(throws: PropertyLawViolation.self) {
             if binaryInteger {
                 try await checkBinaryIntegerPropertyLaws(
-                    using: singleFaultIntegers(fault), options: LawCheckOptions(budget: .sanity), laws: .ownOnly)
+                    using: singleFaultIntegers(fault), options: LawCheckOptions(budget: .sanity), laws: .ownOnly
+                )
             } else {
                 try await checkFixedWidthIntegerPropertyLaws(
-                    using: singleFaultIntegers(fault), options: LawCheckOptions(budget: .sanity), laws: .ownOnly)
+                    using: singleFaultIntegers(fault), options: LawCheckOptions(budget: .sanity), laws: .ownOnly
+                )
             }
         }
         return Set(violation?.results.map(\.protocolLaw) ?? [])

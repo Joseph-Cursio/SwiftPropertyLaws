@@ -1,67 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
-
-/// v3.7.0 — tests for `checkDefensiveCopyPropertyLaws`. Three hand-rolled class
-/// conformers: a correct deep copy (positive control), a `return self` copy
-/// (fails distinctness), and a shallow copy sharing a mutable reference (fails
-/// independence). Fixtures mirror pbt-book Chapter 9 §9.3.
-struct DefensiveCopyLawsTests {
-
-    @Test func correctDeepCopyPassesBothLaws() async throws {
-        let results = try await checkDefensiveCopyPropertyLaws(
-            for: CorrectCopy.self,
-            options: LawCheckOptions(budget: .sanity)
-        )
-        #expect(results.count == 2)
-        #expect(results.allSatisfy { $0.isViolation == false })
-        #expect(results.allSatisfy { $0.tier == .strict })
-        #expect(results.map(\.protocolLaw) == [
-            "DefensiveCopy.copyIsDistinctInstance",
-            "DefensiveCopy.copyIsIndependent"
-        ])
-    }
-
-    @Test func returnSelfCopyIsDetected() async throws {
-        // `copyUnderTest()` returns `self` → fails copyIsDistinctInstance.
-        await #expect(throws: PropertyLawViolation.self) {
-            _ = try await checkDefensiveCopyPropertyLaws(
-                for: ReturnSelfCopy.self,
-                options: LawCheckOptions(budget: .sanity)
-            )
-        }
-    }
-
-    @Test func shallowCopyIsDetected() async throws {
-        // A distinct instance that shares a mutable reference → passes
-        // distinctness but fails copyIsIndependent.
-        await #expect(throws: PropertyLawViolation.self) {
-            _ = try await checkDefensiveCopyPropertyLaws(
-                for: ShallowCopy.self,
-                options: LawCheckOptions(budget: .sanity)
-            )
-        }
-    }
-
-    /// Every non-empty script reaches the shared box, so a script of four or
-    /// more mutations must shrink to one. No other test read the script, so a
-    /// shrinker that returned nothing passed.
-    @Test func shallowCopyShrinksToASingleMutation() async throws {
-        let violation = await #expect(throws: PropertyLawViolation.self) {
-            _ = try await checkDefensiveCopyPropertyLaws(
-                for: ShallowCopy.self,
-                length: 4...8,
-                options: LawCheckOptions(budget: .sanity)
-            )
-        }
-        let shallow = violation?.results.first { $0.protocolLaw == "DefensiveCopy.copyIsIndependent" }
-        guard case .failed(let counterexample) = shallow?.outcome else {
-            Issue.record("expected copyIsIndependent to fail; got \(String(describing: shallow))")
-            return
-        }
-        #expect(counterexample.contains("applying [bump] to the copy alone"), "\(counterexample)")
-    }
-}
+import Testing
 
 // MARK: - Fixtures: correct deep copy (positive control)
 
@@ -111,7 +50,8 @@ final class ReturnSelfCopy: DefensiveCopy, @unchecked Sendable {
 final class ShallowCopy: DefensiveCopy, @unchecked Sendable {
 
     final class Box: @unchecked Sendable { var value: Int = 0 }
-    private var box: Box = Box()
+
+    private var box = Box()
 
     static func == (lhs: ShallowCopy, rhs: ShallowCopy) -> Bool { lhs.box.value == rhs.box.value }
     static func makeProbe() -> ShallowCopy { ShallowCopy() }
@@ -129,5 +69,66 @@ final class ShallowCopy: DefensiveCopy, @unchecked Sendable {
         switch mutation {
         case .bump: target.box.value += 1
         }
+    }
+}
+
+/// v3.7.0 — tests for `checkDefensiveCopyPropertyLaws`. Three hand-rolled class
+/// conformers: a correct deep copy (positive control), a `return self` copy
+/// (fails distinctness), and a shallow copy sharing a mutable reference (fails
+/// independence). Fixtures mirror pbt-book Chapter 9 §9.3.
+struct DefensiveCopyLawsTests {
+
+    @Test func correctDeepCopyPassesBothLaws() async throws {
+        let results = try await checkDefensiveCopyPropertyLaws(
+            for: CorrectCopy.self,
+            options: LawCheckOptions(budget: .sanity)
+        )
+        #expect(results.count == 2)
+        #expect(results.allSatisfy { $0.isViolation == false })
+        #expect(results.allSatisfy { $0.tier == .strict })
+        #expect(results.map(\.protocolLaw) == [
+            "DefensiveCopy.copyIsDistinctInstance",
+            "DefensiveCopy.copyIsIndependent",
+        ])
+    }
+
+    @Test func returnSelfCopyIsDetected() async throws {
+        // `copyUnderTest()` returns `self` → fails copyIsDistinctInstance.
+        await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkDefensiveCopyPropertyLaws(
+                for: ReturnSelfCopy.self,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+    }
+
+    @Test func shallowCopyIsDetected() async throws {
+        // A distinct instance that shares a mutable reference → passes
+        // distinctness but fails copyIsIndependent.
+        await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkDefensiveCopyPropertyLaws(
+                for: ShallowCopy.self,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+    }
+
+    /// Every non-empty script reaches the shared box, so a script of four or
+    /// more mutations must shrink to one. No other test read the script, so a
+    /// shrinker that returned nothing passed.
+    @Test func shallowCopyShrinksToASingleMutation() async throws {
+        let violation = await #expect(throws: PropertyLawViolation.self) {
+            _ = try await checkDefensiveCopyPropertyLaws(
+                for: ShallowCopy.self,
+                length: 4...8,
+                options: LawCheckOptions(budget: .sanity)
+            )
+        }
+        let shallow = violation?.results.first { $0.protocolLaw == "DefensiveCopy.copyIsIndependent" }
+        guard case .failed(let counterexample) = shallow?.outcome else {
+            Issue.record("expected copyIsIndependent to fail; got \(String(describing: shallow))")
+            return
+        }
+        #expect(counterexample.contains("applying [bump] to the copy alone"), "\(counterexample)")
     }
 }

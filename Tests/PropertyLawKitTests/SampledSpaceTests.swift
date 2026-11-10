@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// Sampling a space while keeping the index — the middle ground between walking
 /// it and handing it to `Enumeration.generator`.
@@ -114,7 +114,7 @@ struct SampledSpaceTests {
             satisfies: { _ in true }
         )
         let coverage = try #require(results.first?.coverage)
-        #expect(coverage.spaceSize == 1024)
+        #expect(coverage.spaceSize == 1_024)
         #expect(coverage.casesRun <= 50)
         #expect(coverage.isComplete == false)
     }

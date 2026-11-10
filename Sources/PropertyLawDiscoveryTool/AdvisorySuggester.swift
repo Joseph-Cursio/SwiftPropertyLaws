@@ -16,7 +16,7 @@ enum SuggestionConfidence: String, Sendable, Comparable {
         }
     }
 
-    static func < (lhs: SuggestionConfidence, rhs: SuggestionConfidence) -> Bool {
+    static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.rank < rhs.rank
     }
 }

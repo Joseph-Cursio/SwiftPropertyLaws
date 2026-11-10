@@ -21,7 +21,7 @@ public func checkSemigroupPropertyLaws<
     Value: Semigroup & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -41,7 +41,7 @@ public func checkSemigroupPropertyLaws<
 /// result reports the shortfall rather than claiming completeness.
 @discardableResult
 public func checkSemigroupPropertyLaws<Value: Semigroup & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -56,7 +56,7 @@ public func checkSemigroupPropertyLaws<Value: Semigroup & Equatable & Sendable>(
 /// `options.budget` decides the number of draws.
 @discardableResult
 public func checkSemigroupPropertyLaws<Value: Semigroup & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     sampling carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {

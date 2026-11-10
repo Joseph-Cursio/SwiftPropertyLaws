@@ -1,8 +1,8 @@
 import PropertyBased
 import PropertyLawKit
+@testable import PropertyLawSyntax
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntax
 
 /// `Syntax` identity is **allocation-scoped**, and this suite exists because
 /// two plausible designs failed before that was measured.
@@ -49,7 +49,7 @@ struct SyntaxGeneratorTests {
     /// at 10 000, so a small-budget check is exactly the test that would not
     /// have caught either. Drawing from a prebuilt pool is cheap, so the large
     /// case costs nothing now.
-    @Test("the default generator keeps hash distribution healthy", arguments: [100, 1000, 10000])
+    @Test("the default generator keeps hash distribution healthy", arguments: [100, 1_000, 10_000])
     func distributionStaysHealthy(_ trials: Int) {
         let values = sample(Gen<Syntax>.syntax(), count: trials)
         let ratio = Double(Set(values.map(\.hashValue)).count) / Double(trials)
@@ -62,7 +62,7 @@ struct SyntaxGeneratorTests {
     @Test("every node in the pool has a distinct identity")
     func poolIdentitiesAreDistinct() {
         let nodes = SyntaxNodePool.allNodes
-        #expect(nodes.count > 1000, "pool too small for the largest budget: \(nodes.count)")
+        #expect(nodes.count > 1_000, "pool too small for the largest budget: \(nodes.count)")
         #expect(Set(nodes.map(\.id)).count == nodes.count,
                 "only \(Set(nodes.map(\.id)).count) identities across \(nodes.count) nodes")
     }
@@ -109,7 +109,7 @@ struct SyntaxGeneratorTests {
     /// which is what `pooled(size:)` is for.
     @Test("equal pairs are rare at the default pool size")
     func equalPairsAreRareByDefault() {
-        let pairs = equalPairs(in: sample(Gen<Syntax>.syntax(), count: 2000))
+        let pairs = equalPairs(in: sample(Gen<Syntax>.syntax(), count: 2_000))
         #expect(pairs < 20, "got \(pairs)/1000 equal pairs — the pool is far too small")
     }
 
@@ -139,7 +139,7 @@ struct SyntaxGeneratorTests {
         // the tree it was supposed to — an empty collection node has an empty
         // `description`, so the node itself is a poor witness, but its root is a
         // good one.
-        let node = SyntaxNodePool.node(template: 0, discriminator: 1, nodeIndex: 4095)
+        let node = SyntaxNodePool.node(template: 0, discriminator: 1, nodeIndex: 4_095)
         // Compared against the source builder rather than a literal, so the
         // test does not re-pin the template text every time the pool changes.
         #expect(node.root.description
@@ -160,7 +160,7 @@ struct SyntaxGeneratorTests {
 
     @Test("the pooled generator produces equal pairs at roughly 1/size")
     func pooledProducesEqualPairs() {
-        let pairs = equalPairs(in: sample(Gen<Syntax>.pooled(size: 32), count: 2000))
+        let pairs = equalPairs(in: sample(Gen<Syntax>.pooled(size: 32), count: 2_000))
         // 1 000 pairs at p = 1/32 → expect ~31.
         #expect(pairs > 5, "equal pairs never occurred — the pooled mode has no purpose")
         #expect(pairs < 300, "values are barely distinct — got \(pairs)/1000")
@@ -170,8 +170,8 @@ struct SyntaxGeneratorTests {
     /// test fails when it stops being true.
     @Test("the pooled generator trips the distribution threshold")
     func pooledTripsDistribution() {
-        let values = sample(Gen<Syntax>.pooled(size: 32), count: 1000)
-        let ratio = Double(Set(values.map(\.hashValue)).count) / Double(1000)
+        let values = sample(Gen<Syntax>.pooled(size: 32), count: 1_000)
+        let ratio = Double(Set(values.map(\.hashValue)).count) / Double(1_000)
         #expect(ratio < 0.10, "ratio \(ratio) — the documented pooled/distribution conflict is gone")
     }
 
@@ -219,6 +219,7 @@ struct SyntaxGeneratorTests {
 
     @Test("the pool is stable across rebuilds")
     func poolIsStable() {
+        // swiftlint:disable:next identical_operands - one seed drawn twice must replay
         #expect(SyntaxNodePool.pool(size: 32).map(\.id)
             == SyntaxNodePool.pool(size: 32).map(\.id))
     }

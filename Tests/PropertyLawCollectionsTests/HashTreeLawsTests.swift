@@ -27,11 +27,11 @@ private struct TreeSetProbe: ValueSemantic, Sendable {
         case formSymmetricDifference
     }
 
-    static func makeProbe() -> TreeSetProbe {
-        TreeSetProbe(storage: [1, 2, 3, 4, 5])
+    static func makeProbe() -> Self {
+        Self(storage: [1, 2, 3, 4, 5])
     }
 
-    static func apply(_ mutation: Mutation, to target: inout TreeSetProbe) {
+    static func apply(_ mutation: Mutation, to target: inout Self) {
         switch mutation {
         case .insertNew: target.storage.insert(99)
         case .removeExisting: target.storage.remove(3)
@@ -52,11 +52,11 @@ private struct TreeDictionaryProbe: ValueSemantic, Sendable {
         case mergeOther
     }
 
-    static func makeProbe() -> TreeDictionaryProbe {
-        TreeDictionaryProbe(storage: [1: 10, 2: 20, 3: 30])
+    static func makeProbe() -> Self {
+        Self(storage: [1: 10, 2: 20, 3: 30])
     }
 
-    static func apply(_ mutation: Mutation, to target: inout TreeDictionaryProbe) {
+    static func apply(_ mutation: Mutation, to target: inout Self) {
         switch mutation {
         case .insertNew: target.storage[99] = 990
         case .overwriteExisting: target.storage[2] = -1

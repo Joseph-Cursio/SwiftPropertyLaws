@@ -1,6 +1,26 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+/// Test fixture: `String`-wrapping `Monoid` whose `combine` is the
+/// canonical concatenation and `identity` is the empty string. Used as a
+/// positive control across both Semigroup and Monoid suites — the
+/// canonical free monoid over the alphabet of Swift `Character`s.
+struct StringMonoid: Monoid, Equatable, Sendable, CustomStringConvertible {
+    let value: String
+
+    static let identity = Self(value: "")
+
+    static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+        Self(value: lhs.value + rhs.value)
+    }
+
+    var description: String { "SM(\(value))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        Gen<Character>.letterOrNumber.string(of: 0...4).map { Self(value: $0) }
+    }
+}
 
 struct SemigroupLawsTests {
 
@@ -35,27 +55,5 @@ struct SemigroupLawsTests {
         )
         let names = Set(results.map(\.protocolLaw))
         #expect(names == ["Semigroup.combineAssociativity"])
-    }
-}
-
-/// Test fixture: `String`-wrapping `Monoid` whose `combine` is the
-/// canonical concatenation and `identity` is the empty string. Used as a
-/// positive control across both Semigroup and Monoid suites — the
-/// canonical free monoid over the alphabet of Swift `Character`s.
-struct StringMonoid: Monoid, Equatable, Sendable, CustomStringConvertible {
-    let value: String
-
-    static let identity = StringMonoid(value: "")
-
-    static func combine(_ lhs: StringMonoid, _ rhs: StringMonoid) -> StringMonoid {
-        StringMonoid(value: lhs.value + rhs.value)
-    }
-
-    var description: String { "SM(\(value))" }
-}
-
-extension StringMonoid {
-    static func gen() -> Generator<StringMonoid, some SendableSequenceType> {
-        Gen<Character>.letterOrNumber.string(of: 0...4).map { StringMonoid(value: $0) }
     }
 }

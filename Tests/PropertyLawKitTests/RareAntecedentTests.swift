@@ -1,7 +1,7 @@
 import Foundation
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// **The conditional laws, and the antecedent that a realistic generator does
 /// not reach.**
@@ -19,7 +19,9 @@ struct RareAntecedentTests {
     /// the kit's own planted-bug suite drives it with a hand-narrowed `0...3`.
     struct Rounding: Equatable, Sendable, CustomStringConvertible {
         let raw: Int
-        static func == (lhs: Rounding, rhs: Rounding) -> Bool { abs(lhs.raw - rhs.raw) <= 1 }
+
+        static func == (lhs: Self, rhs: Self) -> Bool { abs(lhs.raw - rhs.raw) <= 1 }
+
         var description: String { "R(\(raw))" }
     }
 
@@ -93,7 +95,8 @@ struct RareAntecedentTests {
     /// A correct `Equatable` clears the whole carrier, and says so.
     @Test func aCorrectEquatableClearsTheCarrier() async throws {
         let results = try await checkEquatablePropertyLaws(
-            overEvery: Every.elements("n", in: 0 ..< 12))
+            overEvery: Every.elements("n", in: 0 ..< 12)
+        )
         #expect(results.allSatisfy { !$0.isViolation })
         #expect(results.allSatisfy { $0.coverage?.isComplete == true })
     }
@@ -104,7 +107,8 @@ struct RareAntecedentTests {
         let carrier = Every.elements("n", in: 0 ..< 12)
         let walked = try await checkHashablePropertyLaws(overEvery: carrier)
         let sampled = try await checkHashablePropertyLaws(
-            using: Gen<Int>.int(in: 0 ..< 12), options: LawCheckOptions(budget: .sanity))
+            using: Gen<Int>.int(in: 0 ..< 12), options: LawCheckOptions(budget: .sanity)
+        )
 
         let walkedLaws = Set(walked.map(\.protocolLaw))
         let sampledLaws = Set(sampled.map(\.protocolLaw))
@@ -122,14 +126,16 @@ struct RareAntecedentTests {
     @Test func aConditionalLawReportsHowOftenItApplied() async throws {
         let wide = try await checkEquatablePropertyLaws(
             using: Gen<Int>.int(in: 0 ... 100_000),
-            options: LawCheckOptions(budget: .standard))
+            options: LawCheckOptions(budget: .standard)
+        )
         let transitivity = try #require(wide.first { $0.protocolLaw == "Equatable.transitivity" })
         #expect(!transitivity.isViolation, "the verdict is unchanged — this is reported, not enforced")
         #expect(transitivity.applications == 0, "and it applied to nothing")
 
         let narrow = try await checkEquatablePropertyLaws(
             using: Gen<Int>.int(in: 0 ... 3),
-            options: LawCheckOptions(budget: .standard))
+            options: LawCheckOptions(budget: .standard)
+        )
         let applied = try #require(narrow.first { $0.protocolLaw == "Equatable.transitivity" }?.applications)
         // Exact equality over four values: a chain needs all three draws equal,
         // so P = 1/16 and roughly 60 of 1 000 trials apply the law.
@@ -140,7 +146,8 @@ struct RareAntecedentTests {
     /// is not answering zero, it is not being asked.
     @Test func unconditionalLawsReportNoCountAtAll() async throws {
         let results = try await checkEquatablePropertyLaws(
-            using: Gen<Int>.int(in: 0 ... 100), options: LawCheckOptions(budget: .sanity))
+            using: Gen<Int>.int(in: 0 ... 100), options: LawCheckOptions(budget: .sanity)
+        )
         let reflexivity = try #require(results.first { $0.protocolLaw == "Equatable.reflexivity" })
         let transitivity = try #require(results.first { $0.protocolLaw == "Equatable.transitivity" })
         #expect(reflexivity.applications == nil)
@@ -151,7 +158,8 @@ struct RareAntecedentTests {
     /// count exists to point at.
     @Test func walkingAppliesTheLawByConstruction() async throws {
         let results = try await checkEquatablePropertyLaws(
-            overEvery: Every.elements("n", in: 0 ..< 12))
+            overEvery: Every.elements("n", in: 0 ..< 12)
+        )
         let applied = try #require(results.first { $0.protocolLaw == "Equatable.transitivity" }?.applications)
         #expect(applied == 12, "one chain per value, x == y == z with all three the same")
     }
@@ -167,10 +175,12 @@ struct RareAntecedentTests {
                 seed: Seed(stateA: 1, stateB: 2, stateC: 3, stateD: 4),
                 environment: environment,
                 outcome: .passed,
-                applications: applications))
+                applications: applications
+            ))
         }
         #expect(rendered(applications: 0).contains(
-            "Applied: never — the antecedent did not fire, so this pass tested nothing."))
+            "Applied: never — the antecedent did not fire, so this pass tested nothing."
+        ))
         #expect(rendered(applications: 37).contains("Applied: 37 of 1000."))
         #expect(!rendered(applications: nil).contains("Applied:"))
     }
@@ -201,7 +211,8 @@ struct RareAntecedentTests {
         let wide = try await checkComparablePropertyLaws(
             using: Gen<Int>.int(in: -1_000_000 ... 1_000_000),
             options: LawCheckOptions(budget: .standard, seed: Self.mixedSeed(0)),
-            laws: .ownOnly)
+            laws: .ownOnly
+        )
         let antisymmetry = try #require(wide.first { $0.protocolLaw == "Comparable.antisymmetry" })
         #expect(!antisymmetry.isViolation, "the verdict is unchanged — this is reported, not enforced")
         #expect(antisymmetry.applications == 0, "and it applied to nothing")
@@ -209,7 +220,8 @@ struct RareAntecedentTests {
         let narrow = try await checkComparablePropertyLaws(
             using: Gen<Int>.int(in: 0 ... 3),
             options: LawCheckOptions(budget: .standard),
-            laws: .ownOnly)
+            laws: .ownOnly
+        )
         let applied = try #require(narrow.first { $0.protocolLaw == "Comparable.antisymmetry" }?.applications)
         // Two equal draws from four values: P = 1/4, so about 250 of 1 000.
         #expect(applied > 100, "a narrow domain applies it constantly; got \(applied)")
@@ -228,7 +240,9 @@ struct RareAntecedentTests {
     /// and `-5` are each `<=` the other, and are not equal.
     struct AbsoluteOrder: Comparable, Sendable, CustomStringConvertible {
         let cents: Int
-        static func < (lhs: AbsoluteOrder, rhs: AbsoluteOrder) -> Bool { abs(lhs.cents) < abs(rhs.cents) }
+
+        static func < (lhs: Self, rhs: Self) -> Bool { abs(lhs.cents) < abs(rhs.cents) }
+
         var description: String { "A(\(cents))" }
     }
 
@@ -236,7 +250,8 @@ struct RareAntecedentTests {
     /// the report is `±1` rather than whichever pair a sample stumbled on.
     @Test func walkingCatchesAnAbsoluteValueOrdering() async throws {
         let carrier = Every.elements(
-            "a", in: (-3 ... 3).map(AbsoluteOrder.init(cents:)), size: { abs($0.cents) })
+            "a", in: (-3 ... 3).map(AbsoluteOrder.init(cents:)), size: { abs($0.cents) }
+        )
         let violation = await #expect(throws: PropertyLawViolation.self) {
             try await checkComparablePropertyLaws(overEvery: carrier)
         }
@@ -251,7 +266,8 @@ struct RareAntecedentTests {
     @Test func walkedComparableRunsTheSameLawsAsSampled() async throws {
         let walked = try await checkComparablePropertyLaws(overEvery: Every.elements("n", in: 0 ..< 8))
         let sampled = try await checkComparablePropertyLaws(
-            using: Gen<Int>.int(in: 0 ..< 8), options: LawCheckOptions(budget: .sanity))
+            using: Gen<Int>.int(in: 0 ..< 8), options: LawCheckOptions(budget: .sanity)
+        )
         #expect(walked.map(\.protocolLaw) == sampled.map(\.protocolLaw))
         #expect(walked.allSatisfy { !$0.isViolation }, "a correct Comparable clears the carrier")
         #expect(walked.allSatisfy { $0.coverage?.isComplete == true }, "and says it covered all of it")
@@ -263,7 +279,9 @@ struct RareAntecedentTests {
     /// the classic `Hashable` bug: `Set` will hold `$(250)` and `$(299)` both.
     struct DollarMoney: Hashable, Sendable, CustomStringConvertible {
         let cents: Int
-        static func == (lhs: DollarMoney, rhs: DollarMoney) -> Bool { lhs.cents / 100 == rhs.cents / 100 }
+
+        static func == (lhs: Self, rhs: Self) -> Bool { lhs.cents / 100 == rhs.cents / 100 }
+
         var description: String { "$(\(cents))" }
     }
 
@@ -289,7 +307,8 @@ struct RareAntecedentTests {
         func check(_ range: ClosedRange<Int>) async -> Int {
             await seedsCaught { options in
                 _ = try await checkHashablePropertyLaws(
-                    using: Gen<Int>.int(in: range).map(DollarMoney.init(cents:)), options: options, laws: .ownOnly)
+                    using: Gen<Int>.int(in: range).map(DollarMoney.init(cents:)), options: options, laws: .ownOnly
+                )
             }
         }
         let wide = await check(-1_000_000 ... 1_000_000)
@@ -300,7 +319,8 @@ struct RareAntecedentTests {
         // The README's walked example: seven values this `==` calls equal.
         await #expect(throws: PropertyLawViolation.self) {
             try await checkHashablePropertyLaws(
-                overEvery: Every.elements("m", in: (-3 ... 3).map(DollarMoney.init(cents:))))
+                overEvery: Every.elements("m", in: (-3 ... 3).map(DollarMoney.init(cents:)))
+            )
         }
     }
 
@@ -311,7 +331,8 @@ struct RareAntecedentTests {
         func check(_ range: ClosedRange<Int>) async -> Int {
             await seedsCaught { options in
                 _ = try await checkComparablePropertyLaws(
-                    using: Gen<Int>.int(in: range).map(AbsoluteOrder.init(cents:)), options: options, laws: .ownOnly)
+                    using: Gen<Int>.int(in: range).map(AbsoluteOrder.init(cents:)), options: options, laws: .ownOnly
+                )
             }
         }
         #expect(await check(-50 ... 50) == 20, "symmetric and narrow: caught every run")

@@ -1,6 +1,24 @@
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
+
+/// The summary's bucket order must not depend on `Dictionary` order, which is
+/// randomized per process. Ten tied buckets make a lucky pass a 1-in-3.6-million
+/// event rather than a coin toss.
+struct BucketLineOrderTests {
+
+    @Test("gap buckets list largest first, then ties by name")
+    func tiesSortByName() {
+        let tied = ["j", "c", "h", "a", "f", "d", "i", "b", "g", "e"]
+        var buckets = Dictionary(uniqueKeysWithValues: tied.map { ($0, 1) })
+        buckets["z"] = 5
+        #expect(PropertyLawDiscoveryTool.bucketLines(buckets) == [
+            "    [5] z",
+            "    [1] a", "    [1] b", "    [1] c", "    [1] d", "    [1] e",
+            "    [1] f", "    [1] g", "    [1] h", "    [1] i", "    [1] j",
+        ])
+    }
+}
 
 /// `todoCategory` buckets a `.todo` by substring-matching `TodoReason`'s prose,
 /// which makes the summary scoreboard silently wrong in two ways: a reworded
@@ -43,7 +61,7 @@ struct TodoCategoryTests {
     func privateMemberCategory() {
         let category = reason(for: structShape([
             StoredMember(name: "a", typeName: "Int"),
-            StoredMember(name: "secret", typeName: "Int", accessLevel: .private)
+            StoredMember(name: "secret", typeName: "Int", accessLevel: .private),
         ]))
         #expect(category == "access-restricted member (private/fileprivate)")
     }
@@ -52,7 +70,7 @@ struct TodoCategoryTests {
     func fileprivateMemberCategory() {
         let category = reason(for: structShape([
             StoredMember(name: "a", typeName: "Int"),
-            StoredMember(name: "b", typeName: "Int", accessLevel: .fileprivate)
+            StoredMember(name: "b", typeName: "Int", accessLevel: .fileprivate),
         ]))
         #expect(category == "access-restricted member (private/fileprivate)")
     }
@@ -110,10 +128,12 @@ struct TodoCategoryTests {
         let category = reason(for: structShape(
             [StoredMember(name: "a", typeName: "Int")],
             hasUserInit: true,
-            initializers: [InitializerSignature(
-                parameters: [InitializerParameter(label: "a", typeName: "Int")],
-                accessLevel: .private
-            )]
+            initializers: [
+                InitializerSignature(
+                    parameters: [InitializerParameter(label: "a", typeName: "Int")],
+                    accessLevel: .private
+                ),
+            ]
         ))
         #expect(category == "access-restricted initializer (private/fileprivate)")
     }
@@ -142,9 +162,11 @@ struct TodoCategoryTests {
     func enumPayloadCategory() {
         let category = reason(for: TypeShape(
             name: "Subject", kind: .enum, inheritedTypes: ["Equatable"], hasUserGen: false,
-            enumCases: [EnumCase(name: "c", associatedValues: [
-                InitializerParameter(label: nil, typeName: "UnsafeContinuation<Void, Error>")
-            ])]
+            enumCases: [
+                EnumCase(name: "c", associatedValues: [
+                    InitializerParameter(label: nil, typeName: "UnsafeContinuation<Void, Error>")
+                ]),
+            ]
         ))
         #expect(category == "enum payload type unresolved")
     }
@@ -153,9 +175,11 @@ struct TodoCategoryTests {
     func enumArityCategory() {
         let category = reason(for: TypeShape(
             name: "Subject", kind: .enum, inheritedTypes: ["Equatable"], hasUserGen: false,
-            enumCases: [EnumCase(name: "big", associatedValues: (0 ..< 11).map {
-                InitializerParameter(label: "v\($0)", typeName: "Int")
-            })]
+            enumCases: [
+                EnumCase(name: "big", associatedValues: (0 ..< 11).map {
+                    InitializerParameter(label: "v\($0)", typeName: "Int")
+                }),
+            ]
         ))
         #expect(category == "enum case over the arity limit")
     }
@@ -164,23 +188,5 @@ struct TodoCategoryTests {
     @Test("a non-todo strategy reports n/a")
     func derivedStrategyHasNoCategory() {
         #expect(PropertyLawDiscoveryTool.todoCategory(for: DerivationStrategy.caseIterable) == "n/a")
-    }
-}
-
-/// The summary's bucket order must not depend on `Dictionary` order, which is
-/// randomized per process. Ten tied buckets make a lucky pass a 1-in-3.6-million
-/// event rather than a coin toss.
-struct BucketLineOrderTests {
-
-    @Test("gap buckets list largest first, then ties by name")
-    func tiesSortByName() {
-        let tied = ["j", "c", "h", "a", "f", "d", "i", "b", "g", "e"]
-        var buckets = Dictionary(uniqueKeysWithValues: tied.map { ($0, 1) })
-        buckets["z"] = 5
-        #expect(PropertyLawDiscoveryTool.bucketLines(buckets) == [
-            "    [5] z",
-            "    [1] a", "    [1] b", "    [1] c", "    [1] d", "    [1] e",
-            "    [1] f", "    [1] g", "    [1] h", "    [1] i", "    [1] j"
-        ])
     }
 }

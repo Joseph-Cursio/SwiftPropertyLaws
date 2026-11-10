@@ -9,6 +9,6 @@
 //
 // M1+ additions land here: seeded generators for `Deque` / `OrderedSet` /
 // `OrderedDictionary` / `Heap` / `BitSet` / `TreeSet` / `TreeDictionary`
-// following the `Tests/PropertyLawKitTests/Helpers/Generators.swift`
+// following the `Tests/PropertyLawKitTests/Helpers/TestGen.swift`
 // conventions, then the new kit-defined law families (OrderPreservationLaws,
 // HeapLaws, DequeSymmetryLaws) per the workplan's M3.

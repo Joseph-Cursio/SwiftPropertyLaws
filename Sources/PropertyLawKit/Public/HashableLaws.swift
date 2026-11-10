@@ -37,7 +37,7 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable, Shrinker: Send
         results.append(contentsOf: [
             await checkEqualityConsistency(source: .sampling(generator), options: options),
             await checkStabilityWithinProcess(source: .sampling(generator), options: options, coverage: coverage),
-            await checkDistribution(generator: generator, options: options, coverage: coverage)
+            await checkDistribution(generator: generator, options: options, coverage: coverage),
         ])
         return results
     }
@@ -59,7 +59,7 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable, Shrinker: Send
 /// difference so it stays a decision rather than a drift.
 @discardableResult
 public func checkHashablePropertyLaws<Value: Hashable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -73,7 +73,7 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable>(
         }
         results.append(contentsOf: [
             await checkEqualityConsistency(source: .enumerated(carrier), options: options),
-            await checkStabilityWithinProcess(source: .enumerated(carrier), options: options, coverage: nil)
+            await checkStabilityWithinProcess(source: .enumerated(carrier), options: options, coverage: nil),
         ])
         return results
     }
@@ -117,6 +117,7 @@ private func checkStabilityWithinProcess<Value: Hashable & Sendable>(
         source: source,
         options: options,
         observation: PerLawDriver.Observation(classify: classify),
+        // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
         property: { sample in sample.hashValue == sample.hashValue },
         formatCounterexample: { sample, _ in
             "x = \(sample); hashValue returned \(sample.hashValue) "
@@ -158,8 +159,8 @@ private func checkDistribution<Value: Hashable & Sendable, Shrinker: SendableSeq
         if uniqueRatio < 0.10 {
             let sampleStr = lastSample.map { "\($0)" } ?? "<no samples>"
             let ratioStr = String(format: "%.3f", uniqueRatio)
-            return .failed(counterexample:
-                "\(count) samples produced only \(hashes.count) unique "
+            return .failed(
+                counterexample: "\(count) samples produced only \(hashes.count) unique "
                     + "hashValues (ratio \(ratioStr)); last sample: \(sampleStr)"
             )
         }

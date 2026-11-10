@@ -33,9 +33,7 @@ public enum TrialBudget: Sendable, Hashable {
         case .custom(let count): return count
         }
     }
-}
 
-extension TrialBudget {
     /// - Warning: Renamed. The name claimed a property of the *input space* and
     ///   delivered a property of the *loop* — ten thousand random draws, with
     ///   nothing exhausted. Use ``thorough`` for the tier, or
@@ -47,7 +45,7 @@ extension TrialBudget {
         Use .thorough for the 10 000-draw tier, .custom(trials:) for another count, \
         or walk an Enumeration for a run that can actually report its coverage.
         """)
-    public static func exhaustive(_ trials: Int = 10_000) -> TrialBudget {
+    public static func exhaustive(_ trials: Int = 10_000) -> Self {
         .custom(trials: trials)
     }
 }

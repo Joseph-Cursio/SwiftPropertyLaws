@@ -40,7 +40,7 @@ public func checkCaseIterablePropertyLaws<
 }
 
 private func checkExactlyOnce<Value: CaseIterable & Hashable & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(

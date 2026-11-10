@@ -22,7 +22,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
     try await runPropertyLawSuite(options: options) {
         [
             await checkHashStableUnderMutation(for: type, length: length, options: options),
-            await checkEqualityStableUnderMutation(for: type, length: length, options: options)
+            await checkEqualityStableUnderMutation(for: type, length: length, options: options),
         ]
     }
 }
@@ -32,7 +32,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
 /// `hashValue` must not change as the object is mutated. Checked after each
 /// step so the first identity-disturbing mutation is the counterexample.
 private func checkHashStableUnderMutation<Value: StableIdentity & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     length: ClosedRange<Int>,
     options: LawCheckOptions
 ) async -> CheckResult
@@ -64,7 +64,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
 /// Whether the object equals an independent, equal-valued twin must not change
 /// as the object is mutated.
 private func checkEqualityStableUnderMutation<Value: StableIdentity & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     length: ClosedRange<Int>,
     options: LawCheckOptions
 ) async -> CheckResult
@@ -106,7 +106,7 @@ private func stableIdentityDropOne<Mutation: Sendable>(_ script: [Mutation]) -> 
 }
 
 private func identityCounterexample<Value: StableIdentity>(
-    of type: Value.Type,
+    of _: Value.Type,
     script: [Value.Mutation],
     reads member: String
 ) -> String {

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// `KnownProtocol.set(from:)` reads an inheritance clause for both the macro
 /// and the discovery plugin, and adds two conformances the clause does not

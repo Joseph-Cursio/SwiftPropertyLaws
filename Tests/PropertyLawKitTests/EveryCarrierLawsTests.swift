@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// Running a whole suite once per carrier. The other entries vary a law's
 /// inputs; this one varies its subject.
@@ -15,6 +15,7 @@ struct EveryCarrierLawsTests {
         let elements: [Int]
         var startIndex: Int { 0 }
         var endIndex: Int { elements.count }
+
         func index(after position: Int) -> Int { position + 1 }
         subscript(position: Int) -> Int { elements[position] }
         /// Correct everywhere except length 7.
@@ -91,7 +92,7 @@ struct EveryCarrierLawsTests {
                 try await checkCollectionPropertyLaws(using: Gen.always(carrier), options: options)
             }
         } catch let violation as PropertyLawViolation {
-            reported = violation.results.first { $0.isViolation }
+            reported = violation.results.first(where: \.isViolation)
         } catch {}
         let result = try? #require(reported)
         #expect(result?.isViolation == true)
@@ -119,7 +120,7 @@ struct EveryCarrierLawsTests {
                 try await checkCollectionPropertyLaws(using: Gen.always(carrier), options: options)
             }
         } catch let violation as PropertyLawViolation {
-            reported = violation.results.first { $0.isViolation }
+            reported = violation.results.first(where: \.isViolation)
         } catch {}
         #expect(reported?.counterexample?.hasPrefix("length=count 7 — ") == true)
         #expect(reported?.coverage?.casesRun == 1, "got \(String(describing: reported?.coverage))")

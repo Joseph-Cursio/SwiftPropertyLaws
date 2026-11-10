@@ -26,7 +26,7 @@ enum RoundTripSuggester {
         ("marshal", "unmarshal"),
         ("pack", "unpack"),
         ("parse", "format"),
-        ("push", "pop")
+        ("push", "pop"),
     ]
 
     /// Walk per-type member functions and module-level free functions
@@ -89,7 +89,7 @@ enum RoundTripSuggester {
         }
 
         let confidence: SuggestionConfidence
-        if signatureInverse && (namedPair != nil || groupMatch) {
+        if signatureInverse, namedPair != nil || groupMatch {
             confidence = .high
         } else if signatureInverse {
             confidence = .medium
@@ -136,8 +136,8 @@ enum RoundTripSuggester {
         _ secondName: String
     ) -> (forward: String, backward: String)? {
         for entry in namePairs {
-            if entry.forward == firstName && entry.backward == secondName { return entry }
-            if entry.forward == secondName && entry.backward == firstName { return entry }
+            if entry.forward == firstName, entry.backward == secondName { return entry }
+            if entry.forward == secondName, entry.backward == firstName { return entry }
         }
         return nil
     }

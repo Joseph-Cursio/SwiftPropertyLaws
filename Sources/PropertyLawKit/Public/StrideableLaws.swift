@@ -50,7 +50,7 @@ public func checkStrideablePropertyLaws<
                 options: options
             ),
             await checkZeroAdvanceIdentity(generator: generator, options: options),
-            await checkSelfDistanceIsZero(generator: generator, options: options)
+            await checkSelfDistanceIsZero(generator: generator, options: options),
         ])
         return results
     }

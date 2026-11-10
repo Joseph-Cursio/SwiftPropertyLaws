@@ -1,6 +1,51 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+/// Test fixture: `Int`-wrapping `CommutativeMonoid` whose `combine` is
+/// addition and `identity` is 0. Positive control across the
+/// CommutativeMonoid suite.
+struct Tally: CommutativeMonoid, Equatable, Sendable, CustomStringConvertible {
+    let count: Int
+
+    static let identity = Self(count: 0)
+
+    static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+        Self(count: lhs.count &+ rhs.count)
+    }
+
+    var description: String { "Tally(\(count))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        Gen<Int>.int(in: -100...100).map { Self(count: $0) }
+    }
+}
+
+/// Negative control — string concatenation is associative + has identity
+/// (empty string) but is NOT commutative. Used in the
+/// `stringConcatFailsCommutativity` test to confirm the
+/// CommutativeMonoid law fires the Strict violation it should.
+///
+/// Defined here rather than reusing `StringMonoid` so the negative
+/// control's intent is unambiguous in the test name.
+struct NonCommutativeString: CommutativeMonoid, Equatable, Sendable, CustomStringConvertible {
+    let value: String
+
+    static let identity = Self(value: "")
+
+    static func combine(
+        _ lhs: Self,
+        _ rhs: Self
+    ) -> Self {
+        Self(value: lhs.value + rhs.value)
+    }
+
+    var description: String { "NCS(\(value))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        Gen<Character>.letterOrNumber.string(of: 1...4).map { Self(value: $0) }
+    }
+}
 
 struct CommutativeMonoidLawsTests {
 
@@ -52,7 +97,7 @@ struct CommutativeMonoidLawsTests {
             "Semigroup.combineAssociativity",
             "Monoid.combineLeftIdentity",
             "Monoid.combineRightIdentity",
-            "CommutativeMonoid.combineCommutativity"
+            "CommutativeMonoid.combineCommutativity",
         ])
     }
 
@@ -68,54 +113,5 @@ struct CommutativeMonoidLawsTests {
                 laws: .ownOnly
             )
         }
-    }
-}
-
-/// Test fixture: `Int`-wrapping `CommutativeMonoid` whose `combine` is
-/// addition and `identity` is 0. Positive control across the
-/// CommutativeMonoid suite.
-struct Tally: CommutativeMonoid, Equatable, Sendable, CustomStringConvertible {
-    let count: Int
-
-    static let identity = Tally(count: 0)
-
-    static func combine(_ lhs: Tally, _ rhs: Tally) -> Tally {
-        Tally(count: lhs.count &+ rhs.count)
-    }
-
-    var description: String { "Tally(\(count))" }
-}
-
-extension Tally {
-    static func gen() -> Generator<Tally, some SendableSequenceType> {
-        Gen<Int>.int(in: -100...100).map { Tally(count: $0) }
-    }
-}
-
-/// Negative control — string concatenation is associative + has identity
-/// (empty string) but is NOT commutative. Used in the
-/// `stringConcatFailsCommutativity` test to confirm the
-/// CommutativeMonoid law fires the Strict violation it should.
-///
-/// Defined here rather than reusing `StringMonoid` so the negative
-/// control's intent is unambiguous in the test name.
-struct NonCommutativeString: CommutativeMonoid, Equatable, Sendable, CustomStringConvertible {
-    let value: String
-
-    static let identity = NonCommutativeString(value: "")
-
-    static func combine(
-        _ lhs: NonCommutativeString,
-        _ rhs: NonCommutativeString
-    ) -> NonCommutativeString {
-        NonCommutativeString(value: lhs.value + rhs.value)
-    }
-
-    var description: String { "NCS(\(value))" }
-}
-
-extension NonCommutativeString {
-    static func gen() -> Generator<NonCommutativeString, some SendableSequenceType> {
-        Gen<Character>.letterOrNumber.string(of: 1...4).map { NonCommutativeString(value: $0) }
     }
 }

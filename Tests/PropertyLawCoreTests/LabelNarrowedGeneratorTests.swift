@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// **A parameter label can declare a domain the type does not.**
 ///
@@ -91,7 +91,7 @@ struct LabelNarrowedGeneratorTests {
         let source = emitted(
             shape("Pair", [
                 InitializerParameter(label: "ascii", typeName: "Unicode.Scalar"),
-                InitializerParameter(label: "other", typeName: "Unicode.Scalar")
+                InitializerParameter(label: "other", typeName: "Unicode.Scalar"),
             ])
         )
         #expect(source.contains("Gen<Unicode.Scalar>.asciiScalar()"))
@@ -106,7 +106,7 @@ struct LabelNarrowedGeneratorTests {
         let source = emitted(
             shape("User", [
                 InitializerParameter(label: "name", typeName: "String"),
-                InitializerParameter(label: "count", typeName: "Int")
+                InitializerParameter(label: "count", typeName: "Int"),
             ])
         )
         #expect(source == """

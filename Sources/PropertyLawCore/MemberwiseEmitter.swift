@@ -26,6 +26,8 @@
 /// port does.
 public enum MemberwiseEmitter {
 
+    /// The `zip(...).map { Type(...) }` expression that builds `typeName` through its
+    /// memberwise initializer, one generator per member.
     public static func expression(typeName: String, members: [MemberSpec]) -> String {
         compose(
             typeName: typeName,

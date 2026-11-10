@@ -56,7 +56,7 @@ public struct PropertyLawViolation: Error, Sendable, CustomStringConvertible {
         }
 
         guard !escalating.isEmpty else { return }
-        throw PropertyLawViolation(results: escalating)
+        throw Self(results: escalating)
     }
 
     /// A violation the enforcement mode has decided not to fail the test over — surfaced rather than

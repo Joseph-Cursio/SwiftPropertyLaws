@@ -1,5 +1,22 @@
 import Foundation
 
+/// Hands out the instance identifiers `MinimalIndex` uses for provenance.
+///
+/// A lock rather than an `Atomic` because this target's deployment floor predates
+/// `Synchronization`, and the cost is irrelevant: one increment per collection constructed.
+final class MinimalInstanceCounter: @unchecked Sendable {
+    private static let shared = MinimalInstanceCounter()
+    private let lock = NSLock()
+    private var next = 0
+
+    static func allocate() -> Int {
+        shared.lock.withLock {
+            shared.next += 1
+            return shared.next
+        }
+    }
+}
+
 /// An index that is *only* an index.
 ///
 /// `Array`'s index is `Int`, so a generic algorithm written against `Collection` can accidentally
@@ -21,8 +38,8 @@ public struct MinimalIndex: Comparable, Hashable, Sendable {
     internal let offset: Int
 
     private static func requireSameOwner(
-        _ lhs: MinimalIndex,
-        _ rhs: MinimalIndex,
+        _ lhs: Self,
+        _ rhs: Self,
         _ operation: StaticString
     ) {
         precondition(
@@ -35,12 +52,12 @@ public struct MinimalIndex: Comparable, Hashable, Sendable {
         )
     }
 
-    public static func == (lhs: MinimalIndex, rhs: MinimalIndex) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         requireSameOwner(lhs, rhs, "==")
         return lhs.offset == rhs.offset
     }
 
-    public static func < (lhs: MinimalIndex, rhs: MinimalIndex) -> Bool {
+    public static func < (lhs: Self, rhs: Self) -> Bool {
         requireSameOwner(lhs, rhs, "<")
         return lhs.offset < rhs.offset
     }
@@ -48,22 +65,5 @@ public struct MinimalIndex: Comparable, Hashable, Sendable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(owner)
         hasher.combine(offset)
-    }
-}
-
-/// Hands out the instance identifiers `MinimalIndex` uses for provenance.
-///
-/// A lock rather than an `Atomic` because this target's deployment floor predates
-/// `Synchronization`, and the cost is irrelevant: one increment per collection constructed.
-final class MinimalInstanceCounter: @unchecked Sendable {
-    private static let shared = MinimalInstanceCounter()
-    private let lock = NSLock()
-    private var next = 0
-
-    static func allocate() -> Int {
-        shared.lock.withLock {
-            shared.next += 1
-            return shared.next
-        }
     }
 }

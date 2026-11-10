@@ -60,7 +60,7 @@ public func checkBinaryIntegerPropertyLaws<
             await checkBitwiseAndDistributesOverOr(generator: generator, options: options),
             await checkBitwiseDeMorgan(generator: generator, options: options),
             await checkShiftByZeroIdentity(generator: generator, options: options),
-            await checkTrailingZeroBitCountRange(generator: generator, options: options)
+            await checkTrailingZeroBitCountRange(generator: generator, options: options),
         ])
         return results
     }

@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// `Unicode.Scalar` was an enum-payload blocker on the swift.org corpus and the
 /// only *stdlib* one in the tail — `Character` was already in the kit's
@@ -24,7 +24,7 @@ struct UnicodeScalarGeneratorTests {
     /// exist to control. Every band excludes it by construction.
     @Test("no sample lands in the surrogate range")
     func neverProducesSurrogates() {
-        for scalar in sample(count: 5000) {
+        for scalar in sample(count: 5_000) {
             #expect(scalar.value < 0xD800 || scalar.value > 0xDFFF,
                     "surrogate code point \(scalar.value) is not a valid scalar")
         }
@@ -33,7 +33,7 @@ struct UnicodeScalarGeneratorTests {
     /// Each band has to be reachable, or the weights are decoration.
     @Test("every band is reached")
     func everyBandIsReached() {
-        let values = sample(count: 5000).map(\.value)
+        let values = sample(count: 5_000).map(\.value)
         #expect(values.contains { (0x20 ... 0x7E).contains($0) }, "ASCII band unreached")
         #expect(values.contains { (0x00A0 ... 0x017F).contains($0) }, "Latin band unreached")
         #expect(values.contains { (0x0180 ... 0xD7FF).contains($0) }, "low-BMP band unreached")
@@ -46,7 +46,7 @@ struct UnicodeScalarGeneratorTests {
     /// out of reach again.
     @Test("ASCII is favoured without dominating")
     func asciiIsWeightedNotDominant() {
-        let values = sample(count: 5000).map(\.value)
+        let values = sample(count: 5_000).map(\.value)
         let ascii = Double(values.filter { (0x20 ... 0x7E).contains($0) }.count)
         let ratio = ascii / Double(values.count)
         #expect(ratio > 0.25, "ASCII ratio \(ratio) — the weighting is not taking effect")
@@ -57,12 +57,13 @@ struct UnicodeScalarGeneratorTests {
     /// classic place a "one scalar is one code unit" assumption breaks.
     @Test("astral scalars appear often enough to matter")
     func astralScalarsAppear() {
-        let astral = sample(count: 1000).filter { $0.value >= 0x10000 }
+        let astral = sample(count: 1_000).filter { $0.value >= 0x10000 }
         #expect(astral.count > 20, "only \(astral.count)/1000 astral scalars")
     }
 
     @Test("the same seed replays")
     func seededReplay() {
+        // swiftlint:disable:next identical_operands - one seed drawn twice must replay
         #expect(sample(count: 100).map(\.value) == sample(count: 100).map(\.value))
     }
 
@@ -76,7 +77,7 @@ struct UnicodeScalarGeneratorTests {
     /// a caller actually relies on when a scalar is an enum payload.
     @Test("every sample round-trips through String")
     func roundTripsThroughString() {
-        for scalar in sample(count: 1000) {
+        for scalar in sample(count: 1_000) {
             let string = String(scalar)
             #expect(string.unicodeScalars.count == 1)
             #expect(string.unicodeScalars.first == scalar)

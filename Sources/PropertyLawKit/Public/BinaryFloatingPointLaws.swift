@@ -38,14 +38,14 @@ public func checkBinaryFloatingPointPropertyLaws<
             await checkRadix2Constraint(type: type, options: options),
             await checkSignificandExponentReconstruction(generator: generator, options: options),
             await checkBinadeMembership(generator: generator, options: options),
-            await checkConvertingFromIntegerExactness(generator: generator, options: options)
+            await checkConvertingFromIntegerExactness(generator: generator, options: options),
         ])
         return results
     }
 }
 
 private func checkRadix2Constraint<Value: BinaryFloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -140,7 +140,7 @@ private func checkConvertingFromIntegerExactness<
         tier: .strict,
         options: options,
         check: LawCheck(
-            sample: { rng in Int.random(in: -1024...1024, using: &rng) },
+            sample: { rng in Int.random(in: -1_024...1_024, using: &rng) },
             property: { source in
                 guard let asValue = Value(exactly: source) else { return true }
                 guard let roundTripped = Int(exactly: asValue) else { return false }

@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// Tests for the `NaN`-reflexive `sameResult` oracle (book §8.1.4–8.1.7 slice).
 ///

@@ -44,11 +44,11 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
     /// Maps a single inheritance-clause type name to a `KnownProtocol`.
     /// `Encodable`/`Decodable` are intentionally absent — only the pair
     /// resolves to `.codable`, handled by `KnownProtocol.set(from:)`.
-    package static func from(typeName: String) -> KnownProtocol? {
+    package static func from(typeName: String) -> Self? {
         typeNameMap[typeName]
     }
 
-    private static let typeNameMap: [String: KnownProtocol] = [
+    private static let typeNameMap: [String: Self] = [
         "Equatable": .equatable,
         "Hashable": .hashable,
         "Comparable": .comparable,
@@ -81,7 +81,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         "CommutativeMonoid": .commutativeMonoid,
         "Group": .group,
         "Semilattice": .semilattice,
-        "Ring": .ring
+        "Ring": .ring,
     ]
 
     /// Resolve a list of raw inherited-type names into the recognized
@@ -91,8 +91,8 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
     /// Strideable type is by definition Comparable; auto-adding Comparable
     /// lets the macro/plugin emit `checkComparablePropertyLaws` for types
     /// that only spell `: Strideable` in their inheritance clause).
-    package static func set(from typeNames: [String]) -> Set<KnownProtocol> {
-        var result: Set<KnownProtocol> = []
+    package static func set(from typeNames: [String]) -> Set<Self> {
+        var result: Set<Self> = []
         var hasEncodable = false
         var hasDecodable = false
         for name in typeNames {
@@ -102,7 +102,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
             if name == "Encodable" { hasEncodable = true }
             if name == "Decodable" { hasDecodable = true }
         }
-        if hasEncodable && hasDecodable {
+        if hasEncodable, hasDecodable {
             result.insert(.codable)
         }
         if result.contains(.strideable) {
@@ -130,7 +130,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
     package static let unemittable: Set<KnownProtocol> = [
         .iteratorProtocol,
         .strideable,
-        .caseIterable
+        .caseIterable,
     ]
 
     /// Filters `protocols` down to its most-specific members per PRD §4.3
@@ -150,7 +150,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
     ///   so a type that's both Bidirectional and RangeReplaceable surfaces both
     ///   checks (one or the other inherits Collection's laws; the other can
     ///   pass `.ownOnly` if the user wants to dedupe further).
-    package static func mostSpecific(in protocols: Set<KnownProtocol>) -> Set<KnownProtocol> {
+    package static func mostSpecific(in protocols: Set<Self>) -> Set<Self> {
         var result = protocols
         for member in protocols {
             for subsumed in member.subsumedProtocols {
@@ -164,27 +164,35 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
     // names (e.g. the integer chains all include `.numeric`). Parallel List Drift pairs two such
     // per-case return sets as one drifted list — a false positive; these are distinct data.
     // swiftprojectlint:disable parallel-list-drift
-    private var subsumedProtocols: Set<KnownProtocol> {
+    private var subsumedProtocols: Set<Self> {
         switch self {
         case .hashable, .comparable: return [.equatable]
         case .strideable: return [.comparable]
         case .collection: return [.sequence, .iteratorProtocol]
         case .sequence: return [.iteratorProtocol]
+
         case .bidirectionalCollection:
             return [.collection, .sequence, .iteratorProtocol]
+
         case .randomAccessCollection:
             return [.bidirectionalCollection, .collection, .sequence, .iteratorProtocol]
+
         case .mutableCollection, .rangeReplaceableCollection:
             return [.collection, .sequence, .iteratorProtocol]
+
         case .numeric: return [.additiveArithmetic]
         case .signedNumeric: return [.numeric, .additiveArithmetic]
         case .binaryInteger: return [.numeric, .additiveArithmetic]
+
         case .signedInteger:
             return [.binaryInteger, .signedNumeric, .numeric, .additiveArithmetic]
+
         case .unsignedInteger:
             return [.binaryInteger, .numeric, .additiveArithmetic]
+
         case .fixedWidthInteger:
             return [.binaryInteger, .numeric, .additiveArithmetic]
+
         case .floatingPoint:
             // FloatingPoint refines SignedNumeric in stdlib but its
             // `checkFloatingPointPropertyLaws` does NOT auto-run the
@@ -194,8 +202,10 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
             // the inherited checks for `: FloatingPoint` types, which is
             // the desired behavior.
             return [.signedNumeric, .numeric, .additiveArithmetic]
+
         case .binaryFloatingPoint:
             return [.floatingPoint, .signedNumeric, .numeric, .additiveArithmetic]
+
         case .stringProtocol:
             // StringProtocol refines BidirectionalCollection in stdlib;
             // its own check auto-runs the BidirectionalCollection chain
@@ -205,17 +215,20 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
             // exercise different invariants — keep them un-subsumed so a
             // type spelled `: StringProtocol, Hashable` still emits both.
             return [.bidirectionalCollection, .collection, .sequence, .iteratorProtocol]
+
         case .monoid:
             // Monoid refines kit-defined Semigroup; checkMonoidPropertyLaws
             // runs Semigroup's combineAssociativity via .all, so a type
             // spelled `: Semigroup, Monoid` emits only the Monoid call.
             return [.semigroup]
+
         case .commutativeMonoid:
             // CommutativeMonoid refines Monoid; checkCommutativeMonoidPropertyLaws
             // runs Monoid's identity laws and Semigroup's associativity via .all,
             // so a type spelled `: Semigroup, Monoid, CommutativeMonoid` emits
             // only the CommutativeMonoid call.
             return [.monoid, .semigroup]
+
         case .group:
             // Group refines Monoid (independently of CommutativeMonoid — non-
             // commutative groups are valid); checkGroupPropertyLaws runs
@@ -226,12 +239,14 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
             // arms in the protocol DAG; see SwiftInferProperties M8 plan
             // open decision #6).
             return [.monoid, .semigroup]
+
         case .semilattice:
             // Semilattice refines CommutativeMonoid; checkSemilatticePropertyLaws
             // auto-recurses the full chain via .all, so a type spelled
             // `: Semigroup, Monoid, CommutativeMonoid, Semilattice` emits
             // only the Semilattice call.
             return [.commutativeMonoid, .monoid, .semigroup]
+
         case .ring:
             // Ring is standalone — its two operations (add / multiply) don't
             // share the chain's single `combine`, so it neither subsumes nor
@@ -239,6 +254,7 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
             // both Ring and (via a different op) Monoid surfaces both checks.
             // See Ring.swift and docs/Protocols/v1.10 plan.md "Why standalone".
             return []
+
         case .equatable, .codable, .iteratorProtocol, .setAlgebra,
              .rawRepresentable, .losslessStringConvertible, .identifiable,
              .caseIterable, .additiveArithmetic, .semigroup: return []
@@ -296,9 +312,6 @@ package enum KnownProtocol: String, CaseIterable, Hashable, Sendable {
         }
     }
 
-}
-
-extension KnownProtocol {
     /// `@Test func` name fragment — `<prefix>_<TypeName>` makes generated
     /// tests greppable in test output. It's `declarationName` with a
     /// lower-cased first letter (e.g. `IteratorProtocol` → `iteratorProtocol`),

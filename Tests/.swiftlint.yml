@@ -1,0 +1,5 @@
+# Test code may force-unwrap: a crash in a test is a test failure, and the
+# fixtures unwrap values they built a line earlier (`.map { $0! }` over a
+# generator of non-nil optionals, `universe.last!`).
+disabled_rules:
+  - force_unwrapping

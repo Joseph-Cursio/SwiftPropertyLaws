@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// `GeneratorResolver` reads a spelling the way Swift does: from the scope it
 /// was written in, innermost first, then module scope — never from an unrelated
@@ -37,7 +37,7 @@ struct ScopedTypeLookupTests {
     func foreignNameIsNotAScannedLeaf() {
         let resolver = GeneratorResolver(types: [
             shape("Document.Symbol", [("id", "Int")]),
-            shape("Summary", [("symbol", "Symbol")])
+            shape("Summary", [("symbol", "Symbol")]),
         ])
         #expect(resolver.customTypeGenerator(forTypeName: "Summary") == nil)
         #expect(resolver.resolutionFailure(forTypeName: "Symbol", within: "Summary") == .notInUniverse)
@@ -62,7 +62,7 @@ struct ScopedTypeLookupTests {
     func lexicalNameStillResolves() {
         let resolver = GeneratorResolver(types: [
             shape("BitSet.Counted", [("n", "Int")]),
-            shape("BitSet", [("counted", "Counted")])
+            shape("BitSet", [("counted", "Counted")]),
         ])
         #expect(
             resolver.customTypeGenerator(forTypeName: "BitSet")?.expression
@@ -98,7 +98,7 @@ struct ScopedTypeLookupTests {
             shape("Counted", [("s", "String")]),
             shape("BitSet.Counted", [("n", "Int")]),
             shape("BitSet", [("counted", "Counted")]),
-            shape("User", [("counted", "Counted")])
+            shape("User", [("counted", "Counted")]),
         ])
         let inside = resolver.customTypeGenerator(forTypeName: "BitSet")?.expression ?? ""
         #expect(inside.contains("BitSet.Counted(n:"))
@@ -111,7 +111,7 @@ struct ScopedTypeLookupTests {
     func walksOutwardThroughEnclosingScopes() {
         let resolver = GeneratorResolver(types: [
             shape("A.C", [("n", "Int")]),
-            shape("A.B", [("c", "C")])
+            shape("A.B", [("c", "C")]),
         ])
         #expect(
             resolver.customTypeGenerator(forTypeName: "A.B")?.expression
@@ -124,7 +124,7 @@ struct ScopedTypeLookupTests {
     func dottedSpellingWalksTheChain() {
         let resolver = GeneratorResolver(types: [
             shape("Outer.Inner.Kind", [("n", "Int")]),
-            shape("Outer", [("kind", "Inner.Kind")])
+            shape("Outer", [("kind", "Inner.Kind")]),
         ])
         #expect(
             resolver.customTypeGenerator(forTypeName: "Outer")?.expression
@@ -141,7 +141,7 @@ struct ScopedTypeLookupTests {
             shape("Kind", [("top", "Int")]),
             shape("Outer.Kind", [("a", "Int")]),
             shape("Outer.Kind", [("b", "String")]),
-            shape("Outer", [("kind", "Kind")])
+            shape("Outer", [("kind", "Kind")]),
         ])
         #expect(resolver.resolutionFailure(forTypeName: "Kind", within: "Outer") == .ambiguous)
         #expect(resolver.customTypeGenerator(forTypeName: "Outer") == nil)

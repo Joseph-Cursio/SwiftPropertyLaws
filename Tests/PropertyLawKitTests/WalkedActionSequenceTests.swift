@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// Walking action sequences — and measuring what it actually buys over
 /// sampling them, which turned out not to be what the design note assumed.
@@ -27,9 +27,11 @@ struct WalkedActionSequenceTests {
         var next = state
         switch move {
         case .deposit: next.balance += 1
+
         case .withdraw:
             if next.frozen { next.balance -= 1 }        // the bug: no balance check
             else if next.balance > 0 { next.balance -= 1 }
+
         case .freeze: next.frozen = true
         case .unfreeze: next.frozen = false
         }

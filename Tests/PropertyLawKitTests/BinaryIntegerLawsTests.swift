@@ -1,60 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
-
-struct BinaryIntegerLawsTests {
-
-    @Test func intsPassAllOwnLaws() async throws {
-        let results = try await checkBinaryIntegerPropertyLaws(
-            for: Int.self,
-            using: Gen<Int>.boundedForArithmetic(),
-            options: LawCheckOptions(budget: .sanity),
-            laws: .ownOnly
-        )
-        for result in results {
-            #expect(result.isViolation == false, "\(result.protocolLaw) should pass for Int")
-        }
-        #expect(results.count == 16)
-    }
-
-    @Test func uintsPassAllOwnLaws() async throws {
-        let results = try await checkBinaryIntegerPropertyLaws(
-            for: UInt.self,
-            using: Gen<UInt>.boundedForArithmetic(),
-            options: LawCheckOptions(budget: .sanity),
-            laws: .ownOnly
-        )
-        for result in results {
-            #expect(result.isViolation == false, "\(result.protocolLaw) should pass for UInt")
-        }
-    }
-
-    @Test func defaultLawSelectionRunsInheritedNumericFirst() async throws {
-        let results = try await checkBinaryIntegerPropertyLaws(
-            for: Int.self,
-            using: Gen<Int>.boundedForArithmetic(),
-            options: LawCheckOptions(budget: .sanity)
-        )
-        let laws = results.map(\.protocolLaw)
-        let firstBinaryIntegerIndex = laws.firstIndex { $0.hasPrefix("BinaryInteger.") }
-        #expect(firstBinaryIntegerIndex != nil)
-        let inheritedLaws = laws[..<firstBinaryIntegerIndex!]
-        #expect(inheritedLaws.contains { $0.hasPrefix("AdditiveArithmetic.") })
-        #expect(inheritedLaws.contains { $0.hasPrefix("Numeric.") })
-        // 5 AdditiveArithmetic + 6 Numeric = 11 inherited
-        #expect(inheritedLaws.count == 11)
-    }
-
-    @Test func tiersAreReportedAsStrict() async throws {
-        let results = try await checkBinaryIntegerPropertyLaws(
-            for: Int.self,
-            using: Gen<Int>.boundedForArithmetic(),
-            options: LawCheckOptions(budget: .sanity),
-            laws: .ownOnly
-        )
-        #expect(results.allSatisfy { $0.tier == .strict })
-    }
-}
+import Testing
 
 struct SignedIntegerLawsTests {
 
@@ -121,7 +67,61 @@ struct UnsignedIntegerLawsTests {
         let names = Set(results.map(\.protocolLaw))
         #expect(names == [
             "UnsignedInteger.nonNegative",
-            "UnsignedInteger.magnitudeIsSelf"
+            "UnsignedInteger.magnitudeIsSelf",
         ])
+    }
+}
+
+struct BinaryIntegerLawsTests {
+
+    @Test func intsPassAllOwnLaws() async throws {
+        let results = try await checkBinaryIntegerPropertyLaws(
+            for: Int.self,
+            using: Gen<Int>.boundedForArithmetic(),
+            options: LawCheckOptions(budget: .sanity),
+            laws: .ownOnly
+        )
+        for result in results {
+            #expect(result.isViolation == false, "\(result.protocolLaw) should pass for Int")
+        }
+        #expect(results.count == 16)
+    }
+
+    @Test func uintsPassAllOwnLaws() async throws {
+        let results = try await checkBinaryIntegerPropertyLaws(
+            for: UInt.self,
+            using: Gen<UInt>.boundedForArithmetic(),
+            options: LawCheckOptions(budget: .sanity),
+            laws: .ownOnly
+        )
+        for result in results {
+            #expect(result.isViolation == false, "\(result.protocolLaw) should pass for UInt")
+        }
+    }
+
+    @Test func defaultLawSelectionRunsInheritedNumericFirst() async throws {
+        let results = try await checkBinaryIntegerPropertyLaws(
+            for: Int.self,
+            using: Gen<Int>.boundedForArithmetic(),
+            options: LawCheckOptions(budget: .sanity)
+        )
+        let laws = results.map(\.protocolLaw)
+        let firstBinaryIntegerIndex = laws.firstIndex { $0.hasPrefix("BinaryInteger.") }
+        #expect(firstBinaryIntegerIndex != nil)
+        let inheritedLaws = laws[..<firstBinaryIntegerIndex!]
+        #expect(inheritedLaws.contains { $0.hasPrefix("AdditiveArithmetic.") })
+        #expect(inheritedLaws.contains { $0.hasPrefix("Numeric.") })
+        // 5 AdditiveArithmetic + 6 Numeric = 11 inherited
+        #expect(inheritedLaws.count == 11)
+    }
+
+    @Test func tiersAreReportedAsStrict() async throws {
+        let results = try await checkBinaryIntegerPropertyLaws(
+            for: Int.self,
+            using: Gen<Int>.boundedForArithmetic(),
+            options: LawCheckOptions(budget: .sanity),
+            laws: .ownOnly
+        )
+        #expect(results.allSatisfy { $0.tier == .strict })
     }
 }

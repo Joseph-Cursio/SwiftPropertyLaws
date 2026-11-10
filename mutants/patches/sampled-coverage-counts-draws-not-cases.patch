@@ -1,7 +1,7 @@
-diff --git a/Sources/PropertyLawKit/Internal/SpaceSampling.swift b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+diff --git a/Sources/PropertyLawKit/Internal/SpaceSampler.swift b/Sources/PropertyLawKit/Internal/SpaceSampler.swift
 index 2136ab4..d0d9bcb 100644
---- a/Sources/PropertyLawKit/Internal/SpaceSampling.swift
-+++ b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+--- a/Sources/PropertyLawKit/Internal/SpaceSampler.swift
++++ b/Sources/PropertyLawKit/Internal/SpaceSampler.swift
 @@ -34,7 +34,7 @@ final class DrawnCombinations: @unchecked Sendable {
  
      func record(_ indices: [Int]) {

@@ -10,7 +10,7 @@ import PropertyBased
 /// `totality` (Conventional), `operatorConsistency` (Strict).
 @discardableResult
 public func checkComparablePropertyLaws<Value: Comparable & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -32,7 +32,7 @@ public func checkComparablePropertyLaws<Value: Comparable & Sendable, Shrinker: 
 /// work; `Comparable` is the third protocol whose laws need equal values.
 @discardableResult
 public func checkComparablePropertyLaws<Value: Comparable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -59,7 +59,7 @@ func checkComparablePropertyLaws<Value: Comparable & Sendable>(
             await checkAntisymmetry(source: source, options: options),
             await checkTransitivity(source: source, options: options),
             await checkTotality(source: source, options: options),
-            await checkOperatorConsistency(source: source, options: options)
+            await checkOperatorConsistency(source: source, options: options),
         ])
         return results
     }
@@ -82,6 +82,7 @@ private func checkIrreflexivity<Value: Comparable & Sendable>(
         "Comparable.irreflexivity",
         source: source,
         options: options,
+        // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
         property: { sample in !(sample < sample) },
         formatCounterexample: { sample, _ in
             "x = \(sample); x < x evaluated to true, but `<` must be a strict order "
@@ -194,7 +195,7 @@ private func operatorConsistencyCounterexample<Value: Comparable>(
         return "x = \(first), y = \(second); x >= y → \(greaterOrEqual) "
             + "but y <= x → \(second <= first)"
     }
-    if lessThan && !lessOrEqual {
+    if lessThan, !lessOrEqual {
         return "x = \(first), y = \(second); x < y but !(x <= y)"
     }
     return nil

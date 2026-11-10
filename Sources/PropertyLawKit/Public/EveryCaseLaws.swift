@@ -49,7 +49,7 @@ public func checkEveryCase<Element: Sendable>(
                 options: options,
                 space: space,
                 property: property
-            )
+            ),
         ]
     }
 }
@@ -95,7 +95,7 @@ public func checkSampledCases<Element: Sendable>(
                 options: options,
                 property: property,
                 formatCounterexample: { element, _ in "\(element)" }
-            )
+            ),
         ]
     }
 }

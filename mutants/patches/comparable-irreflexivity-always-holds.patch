@@ -1,11 +1,11 @@
 diff --git a/Sources/PropertyLawKit/Public/ComparableLaws.swift b/Sources/PropertyLawKit/Public/ComparableLaws.swift
-index 28904ec..8b78657 100644
+index 90a0b35..89c3c4a 100644
 --- a/Sources/PropertyLawKit/Public/ComparableLaws.swift
 +++ b/Sources/PropertyLawKit/Public/ComparableLaws.swift
-@@ -82,7 +82,7 @@ private func checkIrreflexivity<Value: Comparable & Sendable>(
-         "Comparable.irreflexivity",
+@@ -83,7 +83,7 @@ private func checkIrreflexivity<Value: Comparable & Sendable>(
          source: source,
          options: options,
+         // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
 -        property: { sample in !(sample < sample) },
 +        property: { _ in true },
          formatCounterexample: { sample, _ in

@@ -12,14 +12,19 @@ enum PluginError: Error, Equatable, CustomStringConvertible {
         switch self {
         case .missingSubcommand:
             return "missing subcommand. Try: swift package propertylawcheck discover --target <name>"
+
         case .unknownSubcommand(let name):
             return "unknown subcommand: \(name). Available: discover"
+
         case .missingFlag(let flag):
             return "missing required flag \(flag)"
+
         case .unknownArgument(let arg):
             return "unknown argument: \(arg)"
+
         case .unknownTarget(let name):
             return "no target named \(name) in this package"
+
         case .toolFailed(let status):
             return "PropertyLawDiscoveryTool exited with status \(status)"
         }

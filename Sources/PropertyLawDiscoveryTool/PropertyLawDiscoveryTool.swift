@@ -10,7 +10,7 @@ import PropertyLawCore
 /// `ConformanceMap`, applies any suppression markers found in an existing
 /// output file, and writes the rendered output.
 @main
-struct PropertyLawDiscoveryTool {
+enum PropertyLawDiscoveryTool {
     static func main() throws {
         let args = Array(CommandLine.arguments.dropFirst())
         if args.isEmpty || args.first == "--help" || args.first == "-h" {
@@ -236,7 +236,7 @@ struct PropertyLawDiscoveryTool {
         ("declares no cases", "caseless enum (uninhabited)"),
         ("associated values; case enumeration", "enum case over the arity limit"),
         ("associated value of type", "enum payload type unresolved"),
-        ("neither `CaseIterable` nor", "enum cases not captured")
+        ("neither `CaseIterable` nor", "enum cases not captured"),
     ]
 
     /// Render advisory suggestions as Swift-compiler-style `note:` lines

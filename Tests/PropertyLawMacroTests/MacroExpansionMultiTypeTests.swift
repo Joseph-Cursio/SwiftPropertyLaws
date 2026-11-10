@@ -1,7 +1,7 @@
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 struct MacroExpansionMultiTypeTests {
 
@@ -57,7 +57,7 @@ struct MacroExpansionMultiTypeTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: testMacros
         )

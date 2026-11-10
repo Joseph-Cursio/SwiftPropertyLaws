@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct SuppressionTests {
 
@@ -76,12 +76,12 @@ struct SuppressionTests {
                     .intentionalViolation(
                         .equatable(.reflexivity),
                         reason: "anti-reflexive by design"
-                    )
+                    ),
                 ]
             )
         )
         let reflexivity = try #require(results.first { $0.protocolLaw == "Equatable.reflexivity" })
-        if case .expectedViolation(let reason, let counterexample) = reflexivity.outcome {
+        if case let .expectedViolation(reason, counterexample) = reflexivity.outcome {
             #expect(reason == "anti-reflexive by design")
             #expect(counterexample.contains("x == x evaluated to false"))
         } else {
@@ -105,7 +105,7 @@ struct SuppressionTests {
                     .intentionalViolation(
                         .equatable(.reflexivity),
                         reason: "should not actually trigger"
-                    )
+                    ),
                 ]
             )
         )

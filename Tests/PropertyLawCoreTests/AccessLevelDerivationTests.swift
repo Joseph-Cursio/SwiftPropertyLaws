@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Swift gives the synthesized memberwise initializer the access level of the
 /// narrowest stored property. Memberwise derivation calls that initializer, so a
@@ -176,7 +176,7 @@ struct AccessLevelDerivationTests {
     func accessOutranksUnknownType() {
         let subject = shape([
             member("secret", "Int", .private),
-            member("opaque", "SomeUnknownType")
+            member("opaque", "SomeUnknownType"),
         ])
         guard case .todo(let reason) = DerivationStrategist.strategy(for: subject) else {
             Issue.record("expected .todo")
@@ -193,7 +193,7 @@ struct AccessLevelDerivationTests {
         #expect([
             member("a", "Int", .public),
             member("b", "Int", .fileprivate),
-            member("c", "Int", .internal)
+            member("c", "Int", .internal),
         ].synthesizedMemberwiseInitAccess == .fileprivate)
     }
 
@@ -203,7 +203,7 @@ struct AccessLevelDerivationTests {
     func cappedAtInternal() {
         #expect([
             member("a", "Int", .public),
-            member("b", "Int", .open)
+            member("b", "Int", .open),
         ].synthesizedMemberwiseInitAccess == .internal)
     }
 

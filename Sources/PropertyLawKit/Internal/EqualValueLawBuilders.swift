@@ -22,14 +22,16 @@ package func runEqualValueBinaryLaw<Value: Sendable>(
     guard case .sampled(let sample) = source, let lookback = options.equalValuePairing.lookback else {
         return await runBinaryLaw(
             protocolLaw, tier: tier, source: source, options: options,
-            property: property, formatCounterexample: formatCounterexample, shrink: shrink)
+            property: property, formatCounterexample: formatCounterexample, shrink: shrink
+        )
     }
     return await DrawPoolDriver.runPairs(
         DrawPoolDriver.Identity(protocolLaw: protocolLaw, tier: tier),
         options: options,
         lookback: lookback,
         check: DrawPoolDriver.PairCheck(
-            sample: sample, property: property, formatCounterexample: formatCounterexample, shrink: shrink)
+            sample: sample, property: property, formatCounterexample: formatCounterexample, shrink: shrink
+        )
     )
 }
 
@@ -47,7 +49,8 @@ package func runEqualityChainLaw<Value: Equatable & Sendable>(
     guard case .sampled(let sample) = source, let lookback = options.equalValuePairing.lookback else {
         return await runTernaryLaw(
             protocolLaw, source: source, options: options,
-            property: property, formatCounterexample: formatCounterexample, shrink: shrink)
+            property: property, formatCounterexample: formatCounterexample, shrink: shrink
+        )
     }
     return await DrawPoolDriver.runChains(
         DrawPoolDriver.Identity(protocolLaw: protocolLaw, tier: .strict),
@@ -55,6 +58,7 @@ package func runEqualityChainLaw<Value: Equatable & Sendable>(
         lookback: lookback,
         check: DrawPoolDriver.ChainCheck(
             sample: sample, link: { $0 == $1 }, property: property,
-            formatCounterexample: formatCounterexample, shrink: shrink)
+            formatCounterexample: formatCounterexample, shrink: shrink
+        )
     )
 }

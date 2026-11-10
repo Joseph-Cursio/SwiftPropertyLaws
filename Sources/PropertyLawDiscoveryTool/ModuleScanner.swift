@@ -1,8 +1,8 @@
 import Foundation
 import PropertyLawCore
 import PropertyLawSyntaxSupport
-import SwiftSyntax
 import SwiftParser
+import SwiftSyntax
 
 /// Walks every `.swift` file in a target and aggregates type declarations
 /// + their inheritance clauses (including extensions in other files) into
@@ -129,11 +129,12 @@ enum ModuleScanner {
         sourceFiles: [String],
         contextFiles: [String]
     ) -> [ScannedFile] {
-        contextFiles.sorted().map(attributed)
+        let context = contextFiles
+            .sorted()
+            .map(attributed)
             .map { ScannedFile(path: $0.path, module: $0.module, isContext: true) }
-            + sourceFiles.sorted().map {
-                ScannedFile(path: $0, module: nil, isContext: false)
-            }
+        let target = sourceFiles.sorted().map { ScannedFile(path: $0, module: nil, isContext: false) }
+        return context + target
     }
 
     /// One file the scan will read, and what the scan knows about where it came
@@ -223,7 +224,7 @@ enum ModuleScanner {
         var enumCases: [EnumCase] = []
         /// Element-wise OR of witnesses seen in primary decl + every
         /// extension. PRD §5.4 advisory suggestions read from here.
-        var witnesses: WitnessSet = WitnessSet()
+        var witnesses = WitnessSet()
         /// Concatenation of member function signatures seen across the
         /// primary decl and every extension. Order is the scan order
         /// (file path ascending, declaration order within each file)
@@ -265,14 +266,16 @@ enum ModuleScanner {
         // struct is still a fine *member* type for a public type's generator,
         // and dropping it from the resolver universe would cost derivations
         // that compile perfectly well. Only the emitted suite goes away.
-        let usable = perType.keys.sorted().filter {
-            perType[$0]!.seenInTarget
-                && skipReason(for: perType[$0]!, sendableProtocols: sendableProtocols) == nil
+        let usable = perType.sorted { $0.key < $1.key }.filter { _, aggregate in
+            aggregate.seenInTarget
+                && skipReason(for: aggregate, sendableProtocols: sendableProtocols) == nil
         }
-        return usable.map { typeName -> ConformanceMap.Entry in
-            let aggregate = perType[typeName]!
+        return usable.map { typeName, aggregate -> ConformanceMap.Entry in
             let raw = KnownProtocol.set(from: aggregate.inheritedNames)
-            let shape = shapesByName[typeName]!
+            // `makeShapes(from:)` builds one shape per key of `perType`.
+            guard let shape = shapesByName[typeName] else {
+                preconditionFailure("no TypeShape for scanned type \(typeName)")
+            }
             return ConformanceMap.Entry(
                 typeName: typeName,
                 conformances: KnownProtocol.mostSpecific(
