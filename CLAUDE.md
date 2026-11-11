@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**The discovery tool's `main()` is testable, and its mutation score is 100% (2026-11-11, issue #88).** `main()` is now one line that calls `PropertyLawDiscoveryTool.run(arguments:output:)` with the process's arguments and `ToolOutput.standard`. `ToolOutput` holds a writer closure for each stream, and a test passes closures that collect the text. The summary and the two advisory printers became `summaryLines`, `advisoryLines` and `roundTripLines`, which return lines instead of writing them, and `usage` is a `static let`. They stay in `PropertyLawDiscoveryTool.swift`, so the `summary-ties-in-dictionary-order` corpus patch still applies. `ToolRunTests` drives `run` the way the plugin does, `SummaryLinesTests` compares whole lines, and `ToolOutputTests` pins the empty-input guard `run` never reaches.
+
+swift-mutation-testing, at the default tier: 123 mutants (121 plus `ToolOutput`'s two), 123 killed. Before this change, 110 of 121 were killed and 11 were uncovered. **An independent review found two gaps the operators cannot reach.** `run` passes `--advisory-min`, `--context-files` and `--extra-import` to calls whose parameters have defaults, so a `run` that dropped one still compiled and passed every test. `advisoryMinLowersTheRoundTripFloor` and `contextFilesAndExtraImportsReachTheGeneratedFile` now kill each of those three mutants, applied by hand. Dropping the floor from the `AdvisorySuggester` call is an equivalent mutant: every suggestion that detector makes is `high`, so no floor changes its output. 1,318 tests.
+
 **SwiftLint rules come from the shared `../SwiftLintConfig` (2026-11-10).** `.swiftlint.yml` lists only this package's paths; every rule decision lives in SwiftLintConfig (https://github.com/Joseph-Cursio/SwiftLintConfig), cloned beside this repo, and is changed there, never here. `Tests/.swiftlint.yml` is gone, so tests follow `force_unwrapping` too: they use `try #require`, `guard let`, or a one-line waiver where the unwrap is part of a verbatim copy of emitted code. The per-repo exceptions in the entry below are superseded:
 - **`function_default_parameter_at_end` is on.** The 64 public law checks keep `for type:` first until the next major version, so `swiftlint lint` reports them as known debt. Everything non-public was fixed: the package-level `run…Law` builders take `tier:` and `observation:` after `formatCounterexample:`.
 - **`identifier_name` is back to a 40-character limit.** `SetAlgebraLaw.formSymmetricDifferenceMatchesSymmetricDifference` (49) is a public case whose raw value is the law name users suppress by, so renaming it waits for the same major version. Those 65 are the only lint findings.
@@ -86,7 +90,7 @@ Four remain. Three are in `QualifiedTypeName`, which only the discovery-tool tes
 - the alphabetical orientation of a signature-only pair,
 - the blank line between two emitted tests.
 
-With the new tests none survive, and the score went from 79.3% to 90.9%. The 11 uncovered mutants are all in `PropertyLawDiscoveryTool.main()` and the summary it prints, which no test calls.
+With the new tests none survive, and the score went from 79.3% to 90.9%. The 11 uncovered mutants are all in `PropertyLawDiscoveryTool.main()` and the summary it prints, which no test calls. *(Covered since: see the issue #88 entry above.)*
 
 The tool copies the package to a sandbox and never mutates the checkout. The sandbox does not reuse `.build`, so every run starts with a cold build; the schema build took 61 s here, against a 120 s default timeout, so pass a longer one. Build the tool from source (`swift build -c release` in its checkout) and run, from this repo:
 
