@@ -69,7 +69,7 @@ The first run per package resolves its dependencies into the copy and builds the
 
 **Sitrep can no longer be scanned at `ae446f9`.** That revision requires swift-syntax `602.0.0..<603.0.0`, and SwiftPropertyLaws has required 603 since 2026-10-30, so the copy fails to resolve. Its committed results predate the move and are still accurate: no suites, nothing to regenerate.
 
-**Only `ArgumentParser.generated.swift` was regenerated on 2026-11-11**, to pick up the corrected indentation of multi-line generators (issue #90), and its diff was whitespace only. `AWSLambdaRuntime` reproduced byte for byte. `Hummingbird.generated.swift` still has the old indentation: its enum `Gen.oneOf(` cases sit at column 4.
+**Only `ArgumentParser.generated.swift` was regenerated on 2026-11-11**, to pick up the corrected indentation of multi-line generators (issue #90, and the `ExpressionLayout` convention that followed it). Each diff was whitespace only. `AWSLambdaRuntime` reproduced byte for byte: its multi-line generators are all memberwise, whose `.map` lands at column 12 under either convention, and it has no `Gen.oneOf(`. `Hummingbird.generated.swift` still has the old layout: its enum `Gen.oneOf(` cases sit at column 4, and a payload case's `.map` at column 12 under a `zip(` at 4. A rerun with its dependencies resolved as they were would change only that whitespace.
 
 ## Pass 2: law checks against external code
 

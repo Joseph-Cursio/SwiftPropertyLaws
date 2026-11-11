@@ -379,10 +379,10 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
                 zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-            ))
-                        .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+                    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+                ))
+                .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
             ).array(of: 0...8).map { InputOrigin(elements: $0) }
         )
     }
@@ -396,10 +396,10 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
                 zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-            ))
-                        .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+                    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+                ))
+                .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
             )
         )
     }
@@ -410,10 +410,10 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
                 zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-            ))
-                        .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+                    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+                ))
+                .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
             )
         )
     }
@@ -460,7 +460,7 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
                 zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
                 Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
             )
         )
@@ -472,7 +472,7 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
                 zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
                 Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
             )
         )
@@ -504,12 +504,12 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
                 zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
-                        .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
+                .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
                 Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
                 zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-                        .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
                 zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
-                        .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
+                .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
             ).map { NameSpecification.Element(base: $0) }
         )
     }
@@ -523,12 +523,12 @@ import PropertyLawKit
             using: Gen.oneOf(
                 Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
                 zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
-                        .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
+                .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
                 Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
                 zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-                        .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
                 zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
-                        .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
+                .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
             )
         )
     }
@@ -562,18 +562,18 @@ import PropertyLawKit
             for: ParsedArgument.self,
             using: Gen.oneOf(
                 Gen.oneOf(
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-            ).map { ParsedArgument.name($0) }.eraseToAny(),
+                    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                    .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                ).map { ParsedArgument.name($0) }.eraseToAny(),
                 zip(Gen.oneOf(
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-            ), Gen<Character>.letterOrNumber.string(of: 0...8))
-                        .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+                    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                    .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                ), Gen<Character>.letterOrNumber.string(of: 0...8))
+                .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
             )
         )
     }
@@ -645,27 +645,27 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: SplitArguments.self,
             using: zip(zip(Gen.oneOf(
-    Gen.oneOf(
-    Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-).map { ParsedArgument.name($0) }.eraseToAny(),
-    zip(Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-), Gen<Character>.letterOrNumber.string(of: 0...8))
-            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
-).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
-    Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
-), zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
+                Gen.oneOf(
+                    Gen.oneOf(
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                        zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                    ).map { ParsedArgument.name($0) }.eraseToAny(),
+                    zip(Gen.oneOf(
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                        zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                    ), Gen<Character>.letterOrNumber.string(of: 0...8))
+                    .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+                ).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
+                Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
+            ), zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
             .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) })
             .map { SplitArguments.Element(value: $0.0, index: $0.1) }.array(of: 0...8), Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8))
             .map { SplitArguments(_elements: $0.0, firstUnused: $0.1, originalInput: $0.2) }
@@ -679,27 +679,27 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: SplitArguments.Element.self,
             using: zip(Gen.oneOf(
-    Gen.oneOf(
-    Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-).map { ParsedArgument.name($0) }.eraseToAny(),
-    zip(Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-), Gen<Character>.letterOrNumber.string(of: 0...8))
-            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
-).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
-    Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
-), zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
+                Gen.oneOf(
+                    Gen.oneOf(
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                        zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                    ).map { ParsedArgument.name($0) }.eraseToAny(),
+                    zip(Gen.oneOf(
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                        zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                    ), Gen<Character>.letterOrNumber.string(of: 0...8))
+                    .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+                ).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
+                Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
+            ), zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
             .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) })
             .map { SplitArguments.Element(value: $0.0, index: $0.1) }
         )
@@ -713,20 +713,20 @@ import PropertyLawKit
             for: SplitArguments.Element.Value.self,
             using: Gen.oneOf(
                 Gen.oneOf(
-                Gen.oneOf(
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                    Gen.oneOf(
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                        zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
                         .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-            ).map { ParsedArgument.name($0) }.eraseToAny(),
-                zip(Gen.oneOf(
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                    ).map { ParsedArgument.name($0) }.eraseToAny(),
+                    zip(Gen.oneOf(
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                        zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
                         .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-            ), Gen<Character>.letterOrNumber.string(of: 0...8))
-                        .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
-            ).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+                        Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+                    ), Gen<Character>.letterOrNumber.string(of: 0...8))
+                    .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+                ).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
                 Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
                 Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
             )
@@ -740,9 +740,9 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: SplitArguments.Index.self,
             using: zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
             .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }
         )
     }
@@ -751,9 +751,9 @@ import PropertyLawKit
         try await checkComparablePropertyLaws(
             for: SplitArguments.Index.self,
             using: zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
             .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }
         )
     }

@@ -11,7 +11,13 @@
 ///
 ///     // 2+ members (zip + tuple-positional map):
 ///     zip(Gen<Int>.int(), Gen<Int>.int())
-///         .map { TypeName(easting: $0.0, northing: $0.1) }
+///     .map { TypeName(easting: $0.0, northing: $0.1) }
+///
+/// The `.map` line sits under the `zip(` line, at column 0: the expression
+/// follows `ExpressionLayout`, and whoever places it moves the `.map` to the
+/// column of the line it lands on. A member generator that spans lines needs
+/// no moving inside the `zip(`, because it starts on a line at column 0, the
+/// `zip(` line or the last line of the member before it.
 ///
 /// The 2+ shape uses the single-arg `Generator.map` overload that
 /// receives the tuple as `$0` and reads positional fields with `$0.N`,
@@ -38,8 +44,8 @@ public enum MemberwiseEmitter {
     /// Shared `zip(...).map { Type(...) }` composer for any list of labeled
     /// generators — used by memberwise derivation (labels = stored-property
     /// names) and the Tier 6 `initializerBased` strategy (labels = init
-    /// argument labels, `nil` for unlabeled `_` parameters). Output is
-    /// byte-identical to the previous memberwise emitter for non-nil labels.
+    /// argument labels, `nil` for unlabeled `_` parameters). Both strategies
+    /// get the same text from here, so they cannot drift apart.
     static func compose(
         typeName: String,
         arguments: [(label: String?, expression: String)]
@@ -63,8 +69,8 @@ public enum MemberwiseEmitter {
         return nestedZip(typeName: typeName, arguments: arguments)
     }
 
-    /// The flat 2–10 shape: `zip(g0, …).map { T(l0: $0.0, …) }`. Byte-identical
-    /// to the pre-nesting emitter.
+    /// The flat 2–10 shape: `zip(g0, …).map { T(l0: $0.0, …) }`, with the
+    /// `.map` on its own line at column 0.
     private static func flatZip(
         typeName: String,
         arguments: [(label: String?, expression: String)]
@@ -73,7 +79,7 @@ public enum MemberwiseEmitter {
         let callArguments = arguments.enumerated()
             .map { index, argument in callArgument(argument, value: "$0.\(index)") }
             .joined(separator: ", ")
-        return "zip(\(generators))\n            .map { \(typeName)(\(callArguments)) }"
+        return "zip(\(generators))\n.map { \(typeName)(\(callArguments)) }"
     }
 
     /// The 11–100 shape: chunk into groups of ≤`memberwiseArityLimit`, `zip` each
@@ -82,7 +88,7 @@ public enum MemberwiseEmitter {
     /// no arity ceiling, so only `zip` itself is bounded — hence the nesting.
     ///
     ///     zip(zip(g0, …, g9), g10)
-    ///                 .map { T(m0: $0.0.0, …, m9: $0.0.9, m10: $0.1) }
+    ///     .map { T(m0: $0.0.0, …, m9: $0.0.9, m10: $0.1) }
     private static func nestedZip(
         typeName: String,
         arguments: [(label: String?, expression: String)]
@@ -104,7 +110,7 @@ public enum MemberwiseEmitter {
             }
         }
         return "zip(\(groupGenerators.joined(separator: ", ")))"
-            + "\n            .map { \(typeName)(\(callArguments.joined(separator: ", "))) }"
+            + "\n.map { \(typeName)(\(callArguments.joined(separator: ", "))) }"
     }
 
     private static func callArgument(

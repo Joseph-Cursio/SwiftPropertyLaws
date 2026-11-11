@@ -49,7 +49,7 @@ struct InitializerBasedDerivationTests {
         ])
         let expected = """
             zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Int>.int())
-                        .map { User(name: $0.0, count: $0.1) }
+            .map { User(name: $0.0, count: $0.1) }
             """
         #expect(emitted(shape) == expected)
     }
@@ -70,7 +70,7 @@ struct InitializerBasedDerivationTests {
         ])
         let expected = """
             zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8))
-                        .map { Tagged($0.0, label: $0.1) }
+            .map { Tagged($0.0, label: $0.1) }
             """
         #expect(emitted(shape) == expected)
     }

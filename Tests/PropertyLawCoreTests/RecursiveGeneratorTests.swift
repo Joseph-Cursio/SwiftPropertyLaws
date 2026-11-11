@@ -156,9 +156,10 @@ struct RecursiveGeneratorTests {
         #expect(RecursiveGeneratorEmitter.baseArm(expression: expression, typeName: "Node") == nil)
     }
 
-    /// A memberwise expression continues `.map` on its own line. The first
-    /// line stays on the `return` and the later ones move in by eight spaces,
-    /// to sit inside the function. The other tests read the declaration with
+    /// A memberwise expression continues `.map` on its own line, at column 0
+    /// of the expression. The first line stays on the `return` and the `.map`
+    /// moves to the `return`'s column: 8 in the base arm, inside the `if`, and
+    /// 4 in the recursive arm. The other tests read the declaration with
     /// `contains`, which also holds when the first line is the one indented.
     @Test("a multi-line expression stays on its `return`, and its continuation moves in")
     func continuationLinesAreReindented() throws {
@@ -172,7 +173,8 @@ struct RecursiveGeneratorTests {
         #expect(returns.allSatisfy { $0.contains("return zip(") })
         let continuations = lines.filter { $0.contains(".map { DirectoryNode(") }
         #expect(continuations.count == 2)
-        #expect(continuations.allSatisfy { $0.hasPrefix(String(repeating: " ", count: 20) + ".map") })
+        #expect(continuations.map { $0.prefix { $0 == " " }.count } == [8, 4])
+        #expect(returns.map { $0.prefix { $0 == " " }.count } == [8, 4])
     }
 
     @Test("the helper name cannot collide with user code")

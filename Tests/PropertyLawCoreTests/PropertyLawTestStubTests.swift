@@ -53,9 +53,9 @@ struct PropertyLawTestStubTests {
         ] + footer)
     }
 
-    /// `MemberwiseEmitter` already puts its `.map` where `using:` sits, and
-    /// the stub leaves it there.
-    @Test func aMemberwiseGeneratorIsUnchanged() {
+    /// A memberwise generator's `.map` sits at column 0 of the expression,
+    /// and the stub moves it 12, under `using:`, where `main` emitted it.
+    @Test func aMemberwiseGeneratorsMapSitsUnderUsing() {
         let expression = GeneratorExpressionEmitter.expression(
             typeName: "Light",
             strategy: .memberwiseArbitrary(members: [
@@ -63,14 +63,15 @@ struct PropertyLawTestStubTests {
                 MemberSpec(name: "b", rawType: .bool),
             ])
         )
-        let lines = expression.split(separator: "\n").map(String.init)
-        #expect(lines.count == 2)
-        #expect(stub(expression) == header(lines[0]) + [lines[1]] + footer)
-        #expect(lines[1].hasPrefix("            .map {"))
+        #expect(expression == "zip(Gen<Int>.int(), Gen<Bool>.bool())\n.map { Light(a: $0.0, b: $0.1) }")
+        #expect(stub(expression) == header("zip(Gen<Int>.int(), Gen<Bool>.bool())") + [
+            "            .map { Light(a: $0.0, b: $0.1) }",
+        ] + footer)
     }
 
     /// A case with a payload is rendered by `MemberwiseEmitter`, `.map` and
-    /// all, inside the `oneOf` list. Its `.map` stays 8 under its `zip(`.
+    /// all, inside the `oneOf` list. The list moves its `.map` 4 with the
+    /// case, so it sits under its `zip(`.
     @Test func aPayloadCaseKeepsItsMapUnderItsZip() {
         let expression = GeneratorExpressionEmitter.expression(
             typeName: "Light",
@@ -82,19 +83,20 @@ struct PropertyLawTestStubTests {
                 ]),
             ])
         )
-        let lines = stub(expression)
-        let zipLine = lines.firstIndex { $0.contains("zip(") }
-        #expect(zipLine.map { lines[$0].hasPrefix("                zip(") } == true)
-        #expect(zipLine.map { lines[$0 + 1].hasPrefix("                        .map {") } == true)
-        #expect(lines[lines.count - 3] == "            )")
+        #expect(stub(expression) == header("Gen.oneOf(") + [
+            "                Gen.always(Light.off).eraseToAny(),",
+            "                zip(Gen<Int>.int(), Gen<Bool>.bool())",
+            "                .map { Light.dimmed(level: $0.0, warm: $0.1) }.eraseToAny()",
+            "            )",
+        ] + footer)
     }
 
-    /// A memberwise generator whose member is itself a multi-line `oneOf`
-    /// ends on its `.map` line, already at column 12, so nothing moves. The
-    /// inner list keeps the column-4 cases it has on `main`. Anchoring on the
-    /// least-indented line, the inner `)` at column 0, would have pushed the
-    /// `.map` to column 24.
-    @Test func aMemberwiseGeneratorWithAMultiLineMemberDoesNotMove() {
+    /// A memberwise generator whose member is a multi-line `oneOf`: the inner
+    /// list starts on the `zip(` line, so its cases sit 4 under `using:` and
+    /// its `)` under `using:`, and the `.map` stays under `using:` too. `main`
+    /// left the inner list at the method's left margin, because the `.map`
+    /// came out of `MemberwiseEmitter` already 12 in.
+    @Test func aMultiLineMemberOfAMemberwiseGeneratorSitsUnderUsing() {
         let member = GeneratorExpressionEmitter.expression(
             typeName: "Mode",
             strategy: .enumCases(cases: [EnumCaseGenerator(caseName: "a"), EnumCaseGenerator(caseName: "b")])
@@ -106,20 +108,48 @@ struct PropertyLawTestStubTests {
                 MemberSpec(name: "mode", generatorExpression: member),
             ])
         )
-        let lines = stub(expression)
-        // The expression spliced in exactly as rendered, which is what `main` emitted.
-        let asRendered = (header(expression) + footer).joined(separator: "\n")
-        #expect(lines.joined(separator: "\n") == asRendered)
-        #expect(lines[lines.count - 3].hasPrefix("            .map {"))
+        #expect(stub(expression) == header("zip(Gen<Int>.int(), Gen.oneOf(") + [
+            "                Gen.always(Mode.a).eraseToAny(),",
+            "                Gen.always(Mode.b).eraseToAny()",
+            "            ))",
+            "            .map { Light(level: $0.0, mode: $0.1) }",
+        ] + footer)
     }
 
-    /// An empty line stays empty, and a trailing one is not taken for the
-    /// closing line: here `)` at column 4 closes the expression and moves to
-    /// 12, and reading the trailing empty line as the closer, at column 0,
-    /// would push every line 4 further in.
+    /// Three levels: a payload case whose member is a multi-line `oneOf`,
+    /// inside an enum's list. Each level adds only its own column, so the
+    /// innermost cases sit 8 under `using:`.
+    @Test func eachLevelAddsOnlyItsOwnColumn() {
+        let mode = GeneratorExpressionEmitter.expression(
+            typeName: "Mode",
+            strategy: .enumCases(cases: [EnumCaseGenerator(caseName: "a"), EnumCaseGenerator(caseName: "b")])
+        )
+        let expression = GeneratorExpressionEmitter.expression(
+            typeName: "Light",
+            strategy: .enumCases(cases: [
+                EnumCaseGenerator(caseName: "off"),
+                EnumCaseGenerator(caseName: "set", arguments: [
+                    InitArgument(label: "level", generatorExpression: "Gen<Int>.int()"),
+                    InitArgument(label: "mode", generatorExpression: mode),
+                ]),
+            ])
+        )
+        #expect(stub(expression) == header("Gen.oneOf(") + [
+            "                Gen.always(Light.off).eraseToAny(),",
+            "                zip(Gen<Int>.int(), Gen.oneOf(",
+            "                    Gen.always(Mode.a).eraseToAny(),",
+            "                    Gen.always(Mode.b).eraseToAny()",
+            "                ))",
+            "                .map { Light.set(level: $0.0, mode: $0.1) }.eraseToAny()",
+            "            )",
+        ] + footer)
+    }
+
+    /// An empty line stays empty rather than gaining trailing whitespace,
+    /// and every other continuation line moves by the same 12.
     @Test func emptyLinesStayEmpty() {
         #expect(
-            PropertyLawTestStub.indentingContinuationLines(of: "f(\n\n        x\n    )\n", to: 12)
+            ExpressionLayout.indentingContinuationLines(of: "f(\n\n    x\n)\n", by: 12)
                 == "f(\n\n                x\n            )\n"
         )
     }

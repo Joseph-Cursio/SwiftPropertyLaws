@@ -42,7 +42,7 @@ struct GeneratorResolverTests {
         let order = structShape("Order", [("id", "Int"), ("customer", "Customer")])
         let expected = """
             zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8).map { Customer(name: $0) })
-                        .map { Order(id: $0.0, customer: $0.1) }
+            .map { Order(id: $0.0, customer: $0.1) }
             """
         #expect(try expression(for: "Order", in: [order, customer]) == expected)
     }
@@ -55,6 +55,43 @@ struct GeneratorResolverTests {
                 == "Gen<Character>.letterOrNumber.string(of: 0...8)"
                 + ".map { Customer(name: $0) }.array(of: 0...8).map { Cart(items: $0) }"
         )
+    }
+
+    /// A raw-value enum's generator spans two lines, its `.compactMap` at
+    /// column 0. Inside a `zip(` it needs no moving: it starts on the `zip(`
+    /// line, so its `.compactMap` sits under that line, as `ExpressionLayout`
+    /// has every continuation do.
+    @Test func rawValueEnumMemberKeepsItsCompactMapUnderTheZip() throws {
+        let code = TypeShape(name: "Code", kind: .enum, inheritedTypes: ["Int"], hasUserGen: false)
+        let holder = structShape("Holder", [("code", "Code"), ("count", "Int")])
+        let expected = """
+            zip(Gen<Int>.int()
+            .compactMap { Code(rawValue: $0) }, Gen<Int>.int())
+            .map { Holder(code: $0.0, count: $0.1) }
+            """
+        #expect(try expression(for: "Holder", in: [holder, code]) == expected)
+    }
+
+    /// A member that is a multi-line `Gen.oneOf(` keeps its cases 4 in and
+    /// its `)` at column 0, and the outer `.map` still sits at column 0. The
+    /// test stub then moves every continuation line 12 (`PropertyLawTestStubTests`).
+    @Test func multiLineOneOfMemberKeepsItsShapeInsideTheZip() throws {
+        let mode = TypeShape(
+            name: "Mode",
+            kind: .enum,
+            inheritedTypes: ["Equatable"],
+            hasUserGen: false,
+            enumCases: [EnumCase(name: "on"), EnumCase(name: "off")]
+        )
+        let holder = structShape("Holder", [("level", "Int"), ("mode", "Mode")])
+        let expected = """
+            zip(Gen<Int>.int(), Gen.oneOf(
+                Gen.always(Mode.on).eraseToAny(),
+                Gen.always(Mode.off).eraseToAny()
+            ))
+            .map { Holder(level: $0.0, mode: $0.1) }
+            """
+        #expect(try expression(for: "Holder", in: [holder, mode]) == expected)
     }
 
     // MARK: - User gen() reference

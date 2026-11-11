@@ -111,7 +111,7 @@ struct LabelNarrowedGeneratorTests {
         )
         #expect(source == """
             zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Int>.int())
-                        .map { User(name: $0.0, count: $0.1) }
+            .map { User(name: $0.0, count: $0.1) }
             """)
     }
 }

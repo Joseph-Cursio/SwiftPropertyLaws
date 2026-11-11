@@ -35,12 +35,15 @@ public enum ScaffoldEmitter {
         return stubText(typeName: shape.name, body: body)
     }
 
+    /// The body sits 8 in, under `static func`, so its continuation lines
+    /// move 8 with it (`ExpressionLayout`).
     private static func stubText(typeName: String, body: String) -> String {
-        """
+        let placed = ExpressionLayout.indentingContinuationLines(of: body, by: 8)
+        return """
         extension \(typeName) {
             // Scaffolded — fill the <#...#> placeholder(s) to enable property-based testing.
             static func gen() -> Generator<\(typeName), some SendableSequenceType> {
-                \(body)
+                \(placed)
             }
         }
         """

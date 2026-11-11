@@ -62,7 +62,7 @@ struct EnumPayloadDerivationTests {
         ])
         let expected = """
             zip(Gen<Int>.int(), Gen<Int>.int())
-                        .map { Point.xy(x: $0.0, y: $0.1) }
+            .map { Point.xy(x: $0.0, y: $0.1) }
             """
         #expect(emitted(shape) == expected)
     }
