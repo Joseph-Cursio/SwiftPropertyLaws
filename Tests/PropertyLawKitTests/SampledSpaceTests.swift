@@ -12,20 +12,27 @@ struct SampledSpaceTests {
     /// **Minimality, against the bridge, on the same space and law.** The bridge
     /// reports whatever came up first; this reports the smallest case that
     /// exists, because the index shrinks toward zero and the space is ordered.
+    ///
+    /// **The seed is fixed.** 968 of the 1,024 subsets fail, so about one run
+    /// in a thousand drew the minimal witness first, had nothing to shrink,
+    /// and failed `shrinkSteps > 0` while reporting the right counterexample.
+    /// It happened once in a full run on 2026-11-11. Under this seed the first
+    /// failing draw is not the witness, which `shrunkFrom` confirms below.
     @Test func samplingKeepsMinimalityWhereTheBridgeLosesIt() async {
         let space = Every.subsets("subset", of: 10)
+        let options = LawCheckOptions(budget: .standard, seed: RareAntecedentTests.mixedSeed(1))
 
         let bridged = await runUnaryLaw(
             "Spike.cardinalityUnderThree",
             source: .sampling(space.generator),
-            options: LawCheckOptions(budget: .standard),
+            options: options,
             property: { (subset: [Int]) in subset.count < 3 },
             formatCounterexample: { subset, _ in "\(subset)" }
         )
         let sampled = await runUnaryLaw(
             "Spike.cardinalityUnderThree",
             source: .sampledFromSpace(space),
-            options: LawCheckOptions(budget: .standard),
+            options: options,
             property: { (subset: [Int]) in subset.count < 3 },
             formatCounterexample: { subset, _ in "\(subset)" }
         )
@@ -34,6 +41,7 @@ struct SampledSpaceTests {
         #expect(sampled.isViolation)
         #expect(bridged.shrinkSteps == 0, "the bridge advertises no shrinking")
         #expect(sampled.shrinkSteps > 0)
+        #expect(sampled.shrunkFrom != nil && sampled.shrunkFrom != sampled.counterexample)
         // The minimal witness of "cardinality >= 3" is the first 3-element
         // subset, at index 56 of the cardinality-ascending space.
         #expect(sampled.counterexample == "subset=[0, 1, 2] — [0, 1, 2]",
