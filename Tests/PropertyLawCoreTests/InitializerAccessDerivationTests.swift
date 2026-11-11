@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// The same defect as the memberwise access rule, one tier down: Tier 6 lifts
 /// through a *written* initializer, and a `private init` cannot be called from
@@ -75,7 +75,7 @@ struct InitializerAccessDerivationTests {
     func reachableInitializerWins() {
         let subject = shape([
             initializer(["secret"], .private),
-            initializer(["a", "b"], .public)
+            initializer(["a", "b"], .public),
         ])
         guard case .initializerBased(let arguments) = DerivationStrategist
             .strategy(for: subject) else {
@@ -129,7 +129,7 @@ struct InitializerAccessDerivationTests {
             InitializerSignature(
                 parameters: [InitializerParameter(label: "x", typeName: "Unresolvable")],
                 accessLevel: .public
-            )
+            ),
         ])
         guard case .todo(let reason) = DerivationStrategist.strategy(for: subject) else {
             Issue.record("expected .todo")
@@ -146,7 +146,7 @@ struct InitializerAccessDerivationTests {
         let storage = InitializerSignature(
             parameters: [
                 InitializerParameter(label: "_bits", typeName: "Int"),
-                InitializerParameter(label: "count", typeName: "Int")
+                InitializerParameter(label: "count", typeName: "Int"),
             ],
             accessLevel: .public
         )

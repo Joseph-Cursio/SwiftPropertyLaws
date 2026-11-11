@@ -16,8 +16,6 @@ internal final class NearMissCollector: @unchecked Sendable {
     private let lock = NSLock()
     private var entries: [String] = []
 
-    init() {}
-
     func record(_ entry: String) {
         lock.lock()
         entries.append(entry)

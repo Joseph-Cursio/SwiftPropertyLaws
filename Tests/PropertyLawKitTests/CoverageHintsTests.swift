@@ -1,6 +1,5 @@
-import Testing
-import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct CoverageHintsTests {
 
@@ -20,7 +19,7 @@ struct CoverageHintsTests {
         let classifier = IntCoverage()
         #expect(classifier.classify(Int.min).boundaries == ["Int.min"])
         #expect(classifier.classify(Int.max).boundaries == ["Int.max"])
-        #expect(classifier.classify(7).boundaries == [])
+        #expect(classifier.classify(7).boundaries.isEmpty)
     }
 
     @Test func boolCoverageBuckets() {

@@ -1,7 +1,7 @@
 import Foundation
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// Two rules that a bigger corpus proved wrong, both fixed here.
 ///
@@ -42,12 +42,14 @@ struct ExtensionOnlyAndSendableTests {
     /// The swift-syntax shape, reduced.
     @Test("a type is Sendable through a protocol that refines Sendable")
     func sendableViaProtocol() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public protocol NodeProtocol: Sendable {}
         public struct Node: NodeProtocol, Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
         #expect(map.entries.map(\.typeName).contains("Node"))
     }
@@ -55,14 +57,16 @@ struct ExtensionOnlyAndSendableTests {
     /// Two passes would miss this; the fixed point does not.
     @Test("Sendable is followed through a chain of protocols")
     func sendableThroughChain() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public protocol A: Sendable {}
         public protocol B: A {}
         public protocol C: B {}
         public struct Node: C, Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
     }
 
@@ -75,7 +79,7 @@ struct ExtensionOnlyAndSendableTests {
             public struct Node: NodeProtocol, Equatable {
                 public let a: Int
             }
-            """
+            """,
         ])
         #expect(map.skippedTypes.isEmpty)
     }
@@ -84,22 +88,26 @@ struct ExtensionOnlyAndSendableTests {
     /// would emit a suite that cannot type-check.
     @Test("a protocol that does not refine Sendable still leaves the type skipped")
     func nonSendableProtocolStillSkips() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public protocol Plain {}
         public struct Node: Plain, Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.map(\.reason) == [.notSendable])
     }
 
     @Test("@unchecked and retroactive spellings are recognized")
     func decoratedSpellings() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public struct A: Equatable, @unchecked Sendable { public let a: Int }
         public protocol P: @unchecked Sendable {}
         public struct B: P, Equatable { public let b: Int }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
     }
 
@@ -112,15 +120,17 @@ struct ExtensionOnlyAndSendableTests {
         "a standard-library protocol that refines Sendable supplies it",
         arguments: [
             "Actor", "Clock", "CodingKey", "DurationProtocol", "Error", "Executor",
-            "InstantProtocol", "SerialExecutor", "TaskExecutor", "UnsafeSendable"
+            "InstantProtocol", "SerialExecutor", "TaskExecutor", "UnsafeSendable",
         ]
     )
     func standardLibraryRefinementSuppliesSendable(protocolName: String) {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public struct Node: \(protocolName), Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
         #expect(map.entries.map(\.typeName).contains("Node"))
     }
@@ -132,16 +142,18 @@ struct ExtensionOnlyAndSendableTests {
         arguments: [
             "CustomNSError", "LocalizedError", "RecoverableError",
             "AttributedStringProtocol", "NotificationCenter.AsyncMessage",
-            "SortComparator", "StandardPredicateExpression"
+            "SortComparator", "StandardPredicateExpression",
         ]
     )
     func foundationRefinementSuppliesSendable(protocolName: String) {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         import Foundation
         public struct Node: \(protocolName), Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
         #expect(map.entries.map(\.typeName).contains("Node"))
     }
@@ -150,12 +162,14 @@ struct ExtensionOnlyAndSendableTests {
     /// through `Error`, and was skipped as not `Sendable` before the seeds.
     @Test("a module-local protocol refining Error supplies Sendable")
     func moduleProtocolRefiningError() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public protocol AppError: Error {}
         public struct Failure: AppError, Equatable {
             public let code: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
     }
 
@@ -163,12 +177,14 @@ struct ExtensionOnlyAndSendableTests {
     /// `Swift.Error`.
     @Test("module-qualified Swift spellings are recognized")
     func qualifiedSpellings() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public struct Failure: Swift.Error, Equatable { public let a: Int }
         public struct Point: Equatable, Swift.Sendable { public let b: Int }
         public struct Tick: _Concurrency.Clock, Equatable { public let c: Int }
         public struct Lost: Foundation.LocalizedError, Equatable { public let d: Int }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
     }
 
@@ -176,36 +192,42 @@ struct ExtensionOnlyAndSendableTests {
     /// the seed must not vouch for it.
     @Test("a module's own protocol shadows a standard-library seed")
     func moduleProtocolShadowsSeed() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public protocol Clock {}
         public struct Wall: Clock, Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.map(\.reason) == [.notSendable])
     }
 
     /// And the shadowing protocol is still judged on its own clause.
     @Test("a shadowing protocol that refines Sendable itself still supplies it")
     func shadowingProtocolRefiningSendable() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public protocol Clock: Sendable {}
         public struct Wall: Clock, Equatable {
             public let a: Int
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
     }
 
     @Test("an actor is Sendable whatever its inheritance clause says")
     func actorIsSendable() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public actor Counter: Hashable {
             public let id: Int
             public static func == (lhs: Counter, rhs: Counter) -> Bool { lhs.id == rhs.id }
             public nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
         }
-        """])
+        """,
+        ])
         #expect(map.skippedTypes.isEmpty)
         #expect(map.entries.map(\.typeName).contains("Counter"))
     }
@@ -246,13 +268,15 @@ struct ExtensionOnlyAndSendableTests {
     /// shape above — empty for want of information — must not.
     @Test("a declared but memberless struct derives, an extended one does not")
     func declaredMemberlessStructDerives() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public struct Empty: Equatable, Sendable {}
         extension SomeForeignType: Equatable {}
-        """])
-        let empty = map.entries.first(where: { $0.typeName == "Empty" })
+        """,
+        ])
+        let empty = map.entries.first { $0.typeName == "Empty" }
         #expect(empty?.derivationStrategy == .initializerBased(arguments: []))
-        let foreign = map.entries.first(where: { $0.typeName == "SomeForeignType" })
+        let foreign = map.entries.first { $0.typeName == "SomeForeignType" }
         guard case .todo = foreign?.derivationStrategy else {
             Issue.record("an extension-only type must not derive `SomeForeignType()`")
             return
@@ -261,10 +285,12 @@ struct ExtensionOnlyAndSendableTests {
 
     @Test("hasPrimaryDeclaration reflects what the scanner saw")
     func flagReflectsReality() {
-        let map = scan(["S.swift": """
+        let map = scan([
+            "S.swift": """
         public struct Declared: Equatable, Sendable { public let a: Int }
         extension Foreign: Equatable {}
-        """])
+        """,
+        ])
         #expect(map.shapesByName["Declared"]?.hasPrimaryDeclaration == true)
         #expect(map.shapesByName["Foreign"]?.hasPrimaryDeclaration == false)
     }

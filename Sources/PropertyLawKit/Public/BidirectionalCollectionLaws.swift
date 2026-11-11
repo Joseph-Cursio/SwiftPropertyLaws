@@ -41,7 +41,7 @@ where Value.Element: Equatable & Sendable {
         results.append(contentsOf: [
             await checkIndexBeforeAfter(generator: generator, options: options),
             await checkIndexAfterBefore(generator: generator, options: options),
-            await checkReverseTraversal(generator: generator, options: options)
+            await checkReverseTraversal(generator: generator, options: options),
         ])
         return results
     }

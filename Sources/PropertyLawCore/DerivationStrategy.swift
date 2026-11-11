@@ -1,88 +1,3 @@
-/// Generator-derivation strategy for a single type — the result of
-/// applying PRD §5.7's priority order to a syntax-agnostic `TypeShape`.
-///
-/// The macro and the discovery plugin both call `DerivationStrategist`
-/// with their own `TypeShape` (built from SwiftSyntax in each case) and
-/// emit identical generator-reference text from the returned strategy.
-public enum DerivationStrategy: Sendable, Equatable {
-    /// User explicitly defines `<TypeName>.gen()`. M1's convention; the
-    /// emitter just references `<TypeName>.gen()` and the compiler resolves.
-    case userGen
-
-    /// `enum T: CaseIterable` — emit `Gen<T?>.element(of: T.allCases).compactMap { $0 }`
-    /// (the Optional is load-bearing: `element(of:)` is `where Value == C.Element?`).
-    case caseIterable
-
-    /// PRD §5.7 Strategy 3 — every stored property of a struct resolves to
-    /// a generator: a recognized stdlib raw type, or a composite of
-    /// optional/array/set/dictionary around recognized raw types (Tier 1).
-    /// The emitter composes per-member generators via `zip(...)` (or a
-    /// single `.map(...)` for a 1-member type) and lifts through the type's
-    /// synthesized memberwise initializer. v1 supports 1–10 members; arity
-    /// 11+ falls through to `.todo` because `swift-property-based` ships
-    /// `zip` overloads up to 10-arity.
-    case memberwiseArbitrary(members: [MemberSpec])
-
-    /// `enum T: <RawType>` where `RawType` is a stdlib type with a known
-    /// generator (Int, String, Bool, …). The emitter lifts the raw-value
-    /// generator through `T.init(rawValue:)` with a `compactMap` to drop
-    /// `nil`s for sparse raw spaces.
-    case rawRepresentable(RawType)
-
-    /// Tier 6 — a struct with a user-defined initializer whose parameters
-    /// all resolve to generators. Memberwise derivation can't apply (the
-    /// user `init` suppresses Swift's synthesized memberwise init), so the
-    /// emitter instead composes per-argument generators and lifts through
-    /// that init: `zip(...).map { Type(label0: $0.0, ...) }`, honoring each
-    /// argument's call label (or omitting it for an unlabeled `_` parameter).
-    ///
-    /// An **empty** argument list is a struct with no stored properties and a
-    /// callable `init()` (see `statelessStrategy`), emitted as
-    /// `Gen.always(T())`. Carried by this case rather than a new one because
-    /// it is exactly an initializer lift with zero arguments — and a new case
-    /// would break every downstream exhaustive `switch` over this enum.
-    case initializerBased(arguments: [InitArgument])
-
-    /// Tier 4 — an enum whose every case's associated values all resolve to
-    /// generators (including payload-free cases). The emitter builds a
-    /// `Generator<T>` per case (`Gen.always(T.c)` for payload-free, else
-    /// `zip(...).map { T.c(...) }`) and combines them with
-    /// `Gen.oneOf(...eraseToAny())`. Slots in *before* `rawRepresentable` and
-    /// after `caseIterable`, so `CaseIterable` enums keep their simpler
-    /// strategy while a raw-valued enum whose cases were captured is
-    /// enumerated here rather than filtered through `init(rawValue:)` — see
-    /// the ordering note in `strategy(for:resolve:)`. This fills the "enum
-    /// without CaseIterable" gap.
-    case enumCases(cases: [EnumCaseGenerator])
-
-    /// No strategy matched. The emitter produces a deliberate compile
-    /// error pointing at where the user should provide `gen()` or annotate.
-    /// `reason` carries a human-readable diagnostic surfaced as a macro
-    /// warning alongside the compile error (PRD §5.7 telemetry).
-    case todo(reason: String)
-
-    /// Modules the emitted generator expression must be able to name (e.g.
-    /// `["Foundation"]` when a member or init argument is a `Date`). The
-    /// stdlib-only and `<Type>.gen()` strategies require none. The discovery
-    /// plugin unions these across a target so the generated file imports what
-    /// it references; the macro path ignores this (it expands where member
-    /// types are already in scope).
-    public var requiredImports: Set<String> {
-        switch self {
-        case .memberwiseArbitrary(let members):
-            return members.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
-        case .initializerBased(let arguments):
-            return arguments.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
-        case .enumCases(let cases):
-            return cases.reduce(into: Set<String>()) { result, enumCase in
-                for argument in enumCase.arguments { result.formUnion(argument.requiredImports) }
-            }
-        case .userGen, .caseIterable, .rawRepresentable, .todo:
-            return []
-        }
-    }
-}
-
 /// Single member of a memberwise-derivation strategy: the stored property's
 /// label paired with the `swift-property-based` generator expression that
 /// produces values for it. The strategist returns `MemberSpec`s only after
@@ -297,5 +212,92 @@ public enum DerivationStrategist {
         }
         return nil
     }
+}
 
+/// Generator-derivation strategy for a single type — the result of
+/// applying PRD §5.7's priority order to a syntax-agnostic `TypeShape`.
+///
+/// The macro and the discovery plugin both call `DerivationStrategist`
+/// with their own `TypeShape` (built from SwiftSyntax in each case) and
+/// emit identical generator-reference text from the returned strategy.
+public enum DerivationStrategy: Sendable, Equatable {
+    /// User explicitly defines `<TypeName>.gen()`. M1's convention; the
+    /// emitter just references `<TypeName>.gen()` and the compiler resolves.
+    case userGen
+
+    /// `enum T: CaseIterable` — emit `Gen<T?>.element(of: T.allCases).compactMap { $0 }`
+    /// (the Optional is load-bearing: `element(of:)` is `where Value == C.Element?`).
+    case caseIterable
+
+    /// PRD §5.7 Strategy 3 — every stored property of a struct resolves to
+    /// a generator: a recognized stdlib raw type, or a composite of
+    /// optional/array/set/dictionary around recognized raw types (Tier 1).
+    /// The emitter composes per-member generators via `zip(...)` (or a
+    /// single `.map(...)` for a 1-member type) and lifts through the type's
+    /// synthesized memberwise initializer. v1 supports 1–10 members; arity
+    /// 11+ falls through to `.todo` because `swift-property-based` ships
+    /// `zip` overloads up to 10-arity.
+    case memberwiseArbitrary(members: [MemberSpec])
+
+    /// `enum T: <RawType>` where `RawType` is a stdlib type with a known
+    /// generator (Int, String, Bool, …). The emitter lifts the raw-value
+    /// generator through `T.init(rawValue:)` with a `compactMap` to drop
+    /// `nil`s for sparse raw spaces.
+    case rawRepresentable(RawType)
+
+    /// Tier 6 — a struct with a user-defined initializer whose parameters
+    /// all resolve to generators. Memberwise derivation can't apply (the
+    /// user `init` suppresses Swift's synthesized memberwise init), so the
+    /// emitter instead composes per-argument generators and lifts through
+    /// that init: `zip(...).map { Type(label0: $0.0, ...) }`, honoring each
+    /// argument's call label (or omitting it for an unlabeled `_` parameter).
+    ///
+    /// An **empty** argument list is a struct with no stored properties and a
+    /// callable `init()` (see `statelessStrategy`), emitted as
+    /// `Gen.always(T())`. Carried by this case rather than a new one because
+    /// it is exactly an initializer lift with zero arguments — and a new case
+    /// would break every downstream exhaustive `switch` over this enum.
+    case initializerBased(arguments: [InitArgument])
+
+    /// Tier 4 — an enum whose every case's associated values all resolve to
+    /// generators (including payload-free cases). The emitter builds a
+    /// `Generator<T>` per case (`Gen.always(T.c)` for payload-free, else
+    /// `zip(...).map { T.c(...) }`) and combines them with
+    /// `Gen.oneOf(...eraseToAny())`. Slots in *before* `rawRepresentable` and
+    /// after `caseIterable`, so `CaseIterable` enums keep their simpler
+    /// strategy while a raw-valued enum whose cases were captured is
+    /// enumerated here rather than filtered through `init(rawValue:)` — see
+    /// the ordering note in `strategy(for:resolve:)`. This fills the "enum
+    /// without CaseIterable" gap.
+    case enumCases(cases: [EnumCaseGenerator])
+
+    /// No strategy matched. The emitter produces a deliberate compile
+    /// error pointing at where the user should provide `gen()` or annotate.
+    /// `reason` carries a human-readable diagnostic surfaced as a macro
+    /// warning alongside the compile error (PRD §5.7 telemetry).
+    case todo(reason: String)
+
+    /// Modules the emitted generator expression must be able to name (e.g.
+    /// `["Foundation"]` when a member or init argument is a `Date`). The
+    /// stdlib-only and `<Type>.gen()` strategies require none. The discovery
+    /// plugin unions these across a target so the generated file imports what
+    /// it references; the macro path ignores this (it expands where member
+    /// types are already in scope).
+    public var requiredImports: Set<String> {
+        switch self {
+        case .memberwiseArbitrary(let members):
+            return members.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
+
+        case .initializerBased(let arguments):
+            return arguments.reduce(into: Set<String>()) { $0.formUnion($1.requiredImports) }
+
+        case .enumCases(let cases):
+            return cases.reduce(into: Set<String>()) { result, enumCase in
+                for argument in enumCase.arguments { result.formUnion(argument.requiredImports) }
+            }
+
+        case .userGen, .caseIterable, .rawRepresentable, .todo:
+            return []
+        }
+    }
 }

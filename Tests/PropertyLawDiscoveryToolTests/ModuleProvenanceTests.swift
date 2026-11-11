@@ -1,7 +1,6 @@
 import Foundation
-import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// `--context-files` told the scanner which types *exist*; it did not say which
 /// module to `import` for them. So a suite for a type this target merely
@@ -114,7 +113,7 @@ struct ModuleProvenanceTests {
             target: ["T.swift": "public struct Foreign: Equatable, Sendable { public let a: Int }"],
             context: [ContextFile(module: "OtherModule", name: "F.swift", source: foreignPublic)]
         )
-        #expect(map.entries.first(where: { $0.typeName == "Foreign" })?.declaringModule == nil)
+        #expect(map.entries.first { $0.typeName == "Foreign" }?.declaringModule == nil)
         let output = GeneratedFileEmitter.emit(target: "MyTarget", map: map)
         #expect(output.contains("import OtherModule") == false)
     }
@@ -210,11 +209,13 @@ struct ModuleProvenanceTests {
     func foreignInternalSkipped() {
         let map = scan(
             target: ["E.swift": "extension Hidden: Equatable {}"],
-            context: [ContextFile(module: "OtherModule", name: "F.swift", source: """
+            context: [
+                ContextFile(module: "OtherModule", name: "F.swift", source: """
             struct Hidden: Sendable {
                 let a: Int
             }
-            """)]
+            """),
+            ]
         )
         #expect(map.entries.isEmpty)
         #expect(map.skippedTypes.map(\.reason) == [.foreignNonPublic("OtherModule")])
@@ -224,10 +225,12 @@ struct ModuleProvenanceTests {
     func foreignSkipNamesTheModule() {
         let map = scan(
             target: ["E.swift": "extension Hidden: Equatable {}"],
-            context: [ContextFile(
-                module: "OtherModule", name: "F.swift",
-                source: "struct Hidden: Sendable { let a: Int }"
-            )]
+            context: [
+                ContextFile(
+                    module: "OtherModule", name: "F.swift",
+                    source: "struct Hidden: Sendable { let a: Int }"
+                ),
+            ]
         )
         #expect(map.skippedTypes.first?.explanation.contains("`OtherModule`") == true)
         #expect(map.skippedTypes.first?.explanation.contains("only reachable through a plain import") == true)

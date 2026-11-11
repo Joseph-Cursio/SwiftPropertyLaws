@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Run the strict-weak-ordering laws over a **supplied comparator**, the
@@ -93,7 +92,7 @@ private func checkStrictWeakOrderingLaws<Value: Sendable>(
             await checkIrreflexivity(source, compare, options),
             await checkAsymmetry(source, compare, options),
             await checkOrderTransitivity(source, compare, options),
-            await checkIncomparabilityTransitivity(source, compare, options)
+            await checkIncomparabilityTransitivity(source, compare, options),
         ]
     }
 }
@@ -130,7 +129,8 @@ public func checkComparatorDiscriminates<
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
     try await checkComparatorDiscriminates(
-        from: .sampling(generator), by: compare, distinct: distinct, options: options)
+        from: .sampling(generator), by: compare, distinct: distinct, options: options
+    )
 }
 
 /// Discrimination over **every pair** of a bounded carrier. A sampled run that
@@ -144,7 +144,8 @@ public func checkComparatorDiscriminates<Value: Sendable>(
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
     try await checkComparatorDiscriminates(
-        from: .enumerated(carrier), by: compare, distinct: distinct, options: options)
+        from: .enumerated(carrier), by: compare, distinct: distinct, options: options
+    )
 }
 
 /// The same laws over **random draws from** a bounded carrier, keeping the index.
@@ -161,7 +162,8 @@ public func checkComparatorDiscriminates<Value: Sendable>(
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
     try await checkComparatorDiscriminates(
-        from: .sampledFromSpace(carrier), by: compare, distinct: distinct, options: options)
+        from: .sampledFromSpace(carrier), by: compare, distinct: distinct, options: options
+    )
 }
 
 private func checkComparatorDiscriminates<Value: Sendable>(
@@ -175,7 +177,6 @@ private func checkComparatorDiscriminates<Value: Sendable>(
         [
             await requiringApplicableCases(await runBinaryLaw(
                 "StrictWeakOrdering.discrimination",
-                tier: .conventional,
                 source: source,
                 options: options,
                 property: { first, second in
@@ -189,8 +190,9 @@ private func checkComparatorDiscriminates<Value: Sendable>(
                     orders before the other, so their relative order after a sort \
                     is unspecified — `sorted(by:)` is not guaranteed stable.
                     """
-                }
-            ), applications, needing: "two distinct values")
+                },
+                tier: .conventional
+            ), applications, needing: "two distinct values"),
         ]
     }
 }
@@ -270,7 +272,6 @@ private func checkComparatorIsCongruent<Value: Equatable & Sendable>(
         [
             await requiringApplicableCases(await runTernaryLaw(
                 "StrictWeakOrdering.congruence",
-                tier: .conventional,
                 source: source,
                 options: options,
                 property: { first, second, probe in
@@ -285,8 +286,9 @@ private func checkComparatorIsCongruent<Value: Equatable & Sendable>(
                     compare differently against the probe, so the comparator reads \
                     something `==` does not — storage identity is the usual cause.
                     """
-                }
-            ), applications, needing: "two values that are equal but not identical")
+                },
+                tier: .conventional
+            ), applications, needing: "two values that are equal but not identical"),
         ]
     }
 }

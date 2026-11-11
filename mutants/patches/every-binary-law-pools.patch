@@ -1,9 +1,8 @@
 diff --git a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
-index 3c5ee0d..cb68b89 100644
 --- a/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
 +++ b/Sources/PropertyLawKit/Internal/LawCheckBuilders.swift
-@@ -122,6 +122,14 @@ package func runBinaryLaw<Value: Sendable>(
-     formatCounterexample: @escaping @Sendable (Value, Value, ErrorBox?) -> String,
+@@ -124,6 +124,14 @@
+     tier: StrictnessTier = .strict,
      shrink: (@Sendable (Value) -> [Value])? = nil
  ) async -> CheckResult {
 +    if case .sampled(let sample) = source, let lookback = options.equalValuePairing.lookback {

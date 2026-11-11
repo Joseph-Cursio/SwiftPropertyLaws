@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// **A module-qualified spelling is the type it names.** `Swift.String` is `String`.
 ///
@@ -146,16 +146,24 @@ struct ModuleQualifiedSpellingTests {
             kind: .struct,
             inheritedTypes: ["Codable", "Hashable"],
             hasUserGen: false,
-            storedMembers: [StoredMember(name: "additionalProperties",
-                                         typeName: "[String: Swift.String]")],
+            storedMembers: [
+                StoredMember(
+                    name: "additionalProperties",
+                    typeName: "[String: Swift.String]"
+                ),
+            ],
             hasUserInit: true,
             initializers: [
                 InitializerSignature(
-                    parameters: [InitializerParameter(label: "additionalProperties",
-                                                      typeName: "[String: Swift.String]")],
+                    parameters: [
+                        InitializerParameter(
+                            label: "additionalProperties",
+                            typeName: "[String: Swift.String]"
+                        ),
+                    ],
                     isFailable: false,
                     isThrowing: false
-                )
+                ),
             ],
             enumCases: []
         )

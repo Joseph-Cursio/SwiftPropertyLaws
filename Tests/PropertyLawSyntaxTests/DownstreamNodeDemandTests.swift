@@ -1,8 +1,8 @@
 import PropertyBased
 import PropertyLawKit
+@testable import PropertyLawSyntax
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntax
 
 /// Six concrete node types a downstream consumer (SwiftInferProperties) measured
 /// as blocking its own verification — its `Unverifiable` picks. A measured

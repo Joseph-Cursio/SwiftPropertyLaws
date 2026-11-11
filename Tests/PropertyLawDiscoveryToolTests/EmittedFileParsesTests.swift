@@ -1,9 +1,9 @@
 import Foundation
 import PropertyLawCore
+@testable import PropertyLawDiscoveryTool
 import SwiftParser
 import SwiftSyntax
 import Testing
-@testable import PropertyLawDiscoveryTool
 
 /// The `.todo` arm now ends in a trailing `//` comment, which is safe **only**
 /// because that expression always lands last on its line. That is a property of

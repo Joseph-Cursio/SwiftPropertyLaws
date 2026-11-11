@@ -1,6 +1,5 @@
-import Testing
-import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct AdditiveArithmeticLawsTests {
 
@@ -37,7 +36,7 @@ struct AdditiveArithmeticLawsTests {
             "AdditiveArithmetic.additionCommutativity",
             "AdditiveArithmetic.zeroAdditiveIdentity",
             "AdditiveArithmetic.subtractionInverse",
-            "AdditiveArithmetic.selfSubtractionIsZero"
+            "AdditiveArithmetic.selfSubtractionIsZero",
         ])
     }
 }

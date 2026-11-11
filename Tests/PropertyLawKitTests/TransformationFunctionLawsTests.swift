@@ -1,7 +1,7 @@
 import Foundation
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct TransformationFunctionLawsTests {
 
@@ -10,7 +10,7 @@ struct TransformationFunctionLawsTests {
     private static let intFunctions = TransformationFunctions<Int>(
         first: { $0 &* 2 },
         second: { $0 &+ 7 },
-        predicate: { $0 % 3 == 0 }
+        predicate: { $0.isMultiple(of: 3) }
     )
 
     @Test func arrayOfIntPassesAllParameterizedLaws() async throws {
@@ -35,6 +35,7 @@ struct TransformationFunctionLawsTests {
         final class Counter: @unchecked Sendable {
             private let lock = NSLock()
             private var value = 0
+
             func next() -> Int {
                 lock.lock()
                 defer { lock.unlock() }

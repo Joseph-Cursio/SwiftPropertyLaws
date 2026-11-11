@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// PRD §8 framework self-test gate — v1.4 numeric cluster (M1 share).
 /// Each test plants a violation against one of the cluster's Strict-tier

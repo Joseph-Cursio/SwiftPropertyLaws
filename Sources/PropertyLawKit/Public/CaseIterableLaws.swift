@@ -40,7 +40,7 @@ public func checkCaseIterablePropertyLaws<
 }
 
 private func checkExactlyOnce<Value: CaseIterable & Hashable & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -55,7 +55,7 @@ private func checkExactlyOnce<Value: CaseIterable & Hashable & Sendable>(
             },
             formatCounterexample: { _, _ in
                 let cases = Array(Value.allCases)
-                let duplicates = Dictionary(grouping: cases, by: { $0 })
+                let duplicates = Dictionary(grouping: cases) { $0 }
                     .compactMapValues { $0.count > 1 ? $0.count : nil }
                 return "T.allCases has \(cases.count) entries but only "
                     + "\(Set(cases).count) unique values; duplicates: \(duplicates)"

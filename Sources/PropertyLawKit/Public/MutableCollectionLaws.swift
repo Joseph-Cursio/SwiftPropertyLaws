@@ -43,7 +43,7 @@ where Value.Element: Equatable & Sendable {
         }
         results.append(contentsOf: [
             await checkSwapAtSwapsValues(generator: generator, options: options),
-            await checkSwapAtInvolution(generator: generator, options: options)
+            await checkSwapAtInvolution(generator: generator, options: options),
         ])
         return results
     }

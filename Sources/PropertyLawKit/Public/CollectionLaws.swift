@@ -22,7 +22,7 @@ import PropertyBased
 /// reviewer sees the diff magnitude in `CheckResult.nearMisses`.
 @discardableResult
 public func checkCollectionPropertyLaws<Value: Collection & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     sequenceOptions: SequenceLawOptions = SequenceLawOptions(),
@@ -46,7 +46,7 @@ where Value.Element: Equatable & Sendable {
 /// Collection. Chains the Sequence suite through the same equivalence.
 @discardableResult
 public func checkCollectionPropertyLaws<Value: Collection & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     elementSameResult: @escaping SameResult<Value.Element>,
     options: LawCheckOptions = LawCheckOptions(),
@@ -74,12 +74,12 @@ where Value.Element: Sendable {
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { inherited in
                 try await checkSequencePropertyLaws(
                     for: Value.self,
                     using: generator,
                     elementSameResult: same,
-                    options: $0,
+                    options: inherited,
                     sequenceOptions: sequenceOptions
                 )
             })
@@ -87,7 +87,7 @@ where Value.Element: Sendable {
         results.append(contentsOf: [
             await checkCount(generator: generator, options: options),
             await checkIndexValidity(generator: generator, same: same, options: options),
-            await checkNonMutation(generator: generator, same: same, options: options)
+            await checkNonMutation(generator: generator, same: same, options: options),
         ])
         return results
     }
@@ -103,7 +103,6 @@ where C.Element: Sendable {
         "Collection.countConsistency",
         generator: generator,
         options: options,
-        observation: PerLawDriver.Observation(nearMissCollector: collector),
         property: { sample in
             let detail = countDetail(for: sample)
             if let detail, detail.isOffByOne {
@@ -116,7 +115,8 @@ where C.Element: Sendable {
         },
         formatCounterexample: { sample, _ in
             countDetail(for: sample)?.message ?? "<no counterexample>"
-        }
+        },
+        observation: PerLawDriver.Observation(nearMissCollector: collector)
     )
 }
 
@@ -145,31 +145,14 @@ private func checkNonMutation<C: Collection & Sendable, Sh: SendableSequenceType
 where C.Element: Sendable {
     await runUnaryLaw(
         "Collection.nonMutation",
-        tier: .conventional,
         generator: generator,
         options: options,
         property: { sample in nonMutationCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
             nonMutationCounterexample(for: sample, same: same) ?? "<no counterexample>"
-        }
+        },
+        tier: .conventional
     )
-}
-
-/// Detail record for a `count` mismatch — `nil` when the law holds. Returned
-/// from a single helper so the property closure, the formatter, and the
-/// near-miss recorder all see a consistent view.
-private struct CountMismatchDetail {
-    let reportedCount: Int
-    let iteratedCount: Int
-
-    var isOffByOne: Bool {
-        Swift.abs(reportedCount - iteratedCount) == 1
-    }
-
-    var message: String {
-        "collection reported count = \(reportedCount) "
-            + "but iteration yielded \(iteratedCount) elements"
-    }
 }
 
 private func countDetail<C: Collection>(for sample: C) -> CountMismatchDetail? {

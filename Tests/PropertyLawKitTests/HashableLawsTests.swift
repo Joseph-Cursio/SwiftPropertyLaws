@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct HashableLawsTests {
 
@@ -33,9 +33,8 @@ struct HashableLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstHashableIndex = laws.firstIndex { $0.hasPrefix("Hashable.") }
-        #expect(firstHashableIndex != nil)
-        let equatableLaws = laws[..<firstHashableIndex!]
+        let firstHashableIndex = try #require(laws.firstIndex { $0.hasPrefix("Hashable.") })
+        let equatableLaws = laws[..<firstHashableIndex]
         #expect(equatableLaws.allSatisfy { $0.hasPrefix("Equatable.") })
         #expect(equatableLaws.count == 4)
     }

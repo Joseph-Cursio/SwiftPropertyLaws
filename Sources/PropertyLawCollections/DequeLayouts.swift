@@ -41,7 +41,7 @@ public enum DequeLayouts {
                 }
             }
         }
-        return Every.elements(label, in: built, size: { $0.count })
+        return Every.elements(label, in: built) { $0.count }
     }
 
     /// Build one arrangement. `prepend` walks the head backwards through the

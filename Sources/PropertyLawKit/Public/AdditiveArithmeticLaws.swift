@@ -40,7 +40,7 @@ public func checkAdditiveArithmeticPropertyLaws<
     Value: AdditiveArithmetic & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     sameResult: @escaping SameResult<Value> = { $0 == $1 }
@@ -55,7 +55,7 @@ public func checkAdditiveArithmeticPropertyLaws<
             ),
             await checkZeroAdditiveIdentity(generator: generator, options: options),
             await checkSubtractionInverse(generator: generator, options: options),
-            await checkSelfSubtractionIsZero(generator: generator, options: options)
+            await checkSelfSubtractionIsZero(generator: generator, options: options),
         ]
     }
 }

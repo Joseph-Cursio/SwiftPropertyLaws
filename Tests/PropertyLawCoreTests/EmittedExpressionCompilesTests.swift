@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// **Regression guard: every expression `GeneratorExpressionEmitter` emits must
 /// be Swift that compiles and runs.**
@@ -56,7 +56,7 @@ struct EmittedExpressionCompilesTests {
     /// `Side` substituted for `TypeName` — **do not simplify it**. If a future
     /// edit "cleans this up" into a spelling the emitter does not produce, the
     /// assertion below fails, which is the point.
-    private static let caseIterableGenerator = Gen<Side?>.element(of: Side.allCases).compactMap { $0 }
+    private static let caseIterableGenerator = Gen<Side?>.element(of: Side.allCases).compactMap(\.self)
 
     @Test("the .caseIterable expression compiles, runs, and matches the emitter")
     func caseIterableExpressionCompilesAndMatches() {
@@ -127,7 +127,7 @@ struct EmittedExpressionCompilesTests {
             typeName: "Point",
             strategy: .memberwiseArbitrary(members: [
                 MemberSpec(name: "x", rawType: .int),
-                MemberSpec(name: "y", rawType: .int)
+                MemberSpec(name: "y", rawType: .int),
             ])
         )
         #expect(emitted.contains("zip("))
@@ -135,9 +135,7 @@ struct EmittedExpressionCompilesTests {
     }
 
     /// A struct with no stored properties — `.initializerBased(arguments: [])`.
-    private struct Stateless: Sendable, Equatable {
-        var name: String { "stateless" }
-    }
+    private struct Stateless: Sendable, Equatable {}
 
     private static let statelessGenerator = Gen.always(Stateless())
 
@@ -165,7 +163,7 @@ struct EmittedExpressionCompilesTests {
     }
 
     private static let composedGenerator = zip(
-        Gen<Side?>.element(of: Side.allCases).compactMap { $0 },
+        Gen<Side?>.element(of: Side.allCases).compactMap(\.self),
         Gen<Int>.int(in: 0...10)
     ).map { Flip(side: $0.0, count: $0.1) }
 

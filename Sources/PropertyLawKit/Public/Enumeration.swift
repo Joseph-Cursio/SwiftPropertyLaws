@@ -21,6 +21,9 @@ public struct EnumerationBucket: Sendable, Hashable {
         self.count = count
     }
 
+    /// Whether the run holds no cases. A space's buckets never are.
+    public var isEmpty: Bool { count == 0 } // swiftlint:disable:this empty_count - defines isEmpty
+
     /// The half-open range of indices this run holds.
     public var indices: Range<Int> { start ..< (start + count) }
 
@@ -44,7 +47,7 @@ public struct EnumerationBucket: Sendable, Hashable {
     /// ``EnumerationBucket`` makes no claim that `buckets` is well formed — the layout
     /// invariant is `Enumeration.init`'s to enforce — so this is stated over *sorted*
     /// starts alone, which is the weakest precondition the search needs.
-    public static func containing(_ index: Int, in buckets: [EnumerationBucket]) -> EnumerationBucket? {
+    public static func containing(_ index: Int, in buckets: [Self]) -> Self? {
         guard buckets.isEmpty == false else { return nil }
         var low = 0
         var high = buckets.count - 1
@@ -131,6 +134,9 @@ public struct Enumeration<Element: Sendable>: Sendable {
         return last.start + last.count
     }
 
+    /// Whether this enumeration walks no cases.
+    public var isEmpty: Bool { buckets.isEmpty }
+
     /// Whether this enumeration covers the whole space it was derived from.
     public var isComplete: Bool { count == fullCount }
 
@@ -149,7 +155,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
         var expectedStart = 0
         var previousSize: Int?
         for bucket in buckets {
-            precondition(bucket.count > 0, "Enumeration: empty size bucket at index \(bucket.start)")
+            precondition(!bucket.isEmpty, "Enumeration: empty size bucket at index \(bucket.start)")
             precondition(
                 bucket.start == expectedStart,
                 "Enumeration: bucket starting at \(bucket.start) leaves a gap; expected \(expectedStart)"
@@ -224,7 +230,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
             kept.append(EnumerationBucket(size: bucket.size, start: bucket.start, count: take))
             taken += take
         }
-        return Enumeration(buckets: kept, fullCount: fullCount, build: build, describe: describe)
+        return Self(buckets: kept, fullCount: fullCount, build: build, describe: describe)
     }
 
     /// Transform each case, keeping the order, the sizes and the addresses.
@@ -232,17 +238,14 @@ public struct Enumeration<Element: Sendable>: Sendable {
     public func map<Mapped: Sendable>(
         _ transform: @escaping @Sendable (Element) -> Mapped
     ) -> Enumeration<Mapped> {
-        let build = self.build
+        let buildCase = self.build
         return Enumeration<Mapped>(
             buckets: buckets,
             fullCount: fullCount,
-            build: { transform(build($0)) },
+            build: { transform(buildCase($0)) },
             describe: describe
         )
     }
-}
-
-extension Enumeration {
 
     /// Draw from this space at random, as an ordinary kit `Generator`.
     ///
@@ -280,7 +283,7 @@ extension Enumeration {
     /// property survives sampling intact, and it is the reason this is worth
     /// having despite the two paragraphs above.
     public var generator: Generator<Element, Shrink.Integer<Int>> {
-        precondition(count > 0, "Enumeration.generator: cannot draw from an empty space")
+        precondition(!isEmpty, "Enumeration.generator: cannot draw from an empty space")
         let space = self
         return Gen<Int>.int(in: 0 ..< count).map { space[$0] }
     }

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// A class that declares `Sendable` derives through its initializer, exactly as a struct with a
 /// user `init` does. Every draw calls the initializer, so each trial gets a fresh instance and no
@@ -17,9 +17,9 @@ struct SendableClassDerivationTests {
 
     private func classShape(
         _ name: String,
-        kind: TypeShape.Kind = .class,
         inheritedTypes: [String],
-        initializers: [InitializerSignature]
+        initializers: [InitializerSignature],
+        kind: TypeShape.Kind = .class
     ) -> TypeShape {
         TypeShape(
             name: name,
@@ -66,7 +66,7 @@ struct SendableClassDerivationTests {
     }
 
     @Test func actorStillDeclines() {
-        let shape = classShape("Store", kind: .actor, inheritedTypes: ["Sendable"], initializers: [emailInit])
+        let shape = classShape("Store", inheritedTypes: ["Sendable"], initializers: [emailInit], kind: .actor)
         #expect(reason(shape) != nil)
     }
 

@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Run `Codable` protocol laws over `Value` (PRD §4.3, §4.7).
@@ -26,11 +25,12 @@ public func checkCodablePropertyLaws<
     Value: Codable & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     config: CodableLawConfig<Value> = CodableLawConfig(),
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
+    // swiftlint:disable:next closure_body_length - the closure is the suite's law list
     try await runPropertyLawSuite(options: options) {
         let lawName = "Codable.roundTripFidelity[\(config.codec.identifier)]"
         let codec = config.codec
@@ -48,7 +48,7 @@ public func checkCodablePropertyLaws<
                 },
                 property: { trial in
                     switch trial {
-                    case .roundTripped(let original, let restored):
+                    case let .roundTripped(original, restored):
                         let passed = comparesEqual(original, restored, mode: mode)
                         if passed, let collector {
                             recordFieldDiffs(
@@ -58,6 +58,7 @@ public func checkCodablePropertyLaws<
                             )
                         }
                         return passed
+
                     case .threw:
                         return false
                     }
@@ -72,38 +73,6 @@ public func checkCodablePropertyLaws<
     }
 }
 
-/// Whole-trial sample for Codable: captures the original input, the restored
-/// value (or the encode/decode error), in a Sendable shape so the backend
-/// closure boundary stays clean.
-private enum CodableTrial<Value: Codable & Equatable & Sendable>: Sendable {
-    case roundTripped(original: Value, restored: Value)
-    case threw(original: Value, error: ErrorBox)
-
-    static func run<Shrinker: SendableSequenceType>(
-        generator: Generator<Value, Shrinker>,
-        rng: inout Xoshiro,
-        codec: CodableCodec<Value>
-    ) -> CodableTrial<Value> {
-        let value = generator.run(using: &rng)
-        do {
-            let data = try codec.encode(value)
-            let restored = try codec.decode(data)
-            return .roundTripped(original: value, restored: restored)
-        } catch {
-            return .threw(original: value, error: ErrorBox(error))
-        }
-    }
-
-    static func format(trial: CodableTrial<Value>, mode: CodableRoundTripMode<Value>) -> String {
-        switch trial {
-        case .roundTripped(let original, let restored):
-            return formatMismatch(original: original, restored: restored, mode: mode)
-        case .threw(let original, let error):
-            return "x = \(original); encode/decode threw: \(error.message)"
-        }
-    }
-}
-
 private func comparesEqual<Value>(
     _ original: Value,
     _ restored: Value,
@@ -112,8 +81,10 @@ private func comparesEqual<Value>(
     switch mode {
     case .strict:
         return original == restored
+
     case .semantic(let equivalent):
         return equivalent(original, restored)
+
     case .partial(let fields):
         for keyPath in fields {
             let originalField = String(describing: original[keyPath: keyPath])
@@ -121,30 +92,6 @@ private func comparesEqual<Value>(
             if originalField != restoredField { return false }
         }
         return true
-    }
-}
-
-private func formatMismatch<Value>(
-    original: Value,
-    restored: Value,
-    mode: CodableRoundTripMode<Value>
-) -> String where Value: Equatable & Sendable {
-    switch mode {
-    case .strict:
-        return "x = \(original), restored = \(restored); !(x == restored) under .strict"
-    case .semantic:
-        return "x = \(original), restored = \(restored); semantic equivalence returned false"
-    case .partial(let fields):
-        for keyPath in fields {
-            let originalField = String(describing: original[keyPath: keyPath])
-            let restoredField = String(describing: restored[keyPath: keyPath])
-            if originalField != restoredField {
-                return "x = \(original), restored = \(restored); "
-                    + "field at \(keyPath) differs: "
-                    + "\"\(originalField)\" vs \"\(restoredField)\""
-            }
-        }
-        return "x = \(original), restored = \(restored); .partial mode failure"
     }
 }
 
@@ -172,17 +119,5 @@ private func recordFieldDiffs<Value>(
         collector.record(
             "field \(labelText): \"\(originalDesc)\" → \"\(restoredDesc)\""
         )
-    }
-}
-
-extension CodableRoundTripMode {
-    /// `.semantic` and `.partial` can pass with field-level diffs; `.strict`
-    /// can't (any diff is the violation), so near-miss tracking is moot
-    /// there.
-    fileprivate var tracksFieldLevelNearMisses: Bool {
-        switch self {
-        case .strict: return false
-        case .semantic, .partial: return true
-        }
     }
 }

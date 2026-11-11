@@ -1,13 +1,13 @@
-import Foundation
-import Testing
+import Foundation // swiftlint:disable:this unused_import - for pow, which the analyzer credits to Darwin
 @testable import PropertyLawKit
+import Testing
 
 /// `Every.sequences` — the combinator the design note argued had no
 /// `StdlibUnittest` ancestor, and then did not ship.
 struct EnumerationSequenceTests {
 
     private func letters(_ count: Int) -> Enumeration<String> {
-        Every.elements("letter", in: (0 ..< count).map { String(UnicodeScalar(97 + $0)!) })
+        Every.elements("letter", in: (0 ..< count).map { String(UnicodeScalar(UInt8(97 + $0))) })
     }
 
     @Test func countMatchesTheGeometricSeries() {
@@ -24,7 +24,7 @@ struct EnumerationSequenceTests {
 
     @Test func unrankingIsABijection() {
         let space = Every.sequences("seq", of: letters(3), upTo: 4)
-        let walked = Set(space.indices.map { $0 }.map { space[$0] })
+        let walked = Set(space.indices.map(\.self).map { space[$0] })
         #expect(walked.count == 121, "a sequence was produced twice")
     }
 

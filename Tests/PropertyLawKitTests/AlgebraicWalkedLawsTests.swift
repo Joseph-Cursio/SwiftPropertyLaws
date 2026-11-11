@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// The algebraic cluster driven over a bounded carrier instead of a generator.
 ///
@@ -16,19 +16,23 @@ struct AlgebraicWalkedLawsTests {
     /// element has an inverse. Conforms all the way down the `Group` chain.
     private struct Mod8: Group, Equatable, Sendable, CustomStringConvertible {
         let raw: Int
-        static var identity: Mod8 { Mod8(raw: 0) }
-        static func combine(_ lhs: Mod8, _ rhs: Mod8) -> Mod8 { Mod8(raw: (lhs.raw + rhs.raw) % 8) }
-        static func inverse(_ value: Mod8) -> Mod8 { Mod8(raw: (8 - value.raw) % 8) }
+        static var identity: Self { Self(raw: 0) }
+
+        static func combine(_ lhs: Self, _ rhs: Self) -> Self { Self(raw: (lhs.raw + rhs.raw) % 8) }
+        static func inverse(_ value: Self) -> Self { Self(raw: (8 - value.raw) % 8) }
+
         var description: String { "\(raw)" }
     }
 
     /// `max` over `0 ... 7`: associative, commutative, idempotent, identity `0`.
     private struct MaxSeven: Semilattice, Equatable, Sendable, CustomStringConvertible {
         let raw: Int
-        static var identity: MaxSeven { MaxSeven(raw: 0) }
-        static func combine(_ lhs: MaxSeven, _ rhs: MaxSeven) -> MaxSeven {
-            MaxSeven(raw: max(lhs.raw, rhs.raw))
+        static var identity: Self { Self(raw: 0) }
+
+        static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+            Self(raw: max(lhs.raw, rhs.raw))
         }
+
         var description: String { "\(raw)" }
     }
 
@@ -43,13 +47,15 @@ struct AlgebraicWalkedLawsTests {
     /// The walk finds it every time, at the smallest triple that proves it.
     private struct RarelyNonAssociative: Semigroup, Equatable, Sendable, CustomStringConvertible {
         let raw: Int
+
         static func combine(
-            _ lhs: RarelyNonAssociative,
-            _ rhs: RarelyNonAssociative
-        ) -> RarelyNonAssociative {
-            if lhs.raw == 29 && rhs.raw == 27 { return RarelyNonAssociative(raw: 1) }
-            return RarelyNonAssociative(raw: (lhs.raw + rhs.raw) % 32)
+            _ lhs: Self,
+            _ rhs: Self
+        ) -> Self {
+            if lhs.raw == 29, rhs.raw == 27 { return Self(raw: 1) }
+            return Self(raw: (lhs.raw + rhs.raw) % 32)
         }
+
         var description: String { "\(raw)" }
     }
 
@@ -162,7 +168,9 @@ struct AlgebraicWalkedLawsTests {
             )
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let result = try? #require(reported)
         #expect(result?.isViolation == true)
         #expect(result?.coverage?.spaceSize == 32_768)
@@ -202,7 +210,9 @@ struct AlgebraicWalkedLawsTests {
             _ = try await checkSemigroupPropertyLaws(overEvery: rareCarrier())
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let result = try? #require(reported)
         #expect(result?.isViolation == true)
         // Lexicographically first violating triple over 0 ..< 32.

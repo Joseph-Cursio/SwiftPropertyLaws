@@ -18,7 +18,7 @@ public func checkIdentifiablePropertyLaws<
     Value: Identifiable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] where Value.ID: Sendable {
@@ -38,14 +38,15 @@ private func checkIdStability<
 ) async -> CheckResult where Value.ID: Sendable {
     await runUnaryLaw(
         "Identifiable.idStability",
-        tier: .conventional,
         generator: generator,
         options: options,
+        // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
         property: { sample in sample.id == sample.id },
         formatCounterexample: { sample, _ in
             let first = sample.id
             let second = sample.id
             return "x = \(sample); x.id evaluated twice: \(first) ≠ \(second)"
-        }
+        },
+        tier: .conventional
     )
 }

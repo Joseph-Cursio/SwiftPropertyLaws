@@ -1,6 +1,5 @@
-import Testing
 @testable import PropertyLawDiscoveryTool
-@testable import PropertyLawCore
+import Testing
 
 /// Unit tests for `RoundTripSuggester` (PRD §5.5 cross-function round-
 /// trip discovery, M5). Operates on synthetic `ConformanceMap`s — the
@@ -13,8 +12,8 @@ struct RoundTripSuggesterTests {
         let map = makeMap(memberFunctions: [
             "Codec": [
                 signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
-                signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true)
-            ]
+                signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true),
+            ],
         ])
         let suggestions = RoundTripSuggester.suggest(from: map)
         try #require(suggestions.count == 1)
@@ -28,7 +27,7 @@ struct RoundTripSuggesterTests {
     @Test func suggestsRoundTripForSerializeDeserializePair() throws {
         let map = makeMap(topLevelFunctions: [
             signature(name: "serialize", params: ["Foo"], ret: "Data"),
-            signature(name: "deserialize", params: ["Data"], ret: "Foo")
+            signature(name: "deserialize", params: ["Data"], ret: "Foo"),
         ])
         let suggestions = RoundTripSuggester.suggest(from: map)
         try #require(suggestions.count == 1)
@@ -43,11 +42,15 @@ struct RoundTripSuggesterTests {
         // explicit confirmation that the inverse signature is intentional.
         let map = makeMap(memberFunctions: [
             "Foo": [
-                signature(name: "toBytes", params: ["Foo"], ret: "Data",
-                          isStatic: true, group: "ser"),
-                signature(name: "fromBytes", params: ["Data"], ret: "Foo",
-                          isStatic: true, group: "ser")
-            ]
+                signature(
+                    name: "toBytes", params: ["Foo"], ret: "Data",
+                    isStatic: true, group: "ser"
+                ),
+                signature(
+                    name: "fromBytes", params: ["Data"], ret: "Foo",
+                    isStatic: true, group: "ser"
+                ),
+            ],
         ])
         let suggestions = RoundTripSuggester.suggest(from: map)
         try #require(suggestions.count == 1)
@@ -58,11 +61,15 @@ struct RoundTripSuggesterTests {
     @Test func mismatchedGroupValuesDoNotPromote() throws {
         let map = makeMap(memberFunctions: [
             "Foo": [
-                signature(name: "toBytes", params: ["Foo"], ret: "Data",
-                          isStatic: true, group: "groupA"),
-                signature(name: "fromBytes", params: ["Data"], ret: "Foo",
-                          isStatic: true, group: "groupB")
-            ]
+                signature(
+                    name: "toBytes", params: ["Foo"], ret: "Data",
+                    isStatic: true, group: "groupA"
+                ),
+                signature(
+                    name: "fromBytes", params: ["Data"], ret: "Foo",
+                    isStatic: true, group: "groupB"
+                ),
+            ],
         ])
         // Signatures invert → MEDIUM. No naming pair, no group match.
         // Default floor (HIGH) filters this out.
@@ -81,7 +88,7 @@ struct RoundTripSuggesterTests {
     @Test(arguments: [
         (SuggestionConfidence.high, 0),
         (.medium, 1),
-        (.low, 1)
+        (.low, 1),
     ])
     func signatureOnlyPairFiltersByFloor(
         floor: SuggestionConfidence,
@@ -90,8 +97,8 @@ struct RoundTripSuggesterTests {
         let map = makeMap(memberFunctions: [
             "Box": [
                 signature(name: "wrap", params: ["Foo"], ret: "Data", isStatic: true),
-                signature(name: "unwrap", params: ["Data"], ret: "Foo", isStatic: true)
-            ]
+                signature(name: "unwrap", params: ["Data"], ret: "Foo", isStatic: true),
+            ],
         ])
         let suggestions = RoundTripSuggester.suggest(from: map, minConfidence: floor)
         try #require(suggestions.count == expectedCount)
@@ -108,14 +115,14 @@ struct RoundTripSuggesterTests {
     /// rests on its names alone, which is LOW.
     @Test(arguments: [
         ("Data", "Bar"),
-        ("Blob", "Foo")
+        ("Blob", "Foo"),
     ])
     func halfAnInversionIsNotAnInversion(decodeParameter: String, decodeReturn: String) throws {
         let map = makeMap(memberFunctions: [
             "Codec": [
                 signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
-                signature(name: "decode", params: [decodeParameter], ret: decodeReturn, isStatic: true)
-            ]
+                signature(name: "decode", params: [decodeParameter], ret: decodeReturn, isStatic: true),
+            ],
         ])
         #expect(RoundTripSuggester.suggest(from: map).isEmpty)
         let lowered = RoundTripSuggester.suggest(from: map, minConfidence: .low)
@@ -147,7 +154,7 @@ struct RoundTripSuggesterTests {
     @Test(arguments: [
         (SuggestionConfidence.high, 0),
         (.medium, 0),
-        (.low, 1)
+        (.low, 1),
     ])
     func nameOnlyPairFiltersByFloor(
         floor: SuggestionConfidence,
@@ -156,8 +163,8 @@ struct RoundTripSuggesterTests {
         let map = makeMap(memberFunctions: [
             "Stack": [
                 signature(name: "push", params: ["Element"], ret: "Void"),
-                signature(name: "pop", params: [], ret: "Element?")
-            ]
+                signature(name: "pop", params: [], ret: "Element?"),
+            ],
         ])
         let suggestions = RoundTripSuggester.suggest(from: map, minConfidence: floor)
         try #require(suggestions.count == expectedCount)
@@ -176,8 +183,8 @@ struct RoundTripSuggesterTests {
         let map = makeMap(memberFunctions: [
             "Codec": [
                 signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true),
-                signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true)
-            ]
+                signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
+            ],
         ])
         let suggestions = RoundTripSuggester.suggest(from: map)
         try #require(suggestions.count == 1)
@@ -195,7 +202,7 @@ struct RoundTripSuggesterTests {
             memberFunctions: [
                 "Codec": [
                     signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true)
-                ]
+                ],
             ],
             topLevelFunctions: [
                 signature(name: "decode", params: ["Data"], ret: "Foo")
@@ -209,12 +216,12 @@ struct RoundTripSuggesterTests {
             memberFunctions: [
                 "Codec": [
                     signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
-                    signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true)
-                ]
+                    signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true),
+                ],
             ],
             topLevelFunctions: [
                 signature(name: "serialize", params: ["Bar"], ret: "Data"),
-                signature(name: "deserialize", params: ["Data"], ret: "Bar")
+                signature(name: "deserialize", params: ["Data"], ret: "Bar"),
             ]
         )
         let suggestions = RoundTripSuggester.suggest(from: map)
@@ -233,16 +240,16 @@ struct RoundTripSuggesterTests {
             memberFunctions: [
                 "Banana": [
                     signature(name: "encode", params: ["Foo"], ret: "Data", isStatic: true),
-                    signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true)
+                    signature(name: "decode", params: ["Data"], ret: "Foo", isStatic: true),
                 ],
                 "Apple": [
                     signature(name: "serialize", params: ["Foo"], ret: "Data", isStatic: true),
-                    signature(name: "deserialize", params: ["Data"], ret: "Foo", isStatic: true)
-                ]
+                    signature(name: "deserialize", params: ["Data"], ret: "Foo", isStatic: true),
+                ],
             ],
             topLevelFunctions: [
                 signature(name: "compress", params: ["Bar"], ret: "Zip"),
-                signature(name: "decompress", params: ["Zip"], ret: "Bar")
+                signature(name: "decompress", params: ["Zip"], ret: "Bar"),
             ]
         )
         let suggestions = RoundTripSuggester.suggest(from: map)
@@ -263,8 +270,8 @@ struct RoundTripSuggesterTests {
                 signature(name: "encode", params: ["Bar"], ret: "Data", isStatic: true),
                 signature(name: "decode", params: ["Data"], ret: "Bar", isStatic: true),
                 signature(name: "compress", params: ["Foo"], ret: "Zip", isStatic: true),
-                signature(name: "decompress", params: ["Zip"], ret: "Foo", isStatic: true)
-            ]
+                signature(name: "decompress", params: ["Zip"], ret: "Foo", isStatic: true),
+            ],
         ])
         #expect(RoundTripSuggester.suggest(from: map).map(\.forward.name) == ["compress", "encode"])
     }
@@ -279,8 +286,8 @@ struct RoundTripSuggesterTests {
         let map = makeMap(memberFunctions: [
             "Foo": [
                 signature(name: "describe", params: [], ret: "String"),
-                signature(name: "render", params: ["Style"], ret: "View")
-            ]
+                signature(name: "render", params: ["Style"], ret: "View"),
+            ],
         ])
         #expect(RoundTripSuggester.suggest(from: map).isEmpty)
     }

@@ -1,5 +1,5 @@
 diff --git a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
-index bf7b265..63cd6a1 100644
+index 7bda791..ff14b4c 100644
 --- a/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
 +++ b/Sources/PropertyLawDiscoveryTool/SendableProtocols.swift
 @@ -63,7 +63,7 @@ enum SendableProtocols {
@@ -8,6 +8,6 @@ index bf7b265..63cd6a1 100644
          "CustomNSError", "LocalizedError", "RecoverableError",
 -        "AttributedStringProtocol", "NotificationCenter.AsyncMessage",
 +        "AttributedStringProtocol", "AsyncMessage",
-         "SortComparator", "StandardPredicateExpression"
+         "SortComparator", "StandardPredicateExpression",
      ]
  

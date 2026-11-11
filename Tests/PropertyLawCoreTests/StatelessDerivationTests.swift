@@ -76,9 +76,11 @@ struct StatelessDerivationTests {
     func argumentInitRefuses() {
         let strategy = DerivationStrategist.strategy(for: shape(
             hasUserInit: true,
-            initializers: [InitializerSignature(parameters: [
-                InitializerParameter(label: "registry", typeName: "SomeRegistry")
-            ])]
+            initializers: [
+                InitializerSignature(parameters: [
+                    InitializerParameter(label: "registry", typeName: "SomeRegistry")
+                ]),
+            ]
         ))
         #expect(isTodo(strategy))
     }
@@ -95,7 +97,7 @@ struct StatelessDerivationTests {
         let unusable = [
             InitializerSignature(parameters: [], isFailable: true),
             InitializerSignature(parameters: [], isThrowing: true),
-            InitializerSignature(parameters: [], accessLevel: .private)
+            InitializerSignature(parameters: [], accessLevel: .private),
         ]
         for initializer in unusable {
             let strategy = DerivationStrategist.strategy(for: shape(
@@ -135,7 +137,7 @@ struct StatelessDerivationTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "registrar", typeName: "Registrar"),
-                StoredMember(name: "count", typeName: "Int")
+                StoredMember(name: "count", typeName: "Int"),
             ]
         )
         let resolver = GeneratorResolver(types: [owner, shape()])

@@ -1,6 +1,6 @@
-import Testing
-@testable import PropertyLawDiscoveryTool
 @testable import PropertyLawCore
+@testable import PropertyLawDiscoveryTool
+import Testing
 
 // swiftlint:disable type_body_length
 
@@ -61,8 +61,8 @@ struct EmitterGoldenTests {
         )
         #expect(output.contains("@Test func equatable_Record() async throws {"))
         #expect(output.contains("@Test func codable_Record() async throws {"))
-        let equatableRange = output.range(of: "equatable_Record")!
-        let codableRange = output.range(of: "codable_Record")!
+        let equatableRange = try #require(output.range(of: "equatable_Record"))
+        let codableRange = try #require(output.range(of: "codable_Record"))
         #expect(equatableRange.lowerBound < codableRange.lowerBound)
         // One blank line between two tests, and none after the opening brace.
         let lines = output.components(separatedBy: "\n")
@@ -85,7 +85,7 @@ struct EmitterGoldenTests {
                 filePath: "Sources/MyModule/Foo+Hashable.swift",
                 line: 3,
                 kind: .extension
-            )
+            ),
         ]
         let output = GeneratedFileEmitter.emit(
             target: "MyModule",
@@ -104,7 +104,7 @@ struct EmitterGoldenTests {
         let map = ConformanceMap(
             entries: [
                 entry("Bar", conformances: [.hashable]),
-                entry("Foo", conformances: [.equatable])
+                entry("Foo", conformances: [.equatable]),
             ],
             parseFailures: []
         )
@@ -151,7 +151,7 @@ struct EmitterGoldenTests {
                 ConformanceMap.ParseFailure(
                     filePath: "/path/Bad.swift",
                     message: "unreadable"
-                )
+                ),
             ]
         )
         let output = GeneratedFileEmitter.emit(target: "X", map: map)
@@ -235,10 +235,12 @@ struct EmitterGoldenTests {
         let output = GeneratedFileEmitter.emit(
             target: "X",
             map: ConformanceMap(
-                entries: [entry(
-                    "Buffer",
-                    conformances: [.mutableCollection, .rangeReplaceableCollection]
-                )],
+                entries: [
+                    entry(
+                        "Buffer",
+                        conformances: [.mutableCollection, .rangeReplaceableCollection]
+                    ),
+                ],
                 parseFailures: []
             )
         )
@@ -255,16 +257,18 @@ struct EmitterGoldenTests {
         // falling back to `<TypeName>.gen()`.
         let strategy: DerivationStrategy = .memberwiseArbitrary(members: [
             MemberSpec(name: "easting", rawType: .int),
-            MemberSpec(name: "northing", rawType: .int)
+            MemberSpec(name: "northing", rawType: .int),
         ])
         let output = GeneratedFileEmitter.emit(
             target: "X",
             map: ConformanceMap(
-                entries: [entry(
-                    "Coordinate",
-                    conformances: [.equatable],
-                    strategy: strategy
-                )],
+                entries: [
+                    entry(
+                        "Coordinate",
+                        conformances: [.equatable],
+                        strategy: strategy
+                    ),
+                ],
                 parseFailures: []
             )
         )

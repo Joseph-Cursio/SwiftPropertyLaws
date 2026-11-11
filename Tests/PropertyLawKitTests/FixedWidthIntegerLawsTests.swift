@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct FixedWidthIntegerLawsTests {
 
@@ -46,9 +46,8 @@ struct FixedWidthIntegerLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstFixedWidthIndex = laws.firstIndex { $0.hasPrefix("FixedWidthInteger.") }
-        #expect(firstFixedWidthIndex != nil)
-        let inheritedLaws = laws[..<firstFixedWidthIndex!]
+        let firstFixedWidthIndex = try #require(laws.firstIndex { $0.hasPrefix("FixedWidthInteger.") })
+        let inheritedLaws = laws[..<firstFixedWidthIndex]
         #expect(inheritedLaws.contains { $0.hasPrefix("AdditiveArithmetic.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Numeric.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("BinaryInteger.") })
@@ -83,7 +82,7 @@ struct FixedWidthIntegerLawsTests {
             "FixedWidthInteger.wrappingArithmeticDoesNotTrap",
             "FixedWidthInteger.minMaxBoundsAreReachable",
             "FixedWidthInteger.byteSwappedInvolution",
-            "FixedWidthInteger.nonzeroBitCountRange"
+            "FixedWidthInteger.nonzeroBitCountRange",
         ])
     }
 }

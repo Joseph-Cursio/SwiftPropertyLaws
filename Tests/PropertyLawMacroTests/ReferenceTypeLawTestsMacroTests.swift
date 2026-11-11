@@ -1,7 +1,7 @@
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 /// v3.9.0 — golden-output tests for the reference-type law test macros,
 /// `@DefensiveCopyTests` + `@StableIdentityTests` (they share
@@ -9,7 +9,7 @@ import Testing
 
 nonisolated(unsafe) let referenceTypeLawMacros: [String: Macro.Type] = [
     "DefensiveCopyTests": DefensiveCopyTestsMacro.self,
-    "StableIdentityTests": StableIdentityTestsMacro.self
+    "StableIdentityTests": StableIdentityTestsMacro.self,
 ]
 
 struct ReferenceTypeLawTestsMacroTests {
@@ -76,7 +76,7 @@ struct ReferenceTypeLawTestsMacroTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: referenceTypeLawMacros
         )

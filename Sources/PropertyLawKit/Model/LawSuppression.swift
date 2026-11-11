@@ -24,17 +24,18 @@ public struct LawSuppression: Sendable, Hashable {
         self.kind = kind
         self.reason = reason
     }
-}
 
-extension LawSuppression {
-    public static func skip(_ identifier: LawIdentifier, reason: String) -> LawSuppression {
-        LawSuppression(identifier: identifier, kind: .skip, reason: reason)
+    /// Does not run the law. Its result reports `.suppressed` with `reason`.
+    public static func skip(_ identifier: LawIdentifier, reason: String) -> Self {
+        Self(identifier: identifier, kind: .skip, reason: reason)
     }
 
+    /// Runs the law and expects it to fail. A failure is reported as an expected violation with `reason`
+    /// instead of being thrown.
     public static func intentionalViolation(
         _ identifier: LawIdentifier,
         reason: String
-    ) -> LawSuppression {
-        LawSuppression(identifier: identifier, kind: .intentionalViolation, reason: reason)
+    ) -> Self {
+        Self(identifier: identifier, kind: .intentionalViolation, reason: reason)
     }
 }

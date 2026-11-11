@@ -16,9 +16,9 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
     /// reference produced by the custom-type resolver.
     case leaf(expression: String, imports: Set<String>)
     /// `T?` → `<element>.optional`.
-    case optional(GeneratorPlan)
+    case optional(Self)
     /// `[T]` → `<element>.array(of: 0...8)`.
-    case array(GeneratorPlan)
+    case array(Self)
     /// `ArraySlice<T>` → the array generator re-sliced.
     ///
     /// A distinct case rather than a spelling of `.array` because the *type* is
@@ -26,11 +26,11 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
     /// Requested by a downstream consumer with a measured need
     /// (`ArraySlice<CodeBlockItemSyntax>`), and general — `ArraySlice` is a
     /// stdlib type, not a swift-syntax one.
-    case arraySlice(GeneratorPlan)
+    case arraySlice(Self)
     /// `Set<T>` → `<element>.set(ofAtMost: 0...8)`.
-    case set(GeneratorPlan)
+    case set(Self)
     /// `[K: V]` → `zip(<key>, <value>).dictionary(ofAtMost: 0...8)`.
-    case dictionary(key: GeneratorPlan, value: GeneratorPlan)
+    case dictionary(key: Self, value: Self)
     /// An unresolvable slot — a type with no derivable generator. Renders as
     /// a Swift editor placeholder for the developer to fill (scaffolding).
     case hole(typeName: String, reason: String)
@@ -61,20 +61,28 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
         switch self {
         case .leaf(let expression, _):
             return expression
+
         case .optional(let element):
             return "\(element.rendered).optional"
+
         case .array(let element):
             return "\(element.rendered).array(of: 0...8)"
+
         case .arraySlice(let element):
             return "\(element.rendered).array(of: 0...8).map { $0[...] }"
+
         case .set(let element):
             return "\(element.rendered).set(ofAtMost: 0...8)"
-        case .dictionary(let key, let value):
+
+        case let .dictionary(key, value):
             return "zip(\(key.rendered), \(value.rendered)).dictionary(ofAtMost: 0...8)"
+
         case .hole(let typeName, _):
             return "<#Generator<\(typeName)>#>"
+
         case .recursive(_, let helperName, _, _):
             return "\(helperName)(\(Self.defaultDepthBudget))"
+
         case .selfReference(_, let helperName):
             return "\(helperName)(budget - 1)"
         }
@@ -111,38 +119,46 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
         switch self {
         case .leaf(let expression, _):
             return expression
+
         case .selfReference:
             // No wrapper above us to supply a terminal — uninhabitable.
             return nil
+
         case .optional(let element):
             if case .selfReference(let typeName, _) = element {
                 return "Gen<\(typeName)?>.always(nil)"
             }
             return element.renderedBase.map { "\($0).optional" }
+
         case .array(let element):
             if case .selfReference(let typeName, _) = element {
                 return "Gen<[\(typeName)]>.always([])"
             }
             return element.renderedBase.map { "\($0).array(of: 0...8)" }
+
         case .arraySlice(let element):
             if case .selfReference(let typeName, _) = element {
                 return "Gen<ArraySlice<\(typeName)>>.always([])"
             }
             return element.renderedBase.map { "\($0).array(of: 0...8).map { $0[...] }" }
+
         case .set(let element):
             if case .selfReference(let typeName, _) = element {
                 return "Gen<Set<\(typeName)>>.always([])"
             }
             return element.renderedBase.map { "\($0).set(ofAtMost: 0...8)" }
-        case .dictionary(let key, let value):
+
+        case let .dictionary(key, value):
             if case .selfReference(let typeName, _) = value {
                 return "Gen<[\(key.rendered): \(typeName)]>.always([:])"
             }
             guard let keyBase = key.renderedBase,
                   let valueBase = value.renderedBase else { return nil }
             return "zip(\(keyBase), \(valueBase)).dictionary(ofAtMost: 0...8)"
+
         case .hole(let typeName, _):
             return "<#Generator<\(typeName)>#>"
+
         case .recursive(_, let helperName, _, _):
             return "\(helperName)(\(Self.defaultDepthBudget))"
         }
@@ -155,11 +171,14 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
         switch self {
         case .leaf, .hole, .selfReference:
             return []
+
         case .optional(let element), .array(let element),
              .arraySlice(let element), .set(let element):
             return element.supportingDeclarations
-        case .dictionary(let key, let value):
+
+        case let .dictionary(key, value):
             return key.supportingDeclarations + value.supportingDeclarations
+
         case .recursive(_, _, let declaration, _):
             return [declaration]
         }
@@ -171,12 +190,15 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
         switch self {
         case .selfReference:
             return true
+
         case .leaf, .hole, .recursive:
             return false
+
         case .optional(let element), .array(let element),
              .arraySlice(let element), .set(let element):
             return element.containsSelfReference
-        case .dictionary(let key, let value):
+
+        case let .dictionary(key, value):
             return key.containsSelfReference || value.containsSelfReference
         }
     }
@@ -186,13 +208,17 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
         switch self {
         case .leaf(_, let imports):
             return imports
+
         case .optional(let element), .array(let element),
              .arraySlice(let element), .set(let element):
             return element.requiredImports
-        case .dictionary(let key, let value):
+
+        case let .dictionary(key, value):
             return key.requiredImports.union(value.requiredImports)
+
         case .hole, .selfReference:
             return []
+
         case .recursive(_, _, _, let imports):
             return imports
         }
@@ -203,13 +229,17 @@ public indirect enum GeneratorPlan: Sendable, Equatable {
         switch self {
         case .leaf, .recursive:
             return true
+
         case .optional(let element), .array(let element),
              .arraySlice(let element), .set(let element):
             return element.isComplete
-        case .dictionary(let key, let value):
+
+        case let .dictionary(key, value):
             return key.isComplete && value.isComplete
+
         case .hole:
             return false
+
         // A bare recursion point outside a `.recursive` body is a resolver bug,
         // not a derivable generator.
         case .selfReference:

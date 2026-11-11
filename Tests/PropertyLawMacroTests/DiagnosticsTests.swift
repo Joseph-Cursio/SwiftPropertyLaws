@@ -1,8 +1,7 @@
 import PropertyLawCore
-import SwiftSyntaxMacros
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 struct DiagnosticsTests {
 
@@ -41,7 +40,7 @@ struct DiagnosticsTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: testMacros
         )
@@ -66,7 +65,7 @@ struct DiagnosticsTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: testMacros
         )
@@ -147,7 +146,7 @@ struct DiagnosticsTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: testMacros
         )
@@ -267,7 +266,7 @@ struct DiagnosticsTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: testMacros
         )

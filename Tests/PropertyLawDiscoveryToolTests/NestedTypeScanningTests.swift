@@ -1,7 +1,7 @@
 import Foundation
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// **The scanner walked top-level statements only.** A type declared inside
 /// another type — or inside an `extension`, which is how swift-collections

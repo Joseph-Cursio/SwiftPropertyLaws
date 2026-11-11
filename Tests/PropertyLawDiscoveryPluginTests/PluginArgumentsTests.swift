@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// `ParsedArguments` and `PluginError` are compiled into this target through
 /// symlinks into `Plugins/PropertyLawDiscoveryPlugin`, since a plugin target
@@ -15,7 +15,7 @@ struct PluginArgumentsTests {
             "--extra-import", "PropertyLawSyntax",
             "--advisory",
             "--extra-import", "OtherModule",
-            "--advisory-min", "low"
+            "--advisory-min", "low",
         ])
         #expect(parsed.subcommand == "discover")
         #expect(parsed.target == "MyModule")
@@ -34,7 +34,7 @@ struct PluginArgumentsTests {
         #expect(parsed.target == nil)
         #expect(parsed.outputPath == nil)
         #expect(parsed.scaffoldOutputPath == nil)
-        #expect(parsed.extraImports == [])
+        #expect(parsed.extraImports.isEmpty)
         #expect(parsed.advisory == false)
         #expect(parsed.advisoryMin == nil)
     }
@@ -69,7 +69,7 @@ struct PluginArgumentsTests {
             "--advisory",
             "--scaffold-out", "/tmp/scaffold.swift",
             "--advisory-min", "medium",
-            "--extra-import", "B"
+            "--extra-import", "B",
         ])
         let arguments = parsed.toolArguments(
             target: "MyModule",
@@ -86,7 +86,7 @@ struct PluginArgumentsTests {
             "--advisory",
             "--advisory-min", "medium",
             "--source-files", "/a.swift", "/b.swift",
-            "--context-files", "Dep=/dep.swift"
+            "--context-files", "Dep=/dep.swift",
         ])
     }
 
@@ -112,7 +112,7 @@ struct PluginArgumentsTests {
             "discover", "--target", "MyModule",
             "--scaffold-out", "/tmp/scaffold.swift",
             "--extra-import", "PropertyLawSyntax", "--extra-import", "OtherModule",
-            "--advisory", "--advisory-min", "low"
+            "--advisory", "--advisory-min", "low",
         ])
         let invocation = try ToolInvocation(arguments: parsed.toolArguments(
             target: "MyModule",

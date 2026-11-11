@@ -322,7 +322,7 @@ swift package clean && swift test
 swiftlint lint
 ```
 
-Both should be silent on a clean checkout.
+The tests should pass silently on a clean checkout. `swiftlint lint` takes its rules from [SwiftLintConfig](https://github.com/Joseph-Cursio/SwiftLintConfig), cloned beside this repository; it reports only the public-API items deferred to the next major version.
 
 ## License
 

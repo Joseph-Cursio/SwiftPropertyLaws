@@ -21,7 +21,7 @@ import PropertyBased
 /// collections/async workplan).
 @discardableResult
 public func checkIteratorProtocolPropertyLaws<S: Sequence & Sendable, Sh: SendableSequenceType>(
-    for type: S.Type = S.self,
+    for _: S.Type = S.self,
     using generator: Generator<S, Sh>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult]
@@ -30,24 +30,24 @@ where S.Element: Sendable {
         [
             await runUnaryLaw(
                 "IteratorProtocol.terminationStability",
-                tier: .conventional,
                 generator: generator,
                 options: options,
                 property: { sample in iteratorTerminationCounterexample(for: sample) == nil },
                 formatCounterexample: { sample, _ in
                     iteratorTerminationCounterexample(for: sample) ?? "<no counterexample>"
-                }
+                },
+                tier: .conventional
             ),
             await runUnaryLaw(
                 "IteratorProtocol.singlePassYield",
-                tier: .conventional,
                 generator: generator,
                 options: options,
                 property: { sample in iteratorSinglePassCounterexample(for: sample) == nil },
                 formatCounterexample: { sample, _ in
                     iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
-                }
-            )
+                },
+                tier: .conventional
+            ),
         ]
     }
 }

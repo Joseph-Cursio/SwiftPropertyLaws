@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// The user-`init` `.todo` reason names the parameter that stopped derivation,
 /// where it used to say only that *some* initializer had *some* parameter that
@@ -46,7 +46,7 @@ struct InitializerTodoReasonTests {
     func skipsDeclinedInitializer() throws {
         let text = try #require(reason(shape([
             InitializerSignature(parameters: [parameter("a", "Ignored")], isFailable: true),
-            InitializerSignature(parameters: [parameter("b", "Int"), parameter("c", "Blocking")])
+            InitializerSignature(parameters: [parameter("b", "Int"), parameter("c", "Blocking")]),
         ])))
         #expect(text.contains("`init(b:c:)` takes `c: Blocking`"))
         #expect(!text.contains("Ignored"))
@@ -56,9 +56,8 @@ struct InitializerTodoReasonTests {
     func consultsResolver() throws {
         let resolved = DerivationStrategist.ComposedGenerator(expression: "Known.gen()")
         let text = try #require(reason(
-            shape([InitializerSignature(parameters: [parameter("known", "Known"), parameter("other", "Other")])]),
-            resolve: { $0 == "Known" ? resolved : nil }
-        ))
+            shape([InitializerSignature(parameters: [parameter("known", "Known"), parameter("other", "Other")])])
+        ) { $0 == "Known" ? resolved : nil })
         #expect(text.contains("takes `other: Other`"))
         #expect(!text.contains("known: Known"))
     }

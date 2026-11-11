@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Where a type offers `init(x: T)` and `init(xs: [T])`, the collection form is derived: one element is
 /// a corner of the domain the collection form already includes.

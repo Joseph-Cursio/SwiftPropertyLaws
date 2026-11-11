@@ -37,12 +37,12 @@ enum WitnessFinder {
         // `static func ==(lhs:rhs:) -> Bool`. We don't inspect parameter
         // types — `static func ==` is unambiguous in Swift; only the
         // Equatable witness uses that name.
-        if isStatic && name == "==" {
+        if isStatic, name == "==" {
             result.hasEqualEqualOperator = true
         }
 
         // `static func <(lhs:rhs:) -> Bool` — same logic.
-        if isStatic && name == "<" {
+        if isStatic, name == "<" {
             result.hasLessThanOperator = true
         }
 

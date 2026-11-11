@@ -23,16 +23,16 @@ public struct Environment: Sendable, Hashable, Codable {
     /// `CheckResult` literals; production paths go through
     /// `Environment.current(backend:)` so the recorded backend matches the
     /// one that actually ran the check.
-    public static var current: Environment {
-        Environment(
+    public static var current: Self {
+        Self(
             swiftVersion: detectedSwiftVersion,
             backendIdentity: SwiftPropertyBasedBackend().identifier,
             generatorSchemaHash: "m1-no-registry"
         )
     }
 
-    public static func current(backend: any PropertyBackend) -> Environment {
-        Environment(
+    public static func current(backend: any PropertyBackend) -> Self {
+        Self(
             swiftVersion: detectedSwiftVersion,
             backendIdentity: backend.identifier,
             generatorSchemaHash: "m1-no-registry"

@@ -49,7 +49,7 @@ where Value.Element: Equatable & Sendable {
             await checkEmptyInitIsEmpty(generator: generator, options: options),
             await checkRemoveAtInsertRoundTrip(generator: generator, options: options),
             await checkRemoveAllMakesEmpty(generator: generator, options: options),
-            await checkReplaceSubrangeAppliesEdit(generator: generator, options: options)
+            await checkReplaceSubrangeAppliesEdit(generator: generator, options: options),
         ])
         return results
     }

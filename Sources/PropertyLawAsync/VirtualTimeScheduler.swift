@@ -63,19 +63,41 @@ enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
         case .deadlock(let now):
             return "virtual-time deadlock at \(now): every task is blocked and "
                 + "none is sleeping on the clock"
+
         case let .horizonExceeded(horizon, nextDeadline):
             return "virtual time would pass its horizon of \(horizon): the next "
                 + "sleeper wakes at \(nextDeadline)"
+
         case .hookUnavailable:
             return "the Swift runtime's global enqueue hook was not found, so "
                 + "virtual time cannot capture the tasks under test"
+
         case .foreignHookInstalled:
             return "another global enqueue hook is installed (is this running "
                 + "inside withMainSerialExecutor?); virtual time cannot share it"
+
         case .nestedRun:
             return "runInVirtualTime was called from inside a virtual-time run; "
                 + "runs do not nest"
         }
+    }
+}
+
+/// The body's result, set once from inside the run.
+private final class RunOutcome<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: Result<Value, Error>?
+
+    var result: Result<Value, Error>? {
+        lock.lock()
+        defer { lock.unlock() }
+        return stored
+    }
+
+    func record(_ result: Result<Value, Error>) {
+        lock.lock()
+        stored = result
+        lock.unlock()
     }
 }
 
@@ -217,23 +239,5 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
             timeline.cancelAll()
         }
         drain()
-    }
-}
-
-/// The body's result, set once from inside the run.
-private final class RunOutcome<Value: Sendable>: @unchecked Sendable {
-    private let lock = NSLock()
-    private var stored: Result<Value, Error>?
-
-    var result: Result<Value, Error>? {
-        lock.lock()
-        defer { lock.unlock() }
-        return stored
-    }
-
-    func record(_ result: Result<Value, Error>) {
-        lock.lock()
-        stored = result
-        lock.unlock()
     }
 }

@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 // Same PRD §8 self-test gate as `PlantedBugDetectionTests`, split from it
 // when that file passed SwiftLint's 400-line ceiling. The seam is by law
@@ -118,6 +118,7 @@ struct PlantedBugRoundTripDetectionTests {
                 options: LawCheckOptions(budget: .sanity)
             )
         }
+        // swiftlint:disable:next prefer_key_path - a key path here makes #expect's expansion fail to compile
         #expect(results.contains { $0.isViolation })
         #expect(results.contains { $0.protocolLaw == "Identifiable.idStability" })
         #expect(lawsReported(in: warnings) == ["Identifiable.idStability"])

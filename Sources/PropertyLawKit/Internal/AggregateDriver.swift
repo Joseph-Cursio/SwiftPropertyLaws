@@ -55,6 +55,7 @@ internal enum AggregateDriver {
             switch try await check(&rng, trials) {
             case .passed:
                 outcome = .passed
+
             case .failed(let counterexample):
                 outcome = .failed(counterexample: counterexample)
             }

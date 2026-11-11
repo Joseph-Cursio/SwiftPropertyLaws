@@ -25,7 +25,7 @@ public func checkRingPropertyLaws<
     Value: Ring & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -45,7 +45,7 @@ public func checkRingPropertyLaws<
 /// result reports the shortfall rather than claiming completeness.
 @discardableResult
 public func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -60,7 +60,7 @@ public func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
 /// `options.budget` decides the number of draws.
 @discardableResult
 public func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     sampling carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -85,7 +85,7 @@ func checkRingPropertyLaws<Value: Ring & Equatable & Sendable>(
             await checkMultiplyLeftIdentity(source: source, options: options),
             await checkMultiplyRightIdentity(source: source, options: options),
             await checkLeftDistributivity(source: source, options: options),
-            await checkRightDistributivity(source: source, options: options)
+            await checkRightDistributivity(source: source, options: options),
         ]
     }
 }

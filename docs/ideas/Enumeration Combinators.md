@@ -22,7 +22,7 @@ or **reasoned** (designed, not built). Nothing is asserted without one of the tw
 Here it is stronger than that — the layouts are reached with probability **zero**, and the
 example is our code, not Apple's.
 
-`Sources/PropertyLawCollections/DequeGenerators.swift:18` is the kit's only `Deque` source:
+`Sources/PropertyLawCollections/Gen+Deque.swift:18` is the kit's only `Deque` source:
 
 ```swift
 Gen<Int>.int(in: -100 ... 100).array(of: count).map { Deque($0) }

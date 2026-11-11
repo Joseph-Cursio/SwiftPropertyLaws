@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// A composite spelling fails because of a leaf inside it, and the `.todo`
 /// reason names that leaf — `Widget`, not `[String: [Widget]]`.
@@ -17,7 +17,7 @@ struct UnresolvedLeafNamingTests {
     @Test("each composite form is looked inside", arguments: [
         "[Widget]", "Widget?", "Optional<Widget>", "Array<Widget>", "ArraySlice<Widget>",
         "Set<Widget>", "[String: [Widget]]", "[Widget: Int]", "Dictionary<Int, Set<Widget>>",
-        "[[Widget?]]", " [ Widget ] "
+        "[[Widget?]]", " [ Widget ] ",
     ])
     func compositeFormsReachTheLeaf(typeName: String) {
         #expect(leaf(typeName) == "Widget")
@@ -86,9 +86,11 @@ struct UnresolvedLeafNamingTests {
             name: "Doc", kind: .struct, inheritedTypes: ["Equatable"], hasUserGen: false,
             storedMembers: [StoredMember(name: "links", typeName: "Int")],
             hasUserInit: true,
-            initializers: [InitializerSignature(parameters: [
-                InitializerParameter(label: "links", typeName: "Set<Widget>")
-            ])]
+            initializers: [
+                InitializerSignature(parameters: [
+                    InitializerParameter(label: "links", typeName: "Set<Widget>")
+                ]),
+            ]
         )))
         #expect(text.contains(
             "`init(links:)` takes `links: Set<Widget>`, which resolves to no generator because `Widget` does not."
@@ -99,9 +101,11 @@ struct UnresolvedLeafNamingTests {
     func enumMessageNamesLeaf() throws {
         let text = try #require(todo(TypeShape(
             name: "Event", kind: .enum, inheritedTypes: ["Equatable"], hasUserGen: false,
-            enumCases: [EnumCase(name: "batch", associatedValues: [
-                InitializerParameter(label: nil, typeName: "[Widget]")
-            ])]
+            enumCases: [
+                EnumCase(name: "batch", associatedValues: [
+                    InitializerParameter(label: nil, typeName: "[Widget]")
+                ]),
+            ]
         )))
         #expect(text.contains(
             "of type `[Widget]`, which resolves to no generator because `Widget` does not."

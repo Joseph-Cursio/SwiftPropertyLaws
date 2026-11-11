@@ -1,6 +1,17 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+/// Planted bug: reflexivity (`x == x`) fails once `raw >= 1000`.
+private struct BrokenAboveThreshold: Equatable, Sendable {
+    let raw: Int
+
+    init(_ raw: Int) { self.raw = raw }
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        if lhs.raw >= 1_000, rhs.raw >= 1_000 { return false }   // breaks reflexivity
+        return lhs.raw == rhs.raw
+    }
+}
 
 /// v2.4 — backend shrinking (minimal counterexamples).
 ///
@@ -44,7 +55,7 @@ struct BackendShrinkingTests {
         // Force a failure by setting a tiny budget that still samples large
         // ints; threshold 1000 fails on almost every draw from 0...1_000_000.
         let result = await run(
-            failingIntCheck(threshold: 1000, shrink: halveTowardZero),
+            failingIntCheck(threshold: 1_000, shrink: halveTowardZero),
             options: LawCheckOptions(budget: .standard)
         )
 
@@ -60,7 +71,7 @@ struct BackendShrinkingTests {
         // The minimal value still fails (≥ threshold) and is no larger than
         // the original first-failing value.
         if let original, let minimal {
-            #expect(minimal >= 1000)
+            #expect(minimal >= 1_000)
             #expect(minimal <= original)
         }
     }
@@ -68,7 +79,7 @@ struct BackendShrinkingTests {
     @Test
     func noShrinkerReportsFirstFailingInputVerbatim() async throws {
         let result = await run(
-            failingIntCheck(threshold: 1000, shrink: nil),
+            failingIntCheck(threshold: 1_000, shrink: nil),
             options: LawCheckOptions(budget: .standard)
         )
 
@@ -80,14 +91,14 @@ struct BackendShrinkingTests {
         let raw = try #require(result.counterexample)
         let value = Int(raw)
         #expect(value != nil)
-        #expect((value ?? 0) >= 1000)
+        #expect((value ?? 0) >= 1_000)
     }
 
     @Test
     func shrinkingIsDeterministicUnderAFixedSeed() async throws {
         // First run draws a fresh seed and reports it back.
         let first = await run(
-            failingIntCheck(threshold: 1000, shrink: halveTowardZero),
+            failingIntCheck(threshold: 1_000, shrink: halveTowardZero),
             options: LawCheckOptions(budget: .standard)
         )
         #expect(first.isViolation)
@@ -96,7 +107,7 @@ struct BackendShrinkingTests {
         // and the same step count — shrinking is a pure function of the
         // (reproduced) first failing input.
         let replay = await run(
-            failingIntCheck(threshold: 1000, shrink: halveTowardZero),
+            failingIntCheck(threshold: 1_000, shrink: halveTowardZero),
             options: LawCheckOptions(budget: .standard, seed: first.seed)
         )
         #expect(replay.counterexample == first.counterexample)
@@ -112,7 +123,7 @@ struct BackendShrinkingTests {
             "Test.tripleSumBelowThreshold",
             generator: Gen<Int>.int(in: 0...1_000_000),
             options: LawCheckOptions(budget: .standard),
-            property: { first, second, third in first + second + third < 3000 },
+            property: { first, second, third in first + second + third < 3_000 },
             formatCounterexample: { first, second, third, _ in "\(first),\(second),\(third)" },
             shrink: { Array($0.shrink(towards: 0)) }
         )
@@ -126,8 +137,8 @@ struct BackendShrinkingTests {
         let minimal = try #require(result.counterexample)
         let parts = minimal.split(separator: ",").map { Int($0) }
         #expect(parts.allSatisfy { $0 != nil })
-        let sum = parts.compactMap { $0 }.reduce(0, +)
-        #expect(sum >= 3000)
+        let sum = parts.compactMap(\.self).reduce(0, +)
+        #expect(sum >= 3_000)
     }
 
     @Test
@@ -141,9 +152,8 @@ struct BackendShrinkingTests {
             _ = try await checkEquatablePropertyLaws(
                 for: BrokenAboveThreshold.self,
                 using: Gen<Int>.int(in: 0...1_000_000).map(BrokenAboveThreshold.init),
-                options: LawCheckOptions(budget: .standard, enforcement: .default),
-                shrink: { value in value.raw.shrink(towards: 0).map(BrokenAboveThreshold.init) }
-            )
+                options: LawCheckOptions(budget: .standard, enforcement: .default)
+            ) { value in value.raw.shrink(towards: 0).map(BrokenAboveThreshold.init) }
             Issue.record("expected the broken Equatable to throw a PropertyLawViolation")
         } catch let violation as PropertyLawViolation {
             let reflexivity = try #require(
@@ -154,15 +164,5 @@ struct BackendShrinkingTests {
             // The shrinker drove the counterexample down to the threshold.
             #expect(reflexivity.counterexample?.contains("raw: 1000") == true)
         }
-    }
-}
-
-/// Planted bug: reflexivity (`x == x`) fails once `raw >= 1000`.
-private struct BrokenAboveThreshold: Equatable, Sendable {
-    let raw: Int
-    init(_ raw: Int) { self.raw = raw }
-    static func == (lhs: BrokenAboveThreshold, rhs: BrokenAboveThreshold) -> Bool {
-        if lhs.raw >= 1000 && rhs.raw >= 1000 { return false }   // breaks reflexivity
-        return lhs.raw == rhs.raw
     }
 }

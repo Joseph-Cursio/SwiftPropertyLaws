@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 struct SuppressionParserTests {
 
@@ -44,11 +44,11 @@ struct SuppressionParserTests {
     @Test func emptyMarkerKeyIsIgnored() {
         let text = "// property-law-suppress: "
         let keys = SuppressionParser.parse(text: text)
-        #expect(keys == [])
+        #expect(keys.isEmpty)
     }
 
     @Test func nonExistentFileReturnsEmptySet() {
         let keys = SuppressionParser.parse(existingFileAt: "/nonexistent/path.swift")
-        #expect(keys == [])
+        #expect(keys.isEmpty)
     }
 }

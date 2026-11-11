@@ -1,7 +1,7 @@
 import Foundation
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// A per-target scan reaches types it can only see *extended*.
 /// `AccessorBlockSyntax` is declared in `SwiftSyntax` and extended in
@@ -105,7 +105,7 @@ struct ContextFileTests {
                 "F.swift": """
                 private struct Hidden: Equatable { let a: Int }
                 public struct Bare: Equatable { public let a: Int }
-                """
+                """,
             ]
         )
         #expect(map.skippedTypes.isEmpty)
@@ -116,11 +116,13 @@ struct ContextFileTests {
     @Test("a context type resolves as a target type's member")
     func contextTypeResolvesAsMember() {
         let map = scan(
-            target: ["T.swift": """
+            target: [
+                "T.swift": """
             public struct Mine: Equatable, Sendable {
                 public let foreign: Foreign
             }
-            """],
+            """,
+            ],
             context: ["F.swift": foreignDeclaration]
         )
         guard let mine = map.entries.first(where: { $0.typeName == "Mine" }),
@@ -152,16 +154,20 @@ struct ContextFileTests {
     @Test("a name declared in both takes the target's declaration")
     func targetDeclarationWins() {
         let map = scan(
-            target: ["T.swift": """
+            target: [
+                "T.swift": """
             public struct Foreign: Equatable, Sendable {
                 public let mine: Int
             }
-            """],
-            context: ["F.swift": """
+            """,
+            ],
+            context: [
+                "F.swift": """
             public struct Foreign: Sendable {
                 public let theirs: String
             }
-            """]
+            """,
+            ]
         )
         guard let foreign = map.entries.first(where: { $0.typeName == "Foreign" }),
               case .memberwiseArbitrary(let members) = foreign.derivationStrategy else {
@@ -181,12 +187,15 @@ struct ContextFileTests {
     @Test("a dependency's namesake lends the target type nothing")
     func namesakeLendsNoConformances() {
         let map = scan(
-            target: ["T.swift": """
+            target: [
+                "T.swift": """
             public struct Node: Equatable, Sendable {
                 public let name: String
             }
-            """],
-            context: ["Yams.swift": """
+            """,
+            ],
+            context: [
+                "Yams.swift": """
             public enum Node: Hashable, Comparable, Sendable {
                 case scalar(String)
                 public static func < (lhs: Node, rhs: Node) -> Bool { false }
@@ -194,7 +203,8 @@ struct ContextFileTests {
             extension Node: CustomStringConvertible {
                 public var description: String { "" }
             }
-            """]
+            """,
+            ]
         )
         guard let node = map.entries.first(where: { $0.typeName == "Node" }) else {
             Issue.record("Node should be an entry")
@@ -212,11 +222,13 @@ struct ContextFileTests {
     func memberlessTargetKeepsItsOwnShape() {
         let map = scan(
             target: ["T.swift": "public struct Token: Equatable, Sendable {}"],
-            context: ["F.swift": """
+            context: [
+                "F.swift": """
             public struct Token: Sendable {
                 public let raw: String
             }
-            """]
+            """,
+            ]
         )
         #expect(map.shapesByName["Token"]?.storedMembers.isEmpty == true)
         guard case .initializerBased(let arguments) = map.entries
@@ -234,7 +246,8 @@ struct ContextFileTests {
     func nestedInNamesakeIsHidden() {
         let map = scan(
             target: ["T.swift": "public struct Node: Equatable, Sendable { public let a: Int }"],
-            context: ["Yams.swift": """
+            context: [
+                "Yams.swift": """
             public enum Node: Hashable, Sendable {
                 case scalar
                 public struct Scalar: Hashable, Sendable { public let value: String }
@@ -245,7 +258,8 @@ struct ContextFileTests {
             extension Node.Sequence: CustomStringConvertible {
                 public var description: String { "" }
             }
-            """]
+            """,
+            ]
         )
         #expect(map.shapesByName["Node.Scalar"] == nil)
         #expect(map.shapesByName["Node.Mapping"] == nil)
@@ -269,7 +283,8 @@ struct ContextFileTests {
     @Test("a namesake nested elsewhere in the target hides nothing")
     func nestedTargetTypeHidesNoTopLevelNamesake() {
         let map = scan(
-            target: ["T.swift": """
+            target: [
+                "T.swift": """
             public struct Outer: Equatable, Sendable {
                 public struct Node: Equatable, Sendable { public let a: Int }
                 public let a: Int
@@ -277,12 +292,15 @@ struct ContextFileTests {
             extension Node: CustomStringConvertible {
                 public var description: String { "" }
             }
-            """],
-            context: ["F.swift": """
+            """,
+            ],
+            context: [
+                "F.swift": """
             public struct Node: Hashable, Sendable {
                 public let b: String
             }
-            """]
+            """,
+            ]
         )
         guard let node = map.entries.first(where: { $0.typeName == "Node" }) else {
             Issue.record("the extended dependency type should be an entry")

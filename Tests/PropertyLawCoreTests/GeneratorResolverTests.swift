@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Tier 3: nested custom-type derivation through a whole-module
 /// `GeneratorResolver`. A member or init parameter typed as a sibling custom
@@ -22,14 +22,14 @@ struct GeneratorResolverTests {
         )
     }
 
-    private func strategy(for name: String, in universe: [TypeShape]) -> DerivationStrategy {
+    private func strategy(for name: String, in universe: [TypeShape]) throws -> DerivationStrategy {
         let resolver = GeneratorResolver(types: universe)
-        let shape = universe.first { $0.name == name }!
+        let shape = try #require(universe.first { $0.name == name })
         return DerivationStrategist.strategy(for: shape, resolve: resolver.resolve(within: shape.name))
     }
 
-    private func expression(for name: String, in universe: [TypeShape]) -> String {
-        GeneratorExpressionEmitter.expression(
+    private func expression(for name: String, in universe: [TypeShape]) throws -> String {
+        try GeneratorExpressionEmitter.expression(
             typeName: name,
             strategy: strategy(for: name, in: universe)
         )
@@ -37,21 +37,21 @@ struct GeneratorResolverTests {
 
     // MARK: - Nested struct inlines the nested generator
 
-    @Test func nestedStructMemberInlinesItsGenerator() {
+    @Test func nestedStructMemberInlinesItsGenerator() throws {
         let customer = structShape("Customer", [("name", "String")])
         let order = structShape("Order", [("id", "Int"), ("customer", "Customer")])
         let expected = """
             zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8).map { Customer(name: $0) })
                         .map { Order(id: $0.0, customer: $0.1) }
             """
-        #expect(expression(for: "Order", in: [order, customer]) == expected)
+        #expect(try expression(for: "Order", in: [order, customer]) == expected)
     }
 
-    @Test func nestedCustomInsideArrayComposes() {
+    @Test func nestedCustomInsideArrayComposes() throws {
         let customer = structShape("Customer", [("name", "String")])
         let cart = structShape("Cart", [("items", "[Customer]")])
         #expect(
-            expression(for: "Cart", in: [cart, customer])
+            try expression(for: "Cart", in: [cart, customer])
                 == "Gen<Character>.letterOrNumber.string(of: 0...8)"
                 + ".map { Customer(name: $0) }.array(of: 0...8).map { Cart(items: $0) }"
         )
@@ -59,15 +59,15 @@ struct GeneratorResolverTests {
 
     // MARK: - User gen() reference
 
-    @Test func nestedTypeWithUserGenIsReferenced() {
+    @Test func nestedTypeWithUserGenIsReferenced() throws {
         let customer = structShape("Customer", [("name", "String")], hasUserGen: true)
         let order = structShape("Order", [("customer", "Customer")])
-        #expect(expression(for: "Order", in: [order, customer]) == "Customer.gen().map { Order(customer: $0) }")
+        #expect(try expression(for: "Order", in: [order, customer]) == "Customer.gen().map { Order(customer: $0) }")
     }
 
     // MARK: - Nested CaseIterable enum
 
-    @Test func nestedCaseIterableEnumResolves() {
+    @Test func nestedCaseIterableEnumResolves() throws {
         let direction = TypeShape(
             name: "Direction",
             kind: .enum,
@@ -76,14 +76,14 @@ struct GeneratorResolverTests {
         )
         let holder = structShape("Holder", [("dir", "Direction")])
         #expect(
-            expression(for: "Holder", in: [holder, direction])
+            try expression(for: "Holder", in: [holder, direction])
                 == "Gen<Direction?>.element(of: Direction.allCases).compactMap { $0 }.map { Holder(dir: $0) }"
         )
     }
 
     // MARK: - Initializer-based nesting
 
-    @Test func initializerParameterResolvesNestedType() {
+    @Test func initializerParameterResolvesNestedType() throws {
         let customer = structShape("Customer", [("name", "String")])
         let box = TypeShape(
             name: "Box",
@@ -91,11 +91,13 @@ struct GeneratorResolverTests {
             inheritedTypes: ["Equatable"],
             hasUserGen: false,
             hasUserInit: true,
-            initializers: [InitializerSignature(parameters: [
-                InitializerParameter(label: "customer", typeName: "Customer")
-            ])]
+            initializers: [
+                InitializerSignature(parameters: [
+                    InitializerParameter(label: "customer", typeName: "Customer")
+                ]),
+            ]
         )
-        guard case .initializerBased = strategy(for: "Box", in: [box, customer]) else {
+        guard case .initializerBased = try strategy(for: "Box", in: [box, customer]) else {
             Issue.record("expected initializerBased through nested resolution")
             return
         }
@@ -103,34 +105,34 @@ struct GeneratorResolverTests {
 
     // MARK: - Import propagation
 
-    @Test func nestedFoundationImportPropagates() {
+    @Test func nestedFoundationImportPropagates() throws {
         let stamped = structShape("Stamped", [("at", "Date")])
         let wrapper = structShape("Wrapper", [("inner", "Stamped")])
-        #expect(strategy(for: "Wrapper", in: [wrapper, stamped]).requiredImports == ["Foundation"])
+        #expect(try strategy(for: "Wrapper", in: [wrapper, stamped]).requiredImports == ["Foundation"])
     }
 
     // MARK: - Non-resolvable: external types and cycles → .todo
 
-    @Test func externalTypeNotInUniverseFallsThrough() {
+    @Test func externalTypeNotInUniverseFallsThrough() throws {
         let order = structShape("Order", [("customer", "Customer")])
-        guard case .todo = strategy(for: "Order", in: [order]) else {
+        guard case .todo = try strategy(for: "Order", in: [order]) else {
             Issue.record("expected .todo for a type not in the universe")
             return
         }
     }
 
-    @Test func selfRecursiveTypeFallsThrough() {
+    @Test func selfRecursiveTypeFallsThrough() throws {
         let node = structShape("Node", [("value", "Int"), ("next", "Node")])
-        guard case .todo = strategy(for: "Node", in: [node]) else {
+        guard case .todo = try strategy(for: "Node", in: [node]) else {
             Issue.record("expected .todo for a self-recursive type")
             return
         }
     }
 
-    @Test func mutualRecursionFallsThrough() {
+    @Test func mutualRecursionFallsThrough() throws {
         let typeA = structShape("A", [("b", "B")])
         let typeB = structShape("B", [("a", "A")])
-        guard case .todo = strategy(for: "A", in: [typeA, typeB]) else {
+        guard case .todo = try strategy(for: "A", in: [typeA, typeB]) else {
             Issue.record("expected .todo for mutually recursive types")
             return
         }
@@ -197,7 +199,7 @@ struct GeneratorResolverTests {
         // a scanner that records nested types unqualified.
         let universe = [
             enumShape("Kind", inheriting: ["String", "CaseIterable"]),
-            enumShape("Kind", inheriting: ["Int", "Codable"])
+            enumShape("Kind", inheriting: ["Int", "Codable"]),
         ]
         let resolver = GeneratorResolver(types: universe)
         #expect(
@@ -210,7 +212,7 @@ struct GeneratorResolverTests {
         let universe = [
             enumShape("Kind", inheriting: ["String", "CaseIterable"]),
             enumShape("Kind", inheriting: ["Int", "Codable"]),
-            structShape("Order", [("id", "Int")])
+            structShape("Order", [("id", "Int")]),
         ]
         let resolver = GeneratorResolver(types: universe)
         #expect(resolver.ambiguousTypeNames == ["Kind"])
@@ -218,14 +220,14 @@ struct GeneratorResolverTests {
         #expect(resolver.customTypeGenerator(forTypeName: "Order") != nil)
     }
 
-    @Test func aMemberTypedAsAnAmbiguousNameKeepsItsOwnerAtTodo() {
+    @Test func aMemberTypedAsAnAmbiguousNameKeepsItsOwnerAtTodo() throws {
         let universe = [
             enumShape("Kind", inheriting: ["String", "CaseIterable"]),
             enumShape("Kind", inheriting: ["Int", "Codable"]),
-            structShape("Entry", [("name", "String"), ("kind", "Kind")])
+            structShape("Entry", [("name", "String"), ("kind", "Kind")]),
         ]
-        let entry = universe.last!
-        guard case .todo = strategy(for: "Entry", in: universe) else {
+        let entry = try #require(universe.last)
+        guard case .todo = try strategy(for: "Entry", in: universe) else {
             Issue.record("a member of ambiguous type must leave its owner non-derivable")
             return
         }
@@ -250,11 +252,11 @@ struct GeneratorResolverTests {
     /// nested types by **qualified** name has no collision, and every emitter
     /// interpolates the name verbatim, so `Foo.Kind` comes out spelled
     /// correctly with no change to the emitters at all.
-    @Test func qualifiedNamesDisambiguateAndEmitCorrectly() {
+    @Test func qualifiedNamesDisambiguateAndEmitCorrectly() throws {
         let universe = [
             enumShape("Foo.Kind", inheriting: ["String", "CaseIterable"]),
             enumShape("Bar.Kind", inheriting: ["String", "CaseIterable"]),
-            structShape("Entry", [("name", "String"), ("kind", "Foo.Kind")])
+            structShape("Entry", [("name", "String"), ("kind", "Foo.Kind")]),
         ]
         let resolver = GeneratorResolver(types: universe)
         #expect(resolver.ambiguousTypeNames.isEmpty)
@@ -263,7 +265,7 @@ struct GeneratorResolverTests {
                 == "Gen<Foo.Kind?>.element(of: Foo.Kind.allCases).compactMap { $0 }"
         )
         // …and the enclosing type now derives, referencing the qualified name.
-        let expr = expression(for: "Entry", in: universe)
+        let expr = try expression(for: "Entry", in: universe)
         #expect(expr.contains("Foo.Kind.allCases"))
         #expect(!expr.contains("Bar.Kind"))
     }

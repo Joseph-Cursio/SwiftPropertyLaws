@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// The bridge from a bounded space to an ordinary `Generator`.
 ///
@@ -23,7 +23,7 @@ struct EnumerationGeneratorBridgeTests {
         let space = Every.subsets("subset", of: 6)
         var rng = Xoshiro(seed: (7, 8, 9, 10))
         var seen = Set<[Int]>()
-        for _ in 0 ..< 1000 { seen.insert(space.generator.run(using: &rng)) }
+        for _ in 0 ..< 1_000 { seen.insert(space.generator.run(using: &rng)) }
         #expect(seen.count == space.count, "1 000 draws should cover a 64-case space")
     }
 
@@ -57,9 +57,8 @@ struct EnumerationGeneratorBridgeTests {
 
         let walked = try await checkEveryCase(
             of: space,
-            law: "Spike.alwaysHolds",
-            satisfies: { _ in true }
-        )
+            law: "Spike.alwaysHolds"
+        ) { _ in true }
         #expect(walked.first?.coverage?.spaceSize == 64)
     }
 

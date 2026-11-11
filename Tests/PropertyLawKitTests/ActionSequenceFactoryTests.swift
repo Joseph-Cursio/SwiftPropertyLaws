@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 // StatefulGuard conformance fixtures are scoped inside the @Suite struct,
 // nesting them one level deeper than the rule's default — idiomatic for
@@ -24,13 +24,13 @@ struct ActionSequenceFactoryTests {
     /// non-empty-but-permissive the behavior must be unchanged.
     struct AlwaysAllow: StatefulGuard {
         typealias Action = TestAction
-        func wouldAllow(_ next: TestAction, given history: [TestAction]) -> Bool { true }
+        func wouldAllow(_: TestAction, given _: [TestAction]) -> Bool { true }
     }
 
     /// `wouldAllow(_:given:) = false` always.
     struct AlwaysDeny: StatefulGuard {
         typealias Action = TestAction
-        func wouldAllow(_ next: TestAction, given history: [TestAction]) -> Bool { false }
+        func wouldAllow(_: TestAction, given _: [TestAction]) -> Bool { false }
     }
 
     /// Disallows repeating the immediately-previous action (a
@@ -45,7 +45,7 @@ struct ActionSequenceFactoryTests {
     /// Disallows `.bar` entirely (regardless of history).
     struct ForbidBar: StatefulGuard {
         typealias Action = TestAction
-        func wouldAllow(_ next: TestAction, given history: [TestAction]) -> Bool {
+        func wouldAllow(_ next: TestAction, given _: [TestAction]) -> Bool {
             next != .bar
         }
     }
@@ -136,8 +136,7 @@ struct ActionSequenceFactoryTests {
         let gen = ActionSequenceFactory.actionSequence(from: Gen<TestAction>.case)
         var rng = makeRNG()
         let result = gen.run(using: &rng)
-        #expect(result.count >= 0)
-        #expect(result.count <= 16)
+        #expect((0 ... 16).contains(result.count))
     }
 
     @Test("primary entry with .denyAll guard yields an empty sequence")
@@ -218,8 +217,7 @@ struct ActionSequenceFactoryTests {
         let gen = ActionSequenceFactory.actionSequence(forCaseIterable: TestAction.self)
         var rng = makeRNG()
         let result = gen.run(using: &rng)
-        #expect(result.count >= 0)
-        #expect(result.count <= 16)
+        #expect((0 ... 16).contains(result.count))
     }
 
     @Test("convenience entry threads stateful guards through")

@@ -1,7 +1,7 @@
 import Foundation
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// **`EqualValuePairing.everyPairOfDraws`: the equal pairs a budget already
 /// contains.** The three laws that need equal values pass without testing
@@ -32,7 +32,9 @@ struct EqualValuePairingTests {
                 try await run(Self.options(pairing, seed: index))
             } catch is PropertyLawViolation {
                 caught += 1
-            } catch {}
+            } catch {
+                Issue.record(error)
+            }
         }
         return caught
     }
@@ -87,7 +89,8 @@ struct EqualValuePairingTests {
             try await checkHashablePropertyLaws(
                 using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(DollarMoney.init(cents:)),
                 options: Self.options(.everyPairOfDraws, seed: 0),
-                laws: .ownOnly)
+                laws: .ownOnly
+            )
         }
         let failed = violation?.results.filter(\.isViolation).map(\.protocolLaw)
         #expect(failed == ["Hashable.equalityConsistency"])
@@ -100,7 +103,8 @@ struct EqualValuePairingTests {
     @Test func theDefaultDoesNotPool() async throws {
         #expect(LawCheckOptions().equalValuePairing == .independent)
         let results = try await checkComparablePropertyLaws(
-            using: Gen<Int>.int(in: 0 ... 100), options: LawCheckOptions(budget: .sanity))
+            using: Gen<Int>.int(in: 0 ... 100), options: LawCheckOptions(budget: .sanity)
+        )
         #expect(results.allSatisfy { $0.pairedDraws == nil })
     }
 
@@ -120,7 +124,8 @@ struct EqualValuePairingTests {
     @Test func aWalkIgnoresThePairing() async throws {
         let results = try await checkHashablePropertyLaws(
             overEvery: Every.elements("n", in: 0 ..< 8),
-            options: LawCheckOptions(equalValuePairing: .everyPairOfDraws))
+            options: LawCheckOptions(equalValuePairing: .everyPairOfDraws)
+        )
         #expect(results.allSatisfy { $0.pairedDraws == nil })
         #expect(results.allSatisfy { $0.coverage?.isComplete == true })
     }
@@ -134,7 +139,8 @@ struct EqualValuePairingTests {
         func equalityConsistency(_ pairing: EqualValuePairing) async throws -> CheckResult {
             let results = try await checkHashablePropertyLaws(
                 using: generator, options: LawCheckOptions(budget: .sanity, equalValuePairing: pairing),
-                laws: .ownOnly)
+                laws: .ownOnly
+            )
             return try #require(results.first { $0.protocolLaw == "Hashable.equalityConsistency" })
         }
         let everyPair = try await equalityConsistency(.everyPairOfDraws)
@@ -152,7 +158,8 @@ struct EqualValuePairingTests {
         let results = try await checkComparablePropertyLaws(
             using: Gen<Int>.int(in: 0 ... 3),
             options: LawCheckOptions(budget: .sanity, equalValuePairing: .everyPairOfDraws),
-            laws: .ownOnly)
+            laws: .ownOnly
+        )
         let law = try #require(results.first { $0.protocolLaw == "Comparable.antisymmetry" })
         #expect((law.applications ?? 0) > 1_000, "got \(law.applications ?? -1)")
     }
@@ -166,7 +173,8 @@ struct EqualValuePairingTests {
             environment: Environment.current(backend: SwiftPropertyBasedBackend()),
             outcome: .passed,
             applications: 25,
-            pairedDraws: PairedDraws(draws: 1_000, pairs: 499_500))
+            pairedDraws: PairedDraws(draws: 1_000, pairs: 499_500)
+        )
         let rendered = ViolationFormatter.format(result)
         #expect(rendered.contains("[Strict, 1000 draws, 499500 pairs compared]"))
         #expect(rendered.contains("Applied: 25 times among 499500 pairs."))
@@ -184,9 +192,10 @@ struct EqualValuePairingTests {
                 try await checkHashablePropertyLaws(
                     using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(DollarMoney.init(cents:)),
                     options: Self.options(.everyPairOfDraws, seed: 3),
-                    laws: .ownOnly)
+                    laws: .ownOnly
+                )
             }
-            let failure = violation?.results.first { $0.isViolation }
+            let failure = violation?.results.first(where: \.isViolation)
             return try #require(failure)
         }
         let first = try await failing()
@@ -207,6 +216,7 @@ struct EqualValuePairingTests {
     private final class Script: @unchecked Sendable {
         private let lock = NSLock()
         private var values: [Int]
+
         init(_ values: [Int]) { self.values = values }
         func next() -> Int { lock.lock(); defer { lock.unlock() }; return values.removeFirst() }
     }
@@ -221,12 +231,14 @@ struct EqualValuePairingTests {
                 return first == third
             },
             formatCounterexample: { first, second, third, _ in "\(first), \(second), \(third)" },
-            shrink: nil)
+            shrink: nil
+        )
         return await DrawPoolDriver.runChains(
             DrawPoolDriver.Identity(protocolLaw: "Equatable.transitivity", tier: .strict),
             options: LawCheckOptions(budget: .custom(trials: values.count)),
             lookback: .max,
-            check: check)
+            check: check
+        )
     }
 
     /// A pooled failure is a pair like any other, so it shrinks with the law's own
@@ -238,12 +250,14 @@ struct EqualValuePairingTests {
             sample: { _ in DollarMoney(cents: script.next()) },
             property: { first, second in first != second || first.hashValue == second.hashValue },
             formatCounterexample: { first, second, _ in "\(first), \(second)" },
-            shrink: { [DollarMoney(cents: $0.cents - $0.cents.signum())] })
+            shrink: { [DollarMoney(cents: $0.cents - $0.cents.signum())] }
+        )
         let result = await DrawPoolDriver.runPairs(
             DrawPoolDriver.Identity(protocolLaw: "Hashable.equalityConsistency", tier: .strict),
             options: LawCheckOptions(budget: .custom(trials: 2)),
             lookback: .max,
-            check: check)
+            check: check
+        )
         #expect(result.counterexample == "$(200), $(201)")
         #expect(result.shrunkFrom == "$(250), $(299)")
         #expect(result.shrinkSteps == 50 + 98)

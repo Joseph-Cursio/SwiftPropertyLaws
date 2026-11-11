@@ -1,25 +1,7 @@
-/// An `Encoder` that keeps the type distinctions Foundation's encoders erase.
-///
-/// Produces a ``MinimalCodableValue`` tree rather than bytes, so `Int64` and `Int` stay
-/// distinguishable. Adapted in spirit from `swift-collections`' `_CollectionsTestSupport`,
-/// which takes it from the standard library's `StdlibUnittest`.
-public final class MinimalEncoder {
-
-    public init() {}
-
-    /// Encodes `value` to a typed tree.
-    public static func encode(_ value: some Encodable) throws -> MinimalCodableValue {
-        let encoder = BoxedEncoder(codingPath: [])
-        try value.encode(to: encoder)
-        return encoder.finalize()
-    }
-}
-
 /// Storage shared between an encoder and the containers it vends, so a container writing after
 /// its parent has moved on is visible rather than silently dropped.
 final class EncodedBox {
     var value: MinimalCodableValue = .null
-    init() {}
 }
 
 final class BoxedEncoder: Encoder {
@@ -141,7 +123,7 @@ struct UnkeyedContainer: UnkeyedEncodingContainer {
         let nested = EncodedBox()
         nested.value = .array([])
         append(.array([]))
-        return UnkeyedContainer(codingPath: codingPath, box: nested)
+        return Self(codingPath: codingPath, box: nested)
     }
 
     mutating func superEncoder() -> any Encoder { BoxedEncoder(codingPath: codingPath) }
@@ -155,5 +137,25 @@ struct SingleValueContainer: SingleValueEncodingContainer {
 
     mutating func encode(_ value: some Encodable) throws {
         box.value = try PrimitiveEncoding.value(value, codingPath: codingPath)
+    }
+}
+
+/// An `Encoder` that keeps the type distinctions Foundation's encoders erase.
+///
+/// Produces a ``MinimalCodableValue`` tree rather than bytes, so `Int64` and `Int` stay
+/// distinguishable. Adapted in spirit from `swift-collections`' `_CollectionsTestSupport`,
+/// which takes it from the standard library's `StdlibUnittest`.
+public final class MinimalEncoder {
+
+    /// Creates an encoder. Encoding goes through the static `encode(_:)`.
+    public init() {
+        // Stateless: encoding goes through the static `encode(_:)`.
+    }
+
+    /// Encodes `value` to a typed tree.
+    public static func encode(_ value: some Encodable) throws -> MinimalCodableValue {
+        let encoder = BoxedEncoder(codingPath: [])
+        try value.encode(to: encoder)
+        return encoder.finalize()
     }
 }

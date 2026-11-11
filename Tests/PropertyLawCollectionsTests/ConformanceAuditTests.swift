@@ -14,18 +14,42 @@ import Testing
 // Negative facts (conformances a type deliberately lacks) can't be
 // compile-asserted, so they're documented as comments next to each type.
 
-private func probeEquatable<Value: Equatable>(_: Value.Type) {}
-private func probeHashable<Value: Hashable>(_: Value.Type) {}
-private func probeCodable<Value: Codable>(_: Value.Type) {}
-private func probeSequence<Value: Sequence>(_: Value.Type) {}
-private func probeCollection<Value: Collection>(_: Value.Type) {}
-private func probeBidirectionalCollection<Value: BidirectionalCollection>(_: Value.Type) {}
-private func probeRandomAccessCollection<Value: RandomAccessCollection>(_: Value.Type) {}
-private func probeMutableCollection<Value: MutableCollection>(_: Value.Type) {}
-private func probeRangeReplaceableCollection<Value: RangeReplaceableCollection>(_: Value.Type) {}
-private func probeSetAlgebra<Value: SetAlgebra>(_: Value.Type) {}
-private func probeSendable<Value: Sendable>(_: Value.Type) {}
-private func probeExpressibleByArrayLiteral<Value: ExpressibleByArrayLiteral>(_: Value.Type) {}
+private func probeEquatable<Value: Equatable>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeHashable<Value: Hashable>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeCodable<Value: Codable>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeSequence<Value: Sequence>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeCollection<Value: Collection>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeBidirectionalCollection<Value: BidirectionalCollection>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeRandomAccessCollection<Value: RandomAccessCollection>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeMutableCollection<Value: MutableCollection>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeRangeReplaceableCollection<Value: RangeReplaceableCollection>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeSetAlgebra<Value: SetAlgebra>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeSendable<Value: Sendable>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
+private func probeExpressibleByArrayLiteral<Value: ExpressibleByArrayLiteral>(_: Value.Type) {
+    // The call compiling is the assertion.
+}
 
 @Suite
 struct ConformanceAuditTests {

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// **Two derived generators that produced WRONG suites, both measured on swift-collections
 /// `c8080d05` on 2026-08-08, and both reproduced here at the shape level.**
@@ -39,9 +39,11 @@ struct UnsoundInitializerDerivationTests {
     @Test("an initializer taking private storage does not derive")
     func privateStorageDeclines() {
         let strategy = DerivationStrategist.strategy(
-            for: shape("Counted", [InitializerSignature(parameters: [
-                parameter("_bits", "Int"), parameter("count", "Int")
-            ])])
+            for: shape("Counted", [
+                InitializerSignature(parameters: [
+                    parameter("_bits", "Int"), parameter("count", "Int")
+                ]),
+            ])
         )
         guard case .todo = strategy else {
             Issue.record("expected .todo, got \(strategy) — a storage constructor derived")
@@ -55,9 +57,11 @@ struct UnsoundInitializerDerivationTests {
     @Test("an ordinary initializer with the same types still derives")
     func ordinaryInitializerSurvives() {
         let strategy = DerivationStrategist.strategy(
-            for: shape("Money", [InitializerSignature(parameters: [
-                parameter("units", "Int"), parameter("count", "Int")
-            ])])
+            for: shape("Money", [
+                InitializerSignature(parameters: [
+                    parameter("units", "Int"), parameter("count", "Int")
+                ]),
+            ])
         )
         if case .todo = strategy {
             Issue.record("the gate over-reached: a normal two-Int initializer stopped deriving")
@@ -174,9 +178,11 @@ struct UnsoundInitializerDerivationTests {
     @Test("a capacity hint beside a real component still derives")
     func capacityWithComponentSurvives() {
         let strategy = DerivationStrategist.strategy(
-            for: shape("Table", [InitializerSignature(parameters: [
-                parameter("minimumCapacity", "Int"), parameter("seed", "Int")
-            ])])
+            for: shape("Table", [
+                InitializerSignature(parameters: [
+                    parameter("minimumCapacity", "Int"), parameter("seed", "Int")
+                ]),
+            ])
         )
         if case .todo = strategy {
             Issue.record("the gate over-reached: a capacity hint plus a seed stopped deriving")
@@ -197,8 +203,10 @@ struct UnsoundInitializerDerivationTests {
     /// `_HeapNode`, reduced: `init(offset:level:)` asserts `offset >= 0`, and
     /// `init(offset:)` asserts nothing but forwards to it.
     private let asserting = InitializerSignature(
-        parameters: [InitializerParameter(label: "offset", typeName: "Int"),
-                     InitializerParameter(label: "level", typeName: "Int")],
+        parameters: [
+            InitializerParameter(label: "offset", typeName: "Int"),
+            InitializerParameter(label: "level", typeName: "Int"),
+        ],
         assertsPrecondition: true
     )
     private let forwarding = InitializerSignature(

@@ -1,6 +1,103 @@
-import Testing
-import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+// MARK: - Fixtures: state-predicate (Cardinality)
+
+struct TwoFlagState: Equatable, Sendable {
+    var showsA: Bool
+    var showsB: Bool
+}
+
+enum TwoFlagAction: CaseIterable, Sendable {
+    case showA
+    case showB
+    case dismissAll
+    case showBoth   // the faulty-reducer trigger
+}
+
+/// Conformer asserting the Cardinality bound (at most one flag set).
+struct TwoFlagCardinality: CardinalityInvariant, Sendable {
+    typealias State = TwoFlagState
+    static func invariantHolds(in state: TwoFlagState) -> Bool {
+        (state.showsA ? 1 : 0) + (state.showsB ? 1 : 0) <= 1
+    }
+}
+
+/// Well-behaved reducer — every action preserves the cardinality
+/// bound. `.showBoth` is treated as `.dismissAll` to keep the
+/// invariant holding (positive control).
+enum TwoFlagFeature {
+    static func reduce(_: TwoFlagState, _ action: TwoFlagAction) -> TwoFlagState {
+        switch action {
+        case .showA: return TwoFlagState(showsA: true, showsB: false)
+        case .showB: return TwoFlagState(showsA: false, showsB: true)
+        case .dismissAll, .showBoth: return TwoFlagState(showsA: false, showsB: false)
+        }
+    }
+}
+
+/// Faulty reducer — `.showBoth` violates the invariant by setting
+/// both flags to true (negative control).
+enum TwoFlagFaultyFeature {
+    static func reduce(_: TwoFlagState, _ action: TwoFlagAction) -> TwoFlagState {
+        switch action {
+        case .showA: return TwoFlagState(showsA: true, showsB: false)
+        case .showB: return TwoFlagState(showsA: false, showsB: true)
+        case .dismissAll: return TwoFlagState(showsA: false, showsB: false)
+        case .showBoth: return TwoFlagState(showsA: true, showsB: true)
+        }
+    }
+}
+
+// MARK: - Fixtures: ActionIdempotence
+
+struct CounterState: Equatable, Sendable {
+    var value: Int
+    var sub: Int
+}
+
+enum CounterAction: CaseIterable, Sendable, Hashable {
+    case increment
+    case decrement
+    case reset
+}
+
+enum CounterFeature {
+    static func reduce(_ state: CounterState, _ action: CounterAction) -> CounterState {
+        switch action {
+        case .increment: return CounterState(value: state.value + 1, sub: state.sub)
+        case .decrement: return CounterState(value: state.value - 1, sub: state.sub)
+        case .reset: return CounterState(value: 0, sub: 0)
+        }
+    }
+}
+
+/// Honest conformer — only `.reset` is claimed idempotent, and the
+/// reducer treats it as a setter (positive control).
+struct CounterIdempotence: ActionIdempotenceInvariant, Sendable {
+    typealias State = CounterState
+    typealias Action = CounterAction
+
+    static let idempotentActions: Set<CounterAction> = [.reset]
+}
+
+/// Lying conformer — claims `.increment` is idempotent, but the
+/// reducer increments by 1 each time (negative control).
+struct CounterIdempotenceLying: ActionIdempotenceInvariant, Sendable {
+    typealias State = CounterState
+    typealias Action = CounterAction
+
+    static let idempotentActions: Set<CounterAction> = [.increment]
+}
+
+/// Empty-set conformer — degenerate but valid; no per-action
+/// checks happen (positive control for the empty-set branch).
+struct CounterIdempotenceEmptySet: ActionIdempotenceInvariant, Sendable {
+    typealias State = CounterState
+    typealias Action = CounterAction
+
+    static let idempotentActions: Set<CounterAction> = []
+}
 
 /// v2.4.0 — tests for `checkInteractionInvariantPropertyLaws` +
 /// `checkActionIdempotenceInvariantPropertyLaws`. Hand-rolled
@@ -125,99 +222,4 @@ struct InteractionInvariantLawsTests {
         #expect(results.count == 1)
         #expect(results.allSatisfy { $0.isViolation == false })
     }
-}
-
-// MARK: - Fixtures: state-predicate (Cardinality)
-
-struct TwoFlagState: Equatable, Sendable {
-    var showsA: Bool
-    var showsB: Bool
-}
-
-enum TwoFlagAction: CaseIterable, Sendable {
-    case showA
-    case showB
-    case dismissAll
-    case showBoth   // the faulty-reducer trigger
-}
-
-/// Conformer asserting the Cardinality bound (at most one flag set).
-struct TwoFlagCardinality: CardinalityInvariant, Sendable {
-    typealias State = TwoFlagState
-    static func invariantHolds(in state: TwoFlagState) -> Bool {
-        (state.showsA ? 1 : 0) + (state.showsB ? 1 : 0) <= 1
-    }
-}
-
-/// Well-behaved reducer — every action preserves the cardinality
-/// bound. `.showBoth` is treated as `.dismissAll` to keep the
-/// invariant holding (positive control).
-enum TwoFlagFeature {
-    static func reduce(_ state: TwoFlagState, _ action: TwoFlagAction) -> TwoFlagState {
-        switch action {
-        case .showA: return TwoFlagState(showsA: true, showsB: false)
-        case .showB: return TwoFlagState(showsA: false, showsB: true)
-        case .dismissAll, .showBoth: return TwoFlagState(showsA: false, showsB: false)
-        }
-    }
-}
-
-/// Faulty reducer — `.showBoth` violates the invariant by setting
-/// both flags to true (negative control).
-enum TwoFlagFaultyFeature {
-    static func reduce(_ state: TwoFlagState, _ action: TwoFlagAction) -> TwoFlagState {
-        switch action {
-        case .showA: return TwoFlagState(showsA: true, showsB: false)
-        case .showB: return TwoFlagState(showsA: false, showsB: true)
-        case .dismissAll: return TwoFlagState(showsA: false, showsB: false)
-        case .showBoth: return TwoFlagState(showsA: true, showsB: true)
-        }
-    }
-}
-
-// MARK: - Fixtures: ActionIdempotence
-
-struct CounterState: Equatable, Sendable {
-    var value: Int
-    var sub: Int
-}
-
-enum CounterAction: CaseIterable, Sendable, Hashable {
-    case increment
-    case decrement
-    case reset
-}
-
-enum CounterFeature {
-    static func reduce(_ state: CounterState, _ action: CounterAction) -> CounterState {
-        switch action {
-        case .increment: return CounterState(value: state.value + 1, sub: state.sub)
-        case .decrement: return CounterState(value: state.value - 1, sub: state.sub)
-        case .reset: return CounterState(value: 0, sub: 0)
-        }
-    }
-}
-
-/// Honest conformer — only `.reset` is claimed idempotent, and the
-/// reducer treats it as a setter (positive control).
-struct CounterIdempotence: ActionIdempotenceInvariant, Sendable {
-    typealias State = CounterState
-    typealias Action = CounterAction
-    static let idempotentActions: Set<CounterAction> = [.reset]
-}
-
-/// Lying conformer — claims `.increment` is idempotent, but the
-/// reducer increments by 1 each time (negative control).
-struct CounterIdempotenceLying: ActionIdempotenceInvariant, Sendable {
-    typealias State = CounterState
-    typealias Action = CounterAction
-    static let idempotentActions: Set<CounterAction> = [.increment]
-}
-
-/// Empty-set conformer — degenerate but valid; no per-action
-/// checks happen (positive control for the empty-set branch).
-struct CounterIdempotenceEmptySet: ActionIdempotenceInvariant, Sendable {
-    typealias State = CounterState
-    typealias Action = CounterAction
-    static let idempotentActions: Set<CounterAction> = []
 }

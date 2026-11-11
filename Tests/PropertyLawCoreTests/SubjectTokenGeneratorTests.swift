@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// v4.8 — the `String` generators mix the **subject's own** string literals into their alphanumeric
 /// baseline. See `RawType.subjectBaseline(_:)` for why, and for the measurement it reproduces.
@@ -58,10 +58,12 @@ struct SubjectTokenGeneratorTests {
     /// it — **do not simplify it**; the assertion below pins the emitter to this text.
     private static let hashBaseline = Gen.frequency(
         (2.0, Gen<Character>.letterOrNumber.string(of: 0...8)),
+        // swiftlint:disable:next force_unwrapping - verbatim copy of the emitted expression
         (1.0, Gen<String?>.element(of: ["#"] as [String]).map { $0! }),
         (1.0, zip(
             zip(
                 Gen<Character>.letterOrNumber.string(of: 0...4),
+                // swiftlint:disable:next force_unwrapping - verbatim copy of the emitted expression
                 Gen<String?>.element(of: ["#"] as [String]).map { $0! }
             ).map { $0 + $1 },
             Gen<Character>.letterOrNumber.string(of: 0...4)

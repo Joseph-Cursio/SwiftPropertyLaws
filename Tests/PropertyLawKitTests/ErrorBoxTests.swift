@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// Coverage suite for `ErrorBox` — the public Sendable wrapper around an
 /// error description that backend authors construct when wrapping a thrown

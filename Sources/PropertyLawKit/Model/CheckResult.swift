@@ -1,3 +1,26 @@
+/// The extent of a pooled run: how many values it drew, and how many pairs of
+/// them it compared. A failing run stops at the draw that completed the
+/// refuting pair, so both describe how far it got.
+public struct PairedDraws: Sendable, Hashable {
+    public let draws: Int
+    public let pairs: Int
+
+    public init(draws: Int, pairs: Int) {
+        self.draws = draws
+        self.pairs = pairs
+    }
+}
+
+public struct CoverageHints: Sendable, Hashable {
+    public let inputClasses: [String: Int]
+    public let boundaryHits: [String: Int]
+
+    public init(inputClasses: [String: Int], boundaryHits: [String: Int]) {
+        self.inputClasses = inputClasses
+        self.boundaryHits = boundaryHits
+    }
+}
+
 public struct CheckResult: Sendable, Hashable {
     public enum Outcome: Sendable, Hashable {
         case passed
@@ -107,33 +130,12 @@ public struct CheckResult: Sendable, Hashable {
         switch outcome {
         case .failed(let counterexample):
             return counterexample
+
         case .expectedViolation(_, let counterexample):
             return counterexample
+
         case .passed, .suppressed:
             return nil
         }
-    }
-}
-
-/// The extent of a pooled run: how many values it drew, and how many pairs of
-/// them it compared. A failing run stops at the draw that completed the
-/// refuting pair, so both describe how far it got.
-public struct PairedDraws: Sendable, Hashable {
-    public let draws: Int
-    public let pairs: Int
-
-    public init(draws: Int, pairs: Int) {
-        self.draws = draws
-        self.pairs = pairs
-    }
-}
-
-public struct CoverageHints: Sendable, Hashable {
-    public let inputClasses: [String: Int]
-    public let boundaryHits: [String: Int]
-
-    public init(inputClasses: [String: Int], boundaryHits: [String: Int]) {
-        self.inputClasses = inputClasses
-        self.boundaryHits = boundaryHits
     }
 }

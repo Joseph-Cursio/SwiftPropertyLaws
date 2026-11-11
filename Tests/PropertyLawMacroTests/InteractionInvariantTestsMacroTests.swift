@@ -1,7 +1,7 @@
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 /// v2.5.0 — golden-output tests for the `@InteractionInvariantTests`
 /// peer macro. One test per family + a negative for the
@@ -255,7 +255,7 @@ struct InteractionInvariantTestsMacroTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: interactionTestsMacros
         )

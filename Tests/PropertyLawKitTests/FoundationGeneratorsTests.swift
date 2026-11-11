@@ -33,19 +33,19 @@ struct FoundationGeneratorsTests {
     // MARK: - Date
 
     @Test
-    func dateProducesValuesInTheFixedYearWindow() async throws {
+    func dateProducesValuesInTheFixedYearWindow() throws {
         let samples = Self.sample(Gen<Date>.date(), seedTag: 1)
         let calendar = Calendar(identifier: .gregorian)
         for date in samples {
             let year = calendar.component(.year, from: date)
             // date(inYear: 1970...2100) is UTC; allow a one-year slop for the
             // local-calendar boundary at Jan 1 / Dec 31.
-            #expect(year >= 1969 && year <= 2101, "date \(date) fell in year \(year), outside 1970...2100")
+            #expect(year >= 1_969 && year <= 2_101, "date \(date) fell in year \(year), outside 1970...2100")
         }
     }
 
     @Test
-    func dateIsDeterministicUnderTheSameSeed() async throws {
+    func dateIsDeterministicUnderTheSameSeed() throws {
         let runA = Self.sample(Gen<Date>.date(), seedTag: 42)
         let runB = Self.sample(Gen<Date>.date(), seedTag: 42)
         #expect(runA == runB, "same seed produced divergent Date streams")
@@ -54,7 +54,7 @@ struct FoundationGeneratorsTests {
     // MARK: - UUID
 
     @Test
-    func uuidProducesWellFormedVersion4UUIDs() async throws {
+    func uuidProducesWellFormedVersion4UUIDs() throws {
         let samples = Self.sample(Gen<UUID>.uuid(), seedTag: 7)
         for uuid in samples {
             let bytes = withUnsafeBytes(of: uuid.uuid) { Array($0) }
@@ -65,7 +65,7 @@ struct FoundationGeneratorsTests {
     }
 
     @Test
-    func uuidStreamHasHighDistinctness() async throws {
+    func uuidStreamHasHighDistinctness() throws {
         let samples = Self.sample(Gen<UUID>.uuid(), seedTag: 8)
         let distinct = Set(samples)
         // 122 random bits — collisions across 1 000 draws are astronomically
@@ -74,7 +74,7 @@ struct FoundationGeneratorsTests {
     }
 
     @Test
-    func uuidIsDeterministicUnderTheSameSeed() async throws {
+    func uuidIsDeterministicUnderTheSameSeed() throws {
         let runA = Self.sample(Gen<UUID>.uuid(), seedTag: 99)
         let runB = Self.sample(Gen<UUID>.uuid(), seedTag: 99)
         #expect(runA == runB, "same seed produced divergent UUID streams")
@@ -83,7 +83,7 @@ struct FoundationGeneratorsTests {
     // MARK: - Data
 
     @Test
-    func dataRespectsTheRequestedSizeRange() async throws {
+    func dataRespectsTheRequestedSizeRange() throws {
         let generator = Gen<Data>.data(of: 4 ... 12)
         let samples = Self.sample(generator, seedTag: 3)
         for data in samples {
@@ -92,15 +92,15 @@ struct FoundationGeneratorsTests {
     }
 
     @Test
-    func dataDefaultRangeIsUsedWhenUnspecified() async throws {
+    func dataDefaultRangeIsUsedWhenUnspecified() throws {
         let samples = Self.sample(Gen<Data>.data(), seedTag: 5)
         for data in samples {
-            #expect(data.count >= 0 && data.count <= 256, "data count \(data.count) outside default 0...256")
+            #expect((0 ... 256).contains(data.count), "data count \(data.count) outside default 0...256")
         }
     }
 
     @Test
-    func dataIsDeterministicUnderTheSameSeed() async throws {
+    func dataIsDeterministicUnderTheSameSeed() throws {
         let runA = Self.sample(Gen<Data>.data(of: 0 ... 64), seedTag: 11)
         let runB = Self.sample(Gen<Data>.data(of: 0 ... 64), seedTag: 11)
         #expect(runA == runB, "same seed produced divergent Data streams")
@@ -109,7 +109,7 @@ struct FoundationGeneratorsTests {
     // MARK: - URL
 
     @Test
-    func urlProducesOnlyValidURLs() async throws {
+    func urlProducesOnlyValidURLs() throws {
         let samples = Self.sample(Gen<URL>.url(), seedTag: 2)
         for url in samples {
             #expect(url.scheme == "https" || url.scheme == "http", "unexpected scheme in \(url)")
@@ -122,13 +122,13 @@ struct FoundationGeneratorsTests {
     /// The checks above hold for a URL with no path at all, so a generator
     /// that dropped every segment passed them.
     @Test
-    func urlReachesTheBareHostAndEveryPathSegment() async throws {
+    func urlReachesTheBareHostAndEveryPathSegment() throws {
         let paths = Set(Self.sample(Gen<URL>.url(), seedTag: 2).map(\.path))
         #expect(paths == ["", "/path", "/a/b", "/users/42", "/search", "/docs/guide"], "\(paths)")
     }
 
     @Test
-    func urlIsDeterministicUnderTheSameSeed() async throws {
+    func urlIsDeterministicUnderTheSameSeed() throws {
         let runA = Self.sample(Gen<URL>.url(), seedTag: 77)
         let runB = Self.sample(Gen<URL>.url(), seedTag: 77)
         #expect(runA == runB, "same seed produced divergent URL streams")
@@ -137,7 +137,7 @@ struct FoundationGeneratorsTests {
     // MARK: - Decimal
 
     @Test
-    func decimalStaysInBoundsWithExactTwoFractionalDigits() async throws {
+    func decimalStaysInBoundsWithExactTwoFractionalDigits() throws {
         let samples = Self.sample(Gen<Decimal>.decimal(), seedTag: 4)
         let upper = Decimal(10_000_000)
         for value in samples {
@@ -151,7 +151,7 @@ struct FoundationGeneratorsTests {
     }
 
     @Test
-    func decimalIsDeterministicUnderTheSameSeed() async throws {
+    func decimalIsDeterministicUnderTheSameSeed() throws {
         let runA = Self.sample(Gen<Decimal>.decimal(), seedTag: 55)
         let runB = Self.sample(Gen<Decimal>.decimal(), seedTag: 55)
         #expect(runA == runB, "same seed produced divergent Decimal streams")

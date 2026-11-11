@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// The space type and its base constructors. The bucket invariant is the
 /// ordering contract, so it is asserted directly on every constructor rather
@@ -17,7 +17,7 @@ struct EnumerationTests {
         var expectedStart = 0
         var previousSize: Int?
         for bucket in space.buckets {
-            #expect(bucket.count > 0, "\(label): empty bucket", sourceLocation: sourceLocation)
+            #expect(!bucket.isEmpty, "\(label): empty bucket", sourceLocation: sourceLocation)
             #expect(bucket.start == expectedStart, "\(label): gap at \(bucket.start)", sourceLocation: sourceLocation)
             if let previousSize {
                 #expect(bucket.size > previousSize, "\(label): sizes not ascending", sourceLocation: sourceLocation)
@@ -105,21 +105,21 @@ struct EnumerationTests {
     }
 
     @Test func elementsWithASizeReorderToHonourTheInvariant() {
-        let space = Every.elements("word", in: ["ccc", "a", "bb"], size: { $0.count })
+        let space = Every.elements("word", in: ["ccc", "a", "bb"]) { $0.count }
         #expect(space.indices.map { space[$0] } == ["a", "bb", "ccc"])
         #expect(space.buckets.map(\.size) == [1, 2, 3])
         assertBucketInvariant(space, "elements(size:)")
     }
 
     @Test func elementsBreakSizeTiesByGivenOrder() {
-        let space = Every.elements("word", in: ["bb", "aa", "c"], size: { $0.count })
+        let space = Every.elements("word", in: ["bb", "aa", "c"]) { $0.count }
         // "c" is smaller; "bb" and "aa" tie and keep the order they arrived in.
         #expect(space.indices.map { space[$0] } == ["c", "bb", "aa"])
     }
 
     @Test func elementsOverAnEmptyCollectionIsAnEmptySpace() {
         let space = Every.elements("nothing", in: [Int]())
-        #expect(space.count == 0)
+        #expect(space.isEmpty)
         #expect(space.buckets.isEmpty)
         #expect(space.indices.isEmpty)
     }
@@ -129,7 +129,7 @@ struct EnumerationTests {
     @Test func prefixTruncatesButRemembersTheFullSpace() {
         let space = Every.subsets("subset", of: 10).prefix(100)
         #expect(space.count == 100)
-        #expect(space.fullCount == 1024)
+        #expect(space.fullCount == 1_024)
         #expect(space.isComplete == false)
         assertBucketInvariant(space, "prefix(100)")
         // Truncation keeps the smallest cases, so the empty set survives.
@@ -144,7 +144,7 @@ struct EnumerationTests {
 
     @Test func mapKeepsOrderSizesAndAddresses() {
         let base = Every.subsets("subset", of: 5)
-        let mapped = base.map { $0.count }
+        let mapped = base.map(\.count)
         #expect(mapped.count == base.count)
         #expect(mapped.buckets == base.buckets)
         #expect(mapped.indices.allSatisfy { mapped[$0] == base[$0].count })

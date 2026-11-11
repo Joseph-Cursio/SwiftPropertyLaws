@@ -1,7 +1,6 @@
 import Foundation
-import Testing
 @testable import PropertyLawDiscoveryTool
-@testable import PropertyLawCore
+import Testing
 
 /// The scaffold file collects `gen()` stubs only for partially-derivable
 /// `.todo` types — fully-derivable types (auto-test file) and non-scaffoldable
@@ -24,7 +23,7 @@ struct ScaffoldFileEmitterTests {
                     init(value: Int) { self.value = value }
                     static func == (l: Box, r: Box) -> Bool { l.value == r.value }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -51,7 +50,7 @@ struct ScaffoldFileEmitterTests {
                     let meta: Meta
                     let widget: Widget
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -67,7 +66,7 @@ struct ScaffoldFileEmitterTests {
         let dir = try makeFixtureDir([
             "Plain.swift": """
                 struct Point: Equatable { let x: Int; let y: Int }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 

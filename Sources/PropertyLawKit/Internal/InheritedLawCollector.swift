@@ -1,5 +1,3 @@
-import PropertyBased
-
 /// Runs an inherited protocol's `check…PropertyLaws` suite and folds its
 /// outcome into a `[CheckResult]` without rethrowing.
 ///

@@ -43,7 +43,7 @@ where Value.Element: Equatable & Sendable {
         results.append(contentsOf: [
             await checkDistanceConsistency(generator: generator, options: options),
             await checkOffsetConsistency(generator: generator, options: options),
-            await checkNegativeOffsetInversion(generator: generator, options: options)
+            await checkNegativeOffsetInversion(generator: generator, options: options),
         ])
         return results
     }

@@ -1,0 +1,351 @@
+/// Tier 1–3 of the generator-derivation strengthening (Idea #3): parse a
+/// stored-member / init-parameter type spelling and compose
+/// `swift-property-based` combinators around recognized raw types, known
+/// value types, and — when a `resolve` closure is supplied — nested custom
+/// types resolved through the whole-module type universe (Tier 3).
+///
+/// Kept beside `DerivationStrategy` as an extension on `DerivationStrategist`
+/// so `memberGenerator` stays reachable from `memberwiseStrategy` and
+/// `structTodoReason` (same module, internal access) without widening the
+/// public surface beyond `ComposedGenerator`.
+extension DerivationStrategist {
+
+    /// A composed generator, backed by a structured `GeneratorPlan`.
+    /// `expression` / `requiredImports` are derived from the plan, so the
+    /// many call sites that read those keep working unchanged while the tree
+    /// becomes available for scaffolding (holes) and refinement.
+    public struct ComposedGenerator: Sendable, Equatable {
+        public let plan: GeneratorPlan
+        public var expression: String { plan.rendered }
+        public var requiredImports: Set<String> { plan.requiredImports }
+
+        public init(plan: GeneratorPlan) {
+            self.plan = plan
+        }
+
+        /// Convenience for leaf generators (raw / known value types, and the
+        /// resolver's inlined-or-`gen()` references).
+        public init(expression: String, requiredImports: Set<String> = []) {
+            self.plan = .leaf(expression: expression, imports: requiredImports)
+        }
+    }
+
+    /// Resolves a bare custom-type spelling to a generator (Tier 3). The
+    /// default resolves nothing — used by the macro path and any caller that
+    /// only sees one type in isolation. The discovery plugin supplies a
+    /// `GeneratorResolver` backed by the whole-module type universe.
+    public typealias CustomTypeResolver = (String) -> ComposedGenerator?
+
+    /// Generator expression for a stored-member type spelling. Convenience
+    /// over `composedGenerator` for callers that don't need imports or
+    /// custom-type resolution (the `.todo`-reason check, string-level tests).
+    static func memberGenerator(forTypeName typeName: String) -> String? {
+        composedGenerator(forTypeName: typeName)?.expression
+    }
+
+    /// Generator + required imports for a stored-member / init-parameter type
+    /// spelling, composing `swift-property-based` combinators around
+    /// recognized leaf types: `T?` → `.optional`, `[T]` → `.array(of:)`,
+    /// `[K: V]` → `zip(...).dictionary(ofAtMost:)`, `Set<T>` →
+    /// `.set(ofAtMost:)`. Recurses on element types so nested shapes
+    /// (`[Int?]`, `[String: [Customer]]`) compose and carry imports up. A
+    /// bare type that isn't a recognized raw/known value type is handed to
+    /// `resolve` — `nil` by default (composite parsing only), or the
+    /// whole-module resolver under the discovery plugin (Tier 3). Returns
+    /// `nil` when the type doesn't bottom out in something derivable.
+    ///
+    /// **v3.3.0 — now `public`.** Consumers with a top-level *composite* carrier
+    /// spelling (`[Rule]`, `Rule?`, `[K: V]`) whose element/leaf types live in a
+    /// resolvable universe can call this directly with a whole-module resolver,
+    /// rather than only reaching composite parsing indirectly via
+    /// `strategy(for:resolve:)` on a struct's members. Additive: the internal
+    /// call sites and default `resolve` are unchanged.
+    public static func composedGenerator(
+        forTypeName typeName: String,
+        resolve: CustomTypeResolver = { _ in nil }
+    ) -> ComposedGenerator? {
+        let text = trimmed(typeName)
+        guard !text.isEmpty else { return nil }
+
+        // Optional: `T?` sugar or `Optional<T>`.
+        if text.hasSuffix("?") {
+            return wrap(String(text.dropLast()), resolve: resolve) { .optional($0) }
+        }
+        if let inner = genericArgument(of: text, named: "Optional") {
+            return wrap(inner, resolve: resolve) { .optional($0) }
+        }
+
+        // Array / Dictionary sugar: `[ ... ]`.
+        if text.hasPrefix("["), text.hasSuffix("]") {
+            let body = String(text.dropFirst().dropLast())
+            if let colon = topLevelSeparatorIndex(in: body, separator: ":") {
+                return dictionaryGenerator(
+                    key: String(body[..<colon]),
+                    value: String(body[body.index(after: colon)...]),
+                    resolve: resolve
+                )
+            }
+            return wrap(body, resolve: resolve) { .array($0) }
+        }
+
+        // Generic spellings: Array<T>, Set<T>, Dictionary<K, V>.
+        if let inner = genericArgument(of: text, named: "Array") {
+            return wrap(inner, resolve: resolve) { .array($0) }
+        }
+        if let inner = genericArgument(of: text, named: "ArraySlice") {
+            return wrap(inner, resolve: resolve) { .arraySlice($0) }
+        }
+        if let inner = genericArgument(of: text, named: "Set") {
+            return wrap(inner, resolve: resolve) { .set($0) }
+        }
+        if let inner = genericArgument(of: text, named: "Dictionary"),
+           let comma = topLevelSeparatorIndex(in: inner, separator: ",") {
+            return dictionaryGenerator(
+                key: String(inner[..<comma]),
+                value: String(inner[inner.index(after: comma)...]),
+                resolve: resolve
+            )
+        }
+
+        // Bare leaf: recognized raw / known value type, else custom-type
+        // resolution (Tier 3).
+        return leafGenerator(forTypeName: text, resolve: resolve)
+    }
+
+    /// The innermost spelling inside `typeName` that resolves to no generator —
+    /// `Widget` for `[String: [Widget]]` — or `nil` when the whole spelling
+    /// resolves. A bare leaf that fails is its own answer.
+    ///
+    /// **`composedGenerator` stays the judge of what resolves**; this only walks
+    /// the same decomposition to find where it stopped. If a composite form is
+    /// added there and not to `componentTypeNames`, the answer degrades to the
+    /// whole spelling — less specific, never wrong.
+    static func firstUnresolvedLeaf(
+        inTypeName typeName: String,
+        resolve: CustomTypeResolver
+    ) -> String? {
+        let text = trimmed(typeName)
+        guard composedGenerator(forTypeName: text, resolve: resolve) == nil else { return nil }
+        for component in componentTypeNames(of: text) {
+            if let leaf = firstUnresolvedLeaf(inTypeName: component, resolve: resolve) {
+                return leaf
+            }
+        }
+        return text
+    }
+
+    /// The type spellings a composite is built from, in the order
+    /// `composedGenerator` resolves them; empty for a leaf.
+    static func componentTypeNames(of text: String) -> [String] {
+        if text.hasSuffix("?") { return [String(text.dropLast())] }
+        if text.hasPrefix("["), text.hasSuffix("]") {
+            let body = String(text.dropFirst().dropLast())
+            if let colon = topLevelSeparatorIndex(in: body, separator: ":") {
+                return [String(body[..<colon]), String(body[body.index(after: colon)...])]
+            }
+            return [body]
+        }
+        for name in ["Optional", "Array", "ArraySlice", "Set"] {
+            if let inner = genericArgument(of: text, named: name) { return [inner] }
+        }
+        if let inner = genericArgument(of: text, named: "Dictionary"),
+           let comma = topLevelSeparatorIndex(in: inner, separator: ",") {
+            return [String(inner[..<comma]), String(inner[inner.index(after: comma)...])]
+        }
+        return []
+    }
+
+    /// Recurse into `inner`, then wrap its plan in the given collection node
+    /// (`.optional` / `.array` / `.set`).
+    private static func wrap(
+        _ inner: String,
+        resolve: CustomTypeResolver,
+        _ node: (GeneratorPlan) -> GeneratorPlan
+    ) -> ComposedGenerator? {
+        composedGenerator(forTypeName: inner, resolve: resolve).map {
+            ComposedGenerator(plan: node($0.plan))
+        }
+    }
+
+    /// A `.dictionary` plan over the resolved key and value plans, or `nil`
+    /// if either side doesn't resolve.
+    private static func dictionaryGenerator(
+        key: String,
+        value: String,
+        resolve: CustomTypeResolver
+    ) -> ComposedGenerator? {
+        guard let keyGen = composedGenerator(forTypeName: key, resolve: resolve),
+              let valueGen = composedGenerator(forTypeName: value, resolve: resolve) else { return nil }
+        return ComposedGenerator(plan: .dictionary(key: keyGen.plan, value: valueGen.plan))
+    }
+
+    /// A bare leaf type: a recognized stdlib raw type, a known value type
+    /// with a curated engine generator, or — via `resolve` — a nested custom
+    /// type (Tier 3). `nil` when none apply.
+    private static func leafGenerator(
+        forTypeName text: String,
+        resolve: CustomTypeResolver
+    ) -> ComposedGenerator? {
+        if let raw = RawType(typeName: text) {
+            return ComposedGenerator(expression: raw.generatorExpression)
+        }
+        if let known = knownValueGenerator(forTypeName: text) {
+            return known
+        }
+        // Known stdlib/Foundation typealias → derive from the underlying type.
+        // Factual resolution (e.g. TimeInterval *is* Double), not a guess.
+        if let underlying = knownTypeAlias(text) {
+            return composedGenerator(forTypeName: underlying, resolve: resolve)
+        }
+        // A module-qualified spelling of a leaf this file already generates for.
+        // `RawType` handles its own `Swift.`-qualified table; this covers the Foundation
+        // half — `Foundation.Date`, `Foundation.UUID` — by the same rule.
+        if let unqualified = moduleQualifiedLeaf(text) {
+            return composedGenerator(forTypeName: unqualified, resolve: resolve)
+        }
+        return resolve(text)
+    }
+
+    /// `Foundation.Date` → `Date`, when the bare name is a leaf this file can generate.
+    ///
+    /// **Resolution is attempted only against the KNOWN-leaf tables, never against `resolve`.**
+    /// Stripping first and asking the whole-module resolver second would let a source that said
+    /// `Swift.Foo` bind to a user type called `Foo`, which is a different type. Restricting the
+    /// remainder to names this file already generates for makes that impossible.
+    ///
+    /// Only `Swift.` and `Foundation.` are stripped, and only over a single dot: a deeper path is
+    /// a nested type, and any other prefix may be a user module. `Unicode.Scalar` is untouched —
+    /// `Unicode` is not a strippable module, so the entry in `knownValueGenerator` still matches
+    /// the spelling as written.
+    ///
+    /// Generated code is the population: `swift-openapi-generator` fully-qualifies everything it
+    /// emits, and hand-written Swift almost never does.
+    private static func moduleQualifiedLeaf(_ text: String) -> String? {
+        let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 2,
+              parts[0] == "Swift" || parts[0] == "Foundation"
+        else { return nil }
+        let bare = String(parts[1])
+        guard RawType(typeName: bare) != nil
+            || knownValueGenerator(forTypeName: bare) != nil
+            || knownTypeAlias(bare) != nil
+        else { return nil }
+        return bare
+    }
+
+    /// Common stdlib/Foundation typealiases the scanner can't see the
+    /// declaration of (they live in another module), mapped to their
+    /// underlying type spelling. User-declared aliases are resolved
+    /// separately, from the scanned source.
+    private static func knownTypeAlias(_ text: String) -> String? {
+        switch text {
+        // `CGFloat` is `Double` on every 64-bit Apple platform, and SE-0307 makes the conversion
+        // implicit in both directions — verified by compiling a `Double` argument into a
+        // `CGFloat` parameter rather than assumed, because the alias is conditional on word size
+        // in a way `Float64` is not.
+        case "TimeInterval", "NSTimeInterval", "Float64", "CGFloat":
+            return "Double"
+
+        case "Float32":
+            return "Float"
+
+        // Foundation's UTF-16 code unit. Spelled all-lowercase because it comes from Objective-C,
+        // which is exactly why it does not look like a typealias and was never recognised —
+        // measured as four of ten generator-blocked stubs on one subject, every one a character
+        // predicate in a Markdown lexer.
+        case "unichar":
+            return "UInt16"
+
+        default:
+            return nil
+        }
+    }
+
+    /// Stdlib/Foundation value types outside the `RawRepresentable` raw-type
+    /// set, each mapped to a curated `swift-property-based` generator and the
+    /// modules its expression must name. Kept separate from `RawType`
+    /// because `RawType` also drives `RawRepresentable` *enum* derivation.
+    private static func knownValueGenerator(forTypeName text: String) -> ComposedGenerator? {
+        switch text {
+        case "Character":
+            return ComposedGenerator(expression: "Gen<Character>.letterOrNumber")
+
+        case "Date":
+            return ComposedGenerator(expression: "Gen<Date>.date", requiredImports: ["Foundation"])
+
+        // v3.11.0 — common Foundation value types outside the raw-type set.
+        // Each maps to the kit's curated, fully-seeded `Gen<T>` convenience
+        // (PropertyLawKit `FoundationGenerators`) rather than an ad-hoc inline
+        // recipe — the generators every derivation consumer already imports
+        // (`GeneratedFileEmitter`/`ScaffoldFileEmitter` emit `import
+        // PropertyLawKit`; the macro `@_exported`s it). `Foundation` is carried
+        // for the type spelling, exactly like `Date`.
+        case "UUID":
+            return ComposedGenerator(expression: "Gen<UUID>.uuid()", requiredImports: ["Foundation"])
+
+        case "Data":
+            return ComposedGenerator(expression: "Gen<Data>.data()", requiredImports: ["Foundation"])
+
+        case "URL":
+            return ComposedGenerator(expression: "Gen<URL>.url()", requiredImports: ["Foundation"])
+
+        case "Decimal":
+            return ComposedGenerator(expression: "Gen<Decimal>.decimal()", requiredImports: ["Foundation"])
+
+        // Stdlib, not Foundation — so no import beyond the `PropertyLawKit` the
+        // emitters already write. Measured as an enum-payload blocker on the
+        // swift.org corpus; `Character` was here and its scalar sibling was not.
+        case "Unicode.Scalar", "UnicodeScalar":
+            return ComposedGenerator(expression: "Gen<Unicode.Scalar>.unicodeScalar()")
+
+        // A `String` slice, drawn as the `String` generator mapped — reported as *not among the
+        // scanned types* on SwiftInferProperties' seventh corpus census, as if it were a user type.
+        case "Substring":
+            return ComposedGenerator(expression: RawType.string.generatorExpression + ".map { Substring($0) }")
+
+        default:
+            return nil
+        }
+    }
+
+    /// The argument list inside `Name<...>` (e.g. `"K, V"` for
+    /// `Dictionary<K, V>`), or `nil` if `text` isn't spelled that way.
+    private static func genericArgument(of text: String, named name: String) -> String? {
+        guard text.hasPrefix(name + "<"), text.hasSuffix(">") else { return nil }
+        let start = text.index(text.startIndex, offsetBy: name.count + 1)
+        return String(text[start..<text.index(before: text.endIndex)])
+    }
+
+    /// Index of the first `separator` at bracket/angle depth 0 in `text`,
+    /// or `nil`. Respects `<>` and `[]` nesting so `[String: [Int: Int]]`
+    /// splits at the outer colon only.
+    private static func topLevelSeparatorIndex(
+        in text: String,
+        separator: Character
+    ) -> String.Index? {
+        var depth = 0
+        var index = text.startIndex
+        while index < text.endIndex {
+            switch text[index] {
+            case "<", "[": depth += 1
+            case ">", "]": depth -= 1
+            case separator where depth == 0: return index
+            default: break
+            }
+            index = text.index(after: index)
+        }
+        return nil
+    }
+
+    /// Stdlib-only whitespace trim (avoids a Foundation dependency).
+    static func trimmed(_ value: String) -> String {
+        var sub = Substring(value)
+        while let first = sub.first, first == " " || first == "\t" || first == "\n" {
+            sub = sub.dropFirst()
+        }
+        while let last = sub.last, last == " " || last == "\t" || last == "\n" {
+            sub = sub.dropLast()
+        }
+        return String(sub)
+    }
+}

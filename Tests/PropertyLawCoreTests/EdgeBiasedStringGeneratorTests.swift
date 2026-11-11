@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 // v3.2 — `RawType.edgeBiasedGeneratorExpression`: an additive edge-biased
 // String generator that mixes the alphanumeric baseline with curated

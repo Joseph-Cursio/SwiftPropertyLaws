@@ -152,7 +152,7 @@ package enum PerLawDriver {
         observed: ObservedSnapshots
     ) async -> CheckResult {
         switch backendResult {
-        case .passed(let trialsRun, let initialSeed):
+        case let .passed(trialsRun, initialSeed):
             return CheckResult(
                 protocolLaw: metadata.protocolLaw,
                 tier: metadata.tier,
@@ -163,7 +163,8 @@ package enum PerLawDriver {
                 nearMisses: observed.nearMisses,
                 coverageHints: observed.coverageHints
             )
-        case .failed(let trialsRun, let initialSeed, let failingInput, let thrownError):
+
+        case let .failed(trialsRun, initialSeed, failingInput, thrownError):
             // v2.4: shrink the first failing input to a minimal still-failing
             // one. The minimizer re-runs the law's own `property` as the
             // failure oracle, so the law's exact comparison (e.g.
@@ -220,7 +221,7 @@ package enum PerLawDriver {
         var current = start
         var lastError = firstError
         var steps = 0
-        let cap = 1000
+        let cap = 1_000
         descend: while steps < cap {
             for candidate in shrink(current) {
                 let (fails, error) = await stillFails(property, candidate)

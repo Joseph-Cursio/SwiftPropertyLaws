@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// The ASCII-restricted sibling of `unicodeScalar()`, for parameters whose **label** declares
 /// a domain their type does not — `init(ascii: Unicode.Scalar)`.
@@ -23,7 +23,7 @@ struct AsciiScalarGeneratorTests {
     /// contract rather than a restatement of the band table.
     @Test("no sample is outside ASCII")
     func neverProducesNonASCII() {
-        for scalar in sample(count: 5000) {
+        for scalar in sample(count: 5_000) {
             #expect(scalar.isASCII, "scalar \(scalar.value) is not ASCII")
         }
     }
@@ -35,7 +35,7 @@ struct AsciiScalarGeneratorTests {
     /// one killed nothing.
     @Test("every band is reached")
     func everyBandIsReached() {
-        let values = sample(count: 5000).map(\.value)
+        let values = sample(count: 5_000).map(\.value)
         #expect(values.contains { (0x20 ... 0x7E).contains($0) }, "printable band unreached")
         #expect(values.contains { $0 == 0x09 }, "tab unreached")
         #expect(values.contains { $0 == 0x0A }, "newline unreached")
@@ -49,7 +49,7 @@ struct AsciiScalarGeneratorTests {
     /// character is the generator this replaces, wearing a narrower range.
     @Test("printable dominates but does not swamp")
     func theWeightsAreHonoured() {
-        let values = sample(count: 5000).map(\.value)
+        let values = sample(count: 5_000).map(\.value)
         let printable = values.filter { (0x20 ... 0x7E).contains($0) }.count
         let share = Double(printable) / Double(values.count)
         #expect(share > 0.5, "printable share \(share) is too low to be the common case")
@@ -60,6 +60,7 @@ struct AsciiScalarGeneratorTests {
     /// must not. Without this a "generator" that ignored the RNG would pass every arm above.
     @Test("the draw is fully seeded")
     func theDrawIsSeeded() {
+        // swiftlint:disable:next identical_operands - one seed drawn twice must replay
         #expect(sample(count: 200, seed: 7).map(\.value) == sample(count: 200, seed: 7).map(\.value))
         #expect(sample(count: 200, seed: 7).map(\.value) != sample(count: 200, seed: 8).map(\.value))
     }

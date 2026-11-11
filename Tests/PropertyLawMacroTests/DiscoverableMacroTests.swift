@@ -1,7 +1,7 @@
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 /// `@Discoverable(group:)` macro expansion tests (PRD §5.5 M5 marker
 /// layer). The macro emits no peer declarations — these tests pin
@@ -77,7 +77,7 @@ struct DiscoverableMacroTests {
                     line: 3,
                     column: 26,
                     severity: .warning
-                )
+                ),
             ],
             macros: Self.macros
         )

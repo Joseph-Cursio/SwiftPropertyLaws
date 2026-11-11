@@ -1,5 +1,3 @@
-import PropertyBased
-
 /// Brackets every public `check<Protocol>PropertyLaws` entry with the two
 /// policy steps they all share — validate the replay environment *before* any
 /// sampling, then enforce (throw) over the assembled results *after* — so that

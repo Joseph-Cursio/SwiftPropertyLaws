@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// A capacity hint sizes storage; it does not describe a value. Deriving a generator through
 /// `init(minimumCapacity:)` produces the same EMPTY collection every trial, so every law
@@ -62,7 +62,7 @@ struct CapacityHintDerivationTests {
     func mixedInitializerStillDerives() {
         let mixed = InitializerSignature(parameters: [
             InitializerParameter(label: "name", typeName: "String"),
-            InitializerParameter(label: "minimumCapacity", typeName: "Int")
+            InitializerParameter(label: "minimumCapacity", typeName: "Int"),
         ])
         let strategy = DerivationStrategist.strategy(for: shape("Buffer", [mixed]))
         if case .todo = strategy {

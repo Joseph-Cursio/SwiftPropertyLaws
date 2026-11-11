@@ -33,8 +33,8 @@ extension ModuleScanner {
     static func accumulate(
         statement: CodeBlockItemSyntax.Item,
         context: RecordingContext,
-        namespace: [String] = [],
-        into perType: inout [String: TypeAggregate]
+        into perType: inout [String: TypeAggregate],
+        namespace: [String] = []
     ) {
         if let primary = primaryDecl(from: statement) {
             let qualified = (namespace + [primary.name]).joined(separator: ".")
@@ -139,8 +139,8 @@ extension ModuleScanner {
             accumulate(
                 statement: item,
                 context: context,
-                namespace: namespace,
-                into: &perType
+                into: &perType,
+                namespace: namespace
             )
         }
     }

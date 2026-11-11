@@ -1,6 +1,5 @@
-import Testing
-import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct MonoidLawsTests {
 
@@ -30,7 +29,7 @@ struct MonoidLawsTests {
         let names = Set(results.map(\.protocolLaw))
         #expect(names == [
             "Monoid.combineLeftIdentity",
-            "Monoid.combineRightIdentity"
+            "Monoid.combineRightIdentity",
         ])
     }
 
@@ -53,7 +52,7 @@ struct MonoidLawsTests {
         #expect(names == [
             "Semigroup.combineAssociativity",
             "Monoid.combineLeftIdentity",
-            "Monoid.combineRightIdentity"
+            "Monoid.combineRightIdentity",
         ])
     }
 }

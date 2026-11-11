@@ -33,14 +33,14 @@ public func checkSignedIntegerPropertyLaws<
                     options: $0
                 )
             })
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { inherited in
                 // SignedNumeric's own laws only — skipping its inherited Numeric suite
                 // here because the BinaryInteger collector already ran Numeric. Without
                 // the .ownOnly cap we'd run Numeric's six laws twice.
                 try await checkSignedNumericPropertyLaws(
                     for: type,
                     using: generator,
-                    options: $0,
+                    options: inherited,
                     laws: .ownOnly
                 )
             })

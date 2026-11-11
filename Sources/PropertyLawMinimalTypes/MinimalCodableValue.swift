@@ -23,15 +23,12 @@ public indirect enum MinimalCodableValue: Hashable, Codable, Sendable {
     case float(Float)
     case double(Double)
     case string(String)
-    case array([MinimalCodableValue])
-    case dictionary([String: MinimalCodableValue])
-}
-
-public extension MinimalCodableValue {
+    case array([Self])
+    case dictionary([String: Self])
 
     /// A short description of the case, for failure messages that need to say *which* shape was
     /// produced rather than only that two trees differed.
-    var kindName: String {
+    public var kindName: String {
         switch self {
         case .null: "null"
         case .bool: "bool"

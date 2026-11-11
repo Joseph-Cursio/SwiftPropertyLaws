@@ -2,7 +2,7 @@
 /// consumes — and the stored-property record it is built from.
 ///
 /// Split out of `DerivationStrategy.swift` to keep that file under the 400-line
-/// lint, following the `RawType.swift` and `TodoReason.swift` precedent. This is
+/// lint, following the `RawType.swift` and `DerivationStrategist+TodoReason.swift` precedent. This is
 /// the *input* half of the strategist; `DerivationStrategy` is the output half.
 
 /// Stored property declared on a struct/class type — name + source-declared
@@ -117,9 +117,7 @@ public struct TypeShape: Sendable, Equatable {
         self.initializers = initializers
         self.enumCases = enumCases
     }
-}
 
-extension TypeShape {
     /// A class whose inheritance clause names `Sendable`, bare or `@unchecked` — the one kind of
     /// class a derived generator may produce, since `PropertyBackend.check` requires
     /// `Input: Sendable`. Matched as a whole type name, so `NotSendableMarker` does not count.
@@ -129,7 +127,7 @@ extension TypeShape {
         // Whitespace-split rather than trimmed: `PropertyLawCore` imports no Foundation, and the
         // spelling is `Sendable` or `@unchecked Sendable` with arbitrary spacing between words.
         return inheritedTypes.contains { (entry: String) -> Bool in
-            let words = entry.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
+            let words = entry.split { $0 == " " || $0 == "\t" }.map(String.init)
             let bare = words.first == "@unchecked" ? Array(words.dropFirst()) : words
             return bare == ["Sendable"] || bare == ["Swift.Sendable"]
         }

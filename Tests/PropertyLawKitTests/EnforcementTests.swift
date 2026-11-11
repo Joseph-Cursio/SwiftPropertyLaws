@@ -1,6 +1,5 @@
-import Testing
-import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct EnforcementTests {
 
@@ -150,7 +149,7 @@ struct EnforcementTests {
             outcome: .passed,
             nearMisses: [
                 "field whitespaceField: \" abc\" → \"abc\"",
-                "field timestamp: ..."
+                "field timestamp: ...",
             ]
         )
         let text = ViolationFormatter.format(result)

@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct StrideableLawsTests {
 
@@ -24,9 +24,8 @@ struct StrideableLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstStrideableIndex = laws.firstIndex { $0.hasPrefix("Strideable.") }
-        #expect(firstStrideableIndex != nil)
-        let inheritedLaws = laws[..<firstStrideableIndex!]
+        let firstStrideableIndex = try #require(laws.firstIndex { $0.hasPrefix("Strideable.") })
+        let inheritedLaws = laws[..<firstStrideableIndex]
         // Inherited block must contain Equatable's four + Comparable's five.
         #expect(inheritedLaws.contains { $0.hasPrefix("Equatable.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Comparable.") })

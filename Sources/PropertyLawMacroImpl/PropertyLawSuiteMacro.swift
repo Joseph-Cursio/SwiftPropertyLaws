@@ -18,7 +18,7 @@ import SwiftSyntaxMacros
 public struct PropertyLawSuiteMacro: PeerMacro {
 
     public static func expansion(
-        of node: AttributeSyntax,
+        of _: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
@@ -80,7 +80,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
 
         init?(declaration: some DeclSyntaxProtocol) {
             if let decl = declaration.as(StructDeclSyntax.self) {
-                self = TargetDecl(
+                self = Self(
                     name: decl.name.text,
                     kind: .struct,
                     inheritanceClause: decl.inheritanceClause,
@@ -89,7 +89,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
                 return
             }
             if let decl = declaration.as(ClassDeclSyntax.self) {
-                self = TargetDecl(
+                self = Self(
                     name: decl.name.text,
                     kind: .class,
                     inheritanceClause: decl.inheritanceClause,
@@ -98,7 +98,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
                 return
             }
             if let decl = declaration.as(EnumDeclSyntax.self) {
-                self = TargetDecl(
+                self = Self(
                     name: decl.name.text,
                     kind: .enum,
                     inheritanceClause: decl.inheritanceClause,
@@ -107,7 +107,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
                 return
             }
             if let decl = declaration.as(ActorDeclSyntax.self) {
-                self = TargetDecl(
+                self = Self(
                     name: decl.name.text,
                     kind: .actor,
                     inheritanceClause: decl.inheritanceClause,
@@ -153,7 +153,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
 
     private static func inheritedTypeNames(of clause: InheritanceClauseSyntax?) -> [String] {
         guard let clause else { return [] }
-        return clause.inheritedTypes.compactMap { $0.type.trimmedDescription }
+        return clause.inheritedTypes.compactMap(\.type.trimmedDescription)
     }
 
     private static func emitPeerSuite(
@@ -165,9 +165,11 @@ public struct PropertyLawSuiteMacro: PeerMacro {
             typeName: typeName,
             strategy: strategy
         )
-        let testMethods = stableOrder(conformances).map { conformance in
-            emitTest(conformance: conformance, typeName: typeName, generatorExpr: generatorExpr)
-        }.joined(separator: "\n\n    ")
+        let testMethods = stableOrder(conformances)
+            .map { conformance in
+                emitTest(conformance: conformance, typeName: typeName, generatorExpr: generatorExpr)
+            }
+            .joined(separator: "\n\n    ")
         return """
             struct \(raw: typeName)PropertyLawTests {
                 \(raw: testMethods)
@@ -195,7 +197,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
         // for the method's first line, so strip the shared stub's 4-space
         // base indent there; the remaining lines keep their indentation.
         let adjusted = lines.enumerated().map { index, line in
-            index == 0 ? String(line.drop(while: { $0 == " " })) : line
+            index == 0 ? String(line.drop { $0 == " " }) : line
         }
         return adjusted.joined(separator: "\n")
     }

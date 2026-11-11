@@ -1,1 +1,0 @@
-../../Plugins/PropertyLawDiscoveryPlugin/PluginArguments.swift

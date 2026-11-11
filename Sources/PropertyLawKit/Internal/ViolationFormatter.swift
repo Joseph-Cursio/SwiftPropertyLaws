@@ -66,14 +66,17 @@ internal enum ViolationFormatter {
         switch outcome {
         case .passed:
             return nil
+
         case .failed(let counterexample):
             return ["  Counterexample: \(counterexample)"]
+
         case .suppressed(let reason):
             return ["  Suppressed: \(reason)"]
-        case .expectedViolation(let reason, let counterexample):
+
+        case let .expectedViolation(reason, counterexample):
             return [
                 "  Expected violation: \(reason)",
-                "  Counterexample: \(counterexample)"
+                "  Counterexample: \(counterexample)",
             ]
         }
     }

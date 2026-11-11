@@ -41,7 +41,7 @@ where
                 length: length,
                 statefulGuards: statefulGuards,
                 options: options
-            )
+            ),
         ]
     }
 }
@@ -74,7 +74,7 @@ where
                 length: length,
                 statefulGuards: statefulGuards,
                 options: options
-            )
+            ),
         ]
     }
 }
@@ -89,7 +89,7 @@ private func checkInvariantHoldsAfterEachStepAsync<
     Invariant: InteractionInvariant & Sendable,
     Action: CaseIterable & Sendable
 >(
-    invariant: Invariant.Type,
+    invariant _: Invariant.Type,
     initialState: Invariant.State,
     reducer: @escaping @Sendable (Invariant.State, Action) async -> Invariant.State,
     length: ClosedRange<Int>,
@@ -132,7 +132,7 @@ where
 private func checkActionIdempotenceDoubleApplicationAsync<
     Invariant: ActionIdempotenceInvariant & Sendable
 >(
-    invariant: Invariant.Type,
+    invariant _: Invariant.Type,
     initialState: Invariant.State,
     reducer: @escaping @Sendable (Invariant.State, Invariant.Action) async -> Invariant.State,
     length: ClosedRange<Int>,

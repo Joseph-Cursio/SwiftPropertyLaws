@@ -43,7 +43,7 @@ public protocol StableIdentity: AnyObject, Hashable {
 
     /// The type's mutation surface — one case per mutating operation, used to
     /// probe whether any of them disturbs the identity.
-    associatedtype Mutation: CaseIterable & Sendable
+    associatedtype Mutation: CaseIterable, Sendable
 
     /// A deterministic base instance (equal-valued across calls).
     static func makeProbe() -> Self

@@ -26,7 +26,7 @@ import PropertyBased
 /// §4.6 "this law doesn't track" semantic.
 @discardableResult
 public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     sequenceOptions: SequenceLawOptions = SequenceLawOptions(),
@@ -59,7 +59,7 @@ where Value.Element: Equatable & Sendable {
 /// ```
 @discardableResult
 public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     elementSameResult: @escaping SameResult<Value.Element>,
     options: LawCheckOptions = LawCheckOptions(),
@@ -132,13 +132,13 @@ private func checkMultiPass<S: Sequence & Sendable, Sh: SendableSequenceType>(
 where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.multiPassConsistency",
-        tier: .conventional,
         generator: generator,
         options: options,
         property: { sample in multiPassCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
             multiPassCounterexample(for: sample, same: same) ?? "<no counterexample>"
-        }
+        },
+        tier: .conventional
     )
 }
 
@@ -150,13 +150,13 @@ private func checkIndependence<S: Sequence & Sendable, Sh: SendableSequenceType>
 where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.makeIteratorIndependence",
-        tier: .conventional,
         generator: generator,
         options: options,
         property: { sample in independenceCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
             independenceCounterexample(for: sample, same: same) ?? "<no counterexample>"
-        }
+        },
+        tier: .conventional
     )
 }
 

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 // One test per priority-order step plus the fall-through cases for each
 // strategy — the suite legitimately grows past SwiftLint's default
@@ -151,12 +151,12 @@ struct DerivationStrategistTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "easting", typeName: "Int"),
-                StoredMember(name: "northing", typeName: "Int")
+                StoredMember(name: "northing", typeName: "Int"),
             ]
         )
         let expected: DerivationStrategy = .memberwiseArbitrary(members: [
             MemberSpec(name: "easting", rawType: .int),
-            MemberSpec(name: "northing", rawType: .int)
+            MemberSpec(name: "northing", rawType: .int),
         ])
         #expect(DerivationStrategist.strategy(for: shape) == expected)
     }
@@ -187,13 +187,13 @@ struct DerivationStrategistTests {
             storedMembers: [
                 StoredMember(name: "id", typeName: "Int"),
                 StoredMember(name: "label", typeName: "String"),
-                StoredMember(name: "active", typeName: "Bool")
+                StoredMember(name: "active", typeName: "Bool"),
             ]
         )
         let expected: DerivationStrategy = .memberwiseArbitrary(members: [
             MemberSpec(name: "id", rawType: .int),
             MemberSpec(name: "label", rawType: .string),
-            MemberSpec(name: "active", rawType: .bool)
+            MemberSpec(name: "active", rawType: .bool),
         ])
         #expect(DerivationStrategist.strategy(for: shape) == expected)
     }

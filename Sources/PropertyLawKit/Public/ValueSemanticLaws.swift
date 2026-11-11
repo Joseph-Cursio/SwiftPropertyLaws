@@ -54,7 +54,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
                 for: type,
                 length: length,
                 options: options
-            )
+            ),
         ]
     }
 }
@@ -66,7 +66,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
 /// twin. A failure means a mutation to the copy was observable through the
 /// original — shared mutable state leaking through a "value" type.
 private func checkCopyMutationDoesNotLeak<Value: ValueSemantic & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     length: ClosedRange<Int>,
     options: LawCheckOptions
 ) async -> CheckResult
@@ -107,7 +107,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
 /// and asserts the subject still equals the control. A value-safe type keeps
 /// them equal; a type whose copy leaks shared state into the subject diverges.
 private func checkCopyMutationDoesNotLeakUnderInterleaving<Value: ValueSemantic & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     length: ClosedRange<Int>,
     options: LawCheckOptions
 ) async -> CheckResult
@@ -174,7 +174,7 @@ private func dropOneFromPair<Mutation: Sendable>(
 /// probes weren't equal to begin with — a non-deterministic `makeProbe()`,
 /// reported as such rather than as a copy-independence leak.
 private func formatValueSemanticLeak<Value: ValueSemantic>(
-    of type: Value.Type,
+    of _: Value.Type,
     script: [Value.Mutation]
 ) -> String {
     guard !script.isEmpty else {
@@ -193,7 +193,7 @@ private func formatValueSemanticLeak<Value: ValueSemantic>(
 /// contaminated shared state that surfaced when the subject then ran its `own`
 /// script, diverging it from an interference-free control.
 private func formatInterleavedLeak<Value: ValueSemantic>(
-    of type: Value.Type,
+    of _: Value.Type,
     interference: [Value.Mutation],
     own: [Value.Mutation]
 ) -> String {

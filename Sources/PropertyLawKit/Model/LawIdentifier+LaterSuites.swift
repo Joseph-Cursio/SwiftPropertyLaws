@@ -19,15 +19,6 @@ public enum BinaryFloatingPointLaw: String, Sendable, Hashable, CaseIterable {
     case significandExponentReconstruction
 }
 
-public enum BinaryIntegerLaw: String, Sendable, Hashable, CaseIterable {
-    case bitwiseAndCommutativity, bitwiseAndDistributesOverOr, bitwiseAndIdempotence
-    case bitwiseDeMorgan, bitwiseDoubleNegation, bitwiseOrCommutativity
-    case bitwiseOrIdempotence, bitwiseXorSelfIsZero, bitwiseXorZeroIdentity
-    case divisionByOneIdentity, divisionMultiplicationRoundTrip
-    case quotientAndRemainderConsistency, remainderMagnitudeBound, selfDivisionIsOne
-    case shiftByZeroIdentity, trailingZeroBitCountRange
-}
-
 public enum CaseIterableLaw: String, Sendable, Hashable, CaseIterable {
     case exactlyOnce
 }
@@ -128,120 +119,155 @@ public enum ValueSemanticLaw: String, Sendable, Hashable, CaseIterable {
     case copyMutationDoesNotLeak, copyMutationDoesNotLeakUnderInterleaving
 }
 
-extension LawIdentifier {
-    public static func actionIdempotenceInvariant(_ law: ActionIdempotenceInvariantLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "ActionIdempotenceInvariant", lawName: law.rawValue)
-    }
-
-    public static func additiveArithmetic(_ law: AdditiveArithmeticLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "AdditiveArithmetic", lawName: law.rawValue)
-    }
-
-    public static func binaryFloatingPoint(_ law: BinaryFloatingPointLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "BinaryFloatingPoint", lawName: law.rawValue)
-    }
-
-    public static func binaryInteger(_ law: BinaryIntegerLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "BinaryInteger", lawName: law.rawValue)
-    }
-
-    public static func caseIterable(_ law: CaseIterableLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "CaseIterable", lawName: law.rawValue)
-    }
-
-    public static func commutativeMonoid(_ law: CommutativeMonoidLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "CommutativeMonoid", lawName: law.rawValue)
-    }
-
-    public static func defensiveCopy(_ law: DefensiveCopyLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "DefensiveCopy", lawName: law.rawValue)
-    }
-
-    public static func fixedWidthInteger(_ law: FixedWidthIntegerLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "FixedWidthInteger", lawName: law.rawValue)
-    }
-
-    public static func floatingPoint(_ law: FloatingPointLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "FloatingPoint", lawName: law.rawValue)
-    }
-
-    public static func group(_ law: GroupLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Group", lawName: law.rawValue)
-    }
-
-    public static func identifiable(_ law: IdentifiableLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Identifiable", lawName: law.rawValue)
-    }
-
-    public static func interactionInvariant(_ law: InteractionInvariantLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "InteractionInvariant", lawName: law.rawValue)
-    }
-
-    public static func losslessStringConvertible(_ law: LosslessStringConvertibleLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "LosslessStringConvertible", lawName: law.rawValue)
-    }
-
-    public static func monoid(_ law: MonoidLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Monoid", lawName: law.rawValue)
-    }
-
-    public static func numeric(_ law: NumericLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Numeric", lawName: law.rawValue)
-    }
-
-    public static func rawRepresentable(_ law: RawRepresentableLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "RawRepresentable", lawName: law.rawValue)
-    }
-
-    public static func ring(_ law: RingLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Ring", lawName: law.rawValue)
-    }
-
-    public static func semigroup(_ law: SemigroupLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Semigroup", lawName: law.rawValue)
-    }
-
-    public static func semilattice(_ law: SemilatticeLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Semilattice", lawName: law.rawValue)
-    }
-
-    public static func signedInteger(_ law: SignedIntegerLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "SignedInteger", lawName: law.rawValue)
-    }
-
-    public static func signedNumeric(_ law: SignedNumericLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "SignedNumeric", lawName: law.rawValue)
-    }
-
-    public static func stableIdentity(_ law: StableIdentityLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "StableIdentity", lawName: law.rawValue)
-    }
-
-    public static func strideable(_ law: StrideableLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Strideable", lawName: law.rawValue)
-    }
-
-    public static func stringProtocol(_ law: StringProtocolLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "StringProtocol", lawName: law.rawValue)
-    }
-
-    public static func unsignedInteger(_ law: UnsignedIntegerLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "UnsignedInteger", lawName: law.rawValue)
-    }
-
-    public static func valueSemantic(_ law: ValueSemanticLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "ValueSemantic", lawName: law.rawValue)
-    }
-
-}
-
 public enum StrictWeakOrderingLaw: String, Sendable, Hashable, CaseIterable {
     case irreflexivity, asymmetry, transitivity, incomparabilityTransitivity
     case discrimination, congruence
 }
 
-extension LawIdentifier {
-    public static func strictWeakOrdering(_ law: StrictWeakOrderingLaw) -> LawIdentifier {
+public enum BinaryIntegerLaw: String, Sendable, Hashable, CaseIterable {
+    case bitwiseAndCommutativity, bitwiseAndDistributesOverOr, bitwiseAndIdempotence
+    case bitwiseDeMorgan, bitwiseDoubleNegation, bitwiseOrCommutativity
+    case bitwiseOrIdempotence, bitwiseXorSelfIsZero, bitwiseXorZeroIdentity
+    case divisionByOneIdentity, divisionMultiplicationRoundTrip
+    case quotientAndRemainderConsistency, remainderMagnitudeBound, selfDivisionIsOne
+    case shiftByZeroIdentity, trailingZeroBitCountRange
+}
+
+public extension LawIdentifier {
+    /// Names one of the `ActionIdempotenceInvariant` laws, for a `LawSuppression`.
+    static func actionIdempotenceInvariant(_ law: ActionIdempotenceInvariantLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "ActionIdempotenceInvariant", lawName: law.rawValue)
+    }
+
+    /// Names one of the `AdditiveArithmetic` laws, for a `LawSuppression`.
+    static func additiveArithmetic(_ law: AdditiveArithmeticLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "AdditiveArithmetic", lawName: law.rawValue)
+    }
+
+    /// Names one of the `BinaryFloatingPoint` laws, for a `LawSuppression`.
+    static func binaryFloatingPoint(_ law: BinaryFloatingPointLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "BinaryFloatingPoint", lawName: law.rawValue)
+    }
+
+    /// Names one of the `BinaryInteger` laws, for a `LawSuppression`.
+    static func binaryInteger(_ law: BinaryIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "BinaryInteger", lawName: law.rawValue)
+    }
+
+    /// Names one of the `CaseIterable` laws, for a `LawSuppression`.
+    static func caseIterable(_ law: CaseIterableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "CaseIterable", lawName: law.rawValue)
+    }
+
+    /// Names one of the `CommutativeMonoid` laws, for a `LawSuppression`.
+    static func commutativeMonoid(_ law: CommutativeMonoidLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "CommutativeMonoid", lawName: law.rawValue)
+    }
+
+    /// Names one of the `DefensiveCopy` laws, for a `LawSuppression`.
+    static func defensiveCopy(_ law: DefensiveCopyLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "DefensiveCopy", lawName: law.rawValue)
+    }
+
+    /// Names one of the `FixedWidthInteger` laws, for a `LawSuppression`.
+    static func fixedWidthInteger(_ law: FixedWidthIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "FixedWidthInteger", lawName: law.rawValue)
+    }
+
+    /// Names one of the `FloatingPoint` laws, for a `LawSuppression`.
+    static func floatingPoint(_ law: FloatingPointLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "FloatingPoint", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Group` laws, for a `LawSuppression`.
+    static func group(_ law: GroupLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Group", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Identifiable` laws, for a `LawSuppression`.
+    static func identifiable(_ law: IdentifiableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Identifiable", lawName: law.rawValue)
+    }
+
+    /// Names one of the `InteractionInvariant` laws, for a `LawSuppression`.
+    static func interactionInvariant(_ law: InteractionInvariantLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "InteractionInvariant", lawName: law.rawValue)
+    }
+
+    /// Names one of the `LosslessStringConvertible` laws, for a `LawSuppression`.
+    static func losslessStringConvertible(_ law: LosslessStringConvertibleLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "LosslessStringConvertible", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Monoid` laws, for a `LawSuppression`.
+    static func monoid(_ law: MonoidLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Monoid", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Numeric` laws, for a `LawSuppression`.
+    static func numeric(_ law: NumericLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Numeric", lawName: law.rawValue)
+    }
+
+    /// Names one of the `RawRepresentable` laws, for a `LawSuppression`.
+    static func rawRepresentable(_ law: RawRepresentableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "RawRepresentable", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Ring` laws, for a `LawSuppression`.
+    static func ring(_ law: RingLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Ring", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Semigroup` laws, for a `LawSuppression`.
+    static func semigroup(_ law: SemigroupLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Semigroup", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Semilattice` laws, for a `LawSuppression`.
+    static func semilattice(_ law: SemilatticeLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Semilattice", lawName: law.rawValue)
+    }
+
+    /// Names one of the `SignedInteger` laws, for a `LawSuppression`.
+    static func signedInteger(_ law: SignedIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "SignedInteger", lawName: law.rawValue)
+    }
+
+    /// Names one of the `SignedNumeric` laws, for a `LawSuppression`.
+    static func signedNumeric(_ law: SignedNumericLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "SignedNumeric", lawName: law.rawValue)
+    }
+
+    /// Names one of the `StableIdentity` laws, for a `LawSuppression`.
+    static func stableIdentity(_ law: StableIdentityLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "StableIdentity", lawName: law.rawValue)
+    }
+
+    /// Names one of the `Strideable` laws, for a `LawSuppression`.
+    static func strideable(_ law: StrideableLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "Strideable", lawName: law.rawValue)
+    }
+
+    /// Names one of the `StringProtocol` laws, for a `LawSuppression`.
+    static func stringProtocol(_ law: StringProtocolLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "StringProtocol", lawName: law.rawValue)
+    }
+
+    /// Names one of the `UnsignedInteger` laws, for a `LawSuppression`.
+    static func unsignedInteger(_ law: UnsignedIntegerLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "UnsignedInteger", lawName: law.rawValue)
+    }
+
+    /// Names one of the `ValueSemantic` laws, for a `LawSuppression`.
+    static func valueSemantic(_ law: ValueSemanticLaw) -> LawIdentifier {
+        LawIdentifier(protocolName: "ValueSemantic", lawName: law.rawValue)
+    }
+}
+
+public extension LawIdentifier {
+    /// Names one of the `StrictWeakOrdering` laws, for a `LawSuppression`.
+    static func strictWeakOrdering(_ law: StrictWeakOrderingLaw) -> LawIdentifier {
         LawIdentifier(protocolName: "StrictWeakOrdering", lawName: law.rawValue)
     }
 }

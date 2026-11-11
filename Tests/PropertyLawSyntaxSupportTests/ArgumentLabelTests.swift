@@ -1,8 +1,8 @@
 import PropertyLawCore
+@testable import PropertyLawSyntaxSupport
 import SwiftParser
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntaxSupport
 
 /// The labels a derived call writes. A first name of `_`, or none at all,
 /// means the argument is passed unlabelled, and a generated call that wrote

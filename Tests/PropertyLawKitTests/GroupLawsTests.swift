@@ -1,6 +1,58 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+/// Test fixture: `Int`-wrapping `Group` whose `combine` is addition,
+/// `identity` is 0, and `inverse(x)` is `-x`. Positive control across
+/// the Group suite — the canonical additive group of integers.
+struct AdditiveInt: Group, Equatable, Sendable, CustomStringConvertible {
+    let value: Int
+
+    static let identity = Self(value: 0)
+
+    static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+        Self(value: lhs.value &+ rhs.value)
+    }
+
+    static func inverse(_ value: Self) -> Self {
+        Self(value: 0 &- value.value)
+    }
+
+    var description: String { "AInt(\(value))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        // Bounded range avoids the &+ wraparound from masking inverse-law
+        // failures on overflow; ±100 keeps the per-trial arithmetic exact.
+        Gen<Int>.int(in: -100...100).map { Self(value: $0) }
+    }
+}
+
+/// Negative control — `inverse(x) = x` is wrong (the identity function
+/// is only an inverse when x is itself the identity). Used in the
+/// `brokenInverseFailsBothInverseLaws` test to confirm the
+/// Group inverse laws fire the Strict violation they should.
+struct BrokenInverse: Group, Equatable, Sendable, CustomStringConvertible {
+    let value: Int
+
+    static let identity = Self(value: 0)
+
+    static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+        Self(value: lhs.value &+ rhs.value)
+    }
+
+    static func inverse(_ value: Self) -> Self {
+        // Wrong on purpose — should be `-value.value`, not `value.value`.
+        Self(value: value.value)
+    }
+
+    var description: String { "BI(\(value))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        // Generator skips 0 so every sample exposes the broken-inverse bug
+        // (0's inverse IS 0, so x=0 wouldn't fail the law).
+        Gen<Int>.int(in: 1...100).map { Self(value: $0) }
+    }
+}
 
 struct GroupLawsTests {
 
@@ -31,7 +83,7 @@ struct GroupLawsTests {
         let names = Set(results.map(\.protocolLaw))
         #expect(names == [
             "Group.combineLeftInverse",
-            "Group.combineRightInverse"
+            "Group.combineRightInverse",
         ])
     }
 
@@ -56,7 +108,7 @@ struct GroupLawsTests {
             "Monoid.combineLeftIdentity",
             "Monoid.combineRightIdentity",
             "Group.combineLeftInverse",
-            "Group.combineRightInverse"
+            "Group.combineRightInverse",
         ])
     }
 
@@ -72,61 +124,5 @@ struct GroupLawsTests {
                 laws: .ownOnly
             )
         }
-    }
-}
-
-/// Test fixture: `Int`-wrapping `Group` whose `combine` is addition,
-/// `identity` is 0, and `inverse(x)` is `-x`. Positive control across
-/// the Group suite — the canonical additive group of integers.
-struct AdditiveInt: Group, Equatable, Sendable, CustomStringConvertible {
-    let value: Int
-
-    static let identity = AdditiveInt(value: 0)
-
-    static func combine(_ lhs: AdditiveInt, _ rhs: AdditiveInt) -> AdditiveInt {
-        AdditiveInt(value: lhs.value &+ rhs.value)
-    }
-
-    static func inverse(_ value: AdditiveInt) -> AdditiveInt {
-        AdditiveInt(value: 0 &- value.value)
-    }
-
-    var description: String { "AInt(\(value))" }
-}
-
-extension AdditiveInt {
-    static func gen() -> Generator<AdditiveInt, some SendableSequenceType> {
-        // Bounded range avoids the &+ wraparound from masking inverse-law
-        // failures on overflow; ±100 keeps the per-trial arithmetic exact.
-        Gen<Int>.int(in: -100...100).map { AdditiveInt(value: $0) }
-    }
-}
-
-/// Negative control — `inverse(x) = x` is wrong (the identity function
-/// is only an inverse when x is itself the identity). Used in the
-/// `brokenInverseFailsBothInverseLaws` test to confirm the
-/// Group inverse laws fire the Strict violation they should.
-struct BrokenInverse: Group, Equatable, Sendable, CustomStringConvertible {
-    let value: Int
-
-    static let identity = BrokenInverse(value: 0)
-
-    static func combine(_ lhs: BrokenInverse, _ rhs: BrokenInverse) -> BrokenInverse {
-        BrokenInverse(value: lhs.value &+ rhs.value)
-    }
-
-    static func inverse(_ value: BrokenInverse) -> BrokenInverse {
-        // Wrong on purpose — should be `-value.value`, not `value.value`.
-        BrokenInverse(value: value.value)
-    }
-
-    var description: String { "BI(\(value))" }
-}
-
-extension BrokenInverse {
-    static func gen() -> Generator<BrokenInverse, some SendableSequenceType> {
-        // Generator skips 0 so every sample exposes the broken-inverse bug
-        // (0's inverse IS 0, so x=0 wouldn't fail the law).
-        Gen<Int>.int(in: 1...100).map { BrokenInverse(value: $0) }
     }
 }
