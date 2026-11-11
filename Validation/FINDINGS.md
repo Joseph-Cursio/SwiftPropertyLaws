@@ -2,7 +2,7 @@
 
 PRD §8's external validation gate has three passes. Pass 1 scans real packages with the discovery tool, Pass 2 runs the kit's law checks against external types, and Pass 3 searches package histories for bugs the kit should have caught. This file records what each pass found and how to rerun it.
 
-**All three passes were last run on 2026-10-29.** Passes 2 and 3 need Swift 6.3 or earlier; see [Running Passes 2 and 3](#running-passes-2-and-3).
+**All three passes were last run on 2026-10-29.** Pass 2 was rerun on Swift 6.4.2 on 2026-11-11, and Pass 3 on Swift 6.3.3 the same day. Pass 3 needs Swift 6.3 or earlier; see [Running Passes 2 and 3](#running-passes-2-and-3).
 
 ## Pass 1: discovery scan
 
@@ -67,7 +67,7 @@ The first run per package resolves its dependencies into the copy and builds the
 
 ## Pass 2: law checks against external code
 
-`Validation/Package.swift` is a separate SwiftPM package. It depends on the kit by local path and on the external packages by URL, so no consumer of `SwiftPropertyLaws` ever sees those dependencies. Each test writes a generator for an external type and calls a `check…PropertyLaws` suite on it.
+`Validation/Package.swift` is a separate SwiftPM package, and holds Pass 2 alone. It depends on the kit by local path and on the external packages by URL, so no consumer of `SwiftPropertyLaws` ever sees those dependencies. Each test writes a generator for an external type and calls a `check…PropertyLaws` suite on it.
 
 | Test file | Type | Suite | Suppressions | Result |
 |---|---|---|---|---|
@@ -85,7 +85,7 @@ The first run per package resolves its dependencies into the copy and builds the
 | `ComplexLawsTests` | `Complex<Double>` | Numeric (own) | `additionAssociativity`, `multiplicationAssociativity`, `leftDistributivity`, `rightDistributivity`, `subtractionInverse` | passed with documented exceptions |
 | | `Complex<Double>` | SignedNumeric (own) | none | passed |
 
-That is 21 law-suite tests, all at `.standard` (1,000 trials), plus `complexCommutativityIsExactOnNonFiniteInputs`, a plain assertion that `Complex` addition and multiplication commute exactly even on non-finite values. All 22 pass, as do Pass 3's two, on both Swift 6.2.4 and Swift 6.3.3.
+That is 21 law-suite tests, all at `.standard` (1,000 trials), plus `complexCommutativityIsExactOnNonFiniteInputs`, a plain assertion that `Complex` addition and multiplication commute exactly even on non-finite values. All 22 pass on Swift 6.2.4, 6.3.3 and 6.4.2, and Pass 3's two pass on 6.2.4 and 6.3.3.
 
 ### Why two Hashable checks skip `Hashable.distribution`
 
@@ -157,7 +157,7 @@ The fix was on a method `SetAlgebra` requires, behind a public type (`TreeSet`),
 
 ### What Pass 3 found
 
-`ValidationPass3Tests` pins `swift-collections` to `8e5e4a8f`, the parent of the fix, with the buggy `_Bitmap.symmetricDifference` in place. **`TreeSet<Int>` passes every SetAlgebra law there**, and Apple's own regression input (`[1, 3]` △ `[2, 3]`) also gives the correct `[1, 2]`.
+`ValidationPass3Tests`, in its own package at `Validation/Pass3`, pins `swift-collections` to `8e5e4a8f`, the parent of the fix, with the buggy `_Bitmap.symmetricDifference` in place. **`TreeSet<Int>` passes every SetAlgebra law there**, and Apple's own regression input (`[1, 3]` △ `[2, 3]`) also gives the correct `[1, 2]`.
 
 The reason is that the buggy method is dead code. `TreeSet.symmetricDifference` dispatches through `_HashNode._symmetricDifference` to the `_symmetricDifference_slow*` paths, which build the result by structural traversal. Nothing calls `_Bitmap.symmetricDifference`. Apple's commit fixed a real typo on sight, but in unreachable code. The test asserts what is true: the kit reports no violation at the buggy SHA, so it does not false-positive on dead code. If `swift-collections` ever routes a public path through that method, `treeSetPassesAllLawsAtBuggySHA` will start failing, and the pin should be re-evaluated.
 
@@ -167,21 +167,28 @@ Across about 6,400 commits, one candidate survived filtering, and it was not obs
 
 ## Running Passes 2 and 3
 
-On Swift 6.4, `cd Validation && swift test` fails before compiling anything. Pass 3 needs `swift-collections` at exactly `8e5e4a8f`, and the package pins it by revision. That revision's manifest declares no traits (`traits: [], //_traits`), yet one of its build settings is conditioned on the trait `UnstableSortedCollections`. The Swift 6.4 package manager rejects this:
+The two passes are separate packages, because Pass 3's pin does not build on Swift 6.4.
+
+**Pass 2** builds on any toolchain from Swift 6.2 on:
+
+```bash
+cd Validation
+swift test
+```
+
+**Pass 3** lives in `Validation/Pass3`. It needs `swift-collections` at exactly `8e5e4a8f`, and pins it by revision. That revision's manifest declares no traits (`traits: [], //_traits`), yet one of its build settings is conditioned on the trait `UnstableSortedCollections`. The Swift 6.4 package manager rejects this before compiling anything:
 
 ```
 error: 'swift-collections': Trait 'UnstableSortedCollections' referenced in the build settings condition for target '…' is not defined in the package
 ```
 
-The pin applies to the whole package, so Pass 2 fails with it, even though Pass 2 never uses `swift-collections`.
+A pin applies to every target of the package that declares it. While both passes shared `Validation/Package.swift`, Pass 2 failed with it too, though it never uses `swift-collections`. Pass 3 moved to its own package on 2026-11-11 for that reason.
 
 Swift 6.3.3 and 6.2.4 accept the manifest. But neither can compile a package manifest against Xcode 27's macOS 27.0 SDK (`unknown argument: '-target-arch-variant'`), so they need an older SDK. The Command Line Tools ship the macOS 26.5 SDK, and that combination works:
 
 ```bash
-cd Validation
+cd Validation/Pass3
 SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk swiftly run swift test +6.3.3
 ```
 
-Add `--filter SwiftCollectionsRetroactiveTests` for Pass 3 alone. Use `+6.3.3` rather than `+6.2.4` when you have the choice: Swift 6.2 has no warning severity, so it fails a test over a Heuristic violation that 6.3 only reports. Neither pass runs in CI.
-
-Moving Pass 3 into its own package would let Pass 2 build on Swift 6.4 again. That hasn't been done.
+Without swiftly, call an installed toolchain's `swift` directly, such as `~/Library/Developer/Toolchains/swift-6.3.3-RELEASE.xctoolchain/usr/bin/swift test`, with the same `SDKROOT`. Use 6.3.3 rather than 6.2.4 when you have the choice: Swift 6.2 has no warning severity, so it fails a test over a Heuristic violation that 6.3 only reports. Neither pass runs in CI.

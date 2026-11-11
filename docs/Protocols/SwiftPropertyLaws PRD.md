@@ -358,7 +358,7 @@ The four refinements are independent siblings except for the `RandomAccessCollec
 | `subtract` matches `subtracting` | Strict | likewise for `subtract` / `subtracting` |
 | `formSymmetricDifference` matches `symmetricDifference` | Strict | likewise for `formSymmetricDifference` / `symmetricDifference` |
 
-The four `symmetricDifference*` laws exist because the first five never exercise `symmetricDifference`. A git-archaeology pass found a `swift-collections` fix (`35349601`) where `_Bitmap.symmetricDifference` used `&` instead of `^`. `Validation/Tests/ValidationPass3Tests` pins the pre-fix parent and records that `TreeSet<Int>` passes every law there, because no public API reaches the buggy method (§8).
+The four `symmetricDifference*` laws exist because the first five never exercise `symmetricDifference`. A git-archaeology pass found a `swift-collections` fix (`35349601`) where `_Bitmap.symmetricDifference` used `&` instead of `^`. `ValidationPass3Tests`, in the `Validation/Pass3` package, pins the pre-fix parent and records that `TreeSet<Int>` passes every law there, because no public API reaches the buggy method (§8).
 
 The six distributivity, absorption and De Morgan laws relate `union`, `intersection` and `subtracting` to each other, which no earlier law does. Without them a `subtracting` implemented as `symmetricDifference` passes, since the two agree whenever the subtrahend is a subset. `SetAlgebra` has no complement, so De Morgan is stated in relative (subtracting) form. The four `form*`/`subtract` laws check each mutating method against its non-mutating twin, because every other law uses the non-mutating operations only.
 
