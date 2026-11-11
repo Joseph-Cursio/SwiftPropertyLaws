@@ -13,26 +13,35 @@ import PropertyLawCore
 enum PropertyLawDiscoveryTool {
     // swiftlint:disable:next unused_declaration - the @main entry point
     static func main() throws {
-        let args = Array(CommandLine.arguments.dropFirst())
-        if args.isEmpty || args.first == "--help" || args.first == "-h" {
-            printUsage()
+        try run(arguments: Array(CommandLine.arguments.dropFirst()), output: .standard)
+    }
+
+    /// Everything `main()` does, with the arguments and the output streams
+    /// passed in rather than read from the process, so a test can call it.
+    ///
+    /// - Parameters:
+    ///   - arguments: the command line without the program name.
+    ///   - output: where the usage text, the summary and the advisory notes go.
+    static func run(arguments: [String], output: ToolOutput) throws {
+        if arguments.isEmpty || arguments.first == "--help" || arguments.first == "-h" {
+            output.writeStandardOutput(usage + "\n")
             return
         }
 
-        let invocation = try ToolInvocation(arguments: args)
+        let invocation = try ToolInvocation(arguments: arguments)
         let map = ModuleScanner.scan(
             sourceFiles: invocation.sourceFiles,
             contextFiles: invocation.contextFiles
         )
         let suppressions = SuppressionParser.parse(existingFileAt: invocation.outputPath)
-        let output = GeneratedFileEmitter.emit(
+        let generated = GeneratedFileEmitter.emit(
             target: invocation.target,
             map: map,
             suppressions: suppressions,
             extraImports: invocation.extraImports
         )
-        try writeOutput(output, to: invocation.outputPath)
-        printSummary(invocation: invocation, map: map, suppressions: suppressions)
+        try writeOutput(generated, to: invocation.outputPath)
+        output.printLines(summaryLines(invocation: invocation, map: map, suppressions: suppressions))
 
         // Opt-in scaffold pass — best-effort `gen()` stubs for partially
         // derivable `.todo` types, written to a separate file (placeholders
@@ -40,13 +49,9 @@ enum PropertyLawDiscoveryTool {
         if let scaffoldPath = invocation.scaffoldOutputPath {
             if let scaffolds = ScaffoldFileEmitter.emit(map: map) {
                 try writeOutput(scaffolds, to: scaffoldPath)
-                FileHandle.standardOutput.write(Data(
-                    "  scaffolds written: \(scaffoldPath)\n".utf8
-                ))
+                output.printLines(["  scaffolds written: \(scaffoldPath)"])
             } else {
-                FileHandle.standardOutput.write(Data(
-                    "  scaffolds: none (no partially-derivable types)\n".utf8
-                ))
+                output.printLines(["  scaffolds: none (no partially-derivable types)"])
             }
         }
 
@@ -60,60 +65,58 @@ enum PropertyLawDiscoveryTool {
                 from: map,
                 minConfidence: invocation.advisoryMinConfidence
             )
-            printAdvisory(suggestions)
+            output.printErrorLines(advisoryLines(suggestions))
 
             let roundTripSuggestions = RoundTripSuggester.suggest(
                 from: map,
                 minConfidence: invocation.advisoryMinConfidence
             )
-            printRoundTripSuggestions(roundTripSuggestions)
+            output.printErrorLines(roundTripLines(roundTripSuggestions))
         }
     }
 
-    static func printUsage() {
-        let usage = """
-            PropertyLawDiscoveryTool — walks a target's source files and emits
-            PropertyLawKit test calls for each detected conformance.
+    /// The text `--help`, `-h` or no arguments at all print.
+    static let usage = """
+        PropertyLawDiscoveryTool — walks a target's source files and emits
+        PropertyLawKit test calls for each detected conformance.
 
-            Usage (typical, via plugin):
-                swift package propertylawcheck discover --target <Target>
+        Usage (typical, via plugin):
+            swift package propertylawcheck discover --target <Target>
 
-            Direct invocation:
-                PropertyLawDiscoveryTool \\
-                    --target <Target> \\
-                    --output <path/to/PropertyLawTests.generated.swift> \\
-                    --source-files <file1.swift> <file2.swift> ...
+        Direct invocation:
+            PropertyLawDiscoveryTool \\
+                --target <Target> \\
+                --output <path/to/PropertyLawTests.generated.swift> \\
+                --source-files <file1.swift> <file2.swift> ...
 
-            Options:
-                --target <name>           Required. The target whose conformances to scan.
-                --output <path>           Required. Path to the generated file.
-                --scaffold-out <path>     Optional. Write best-effort gen() stubs for
-                                          partially-derivable types (with <#...#>
-                                          placeholders) to a separate file for review.
-                --source-files <paths>... Required. Source paths the plugin discovers.
-                --extra-import <Module>   Optional, repeatable. Add an `import <Module>` to
-                                          the generated file. Use for a package that supplies
-                                          generators the emitted code calls — e.g.
-                                          `--extra-import PropertyLawSyntax` so an emitted
-                                          `Syntax.gen()` resolves. Never inferred.
-                --context-files <paths>...
-                                          Optional. Sources of the target's dependencies,
-                                          read for declarations only. Types found here get
-                                          no suite of their own; they let the scan resolve
-                                          members and report accurate diagnostics for types
-                                          this target merely extends. Each path may be
-                                          prefixed `Module=` so the emitter knows which
-                                          module to import for a foreign type.
-                --advisory                Optional. Emit missing-conformance suggestions
-                                          to stderr (PRD §5.4). Off by default. Output
-                                          is informational only and does not change the
-                                          generated file.
-                --advisory-min <level>    Optional. Minimum confidence floor: low, medium,
-                                          or high. Defaults to high. Lowers the bar for
-                                          which advisory suggestions are emitted.
-            """
-        FileHandle.standardOutput.write(Data((usage + "\n").utf8))
-    }
+        Options:
+            --target <name>           Required. The target whose conformances to scan.
+            --output <path>           Required. Path to the generated file.
+            --scaffold-out <path>     Optional. Write best-effort gen() stubs for
+                                      partially-derivable types (with <#...#>
+                                      placeholders) to a separate file for review.
+            --source-files <paths>... Required. Source paths the plugin discovers.
+            --extra-import <Module>   Optional, repeatable. Add an `import <Module>` to
+                                      the generated file. Use for a package that supplies
+                                      generators the emitted code calls — e.g.
+                                      `--extra-import PropertyLawSyntax` so an emitted
+                                      `Syntax.gen()` resolves. Never inferred.
+            --context-files <paths>...
+                                      Optional. Sources of the target's dependencies,
+                                      read for declarations only. Types found here get
+                                      no suite of their own; they let the scan resolve
+                                      members and report accurate diagnostics for types
+                                      this target merely extends. Each path may be
+                                      prefixed `Module=` so the emitter knows which
+                                      module to import for a foreign type.
+            --advisory                Optional. Emit missing-conformance suggestions
+                                      to stderr (PRD §5.4). Off by default. Output
+                                      is informational only and does not change the
+                                      generated file.
+            --advisory-min <level>    Optional. Minimum confidence floor: low, medium,
+                                      or high. Defaults to high. Lowers the bar for
+                                      which advisory suggestions are emitted.
+        """
 
     /// Writes `contents` to `path`, creating parent directories as needed.
     private static func writeOutput(_ contents: String, to path: String) throws {
@@ -126,11 +129,14 @@ enum PropertyLawDiscoveryTool {
         try contents.write(to: url, atomically: true, encoding: .utf8)
     }
 
-    private static func printSummary(
+    /// The summary printed after the generated file is written: what was
+    /// scanned, what was skipped and why, and which types still need a
+    /// hand-written `gen()`.
+    static func summaryLines(
         invocation: ToolInvocation,
         map: ConformanceMap,
         suppressions: Set<String>
-    ) {
+    ) -> [String] {
         var lines: [String] = []
         lines.append("PropertyLawDiscoveryTool: wrote \(invocation.outputPath)")
         lines.append("  target: \(invocation.target)")
@@ -172,7 +178,7 @@ enum PropertyLawDiscoveryTool {
                 }
             }
         }
-        FileHandle.standardOutput.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        return lines
     }
 
     /// Buckets a `.todo` strategy's reason into a coarse derivation-gap
@@ -240,12 +246,13 @@ enum PropertyLawDiscoveryTool {
         ("neither `CaseIterable` nor", "enum cases not captured"),
     ]
 
-    /// Render advisory suggestions as Swift-compiler-style `note:` lines
-    /// on stderr. One block per suggestion with two indented detail
-    /// lines — matches PRD §5.4's "informational, never a test failure"
-    /// framing without ever touching the generated file.
-    private static func printAdvisory(_ suggestions: [Suggestion]) {
-        guard !suggestions.isEmpty else { return }
+    /// Advisory suggestions as Swift-compiler-style `note:` lines, for
+    /// stderr. One block per suggestion with two indented detail lines —
+    /// matches PRD §5.4's "informational, never a test failure" framing
+    /// without ever touching the generated file. No suggestions, no lines:
+    /// not even the header.
+    static func advisoryLines(_ suggestions: [Suggestion]) -> [String] {
+        guard !suggestions.isEmpty else { return [] }
         var lines: [String] = []
         lines.append("PropertyLawDiscoveryTool: \(suggestions.count) advisory suggestion(s):")
         for suggestion in suggestions {
@@ -262,14 +269,15 @@ enum PropertyLawDiscoveryTool {
                 "        confidence: \(suggestion.confidence.rawValue)"
             )
         }
-        FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        return lines
     }
 
-    /// Render round-trip suggestions as `note:` blocks on stderr — same
-    /// shape as `printAdvisory` so a user reading the advisory output
-    /// sees a uniform format. PRD §5.5 framing: informational only.
-    private static func printRoundTripSuggestions(_ suggestions: [RoundTripSuggestion]) {
-        guard !suggestions.isEmpty else { return }
+    /// Round-trip suggestions as `note:` blocks, for stderr — same shape
+    /// as `advisoryLines` so a user reading the advisory output sees a
+    /// uniform format. PRD §5.5 framing: informational only. No
+    /// suggestions, no lines.
+    static func roundTripLines(_ suggestions: [RoundTripSuggestion]) -> [String] {
+        guard !suggestions.isEmpty else { return [] }
         var lines: [String] = []
         lines.append(
             "PropertyLawDiscoveryTool: \(suggestions.count) round-trip pair candidate(s):"
@@ -297,6 +305,6 @@ enum PropertyLawDiscoveryTool {
                 "        evidence: \(suggestion.evidence)"
             )
         }
-        FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        return lines
     }
 }
