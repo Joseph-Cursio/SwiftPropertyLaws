@@ -18,6 +18,10 @@ package enum PropertyLawTestStub {
     }
 
     /// The six source lines of the generated test method, 4-space-indented.
+    /// A multi-line generator's continuation lines move 12 with the `using:`
+    /// line its first line is placed on (`ExpressionLayout`), so its closing
+    /// line, a memberwise `.map` or a `Gen.oneOf(` list's `)`, lines up under
+    /// `using:`.
     package static func lines(
         conformance: KnownProtocol,
         typeName: String,
@@ -27,7 +31,7 @@ package enum PropertyLawTestStub {
             "    @Test func \(testName(conformance: conformance, typeName: typeName))() async throws {",
             "        try await \(conformance.checkFunctionName)(",
             "            for: \(typeName).self,",
-            "            using: \(generatorExpr)",
+            "            using: \(ExpressionLayout.indentingContinuationLines(of: generatorExpr, by: 12))",
             "        )",
             "    }",
         ]

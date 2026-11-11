@@ -150,10 +150,10 @@ struct MacroExpansionMultiTypeTests {
                     try await checkEquatablePropertyLaws(
                         for: Direction.self,
                         using: Gen.oneOf(
-                Gen.always(Direction.north).eraseToAny(),
-                Gen.always(Direction.south).eraseToAny(),
-                Gen.always(Direction.east).eraseToAny(),
-                Gen.always(Direction.west).eraseToAny()
+                            Gen.always(Direction.north).eraseToAny(),
+                            Gen.always(Direction.south).eraseToAny(),
+                            Gen.always(Direction.east).eraseToAny(),
+                            Gen.always(Direction.west).eraseToAny()
                         )
                     )
                 }
@@ -162,10 +162,10 @@ struct MacroExpansionMultiTypeTests {
                     try await checkCodablePropertyLaws(
                         for: Direction.self,
                         using: Gen.oneOf(
-                Gen.always(Direction.north).eraseToAny(),
-                Gen.always(Direction.south).eraseToAny(),
-                Gen.always(Direction.east).eraseToAny(),
-                Gen.always(Direction.west).eraseToAny()
+                            Gen.always(Direction.north).eraseToAny(),
+                            Gen.always(Direction.south).eraseToAny(),
+                            Gen.always(Direction.east).eraseToAny(),
+                            Gen.always(Direction.west).eraseToAny()
                         )
                     )
                 }

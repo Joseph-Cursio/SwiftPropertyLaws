@@ -625,6 +625,46 @@
       "expected": "killed",
       "test": "tiesSortByName",
       "label": "The summary's gap buckets sort by count alone, so ties come out in Dictionary order, which Swift randomizes per process, and the committed `.summary.txt` files change between identical runs."
+    },
+    {
+      "id": "enum-cases-ignore-their-column",
+      "patch": "patches/enum-cases-ignore-their-column.patch",
+      "shape": "expression-layout",
+      "expected": "killed",
+      "test": "payloadCaseKeepsItsMapUnderItsZip",
+      "label": "EnumCaseEmitter places each case at column 4 but stops moving the case's continuation lines with it, so a payload case's `.map` falls back to column 0 under the `oneOf(` instead of under its own `zip(`. Every generator still compiles; only the layout is wrong."
+    },
+    {
+      "id": "nested-zip-bakes-column-twelve",
+      "patch": "patches/nested-zip-bakes-column-twelve.patch",
+      "shape": "expression-layout",
+      "expected": "killed",
+      "test": "elevenMembersNestIntoAnOuterZipOfGroups",
+      "label": "The 11-plus-member memberwise shape goes back to baking its `.map` at an absolute column 12, the old convention. Its test once checked only `hasPrefix` and `contains`, so this line could be reverted with every test green."
+    },
+    {
+      "id": "stub-splices-without-its-column",
+      "patch": "patches/stub-splices-without-its-column.patch",
+      "shape": "expression-layout",
+      "expected": "killed",
+      "test": "anEnumsCasesSitUnderUsing",
+      "label": "The test stub splices a multi-line generator after `using:` without adding its column 12: issue #90's defect, a `Gen.oneOf(` list's cases at column 4 and its `)` at the method's margin, in both the macro and the discovery plugin."
+    },
+    {
+      "id": "scaffold-body-not-placed",
+      "patch": "patches/scaffold-body-not-placed.patch",
+      "shape": "expression-layout",
+      "expected": "killed",
+      "test": "aMultiLineBodySitsUnderTheFunction",
+      "label": "The scaffold stub splices its body without moving its continuation lines 8, so a memberwise `.map` lands at column 0 and an enum body's cases at 4 inside a `static func` whose body is at 8."
+    },
+    {
+      "id": "recursive-arms-share-a-column",
+      "patch": "patches/recursive-arms-share-a-column.patch",
+      "shape": "expression-layout",
+      "expected": "killed",
+      "test": "continuationLinesAreReindented",
+      "label": "The recursive helper's outer `return` (column 4) moves its expression 8, like the base arm inside the `if`, so its `.map` sits 4 deeper than its `return`. Each placement site must add its own column, not a shared one."
     }
   ]
 }

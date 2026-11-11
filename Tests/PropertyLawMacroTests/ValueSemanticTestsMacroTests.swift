@@ -35,8 +35,8 @@ struct ValueSemanticTestsMacroTests {
 
             struct BufferValueSemanticTests {
                 @Test func valueSemantic_Buffer() async throws {
-                        try await checkValueSemanticPropertyLaws(for: Buffer.self)
-                    }
+                    try await checkValueSemanticPropertyLaws(for: Buffer.self)
+                }
             }
             """,
             macros: valueSemanticTestsMacros

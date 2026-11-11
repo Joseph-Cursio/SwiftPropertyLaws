@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawCore/DerivationStrategist+EnumPayload.swift b/Sources/PropertyLawCore/DerivationStrategist+EnumPayload.swift
+index ea1f9fa..c2a376d 100644
+--- a/Sources/PropertyLawCore/DerivationStrategist+EnumPayload.swift
++++ b/Sources/PropertyLawCore/DerivationStrategist+EnumPayload.swift
+@@ -48,7 +48,7 @@ enum EnumCaseEmitter {
+             return caseGenerators[0]
+         }
+         let body = caseGenerators
+-            .map { "    \(ExpressionLayout.indentingContinuationLines(of: $0, by: 4)).eraseToAny()" }
++            .map { "    \($0).eraseToAny()" }
+             .joined(separator: ",\n")
+         return "Gen.oneOf(\n\(body)\n)"
+     }

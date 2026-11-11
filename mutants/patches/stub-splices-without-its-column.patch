@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawCore/PropertyLawTestStub.swift b/Sources/PropertyLawCore/PropertyLawTestStub.swift
+index e729555..af3682d 100644
+--- a/Sources/PropertyLawCore/PropertyLawTestStub.swift
++++ b/Sources/PropertyLawCore/PropertyLawTestStub.swift
+@@ -31,7 +31,7 @@ package enum PropertyLawTestStub {
+             "    @Test func \(testName(conformance: conformance, typeName: typeName))() async throws {",
+             "        try await \(conformance.checkFunctionName)(",
+             "            for: \(typeName).self,",
+-            "            using: \(ExpressionLayout.indentingContinuationLines(of: generatorExpr, by: 12))",
++            "            using: \(generatorExpr)",
+             "        )",
+             "    }",
+         ]

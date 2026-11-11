@@ -92,7 +92,7 @@ struct GeneratorExpressionEmitterTests {
         )
         let expected = """
             Gen<Character>.letterOrNumber.string(of: 0...8)
-                        .compactMap { Direction(rawValue: $0) }
+            .compactMap { Direction(rawValue: $0) }
             """
         #expect(expr == expected)
     }
@@ -104,7 +104,7 @@ struct GeneratorExpressionEmitterTests {
         )
         let expected = """
             Gen<Int>.int()
-                        .compactMap { Code(rawValue: $0) }
+            .compactMap { Code(rawValue: $0) }
             """
         #expect(expr == expected)
     }

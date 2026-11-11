@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawCore/MemberwiseEmitter.swift b/Sources/PropertyLawCore/MemberwiseEmitter.swift
+index 8b16dfd..56fbe57 100644
+--- a/Sources/PropertyLawCore/MemberwiseEmitter.swift
++++ b/Sources/PropertyLawCore/MemberwiseEmitter.swift
+@@ -110,7 +110,7 @@ public enum MemberwiseEmitter {
+             }
+         }
+         return "zip(\(groupGenerators.joined(separator: ", ")))"
+-            + "\n.map { \(typeName)(\(callArguments.joined(separator: ", "))) }"
++            + "\n            .map { \(typeName)(\(callArguments.joined(separator: ", "))) }"
+     }
+ 
+     private static func callArgument(

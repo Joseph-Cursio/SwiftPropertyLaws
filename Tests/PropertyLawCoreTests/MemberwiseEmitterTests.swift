@@ -34,7 +34,7 @@ struct MemberwiseEmitterTests {
         )
         let expected = """
             zip(Gen<Int>.int(), Gen<Int>.int())
-                        .map { Coordinate(easting: $0.0, northing: $0.1) }
+            .map { Coordinate(easting: $0.0, northing: $0.1) }
             """
         #expect(expr == expected)
     }
@@ -50,7 +50,7 @@ struct MemberwiseEmitterTests {
         )
         let expected = """
             zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
-                        .map { Record(id: $0.0, label: $0.1, active: $0.2) }
+            .map { Record(id: $0.0, label: $0.1, active: $0.2) }
             """
         #expect(expr == expected)
     }
@@ -91,6 +91,10 @@ struct MemberwiseEmitterTests {
         #expect(expr.contains("m10: $0.1"))
         #expect(!expr.contains("m10: $0.1.0"))
         #expect(expr.contains(".map { Wide("))
+        // Two lines, the `.map` at column 0 under the `zip(` (`ExpressionLayout`).
+        let lines = expr.split(separator: "\n", omittingEmptySubsequences: false)
+        #expect(lines.count == 2)
+        #expect(lines.last?.hasPrefix(".map { Wide(m0: $0.0.0, ") == true)
     }
 
     @Test func twentyMembersNestIntoTwoFullGroups() {

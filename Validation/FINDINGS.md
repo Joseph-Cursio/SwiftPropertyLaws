@@ -65,6 +65,12 @@ git diff Validation/results/
 
 The first run per package resolves its dependencies into the copy and builds the plugin's tool, under a minute each here. Later runs are incremental. Two runs over the same revisions produce byte-identical results. Record the scanned revision of each package in the table above. Results are only comparable between runs at the same upstream revision.
 
+**Dependencies are part of the revision.** A package that ignores its `Package.resolved` resolves its dependencies afresh in a new copy, and dependency sources are context for the scan. On 2026-11-11, rerunning Hummingbird at its recorded revision picked up a newer swift-nio, which moved one line number in a provenance comment. That file was not replaced.
+
+**Sitrep can no longer be scanned at `ae446f9`.** That revision requires swift-syntax `602.0.0..<603.0.0`, and SwiftPropertyLaws has required 603 since 2026-10-30, so the copy fails to resolve. Its committed results predate the move and are still accurate: no suites, nothing to regenerate.
+
+**Only `ArgumentParser.generated.swift` was regenerated on 2026-11-11**, to pick up the corrected indentation of multi-line generators (issue #90, and the `ExpressionLayout` convention that followed it). Each diff was whitespace only. `AWSLambdaRuntime` reproduced byte for byte: its multi-line generators are all memberwise, whose `.map` lands at column 12 under either convention, and it has no `Gen.oneOf(`. `Hummingbird.generated.swift` still has the old layout: its enum `Gen.oneOf(` cases sit at column 4, and a payload case's `.map` at column 12 under a `zip(` at 4. A rerun with its dependencies resolved as they were would change only that whitespace.
+
 ## Pass 2: law checks against external code
 
 `Validation/Package.swift` is a separate SwiftPM package, and holds Pass 2 alone. It depends on the kit by local path and on the external packages by URL, so no consumer of `SwiftPropertyLaws` ever sees those dependencies. Each test writes a generator for an external type and calls a `check…PropertyLaws` suite on it.

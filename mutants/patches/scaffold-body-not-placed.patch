@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawCore/ScaffoldEmitter.swift b/Sources/PropertyLawCore/ScaffoldEmitter.swift
+index d8dd140..538e4ed 100644
+--- a/Sources/PropertyLawCore/ScaffoldEmitter.swift
++++ b/Sources/PropertyLawCore/ScaffoldEmitter.swift
+@@ -38,7 +38,7 @@ public enum ScaffoldEmitter {
+     /// The body sits 8 in, under `static func`, so its continuation lines
+     /// move 8 with it (`ExpressionLayout`).
+     private static func stubText(typeName: String, body: String) -> String {
+-        let placed = ExpressionLayout.indentingContinuationLines(of: body, by: 8)
++        let placed = body
+         return """
+         extension \(typeName) {
+             // Scaffolded — fill the <#...#> placeholder(s) to enable property-based testing.

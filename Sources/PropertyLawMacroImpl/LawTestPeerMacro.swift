@@ -141,8 +141,8 @@ enum LawTestPeerMacro {
         """
         struct \(raw: typeName)\(raw: config.suffix) {
             @Test func \(raw: config.testFragment)_\(raw: typeName)() async throws {
-                    try await \(raw: config.checkFunction)(for: \(raw: typeName).self)
-                }
+                try await \(raw: config.checkFunction)(for: \(raw: typeName).self)
+            }
         }
         """
     }

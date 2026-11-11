@@ -15,10 +15,10 @@
 /// func __genDirectoryNode(_ budget: Int) -> Generator<DirectoryNode, AnySequence<Any>> {
 ///     if budget <= 0 {
 ///         return zip(…, Gen<[DirectoryNode]>.always([]))   // base: recursion collapsed
-///             .map { DirectoryNode(name: $0, children: $1) }.eraseToAny()
+///         .map { DirectoryNode(name: $0, children: $1) }.eraseToAny()
 ///     }
 ///     return zip(…, __genDirectoryNode(budget - 1).array(of: 0...8))
-///         .map { DirectoryNode(name: $0, children: $1) }.eraseToAny()
+///     .map { DirectoryNode(name: $0, children: $1) }.eraseToAny()
 /// }
 /// ```
 ///
@@ -29,6 +29,9 @@
 /// `__genDirectoryNode(budget - 2)`, and so on past zero. That is an infinite
 /// loop at generator-*construction* time, before a single value is drawn, and
 /// it does not announce itself as a recursion bug: the stub simply hangs.
+///
+/// Each arm's continuation lines move to the column of its `return`, 8 and 4,
+/// as `ExpressionLayout` has every site that places an expression do.
 ///
 /// `eraseToAny()` on both arms is what makes the return type nameable.
 /// `Generator` is generic over its shrink sequence as well as its value, and
@@ -146,19 +149,10 @@ public enum RecursiveGeneratorEmitter {
             /// yield their empty form so construction terminates.
             func \(name)(_ budget: Int) -> Generator<\(typeName), AnySequence<Any>> {
                 if budget <= 0 {
-                    return \(indented(base)).eraseToAny()
+                    return \(ExpressionLayout.indentingContinuationLines(of: base, by: 8)).eraseToAny()
                 }
-                return \(indented(expression)).eraseToAny()
+                return \(ExpressionLayout.indentingContinuationLines(of: expression, by: 4)).eraseToAny()
             }
             """
-    }
-
-    /// Re-indent a rendered expression to sit under `return ` inside the func.
-    static func indented(_ expression: String) -> String {
-        expression
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .enumerated()
-            .map { $0.offset == 0 ? String($0.element) : "        " + $0.element }
-            .joined(separator: "\n")
     }
 }

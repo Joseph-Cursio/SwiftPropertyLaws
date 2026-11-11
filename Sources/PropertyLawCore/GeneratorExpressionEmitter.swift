@@ -32,6 +32,11 @@
 ///   even types with long names + long raw-type generators (e.g.
 ///   `String`'s `Gen<Character>.letterOrNumber.string(of: 0...8)`) stay
 ///   within reasonable line widths.
+///
+/// Every multi-line expression follows `ExpressionLayout`: it is rendered as
+/// if it started at column 0, a chained `.map` / `.compactMap` sits at column
+/// 0 under the line it continues, and the caller placing it moves its
+/// continuation lines to the column it lands on.
 public enum GeneratorExpressionEmitter {
 
     /// Trailing marker distinguishing a deliberate compile error from a working
@@ -100,10 +105,7 @@ public enum GeneratorExpressionEmitter {
             return EnumCaseEmitter.expression(typeName: typeName, cases: cases)
 
         case .rawRepresentable(let rawType):
-            return """
-                \(rawType.generatorExpression)
-                            .compactMap { \(typeName)(rawValue: $0) }
-                """
+            return "\(rawType.generatorExpression)\n.compactMap { \(typeName)(rawValue: $0) }"
         }
     }
 }

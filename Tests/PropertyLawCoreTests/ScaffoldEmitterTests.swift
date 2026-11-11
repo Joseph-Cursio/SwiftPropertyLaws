@@ -30,6 +30,40 @@ struct ScaffoldEmitterTests {
         #expect(text.contains("Doc(id: $0.0, widget: $0.1)"))  // lifted through the init
     }
 
+    /// The body sits 8 in, under `static func`, and its continuation lines
+    /// move 8 with it: a memberwise `.map` under the `zip(`, and an enum's
+    /// cases 4 further in with the `)` under `Gen.oneOf(`.
+    @Test func aMultiLineBodySitsUnderTheFunction() {
+        let doc = structShape("Doc", [("id", "Int"), ("widget", "Widget")])
+        #expect(ScaffoldEmitter.stub(for: doc) == """
+            extension Doc {
+                // Scaffolded — fill the <#...#> placeholder(s) to enable property-based testing.
+                static func gen() -> Generator<Doc, some SendableSequenceType> {
+                    zip(Gen<Int>.int(), <#Generator<Widget>#>)
+                    .map { Doc(id: $0.0, widget: $0.1) }
+                }
+            }
+            """)
+        let node = TypeShape(
+            name: "Node", kind: .enum, inheritedTypes: ["Equatable"], hasUserGen: false,
+            enumCases: [
+                EnumCase(name: "empty"),
+                EnumCase(name: "leaf", associatedValues: [InitializerParameter(label: nil, typeName: "Widget")]),
+            ]
+        )
+        #expect(ScaffoldEmitter.stub(for: node) == """
+            extension Node {
+                // Scaffolded — fill the <#...#> placeholder(s) to enable property-based testing.
+                static func gen() -> Generator<Node, some SendableSequenceType> {
+                    Gen.oneOf(
+                        Gen.always(Node.empty).eraseToAny(),
+                        <#Generator<Widget>#>.map { Node.leaf($0) }.eraseToAny()
+                    )
+                }
+            }
+            """)
+    }
+
     @Test func holeInsideCollectionKeepsStructure() {
         let cart = structShape("Cart", [("items", "[Color]")])
         let text = ScaffoldEmitter.stub(for: cart) ?? ""

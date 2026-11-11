@@ -163,12 +163,12 @@ public struct InteractionInvariantTestsMacro: PeerMacro {
         return """
             struct \(raw: typeName)InteractionInvariantTests {
                 @Test func \(raw: testFuncName)() async throws {
-                        try await \(raw: checkFn)(
-                            for: \(raw: typeName).self,
-                            initialState: \(raw: typeName).initialState,
-                            reducer: \(raw: typeName).reducer
-                        )
-                    }
+                    try await \(raw: checkFn)(
+                        for: \(raw: typeName).self,
+                        initialState: \(raw: typeName).initialState,
+                        reducer: \(raw: typeName).reducer
+                    )
+                }
             }
             """
     }

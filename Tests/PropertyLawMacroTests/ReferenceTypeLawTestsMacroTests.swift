@@ -27,8 +27,8 @@ struct ReferenceTypeLawTestsMacroTests {
 
             struct BufferDefensiveCopyTests {
                 @Test func defensiveCopy_Buffer() async throws {
-                        try await checkDefensiveCopyPropertyLaws(for: Buffer.self)
-                    }
+                    try await checkDefensiveCopyPropertyLaws(for: Buffer.self)
+                }
             }
             """,
             macros: referenceTypeLawMacros
@@ -48,8 +48,8 @@ struct ReferenceTypeLawTestsMacroTests {
 
             struct NodeStableIdentityTests {
                 @Test func stableIdentity_Node() async throws {
-                        try await checkStableIdentityPropertyLaws(for: Node.self)
-                    }
+                    try await checkStableIdentityPropertyLaws(for: Node.self)
+                }
             }
             """,
             macros: referenceTypeLawMacros

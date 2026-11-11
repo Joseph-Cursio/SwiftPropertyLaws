@@ -78,6 +78,78 @@ struct EmittedFileParsesTests {
         #expect(syntaxErrors(in: output).isEmpty, "\(syntaxErrors(in: output))")
     }
 
+    /// The nested shapes `ExpressionLayout` places: a memberwise generator
+    /// with a multi-line `oneOf` member, a payload case inside a `oneOf`, and
+    /// a `oneOf` nested in a `oneOf`. Each puts a continuation line inside
+    /// parentheses, so a layout that broke the syntax would show up here. The
+    /// test also checks where the lines land. `Code` has raw values, but its
+    /// cases are visible to the scanner, so it derives through case
+    /// enumeration; the raw-value shape is the next test.
+    @Test("an emitted file with nested multi-line generators parses")
+    func nestedGeneratorsParse() {
+        let map = scan("""
+        enum Mode: Equatable, Sendable {
+            case on, off
+        }
+
+        enum Code: Int, Equatable, Sendable {
+            case a = 1, b = 2
+        }
+
+        enum Signal: Equatable, Sendable {
+            case off
+            case dimmed(level: Int, warm: Bool)
+            case moded(Mode)
+        }
+
+        struct Panel: Equatable, Sendable {
+            let level: Int
+            let mode: Mode
+            let code: Code
+            let signal: Signal
+        }
+        """)
+        let output = GeneratedFileEmitter.emit(target: "MyTarget", map: map)
+        #expect(syntaxErrors(in: output).isEmpty, "\(syntaxErrors(in: output))")
+        let lines = output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        // Panel's outer `.map` lines up under `using:`, at column 12.
+        #expect(lines.contains { $0.hasPrefix("            .map { Panel(level: ") })
+        // Signal's payload case keeps its `.map` under its `zip(`, at 16.
+        #expect(lines.contains { $0.hasPrefix("                .map { Signal.dimmed(level: ") })
+        // Nothing lands at the method's left margin.
+        #expect(!lines.contains { $0.hasPrefix("Gen.") || $0.hasPrefix(")") || $0.hasPrefix(".") })
+    }
+
+    /// A raw-value member: `Gen<Int>.int()` with its `.compactMap` on the next
+    /// line, at column 0, inside the `zip(` and before a comma. A scanned
+    /// raw-value enum with visible cases derives through case enumeration, so
+    /// the entry is built directly from the strategy the strategist falls back
+    /// to when the cases are not visible.
+    @Test("an emitted file with a raw-value member inside a zip parses")
+    func rawValueMemberInsideAZipParses() {
+        let code = GeneratorExpressionEmitter.expression(typeName: "Code", strategy: .rawRepresentable(.int))
+        let map = ConformanceMap(
+            entries: [
+                ConformanceMap.Entry(
+                    typeName: "Holder",
+                    conformances: [.equatable],
+                    provenances: [],
+                    derivationStrategy: .memberwiseArbitrary(members: [
+                        MemberSpec(name: "code", generatorExpression: code),
+                        MemberSpec(name: "count", rawType: .int),
+                    ])
+                ),
+            ],
+            parseFailures: []
+        )
+        let output = GeneratedFileEmitter.emit(target: "MyTarget", map: map)
+        #expect(syntaxErrors(in: output).isEmpty, "\(syntaxErrors(in: output))")
+        let lines = output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        #expect(lines.contains("            using: zip(Gen<Int>.int()"))
+        #expect(lines.contains("            .compactMap { Code(rawValue: $0) }, Gen<Int>.int())"))
+        #expect(lines.contains { $0.hasPrefix("            .map { Holder(code: $0.0, count: $0.1) }") })
+    }
+
     /// Multiple todos in one suite: several `@Test` methods, each ending in the
     /// marker, with the next method's lines following.
     @Test("a suite with several todo tests parses")

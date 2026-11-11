@@ -231,7 +231,7 @@ struct CompositeMemberDerivationTests {
         )
         let expected = """
             zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8))
-                        .map { Order(id: $0.0, skus: $0.1) }
+            .map { Order(id: $0.0, skus: $0.1) }
             """
         #expect(expr == expected)
     }

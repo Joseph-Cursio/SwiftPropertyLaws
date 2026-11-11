@@ -35,6 +35,10 @@ public struct EnumCaseGenerator: Sendable, Equatable {
 /// `swift-property-based` expression. A single case is emitted directly; two
 /// or more combine via `Gen.oneOf(...)`, each case erased to a common
 /// shrinker type with `.eraseToAny()` (the proven homogeneous-`oneOf` form).
+///
+/// The list follows `ExpressionLayout`: cases at column 4, `)` at column 0.
+/// A case with a payload is a `zip(...)` with its `.map` on the next line,
+/// and that line moves 4 with the case, so it stays under its `zip(`.
 enum EnumCaseEmitter {
 
     static func expression(typeName: String, cases: [EnumCaseGenerator]) -> String {
@@ -44,7 +48,7 @@ enum EnumCaseEmitter {
             return caseGenerators[0]
         }
         let body = caseGenerators
-            .map { "    \($0).eraseToAny()" }
+            .map { "    \(ExpressionLayout.indentingContinuationLines(of: $0, by: 4)).eraseToAny()" }
             .joined(separator: ",\n")
         return "Gen.oneOf(\n\(body)\n)"
     }
