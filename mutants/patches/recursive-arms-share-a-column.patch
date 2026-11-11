@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawCore/RecursiveGeneratorEmitter.swift b/Sources/PropertyLawCore/RecursiveGeneratorEmitter.swift
+index db8d5e1..1893f95 100644
+--- a/Sources/PropertyLawCore/RecursiveGeneratorEmitter.swift
++++ b/Sources/PropertyLawCore/RecursiveGeneratorEmitter.swift
+@@ -151,7 +151,7 @@ public enum RecursiveGeneratorEmitter {
+                 if budget <= 0 {
+                     return \(ExpressionLayout.indentingContinuationLines(of: base, by: 8)).eraseToAny()
+                 }
+-                return \(ExpressionLayout.indentingContinuationLines(of: expression, by: 4)).eraseToAny()
++                return \(ExpressionLayout.indentingContinuationLines(of: expression, by: 8)).eraseToAny()
+             }
+             """
+     }

@@ -99,6 +99,11 @@ Requires a clean working tree.
 | `namesakes-extension-not-hidden` | discovery-namesakes | killed | `nestedInNamesakeIsHidden` |
 | `namesakes-alias-not-hidden` | discovery-namesakes | killed | `namesakeAliasIsHidden` |
 | `summary-ties-in-dictionary-order` | discovery-summary | killed | `tiesSortByName` |
+| `enum-cases-ignore-their-column` | expression-layout | killed | `payloadCaseKeepsItsMapUnderItsZip` |
+| `nested-zip-bakes-column-twelve` | expression-layout | killed | `elevenMembersNestIntoAnOuterZipOfGroups` |
+| `stub-splices-without-its-column` | expression-layout | killed | `anEnumsCasesSitUnderUsing` |
+| `scaffold-body-not-placed` | expression-layout | killed | `aMultiLineBodySitsUnderTheFunction` |
+| `recursive-arms-share-a-column` | expression-layout | killed | `continuationLinesAreReindented` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -147,6 +152,15 @@ negation-consistent, so symmetry is its *only* broken law) and
 `detectsSymmetryOnlyEquality`, which asserts the specific `Equatable.symmetry`
 violation. With those in place the symmetry mutant is caught — the mutation suite
 exposing a law arm that no test pinned, and driving the fix.
+
+**`expression-layout` guards where emitted code lands, not whether it works.**
+`ExpressionLayout` has every site that places a multi-line generator add only
+its own column. Each of these five patches makes one site forget its column or
+add another's, and every one still emits code that compiles and runs: the
+defect is only that a `.map` or a `Gen.oneOf(` case lands somewhere a reader
+would not put it. `stub-splices-without-its-column` is issue #90's defect
+itself. `nested-zip-bakes-column-twelve` restores the old absolute convention
+on the one line whose test once checked only `hasPrefix`.
 
 ## Adding a mutant
 
