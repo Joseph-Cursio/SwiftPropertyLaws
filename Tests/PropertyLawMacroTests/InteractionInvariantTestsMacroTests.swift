@@ -35,12 +35,12 @@ struct InteractionInvariantTestsMacroTests {
 
             struct InboxCardinalityInteractionInvariantTests {
                 @Test func cardinalityInvariant_InboxCardinality() async throws {
-                        try await checkInteractionInvariantPropertyLaws(
-                            for: InboxCardinality.self,
-                            initialState: InboxCardinality.initialState,
-                            reducer: InboxCardinality.reducer
-                        )
-                    }
+                    try await checkInteractionInvariantPropertyLaws(
+                        for: InboxCardinality.self,
+                        initialState: InboxCardinality.initialState,
+                        reducer: InboxCardinality.reducer
+                    )
+                }
             }
             """,
             macros: interactionTestsMacros
@@ -68,12 +68,12 @@ struct InteractionInvariantTestsMacroTests {
 
             struct InboxRefIntInteractionInvariantTests {
                 @Test func referentialIntegrityInvariant_InboxRefInt() async throws {
-                        try await checkInteractionInvariantPropertyLaws(
-                            for: InboxRefInt.self,
-                            initialState: InboxRefInt.initialState,
-                            reducer: InboxRefInt.reducer
-                        )
-                    }
+                    try await checkInteractionInvariantPropertyLaws(
+                        for: InboxRefInt.self,
+                        initialState: InboxRefInt.initialState,
+                        reducer: InboxRefInt.reducer
+                    )
+                }
             }
             """,
             macros: interactionTestsMacros
@@ -101,12 +101,12 @@ struct InteractionInvariantTestsMacroTests {
 
             struct InboxBicondInteractionInvariantTests {
                 @Test func biconditionalInvariant_InboxBicond() async throws {
-                        try await checkInteractionInvariantPropertyLaws(
-                            for: InboxBicond.self,
-                            initialState: InboxBicond.initialState,
-                            reducer: InboxBicond.reducer
-                        )
-                    }
+                    try await checkInteractionInvariantPropertyLaws(
+                        for: InboxBicond.self,
+                        initialState: InboxBicond.initialState,
+                        reducer: InboxBicond.reducer
+                    )
+                }
             }
             """,
             macros: interactionTestsMacros
@@ -134,12 +134,12 @@ struct InteractionInvariantTestsMacroTests {
 
             struct InboxConsInteractionInvariantTests {
                 @Test func conservationInvariant_InboxCons() async throws {
-                        try await checkInteractionInvariantPropertyLaws(
-                            for: InboxCons.self,
-                            initialState: InboxCons.initialState,
-                            reducer: InboxCons.reducer
-                        )
-                    }
+                    try await checkInteractionInvariantPropertyLaws(
+                        for: InboxCons.self,
+                        initialState: InboxCons.initialState,
+                        reducer: InboxCons.reducer
+                    )
+                }
             }
             """,
             macros: interactionTestsMacros
@@ -173,12 +173,12 @@ struct InteractionInvariantTestsMacroTests {
 
             struct InboxIdemInteractionInvariantTests {
                 @Test func actionIdempotenceInvariant_InboxIdem() async throws {
-                        try await checkActionIdempotenceInvariantPropertyLaws(
-                            for: InboxIdem.self,
-                            initialState: InboxIdem.initialState,
-                            reducer: InboxIdem.reducer
-                        )
-                    }
+                    try await checkActionIdempotenceInvariantPropertyLaws(
+                        for: InboxIdem.self,
+                        initialState: InboxIdem.initialState,
+                        reducer: InboxIdem.reducer
+                    )
+                }
             }
             """,
             macros: interactionTestsMacros
@@ -212,12 +212,12 @@ struct InteractionInvariantTestsMacroTests {
 
             struct DualConformerInteractionInvariantTests {
                 @Test func actionIdempotenceInvariant_DualConformer() async throws {
-                        try await checkActionIdempotenceInvariantPropertyLaws(
-                            for: DualConformer.self,
-                            initialState: DualConformer.initialState,
-                            reducer: DualConformer.reducer
-                        )
-                    }
+                    try await checkActionIdempotenceInvariantPropertyLaws(
+                        for: DualConformer.self,
+                        initialState: DualConformer.initialState,
+                        reducer: DualConformer.reducer
+                    )
+                }
             }
             """,
             macros: interactionTestsMacros

@@ -205,8 +205,8 @@ struct DiagnosticsTests {
                     try await checkEquatablePropertyLaws(
                         for: Either.self,
                         using: Gen.oneOf(
-                Gen.always(Either.left).eraseToAny(),
-                Gen.always(Either.right).eraseToAny()
+                            Gen.always(Either.left).eraseToAny(),
+                            Gen.always(Either.right).eraseToAny()
                         )
                     )
                 }

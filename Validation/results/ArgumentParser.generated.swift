@@ -32,14 +32,14 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: ArgumentArrayParsingStrategy.self,
             using: Gen.oneOf(
-    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
-).map { ArgumentArrayParsingStrategy(base: $0) }
+                Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+            ).map { ArgumentArrayParsingStrategy(base: $0) }
         )
     }
 }
@@ -100,10 +100,10 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: ArgumentVisibility.self,
             using: Gen.oneOf(
-    Gen.always(ArgumentVisibility.Representation.`default`).eraseToAny(),
-    Gen.always(ArgumentVisibility.Representation.hidden).eraseToAny(),
-    Gen.always(ArgumentVisibility.Representation.`private`).eraseToAny()
-).map { ArgumentVisibility(base: $0) }
+                Gen.always(ArgumentVisibility.Representation.`default`).eraseToAny(),
+                Gen.always(ArgumentVisibility.Representation.hidden).eraseToAny(),
+                Gen.always(ArgumentVisibility.Representation.`private`).eraseToAny()
+            ).map { ArgumentVisibility(base: $0) }
         )
     }
 }
@@ -120,14 +120,14 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: ArrayParsingStrategy.self,
             using: Gen.oneOf(
-    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
-).map { ArrayParsingStrategy(base: $0) }
+                Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+            ).map { ArrayParsingStrategy(base: $0) }
         )
     }
 }
@@ -230,14 +230,14 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: DefaultAsFlagParsingStrategy.self,
             using: Gen.oneOf(
-    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
-).map { DefaultAsFlagParsingStrategy(base: $0) }
+                Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+            ).map { DefaultAsFlagParsingStrategy(base: $0) }
         )
     }
 }
@@ -283,10 +283,10 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: FlagExclusivity.self,
             using: Gen.oneOf(
-    Gen.always(FlagExclusivity.Representation.exclusive).eraseToAny(),
-    Gen.always(FlagExclusivity.Representation.chooseFirst).eraseToAny(),
-    Gen.always(FlagExclusivity.Representation.chooseLast).eraseToAny()
-).map { FlagExclusivity(base: $0) }
+                Gen.always(FlagExclusivity.Representation.exclusive).eraseToAny(),
+                Gen.always(FlagExclusivity.Representation.chooseFirst).eraseToAny(),
+                Gen.always(FlagExclusivity.Representation.chooseLast).eraseToAny()
+            ).map { FlagExclusivity(base: $0) }
         )
     }
 }
@@ -300,9 +300,9 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: FlagInversion.self,
             using: Gen.oneOf(
-    Gen.always(FlagInversion.Representation.prefixedNo).eraseToAny(),
-    Gen.always(FlagInversion.Representation.prefixedEnableDisable).eraseToAny()
-).map { FlagInversion(base: $0) }
+                Gen.always(FlagInversion.Representation.prefixedNo).eraseToAny(),
+                Gen.always(FlagInversion.Representation.prefixedEnableDisable).eraseToAny()
+            ).map { FlagInversion(base: $0) }
         )
     }
 }
@@ -347,12 +347,12 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: HelpGenerator.Section.Header.self,
             using: Gen.oneOf(
-    Gen.always(HelpGenerator.Section.Header.positionalArguments).eraseToAny(),
-    Gen.always(HelpGenerator.Section.Header.subcommands).eraseToAny(),
-    Gen.always(HelpGenerator.Section.Header.options).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { HelpGenerator.Section.Header.title($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { HelpGenerator.Section.Header.groupedSubcommands($0) }.eraseToAny()
-)
+                Gen.always(HelpGenerator.Section.Header.positionalArguments).eraseToAny(),
+                Gen.always(HelpGenerator.Section.Header.subcommands).eraseToAny(),
+                Gen.always(HelpGenerator.Section.Header.options).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { HelpGenerator.Section.Header.title($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { HelpGenerator.Section.Header.groupedSubcommands($0) }.eraseToAny()
+            )
         )
     }
 }
@@ -377,13 +377,13 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: InputOrigin.self,
             using: Gen.oneOf(
-    Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
-    zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
-            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
-).array(of: 0...8).map { InputOrigin(elements: $0) }
+                Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
+                zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
+                        .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+            ).array(of: 0...8).map { InputOrigin(elements: $0) }
         )
     }
 }
@@ -394,13 +394,13 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: InputOrigin.Element.self,
             using: Gen.oneOf(
-    Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
-    zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
-            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
-)
+                Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
+                zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
+                        .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+            )
         )
     }
 
@@ -408,13 +408,13 @@ import PropertyLawKit
         try await checkComparablePropertyLaws(
             for: InputOrigin.Element.self,
             using: Gen.oneOf(
-    Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
-    zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-))
-            .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
-)
+                Gen.always(InputOrigin.Element.defaultValue).eraseToAny(),
+                zip(Gen<Int>.int().map { SplitArguments.InputIndex(rawValue: $0) }, Gen.oneOf(
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            ))
+                        .map { SplitArguments.Index(inputIndex: $0.0, subIndex: $0.1) }.map { InputOrigin.Element.argumentIndex($0) }.eraseToAny()
+            )
         )
     }
 }
@@ -458,11 +458,11 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: Name.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-)
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+            )
         )
     }
 
@@ -470,11 +470,11 @@ import PropertyLawKit
         try await checkComparablePropertyLaws(
             for: Name.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-)
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+            )
         )
     }
 }
@@ -485,10 +485,10 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: Name.Case.self,
             using: Gen.oneOf(
-    Gen.always(Name.Case.long).eraseToAny(),
-    Gen.always(Name.Case.short).eraseToAny(),
-    Gen.always(Name.Case.longWithSingleDash).eraseToAny()
-)
+                Gen.always(Name.Case.long).eraseToAny(),
+                Gen.always(Name.Case.short).eraseToAny(),
+                Gen.always(Name.Case.longWithSingleDash).eraseToAny()
+            )
         )
     }
 }
@@ -502,15 +502,15 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: NameSpecification.Element.self,
             using: Gen.oneOf(
-    Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
-            .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
-    Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
-            .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
-).map { NameSpecification.Element(base: $0) }
+                Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
+                        .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
+                Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
+                        .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
+            ).map { NameSpecification.Element(base: $0) }
         )
     }
 }
@@ -521,15 +521,15 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: NameSpecification.Element.Representation.self,
             using: Gen.oneOf(
-    Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
-            .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
-    Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
-            .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
-)
+                Gen.always(NameSpecification.Element.Representation.long).eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Bool>.bool())
+                        .map { NameSpecification.Element.Representation.customLong($0.0, withSingleDash: $0.1) }.eraseToAny(),
+                Gen.always(NameSpecification.Element.Representation.short).eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { NameSpecification.Element.Representation.customShort($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Character>.letterOrNumber.string(of: 0...8))
+                        .map { NameSpecification.Element.Representation.invalidLiteral(literal: $0.0, message: $0.1) }.eraseToAny()
+            )
         )
     }
 }
@@ -561,20 +561,20 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: ParsedArgument.self,
             using: Gen.oneOf(
-    Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-).map { ParsedArgument.name($0) }.eraseToAny(),
-    zip(Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-), Gen<Character>.letterOrNumber.string(of: 0...8))
-            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
-)
+                Gen.oneOf(
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+            ).map { ParsedArgument.name($0) }.eraseToAny(),
+                zip(Gen.oneOf(
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+            ), Gen<Character>.letterOrNumber.string(of: 0...8))
+                        .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+            )
         )
     }
 }
@@ -627,14 +627,14 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: SingleValueParsingStrategy.self,
             using: Gen.oneOf(
-    Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
-    Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
-).map { SingleValueParsingStrategy(base: $0) }
+                Gen.always(ArgumentDefinition.ParsingStrategy.`default`).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.scanningForValue).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.unconditional).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.upToNextOption).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allRemainingInput).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.postTerminator).eraseToAny(),
+                Gen.always(ArgumentDefinition.ParsingStrategy.allUnrecognized).eraseToAny()
+            ).map { SingleValueParsingStrategy(base: $0) }
         )
     }
 }
@@ -712,24 +712,24 @@ import PropertyLawKit
         try await checkEquatablePropertyLaws(
             for: SplitArguments.Element.Value.self,
             using: Gen.oneOf(
-    Gen.oneOf(
-    Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-).map { ParsedArgument.name($0) }.eraseToAny(),
-    zip(Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
-            .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
-), Gen<Character>.letterOrNumber.string(of: 0...8))
-            .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
-).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
-    Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
-)
+                Gen.oneOf(
+                Gen.oneOf(
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+            ).map { ParsedArgument.name($0) }.eraseToAny(),
+                zip(Gen.oneOf(
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.long($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber, Gen<Bool>.bool())
+                        .map { Name.short($0.0, allowingJoined: $0.1) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Name.longWithSingleDash($0) }.eraseToAny()
+            ), Gen<Character>.letterOrNumber.string(of: 0...8))
+                        .map { ParsedArgument.nameWithValue($0.0, $0.1) }.eraseToAny()
+            ).map { SplitArguments.Element.Value.option($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { SplitArguments.Element.Value.value($0) }.eraseToAny(),
+                Gen.always(SplitArguments.Element.Value.terminator).eraseToAny()
+            )
         )
     }
 }
@@ -789,9 +789,9 @@ import PropertyLawKit
         try await checkHashablePropertyLaws(
             for: SplitArguments.SubIndex.self,
             using: Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-)
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            )
         )
     }
 
@@ -799,9 +799,9 @@ import PropertyLawKit
         try await checkComparablePropertyLaws(
             for: SplitArguments.SubIndex.self,
             using: Gen.oneOf(
-    Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
-    Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
-)
+                Gen.always(SplitArguments.SubIndex.complete).eraseToAny(),
+                Gen<Int>.int().map { SplitArguments.SubIndex.sub($0) }.eraseToAny()
+            )
         )
     }
 }
