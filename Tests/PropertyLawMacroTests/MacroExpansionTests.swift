@@ -1,7 +1,7 @@
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 /// Single source-of-truth macro registry for `assertMacroExpansion`.
 /// `nonisolated(unsafe)` because `assertMacroExpansion` itself isn't

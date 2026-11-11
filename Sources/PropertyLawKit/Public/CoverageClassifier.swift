@@ -1,18 +1,3 @@
-/// Classifies sampled inputs into named buckets so per-trial distribution
-/// shows up on `CheckResult.coverageHints` (PRD §4.6).
-///
-/// Two bucket sets per classification:
-/// - `classes`: orthogonal categories the input falls into. Counted
-///   independently — an input may fall into more than one class. Surfaces
-///   the "all my Int samples were tiny" failure mode.
-/// - `boundaries`: named boundary values the input hit (`Int.min`,
-///   `empty-string`, `single-character`). Surfaces "I never tested the
-///   actual edge case I claimed to cover."
-public protocol CoverageClassifier<Input>: Sendable {
-    associatedtype Input: Sendable
-    func classify(_ input: Input) -> (classes: Set<String>, boundaries: Set<String>)
-}
-
 /// Type-erased wrapper for a `CoverageClassifier`. The kit's per-suite
 /// `coverage:` parameter is `AnyCoverageClassifier<Value>?` rather than a
 /// raw existential because Swift's existential `any CoverageClassifier`
@@ -77,7 +62,7 @@ public struct StringCoverage: CoverageClassifier {
         var classes: Set<String> = []
         if input.isEmpty {
             classes.insert("empty")
-        } else if input.allSatisfy({ $0.isASCII }) {
+        } else if input.allSatisfy(\.isASCII) {
             classes.insert("ascii")
         } else {
             classes.insert("unicode")
@@ -103,4 +88,19 @@ public struct ArrayCoverage<Element: Sendable>: CoverageClassifier {
         }
         return (classes, [])
     }
+}
+
+/// Classifies sampled inputs into named buckets so per-trial distribution
+/// shows up on `CheckResult.coverageHints` (PRD §4.6).
+///
+/// Two bucket sets per classification:
+/// - `classes`: orthogonal categories the input falls into. Counted
+///   independently — an input may fall into more than one class. Surfaces
+///   the "all my Int samples were tiny" failure mode.
+/// - `boundaries`: named boundary values the input hit (`Int.min`,
+///   `empty-string`, `single-character`). Surfaces "I never tested the
+///   actual edge case I claimed to cover."
+public protocol CoverageClassifier<Input>: Sendable {
+    associatedtype Input: Sendable
+    func classify(_ input: Input) -> (classes: Set<String>, boundaries: Set<String>)
 }

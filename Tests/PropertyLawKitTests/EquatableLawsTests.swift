@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct EquatableLawsTests {
 
@@ -69,7 +69,7 @@ struct EquatableLawsTests {
             "Equatable.reflexivity",
             "Equatable.symmetry",
             "Equatable.transitivity",
-            "Equatable.negationConsistency"
+            "Equatable.negationConsistency",
         ])
     }
 }

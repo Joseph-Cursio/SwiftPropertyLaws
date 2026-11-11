@@ -35,7 +35,7 @@ public func checkUnsignedIntegerPropertyLaws<
         }
         results.append(contentsOf: [
             await checkNonNegative(generator: generator, options: options),
-            await checkMagnitudeIsSelf(generator: generator, options: options)
+            await checkMagnitudeIsSelf(generator: generator, options: options),
         ])
         return results
     }

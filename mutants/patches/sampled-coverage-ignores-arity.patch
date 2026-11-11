@@ -1,7 +1,7 @@
-diff --git a/Sources/PropertyLawKit/Internal/SpaceSampling.swift b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+diff --git a/Sources/PropertyLawKit/Internal/SpaceSampler.swift b/Sources/PropertyLawKit/Internal/SpaceSampler.swift
 index 2136ab4..8a25370 100644
---- a/Sources/PropertyLawKit/Internal/SpaceSampling.swift
-+++ b/Sources/PropertyLawKit/Internal/SpaceSampling.swift
+--- a/Sources/PropertyLawKit/Internal/SpaceSampler.swift
++++ b/Sources/PropertyLawKit/Internal/SpaceSampler.swift
 @@ -106,7 +106,7 @@ struct SpaceSampler<Value: Sendable>: Sendable {
      /// `SpaceCoverage` already uses.
      func coverage(arity: Int) -> SpaceCoverage? {

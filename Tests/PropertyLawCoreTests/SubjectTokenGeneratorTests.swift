@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// v4.8 — the `String` generators mix the **subject's own** string literals into their alphanumeric
 /// baseline. See `RawType.subjectBaseline(_:)` for why, and for the measurement it reproduces.

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Tier 2 of the generator-derivation strengthening (Idea #3): members
 /// typed as known value types outside the `RawType` set — `Character`
@@ -13,7 +13,7 @@ struct KnownValueTypeDerivationTests {
     @Test func characterUsesLetterOrNumberGenerator() {
         let composed = DerivationStrategist.composedGenerator(forTypeName: "Character")
         #expect(composed?.expression == "Gen<Character>.letterOrNumber")
-        #expect(composed?.requiredImports == [])
+        #expect(composed?.requiredImports.isEmpty == true)
     }
 
     @Test func characterComposesInsideCollections() {
@@ -89,7 +89,7 @@ struct KnownValueTypeDerivationTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "identifier", typeName: "UUID"),
-                StoredMember(name: "payload", typeName: "Data")
+                StoredMember(name: "payload", typeName: "Data"),
             ]
         )
         let strategy = DerivationStrategist.strategy(for: shape)
@@ -157,7 +157,7 @@ struct KnownValueTypeDerivationTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "id", typeName: "Int"),
-                StoredMember(name: "occurredAt", typeName: "Date")
+                StoredMember(name: "occurredAt", typeName: "Date"),
             ]
         )
         let strategy = DerivationStrategist.strategy(for: shape)
@@ -176,10 +176,10 @@ struct KnownValueTypeDerivationTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "x", typeName: "Int"),
-                StoredMember(name: "tags", typeName: "[String]")
+                StoredMember(name: "tags", typeName: "[String]"),
             ]
         )
-        #expect(DerivationStrategist.strategy(for: shape).requiredImports == [])
+        #expect(DerivationStrategist.strategy(for: shape).requiredImports.isEmpty)
     }
 
     /// `Unicode.Scalar` was an enum-payload blocker on the swift.org corpus and
@@ -195,7 +195,7 @@ struct KnownValueTypeDerivationTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "scalar", typeName: "Unicode.Scalar"),
-                StoredMember(name: "legacy", typeName: "UnicodeScalar")
+                StoredMember(name: "legacy", typeName: "UnicodeScalar"),
             ]
         )
         guard case .memberwiseArbitrary(let members) = DerivationStrategist.strategy(for: shape) else {
@@ -206,6 +206,7 @@ struct KnownValueTypeDerivationTests {
             $0.generatorExpression == "Gen<Unicode.Scalar>.unicodeScalar()"
         })
         // Stdlib, not Foundation — no extra import beyond the emitters' default.
+        // swiftlint:disable:next prefer_key_path - a key path here makes #expect's expansion fail to compile
         #expect(members.allSatisfy { $0.requiredImports.isEmpty })
     }
 
@@ -217,9 +218,11 @@ struct KnownValueTypeDerivationTests {
             kind: .enum,
             inheritedTypes: ["Equatable"],
             hasUserGen: false,
-            enumCases: [EnumCase(name: "scalar", associatedValues: [
-                InitializerParameter(label: nil, typeName: "Unicode.Scalar")
-            ])]
+            enumCases: [
+                EnumCase(name: "scalar", associatedValues: [
+                    InitializerParameter(label: nil, typeName: "Unicode.Scalar")
+                ]),
+            ]
         )
         guard case .enumCases = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected case enumeration")
@@ -244,6 +247,7 @@ struct KnownValueTypeDerivationTests {
         }
         #expect(members.first?.generatorExpression
             == "Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }")
+        // swiftlint:disable:next prefer_key_path - a key path here makes #expect's expansion fail to compile
         #expect(members.allSatisfy { $0.requiredImports.isEmpty })
     }
 }

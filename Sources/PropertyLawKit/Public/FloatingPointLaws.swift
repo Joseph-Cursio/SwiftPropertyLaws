@@ -68,7 +68,7 @@ public func checkFloatingPointPropertyLaws<
             await checkSignMatchesIsLessThanZero(generator: generator, options: options),
             await checkAbsoluteValueNonNegative(generator: generator, options: options),
             await checkAdditionCommutativityExact(generator: generator, options: options),
-            await checkMultiplicationCommutativityExact(generator: generator, options: options)
+            await checkMultiplicationCommutativityExact(generator: generator, options: options),
         ]
         if options.allowNaN {
             results.append(contentsOf: [
@@ -76,7 +76,7 @@ public func checkFloatingPointPropertyLaws<
                 await checkNaNInequality(type: type, options: options),
                 await checkNaNPropagatesAddition(generator: generator, options: options),
                 await checkNaNPropagatesMultiplication(generator: generator, options: options),
-                await checkNaNComparisonIsUnordered(generator: generator, options: options)
+                await checkNaNComparisonIsUnordered(generator: generator, options: options),
             ])
         }
         return results
@@ -87,7 +87,7 @@ public func checkFloatingPointPropertyLaws<
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkInfinityIsInfinite<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -106,7 +106,7 @@ private func checkInfinityIsInfinite<Value: FloatingPoint & Sendable>(
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkNegativeInfinityComparison<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -125,7 +125,7 @@ private func checkNegativeInfinityComparison<Value: FloatingPoint & Sendable>(
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkZeroIsZero<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -144,7 +144,7 @@ private func checkZeroIsZero<Value: FloatingPoint & Sendable>(
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkSignedZeroEquality<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -163,7 +163,7 @@ private func checkSignedZeroEquality<Value: FloatingPoint & Sendable>(
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkRoundedZeroIdentity<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -277,7 +277,7 @@ private func checkAbsoluteValueNonNegative<
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkNaNIsNaN<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(
@@ -296,7 +296,7 @@ private func checkNaNIsNaN<Value: FloatingPoint & Sendable>(
 
 // Not eligible: samples a constant `0` rather than drawing from a generator.
 private func checkNaNInequality<Value: FloatingPoint & Sendable>(
-    type: Value.Type,
+    type _: Value.Type,
     options: LawCheckOptions
 ) async -> CheckResult {
     await PerLawDriver.run(

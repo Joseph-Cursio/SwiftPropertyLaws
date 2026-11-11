@@ -244,7 +244,7 @@ public final class GeneratorResolver {
         case .failed:
             return nil
 
-        case .alias(let key, let underlying):
+        case let .alias(key, underlying):
             return memoized(key, visiting: visiting) {
                 // A user typealias → derive from its underlying type spelling,
                 // read where the alias was declared: `Account.ID = Handle`

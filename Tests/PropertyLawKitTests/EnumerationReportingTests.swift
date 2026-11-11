@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// What a walk's result *says*. `SpaceCoverage` exists so a result can stop
 /// implying coverage it does not have, which only pays off if the rendered
@@ -29,7 +29,7 @@ struct EnumerationReportingTests {
 
     @Test func aTruncatedWalkReportsTheShortfall() {
         let text = ViolationFormatter.format(
-            result(coverage: SpaceCoverage(casesRun: 100, spaceSize: 1024), outcome: .passed, trials: 100)
+            result(coverage: SpaceCoverage(casesRun: 100, spaceSize: 1_024), outcome: .passed, trials: 100)
         )
         #expect(text.contains("walked 100 of 1024 cases"))
         #expect(!text.contains("walked all"))
@@ -40,7 +40,7 @@ struct EnumerationReportingTests {
     @Test func aFailingWalkReportsWhereItStoppedNotHowMuchItCovered() {
         let text = ViolationFormatter.format(
             result(
-                coverage: SpaceCoverage(casesRun: 57, spaceSize: 1024),
+                coverage: SpaceCoverage(casesRun: 57, spaceSize: 1_024),
                 outcome: .failed(counterexample: "subset=[0, 1, 2]"),
                 trials: 57
             )
@@ -53,7 +53,7 @@ struct EnumerationReportingTests {
     /// The nil-versus-empty discipline: a sampled law does not know its input
     /// space, and its output must be exactly what it was before this shipped.
     @Test func aSampledResultIsUnchanged() {
-        let text = ViolationFormatter.format(result(coverage: nil, outcome: .passed, trials: 1000))
+        let text = ViolationFormatter.format(result(coverage: nil, outcome: .passed, trials: 1_000))
         #expect(text.contains("1000 trials"))
         #expect(text.contains("Replay with seed:"))
         #expect(!text.contains("cases"))

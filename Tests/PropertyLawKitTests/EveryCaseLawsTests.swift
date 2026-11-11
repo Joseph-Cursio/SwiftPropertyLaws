@@ -1,5 +1,15 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
+
+/// Counts property applications across the walk. The walk is sequential, so a
+/// plain lock-free counter behind a class reference is enough.
+private final class Counter: @unchecked Sendable {
+    private var count = 0
+
+    func record() { count += 1 }
+
+    var total: Int { count }
+}
 
 /// The walk itself: what it covers, where it stops, and what it reports.
 struct EveryCaseLawsTests {
@@ -54,7 +64,7 @@ struct EveryCaseLawsTests {
         #expect(result?.shrinkSteps == 0)
         // 1 + 10 + 45 = 56 smaller cases were cleared first.
         #expect(result?.coverage?.casesRun == 57)
-        #expect(result?.coverage?.spaceSize == 1024)
+        #expect(result?.coverage?.spaceSize == 1_024)
     }
 
     @Test func aWalkStopsAtTheFirstFailure() async {
@@ -86,7 +96,7 @@ struct EveryCaseLawsTests {
         )
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.casesRun == 100)
-        #expect(coverage.spaceSize == 1024)
+        #expect(coverage.spaceSize == 1_024)
         #expect(coverage.isComplete == false)
     }
 
@@ -110,7 +120,7 @@ struct EveryCaseLawsTests {
                         identifier: LawIdentifier(protocolName: "Spike", lawName: "alwaysFails"),
                         kind: .skip,
                         reason: "spike"
-                    )
+                    ),
                 ]
             ),
             satisfies: { _ in false }
@@ -165,11 +175,3 @@ struct EveryCaseLawsTests {
 
 /// Subtraction mod 8 — associative-looking and not associative.
 @Sendable private func subtract(_ lhs: Int, _ rhs: Int) -> Int { (lhs - rhs + 8) % 8 }
-
-/// Counts property applications across the walk. The walk is sequential, so a
-/// plain lock-free counter behind a class reference is enough.
-private final class Counter: @unchecked Sendable {
-    private var count = 0
-    func record() { count += 1 }
-    var total: Int { count }
-}

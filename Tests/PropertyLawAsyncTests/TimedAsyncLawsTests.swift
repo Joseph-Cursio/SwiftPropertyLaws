@@ -1,7 +1,21 @@
 import PropertyBased
+@testable import PropertyLawAsync
 import PropertyLawKit
 import Testing
-@testable import PropertyLawAsync
+
+/// A `VirtualClock` whose sleeps run in a task of their own, which the
+/// sleeper's cancellation does not reach.
+private struct CancellationDeafClock: Clock {
+    let base: VirtualClock
+
+    var now: VirtualClock.Instant { base.now }
+
+    var minimumResolution: Duration { base.minimumResolution }
+
+    func sleep(until deadline: VirtualClock.Instant, tolerance: Duration? = nil) async throws {
+        try await Task { [base] in try await base.sleep(until: deadline, tolerance: tolerance) }.value
+    }
+}
 
 struct TimedAsyncLawsTests {
 
@@ -53,19 +67,5 @@ struct TimedAsyncLawsTests {
             identifier.qualifiedName
                 == "TimedAsyncSequence.debounceIsDeterministicUnderTestClock"
         )
-    }
-}
-
-/// A `VirtualClock` whose sleeps run in a task of their own, which the
-/// sleeper's cancellation does not reach.
-private struct CancellationDeafClock: Clock {
-    let base: VirtualClock
-
-    var now: VirtualClock.Instant { base.now }
-
-    var minimumResolution: Duration { base.minimumResolution }
-
-    func sleep(until deadline: VirtualClock.Instant, tolerance: Duration? = nil) async throws {
-        try await Task { [base] in try await base.sleep(until: deadline, tolerance: tolerance) }.value
     }
 }

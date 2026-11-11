@@ -63,7 +63,7 @@ public func checkNumericPropertyLaws<
             await checkOneMultiplicativeIdentity(generator: generator, options: options),
             await checkZeroAnnihilation(generator: generator, options: options),
             await checkLeftDistributivity(generator: generator, options: options),
-            await checkRightDistributivity(generator: generator, options: options)
+            await checkRightDistributivity(generator: generator, options: options),
         ])
         return results
     }

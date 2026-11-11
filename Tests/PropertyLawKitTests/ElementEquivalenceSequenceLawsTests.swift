@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// Phase 2 M3 payoff: dictionary-shaped carriers (tuple `Element`, which
 /// cannot conform to `Equatable`) running the Sequence laws through the

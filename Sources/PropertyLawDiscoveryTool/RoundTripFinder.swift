@@ -46,7 +46,7 @@ enum RoundTripFinder {
             mod.name.tokenKind == .keyword(.static)
         }
         let parameters = funcDecl.signature.parameterClause.parameters
-        let parameterTypes = parameters.map { $0.type.trimmedDescription }
+        let parameterTypes = parameters.map(\.type.trimmedDescription)
         let returnType = funcDecl.signature.returnClause?.type.trimmedDescription ?? "Void"
 
         return FunctionSignature(

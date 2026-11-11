@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct BinaryFloatingPointLawsTests {
 
@@ -76,7 +76,7 @@ struct BinaryFloatingPointLawsTests {
             "BinaryFloatingPoint.radix2Constraint",
             "BinaryFloatingPoint.significandExponentReconstruction",
             "BinaryFloatingPoint.binadeMembership",
-            "BinaryFloatingPoint.convertingFromIntegerExactness"
+            "BinaryFloatingPoint.convertingFromIntegerExactness",
         ])
     }
 }

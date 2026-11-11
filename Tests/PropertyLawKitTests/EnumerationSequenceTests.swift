@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// `Every.sequences` — the combinator the design note argued had no
 /// `StdlibUnittest` ancestor, and then did not ship.
@@ -24,7 +24,7 @@ struct EnumerationSequenceTests {
 
     @Test func unrankingIsABijection() {
         let space = Every.sequences("seq", of: letters(3), upTo: 4)
-        let walked = Set(space.indices.map { $0 }.map { space[$0] })
+        let walked = Set(space.indices.map(\.self).map { space[$0] })
         #expect(walked.count == 121, "a sequence was produced twice")
     }
 

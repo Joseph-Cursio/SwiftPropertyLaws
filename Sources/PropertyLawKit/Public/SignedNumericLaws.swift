@@ -45,7 +45,7 @@ public func checkSignedNumericPropertyLaws<
             await checkNegationInvolution(generator: generator, options: options),
             await checkAdditiveInverse(generator: generator, options: options),
             await checkNegationDistributesOverAddition(generator: generator, options: options),
-            await checkNegateMutationConsistency(generator: generator, options: options)
+            await checkNegateMutationConsistency(generator: generator, options: options),
         ])
         return results
     }

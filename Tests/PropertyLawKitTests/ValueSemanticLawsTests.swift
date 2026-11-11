@@ -1,6 +1,151 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+// MARK: - Fixtures: plain value type (positive control)
+
+struct SafeBadge: ValueSemantic, Sendable {
+    var value: Int = 0
+
+    static func makeProbe() -> Self { Self() }
+
+    enum Mutation: CaseIterable, Sendable { case increment }
+
+    static func apply(_ mutation: Mutation, to target: inout Self) {
+        switch mutation {
+        case .increment: target.value += 1
+        }
+    }
+}
+
+// MARK: - Fixtures: reference-container leak (negative control)
+
+struct LeakyBadge: ValueSemantic, Sendable {
+
+    /// A shared, mutable reference — the escape hatch. `@unchecked Sendable`
+    /// because it is deliberately unsafe (that is the bug under test).
+    final class Box: @unchecked Sendable {
+        var value: Int
+
+        init(_ value: Int) { self.value = value }
+    }
+
+    var box = Box(0)
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.box.value == rhs.box.value
+    }
+
+    static func makeProbe() -> Self { Self() }
+
+    enum Mutation: CaseIterable, Sendable { case increment }
+
+    static func apply(_ mutation: Mutation, to target: inout Self) {
+        switch mutation {
+        // Mutates through the shared reference — a copy's mutation is visible
+        // through the original.
+        case .increment: target.box.value += 1
+        }
+    }
+}
+
+// MARK: - Fixtures: broken copy-on-write (negative control)
+
+struct BrokenBuffer: ValueSemantic, Sendable {
+
+    final class Storage: @unchecked Sendable {
+        var bytes: [UInt8]
+
+        init(_ bytes: [UInt8] = []) { self.bytes = bytes }
+        func clone() -> Storage { Storage(bytes) }
+    }
+
+    var storage = Storage()
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.storage.bytes == rhs.storage.bytes
+    }
+
+    static func makeProbe() -> Self { Self() }
+
+    enum Mutation: CaseIterable, Sendable { case appendOne }
+
+    static func apply(_ mutation: Mutation, to target: inout Self) {
+        switch mutation {
+        // BUG: no `isKnownUniquelyReferenced` guard — shared storage is
+        // mutated in place, so the original observes the copy's append.
+        case .appendOne: target.storage.bytes.append(1)
+        }
+    }
+}
+
+// MARK: - Fixtures: correct copy-on-write (positive control)
+
+struct SafeBuffer: ValueSemantic, Sendable {
+
+    final class Storage: @unchecked Sendable {
+        var bytes: [UInt8]
+
+        init(_ bytes: [UInt8] = []) { self.bytes = bytes }
+        func clone() -> Storage { Storage(bytes) }
+    }
+
+    var storage = Storage()
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.storage.bytes == rhs.storage.bytes
+    }
+
+    static func makeProbe() -> Self { Self() }
+
+    enum Mutation: CaseIterable, Sendable { case appendOne }
+
+    static func apply(_ mutation: Mutation, to target: inout Self) {
+        switch mutation {
+        case .appendOne:
+            // Correct CoW: clone shared storage before mutating, so a copy's
+            // append never touches the original.
+            if !isKnownUniquelyReferenced(&target.storage) {
+                target.storage = target.storage.clone()
+            }
+            target.storage.bytes.append(1)
+        }
+    }
+}
+
+// MARK: - Fixtures: closure capturing shared mutable state (negative control)
+
+struct ClosureLeak: ValueSemantic, @unchecked Sendable {
+
+    // Captures a heap `var box` — every value copy shares the same closure and
+    // thus the same box. `@unchecked Sendable` because that shared capture is
+    // deliberately unsafe (the bug under test).
+    private let increment: () -> Int
+    private(set) var lastValue: Int = 0
+
+    init() {
+        var box = 0
+        increment = { box += 1; return box }
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.lastValue == rhs.lastValue
+    }
+
+    static func makeProbe() -> Self { Self() }
+
+    enum Mutation: CaseIterable, Sendable { case tick }
+
+    static func apply(_ mutation: Mutation, to target: inout Self) {
+        switch mutation {
+        case .tick: target.tick()
+        }
+    }
+
+    // The leak surfaces here: `increment()` advances the shared box, so a copy's
+    // earlier tick contaminates the value this original observes.
+    mutating func tick() { lastValue = increment() }
+}
 
 /// v3.3.0 — tests for `checkValueSemanticPropertyLaws`. Four hand-rolled
 /// conformers exercise the copy-mutate-compare law: a plain value type and a
@@ -23,7 +168,7 @@ struct ValueSemanticLawsTests {
         #expect(results.allSatisfy { $0.tier == .strict })
         #expect(results.map(\.protocolLaw) == [
             "ValueSemantic.copyMutationDoesNotLeak",
-            "ValueSemantic.copyMutationDoesNotLeakUnderInterleaving"
+            "ValueSemantic.copyMutationDoesNotLeakUnderInterleaving",
         ])
     }
 
@@ -100,146 +245,4 @@ struct ValueSemanticLawsTests {
             )
         }
     }
-}
-
-// MARK: - Fixtures: plain value type (positive control)
-
-struct SafeBadge: ValueSemantic, Sendable {
-    var value: Int = 0
-
-    static func makeProbe() -> SafeBadge { SafeBadge() }
-
-    enum Mutation: CaseIterable, Sendable { case increment }
-
-    static func apply(_ mutation: Mutation, to target: inout SafeBadge) {
-        switch mutation {
-        case .increment: target.value += 1
-        }
-    }
-}
-
-// MARK: - Fixtures: reference-container leak (negative control)
-
-struct LeakyBadge: ValueSemantic, Sendable {
-
-    /// A shared, mutable reference — the escape hatch. `@unchecked Sendable`
-    /// because it is deliberately unsafe (that is the bug under test).
-    final class Box: @unchecked Sendable {
-        var value: Int
-        init(_ value: Int) { self.value = value }
-    }
-
-    var box: Box = Box(0)
-
-    static func == (lhs: LeakyBadge, rhs: LeakyBadge) -> Bool {
-        lhs.box.value == rhs.box.value
-    }
-
-    static func makeProbe() -> LeakyBadge { LeakyBadge() }
-
-    enum Mutation: CaseIterable, Sendable { case increment }
-
-    static func apply(_ mutation: Mutation, to target: inout LeakyBadge) {
-        switch mutation {
-        // Mutates through the shared reference — a copy's mutation is visible
-        // through the original.
-        case .increment: target.box.value += 1
-        }
-    }
-}
-
-// MARK: - Fixtures: broken copy-on-write (negative control)
-
-struct BrokenBuffer: ValueSemantic, Sendable {
-
-    final class Storage: @unchecked Sendable {
-        var bytes: [UInt8]
-        init(_ bytes: [UInt8] = []) { self.bytes = bytes }
-        func clone() -> Storage { Storage(bytes) }
-    }
-
-    var storage: Storage = Storage()
-
-    static func == (lhs: BrokenBuffer, rhs: BrokenBuffer) -> Bool {
-        lhs.storage.bytes == rhs.storage.bytes
-    }
-
-    static func makeProbe() -> BrokenBuffer { BrokenBuffer() }
-
-    enum Mutation: CaseIterable, Sendable { case appendOne }
-
-    static func apply(_ mutation: Mutation, to target: inout BrokenBuffer) {
-        switch mutation {
-        // BUG: no `isKnownUniquelyReferenced` guard — shared storage is
-        // mutated in place, so the original observes the copy's append.
-        case .appendOne: target.storage.bytes.append(1)
-        }
-    }
-}
-
-// MARK: - Fixtures: correct copy-on-write (positive control)
-
-struct SafeBuffer: ValueSemantic, Sendable {
-
-    final class Storage: @unchecked Sendable {
-        var bytes: [UInt8]
-        init(_ bytes: [UInt8] = []) { self.bytes = bytes }
-        func clone() -> Storage { Storage(bytes) }
-    }
-
-    var storage: Storage = Storage()
-
-    static func == (lhs: SafeBuffer, rhs: SafeBuffer) -> Bool {
-        lhs.storage.bytes == rhs.storage.bytes
-    }
-
-    static func makeProbe() -> SafeBuffer { SafeBuffer() }
-
-    enum Mutation: CaseIterable, Sendable { case appendOne }
-
-    static func apply(_ mutation: Mutation, to target: inout SafeBuffer) {
-        switch mutation {
-        case .appendOne:
-            // Correct CoW: clone shared storage before mutating, so a copy's
-            // append never touches the original.
-            if !isKnownUniquelyReferenced(&target.storage) {
-                target.storage = target.storage.clone()
-            }
-            target.storage.bytes.append(1)
-        }
-    }
-}
-
-// MARK: - Fixtures: closure capturing shared mutable state (negative control)
-
-struct ClosureLeak: ValueSemantic, @unchecked Sendable {
-
-    // Captures a heap `var box` — every value copy shares the same closure and
-    // thus the same box. `@unchecked Sendable` because that shared capture is
-    // deliberately unsafe (the bug under test).
-    private let increment: () -> Int
-    private(set) var lastValue: Int = 0
-
-    init() {
-        var box = 0
-        increment = { box += 1; return box }
-    }
-
-    static func == (lhs: ClosureLeak, rhs: ClosureLeak) -> Bool {
-        lhs.lastValue == rhs.lastValue
-    }
-
-    static func makeProbe() -> ClosureLeak { ClosureLeak() }
-
-    enum Mutation: CaseIterable, Sendable { case tick }
-
-    static func apply(_ mutation: Mutation, to target: inout ClosureLeak) {
-        switch mutation {
-        case .tick: target.tick()
-        }
-    }
-
-    // The leak surfaces here: `increment()` advances the shared box, so a copy's
-    // earlier tick contaminates the value this original observes.
-    mutating func tick() { lastValue = increment() }
 }

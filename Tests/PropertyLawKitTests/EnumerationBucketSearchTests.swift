@@ -128,7 +128,7 @@ struct EnumerationBucketSearchTests {
         let buckets = [
             EnumerationBucket(size: 0, start: 0, count: 5),
             EnumerationBucket(size: 1, start: 5, count: 1),
-            EnumerationBucket(size: 2, start: 6, count: 5)
+            EnumerationBucket(size: 2, start: 6, count: 5),
         ]
         #expect(EnumerationBucket.containing(5, in: buckets) == buckets[1])
         #expect(EnumerationBucket.containing(4, in: buckets) == buckets[0])

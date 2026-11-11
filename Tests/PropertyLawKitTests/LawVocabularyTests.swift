@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// `LawIdentifier.allLawIdentifiers`, `allLawNames` and `isKnownLawName`: the
 /// vocabulary of law names this module exports, checked against the laws its

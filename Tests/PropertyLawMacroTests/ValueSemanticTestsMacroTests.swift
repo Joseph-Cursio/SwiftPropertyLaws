@@ -1,7 +1,7 @@
+@testable import PropertyLawMacroImpl
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-@testable import PropertyLawMacroImpl
 
 /// v3.6.0 — golden-output tests for the `@ValueSemanticTests` peer macro: the
 /// emitted copy-mutate-compare suite + the no-conformance diagnostic path.
@@ -63,7 +63,7 @@ struct ValueSemanticTestsMacroTests {
                     line: 1,
                     column: 1,
                     severity: .warning
-                )
+                ),
             ],
             macros: valueSemanticTestsMacros
         )

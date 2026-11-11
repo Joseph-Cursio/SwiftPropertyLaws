@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 // Helper conformance fixtures (State/Action + invariant conformers) are
 // scoped inside the @Suite struct, nesting them one level deeper than the
@@ -131,6 +131,7 @@ struct InteractionInvariantTests {
     struct InboxActionIdempotence: ActionIdempotenceInvariant {
         typealias State = InteractionInvariantTests.State
         typealias Action = InteractionInvariantTests.Action
+
         static let idempotentActions: Set<Action> = [.refresh, .reset]
     }
 
@@ -158,7 +159,7 @@ struct InteractionInvariantTests {
     func familiesAreMutuallyIndependent() {
         // Static-typechecked: each protocol's parent is InteractionInvariant,
         // not another family. Pure type-level assertion.
-        func acceptsRoot<I: InteractionInvariant>(_ type: I.Type) {}
+        func acceptsRoot<I: InteractionInvariant>(_: I.Type) {}
         acceptsRoot(InboxCardinality.self)
         acceptsRoot(InboxReferentialIntegrity.self)
         acceptsRoot(InboxLoadingBiconditional.self)

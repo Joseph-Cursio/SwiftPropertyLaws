@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Direct `#expect` pins on the rendered generator expression. Single
 /// source of truth for the strategy → Swift-source mapping consumed by
@@ -69,7 +69,7 @@ struct GeneratorExpressionEmitterTests {
         // can't desync this surface.
         let members = [
             MemberSpec(name: "amount", rawType: .int),
-            MemberSpec(name: "currency", rawType: .string)
+            MemberSpec(name: "currency", rawType: .string),
         ]
         let viaUnified = GeneratorExpressionEmitter.expression(
             typeName: "Money",

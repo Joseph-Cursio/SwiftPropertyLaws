@@ -1,3 +1,21 @@
+/// Where a consumer writes the code the strategist plans, relative to the type
+/// being generated. Access control makes this observable, so the strategist
+/// cannot decide reachability without it.
+///
+/// The two shipped consumers genuinely differ, and the difference is not
+/// cosmetic — `fileprivate` is reachable from one and not the other:
+///
+/// - `@PropertyLawSuite` is a **peer** macro. Its expansion is attributed to
+///   the file the type is declared in, at the type's own scope.
+/// - The discovery plugin writes `Tests/<Target>Tests/PropertyLawTests.generated.swift`,
+///   and `ScaffoldEmitter` writes a separate scaffold file. Both are other files.
+public enum EmissionSite: String, Sendable, Equatable, CaseIterable {
+    /// File scope of the type's own file — peer-macro expansion.
+    case sameFile
+    /// Any other file, in this module or a `@testable` importer of it.
+    case separateFile
+}
+
 /// Access level as written in source, for the declarations the strategist has
 /// to *call* rather than merely describe.
 ///
@@ -25,30 +43,9 @@ public enum AccessLevel: String, Sendable, Equatable, CaseIterable {
     /// Callers pass the modifier's bare text; the caller is responsible for
     /// skipping detail-carrying modifiers — see `MemberBlockInspector`.
     public init?(modifierName: String) {
-        guard let match = AccessLevel(rawValue: modifierName) else { return nil }
+        guard let match = Self(rawValue: modifierName) else { return nil }
         self = match
     }
-}
-
-/// Where a consumer writes the code the strategist plans, relative to the type
-/// being generated. Access control makes this observable, so the strategist
-/// cannot decide reachability without it.
-///
-/// The two shipped consumers genuinely differ, and the difference is not
-/// cosmetic — `fileprivate` is reachable from one and not the other:
-///
-/// - `@PropertyLawSuite` is a **peer** macro. Its expansion is attributed to
-///   the file the type is declared in, at the type's own scope.
-/// - The discovery plugin writes `Tests/<Target>Tests/PropertyLawTests.generated.swift`,
-///   and `ScaffoldEmitter` writes a separate scaffold file. Both are other files.
-public enum EmissionSite: String, Sendable, Equatable, CaseIterable {
-    /// File scope of the type's own file — peer-macro expansion.
-    case sameFile
-    /// Any other file, in this module or a `@testable` importer of it.
-    case separateFile
-}
-
-extension AccessLevel {
 
     /// Whether a declaration at this level can be *called* from `site`.
     ///
@@ -69,6 +66,22 @@ extension AccessLevel {
         case .private: return false
         case .fileprivate: return site == .sameFile
         case .internal, .package, .public, .open: return true
+        }
+    }
+
+    /// Ordering by restrictiveness, `private` narrowest.
+    func isNarrower(than other: Self) -> Bool {
+        restrictivenessOrder < other.restrictivenessOrder
+    }
+
+    private var restrictivenessOrder: Int {
+        switch self {
+        case .private: return 0
+        case .fileprivate: return 1
+        case .internal: return 2
+        case .package: return 3
+        case .public: return 4
+        case .open: return 5
         }
     }
 }
@@ -99,24 +112,5 @@ extension Collection where Element == StoredMember {
     /// names the offending property rather than the type.
     func firstBlockingMemberwiseDerivation(from site: EmissionSite) -> StoredMember? {
         first { !$0.accessLevel.isCallable(from: site) }
-    }
-}
-
-extension AccessLevel {
-
-    /// Ordering by restrictiveness, `private` narrowest.
-    func isNarrower(than other: AccessLevel) -> Bool {
-        restrictivenessOrder < other.restrictivenessOrder
-    }
-
-    private var restrictivenessOrder: Int {
-        switch self {
-        case .private: return 0
-        case .fileprivate: return 1
-        case .internal: return 2
-        case .package: return 3
-        case .public: return 4
-        case .open: return 5
-        }
     }
 }

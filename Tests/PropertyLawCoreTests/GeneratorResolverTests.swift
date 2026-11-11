@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Tier 3: nested custom-type derivation through a whole-module
 /// `GeneratorResolver`. A member or init parameter typed as a sibling custom
@@ -91,9 +91,11 @@ struct GeneratorResolverTests {
             inheritedTypes: ["Equatable"],
             hasUserGen: false,
             hasUserInit: true,
-            initializers: [InitializerSignature(parameters: [
-                InitializerParameter(label: "customer", typeName: "Customer")
-            ])]
+            initializers: [
+                InitializerSignature(parameters: [
+                    InitializerParameter(label: "customer", typeName: "Customer")
+                ]),
+            ]
         )
         guard case .initializerBased = strategy(for: "Box", in: [box, customer]) else {
             Issue.record("expected initializerBased through nested resolution")
@@ -197,7 +199,7 @@ struct GeneratorResolverTests {
         // a scanner that records nested types unqualified.
         let universe = [
             enumShape("Kind", inheriting: ["String", "CaseIterable"]),
-            enumShape("Kind", inheriting: ["Int", "Codable"])
+            enumShape("Kind", inheriting: ["Int", "Codable"]),
         ]
         let resolver = GeneratorResolver(types: universe)
         #expect(
@@ -210,7 +212,7 @@ struct GeneratorResolverTests {
         let universe = [
             enumShape("Kind", inheriting: ["String", "CaseIterable"]),
             enumShape("Kind", inheriting: ["Int", "Codable"]),
-            structShape("Order", [("id", "Int")])
+            structShape("Order", [("id", "Int")]),
         ]
         let resolver = GeneratorResolver(types: universe)
         #expect(resolver.ambiguousTypeNames == ["Kind"])
@@ -222,7 +224,7 @@ struct GeneratorResolverTests {
         let universe = [
             enumShape("Kind", inheriting: ["String", "CaseIterable"]),
             enumShape("Kind", inheriting: ["Int", "Codable"]),
-            structShape("Entry", [("name", "String"), ("kind", "Kind")])
+            structShape("Entry", [("name", "String"), ("kind", "Kind")]),
         ]
         let entry = universe.last!
         guard case .todo = strategy(for: "Entry", in: universe) else {
@@ -254,7 +256,7 @@ struct GeneratorResolverTests {
         let universe = [
             enumShape("Foo.Kind", inheriting: ["String", "CaseIterable"]),
             enumShape("Bar.Kind", inheriting: ["String", "CaseIterable"]),
-            structShape("Entry", [("name", "String"), ("kind", "Foo.Kind")])
+            structShape("Entry", [("name", "String"), ("kind", "Foo.Kind")]),
         ]
         let resolver = GeneratorResolver(types: universe)
         #expect(resolver.ambiguousTypeNames.isEmpty)

@@ -1,50 +1,3 @@
-/// v2.3.0 — root protocol for SwiftInferProperties v2.0's
-/// **InteractionInvariantBridge** (PRD §9). Conformance declares a
-/// state-level boolean predicate that an interaction-bearing reducer
-/// is expected to preserve after every action it processes.
-///
-/// **The conformer is NOT the reducer.** Per PRD §9.2, the verify
-/// harness takes the reducer as a closure parameter, so a single
-/// invariant-bearing type doesn't need to *be* the reducer. Pattern:
-/// the user writes a stub type that conforms to one of the five
-/// family-specific sub-protocols (Cardinality / RefInt / etc.) and
-/// implements `invariantHolds(in:)`; the harness drives the actual
-/// reducer.
-///
-/// ## Conformance shape
-///
-/// ```swift
-/// struct InboxCardinality: CardinalityInvariant {
-///     static func invariantHolds(in state: Inbox.State) -> Bool {
-///         (state.isShowingSheet ? 1 : 0)
-///             + (state.isShowingAlert ? 1 : 0) <= 1
-///     }
-/// }
-/// ```
-///
-/// ## Why kit-defined
-///
-/// SwiftInferProperties' M9 RefactorBridge (v1's equivalent: M8 in
-/// SwiftPropertyLaws v1.9) promotes ≥ 3 Strong-tier interaction
-/// invariants on the same reducer into a Bridge proposal — the user
-/// conforms a stub type to each family-specific sub-protocol, and
-/// the kit's discovery plugin runs the predicate check on every CI
-/// invocation thereafter. Pre-v2.3.0 the protocols didn't exist;
-/// the Bridge had no kit-side surface to propose.
-///
-/// ## Sub-protocols
-///
-/// The five family sub-protocols are **mutually independent** — no
-/// hierarchy. PRD §9.4 documents that ≥ 2 firing simultaneously on
-/// the same reducer surface as peer proposals, not nested choices.
-/// `ActionIdempotenceInvariant` carries an additional Action
-/// associatedtype + idempotent-action set; the other four refine
-/// without adding requirements.
-public protocol InteractionInvariant {
-    associatedtype State
-    static func invariantHolds(in state: State) -> Bool
-}
-
 /// v2.3.0 — declares "at most N of these flags / fields are
 /// simultaneously non-empty" (PRD §5.4). SwiftInferProperties' M5
 /// Cardinality template detector triggers conformance proposals
@@ -90,9 +43,60 @@ public protocol ConservationInvariant: InteractionInvariant {}
 public protocol ActionIdempotenceInvariant: InteractionInvariant
 where Self.State: Equatable {
     associatedtype Action: Hashable
+
     static var idempotentActions: Set<Action> { get }
 }
 
-extension ActionIdempotenceInvariant {
-    public static func invariantHolds(in state: State) -> Bool { true }
+/// v2.3.0 — root protocol for SwiftInferProperties v2.0's
+/// **InteractionInvariantBridge** (PRD §9). Conformance declares a
+/// state-level boolean predicate that an interaction-bearing reducer
+/// is expected to preserve after every action it processes.
+///
+/// **The conformer is NOT the reducer.** Per PRD §9.2, the verify
+/// harness takes the reducer as a closure parameter, so a single
+/// invariant-bearing type doesn't need to *be* the reducer. Pattern:
+/// the user writes a stub type that conforms to one of the five
+/// family-specific sub-protocols (Cardinality / RefInt / etc.) and
+/// implements `invariantHolds(in:)`; the harness drives the actual
+/// reducer.
+///
+/// ## Conformance shape
+///
+/// ```swift
+/// struct InboxCardinality: CardinalityInvariant {
+///     static func invariantHolds(in state: Inbox.State) -> Bool {
+///         (state.isShowingSheet ? 1 : 0)
+///             + (state.isShowingAlert ? 1 : 0) <= 1
+///     }
+/// }
+/// ```
+///
+/// ## Why kit-defined
+///
+/// SwiftInferProperties' M9 RefactorBridge (v1's equivalent: M8 in
+/// SwiftPropertyLaws v1.9) promotes ≥ 3 Strong-tier interaction
+/// invariants on the same reducer into a Bridge proposal — the user
+/// conforms a stub type to each family-specific sub-protocol, and
+/// the kit's discovery plugin runs the predicate check on every CI
+/// invocation thereafter. Pre-v2.3.0 the protocols didn't exist;
+/// the Bridge had no kit-side surface to propose.
+///
+/// ## Sub-protocols
+///
+/// The five family sub-protocols are **mutually independent** — no
+/// hierarchy. PRD §9.4 documents that ≥ 2 firing simultaneously on
+/// the same reducer surface as peer proposals, not nested choices.
+/// `ActionIdempotenceInvariant` carries an additional Action
+/// associatedtype + idempotent-action set; the other four refine
+/// without adding requirements.
+public protocol InteractionInvariant {
+    /// The reducer state the invariant constrains.
+    associatedtype State
+    /// Whether `state` satisfies the invariant. The harness checks it after every step of an action sequence.
+    static func invariantHolds(in state: State) -> Bool
+}
+
+public extension ActionIdempotenceInvariant {
+    /// Always `true`: an action-idempotence invariant constrains actions, not states.
+    static func invariantHolds(in _: State) -> Bool { true }
 }

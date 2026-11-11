@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Tier 1 of the generator-derivation strengthening (Idea #3): members
 /// typed as optionals, arrays, sets, and dictionaries of recognized raw
@@ -175,7 +175,7 @@ struct CompositeMemberDerivationTests {
             hasUserGen: false,
             storedMembers: [
                 StoredMember(name: "tags", typeName: "[String]"),
-                StoredMember(name: "count", typeName: "Int")
+                StoredMember(name: "count", typeName: "Int"),
             ]
         )
         let expected: DerivationStrategy = .memberwiseArbitrary(members: [
@@ -183,7 +183,7 @@ struct CompositeMemberDerivationTests {
                 name: "tags",
                 generatorExpression: "Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8)"
             ),
-            MemberSpec(name: "count", rawType: .int)
+            MemberSpec(name: "count", rawType: .int),
         ])
         #expect(DerivationStrategist.strategy(for: shape) == expected)
     }
@@ -212,7 +212,7 @@ struct CompositeMemberDerivationTests {
                 MemberSpec(
                     name: "items",
                     generatorExpression: "Gen<Int>.int().array(of: 0...8)"
-                )
+                ),
             ]
         )
         #expect(expr == "Gen<Int>.int().array(of: 0...8).map { Bag(items: $0) }")
@@ -226,7 +226,7 @@ struct CompositeMemberDerivationTests {
                 MemberSpec(
                     name: "skus",
                     generatorExpression: "Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8)"
-                )
+                ),
             ]
         )
         let expected = """

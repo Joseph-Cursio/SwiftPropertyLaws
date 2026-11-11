@@ -1,5 +1,129 @@
 import PropertyLawCore
 
+/// A type the scanner detected but emitted no suite for. Top-level rather
+/// than nested in `ConformanceMap` so `Reason` stays one level deep.
+struct SkippedType: Sendable, Equatable {
+    enum Reason: Sendable, Equatable {
+        /// `private` / `fileprivate`, which `@testable import` does not
+        /// promote the way it promotes `internal` — the suite could not
+        /// even write `for: Thing.self`.
+        case notNameable(AccessLevel)
+        /// Declared in another module and not `public`. A foreign type is
+        /// reachable only through a plain `import` — `@testable` is emitted for
+        /// the scanned target alone, and across a package boundary it needs the
+        /// dependency built with testability, which is not ours to assume — so
+        /// anything narrower than `public` cannot be named however the imports
+        /// are written.
+        case foreignNonPublic(String)
+        /// `public` or `open` with no `Sendable` conformance in sight.
+        /// Swift infers `Sendable` for non-public types only, and every
+        /// `check…PropertyLaws` entry point constrains its value to
+        /// `Sendable`, so the call fails to type-check.
+        case notSendable
+    }
+
+    let typeName: String
+    let reason: Reason
+
+    /// One-line explanation, shared by the file header and the CLI summary
+    /// so the two never drift.
+    var explanation: String {
+        switch reason {
+        case .notNameable(let level):
+            return "declared `\(level.rawValue)` — not nameable from another file"
+
+        case .foreignNonPublic(let module):
+            return "declared in `\(module)` and not `public` — a foreign type "
+                + "is only reachable through a plain import"
+
+        case .notSendable:
+            return "`public` without a `Sendable` conformance — "
+                + "the law entry points require one"
+        }
+    }
+}
+
+/// One round-trip pair candidate emitted by `RoundTripSuggester`
+/// (PRD §5.5 M5 scope). Output is informational only — never a test
+/// failure, never a write to the generated file (preserves the M2
+/// regeneration-as-diff guarantee).
+struct RoundTripSuggestion: Sendable, Equatable {
+    /// Where the pair was detected. Per-type and module-level scopes
+    /// stay separate — a `Codec.encode` member doesn't pair with a
+    /// top-level `decode` free function in M5.
+    enum Scope: Sendable, Equatable, Hashable {
+        case type(String)
+        case module
+    }
+
+    let scope: Scope
+    /// "Forward" half of the pair. When the names match an entry in
+    /// `RoundTripSuggester.namePairs`, the table's `forward` slot wins;
+    /// otherwise the alphabetically-earlier name takes the forward slot
+    /// so output stays deterministic.
+    let forward: FunctionSignature
+    let backward: FunctionSignature
+    let confidence: SuggestionConfidence
+    /// Human-readable explanation of which signals fired (signature
+    /// inverse, naming pair, `@Discoverable` group). Goes straight into
+    /// the rendered diagnostic.
+    let evidence: String
+}
+
+/// Syntactic record of one function declaration, consumed by
+/// `RoundTripSuggester` (PRD §5.5 M5 scope) to look up inverse-typed
+/// pairs.
+///
+/// Type names are stored as `TypeSyntax.trimmedDescription` strings —
+/// the same syntactic-only stance `WitnessFinder` takes. Two types are
+/// "the same" iff their textual forms match. Generic parameters are
+/// rejected at the finder; they would require type-binding inference
+/// out of M5's syntactic scope.
+struct FunctionSignature: Sendable, Equatable {
+    let name: String
+    /// Parameter types in declaration order. Empty for `() -> U`.
+    let parameterTypes: [String]
+    /// `Void` when the declaration omits the return clause.
+    let returnType: String
+    let isStatic: Bool
+    /// `group:` value from a `@Discoverable(group: "...")` attribute,
+    /// when present and supplied as a string literal. Non-literal
+    /// arguments leave this nil — see `RoundTripFinder` for the
+    /// reasoning.
+    let group: String?
+}
+
+/// Structural evidence that a type may want a particular conformance
+/// (PRD §5.4 Advisory: missing-conformance suggestions, M4 scope).
+///
+/// Each flag is set when the corresponding declaration appears in the
+/// type's own body or any of its same-module extensions. We deliberately
+/// match on signature shape, not full type resolution — false positives
+/// are possible but rare for these specific signatures, and the
+/// suggester only emits HIGH-confidence advice by default.
+struct WitnessSet: Sendable, Equatable {
+    /// `static func ==(lhs:rhs:) -> Bool` — Equatable witness.
+    var hasEqualEqualOperator: Bool = false
+    /// `func hash(into:)` — Hashable witness.
+    var hasHashIntoMethod: Bool = false
+    /// `static func <(lhs:rhs:) -> Bool` — Comparable witness.
+    var hasLessThanOperator: Bool = false
+    /// `func encode(to:)` — Encodable half of the Codable pair.
+    var hasEncodeToMethod: Bool = false
+    /// `init(from:)` — Decodable half of the Codable pair.
+    var hasInitFromInitializer: Bool = false
+
+    /// Element-wise OR — used by the scanner to merge witnesses across
+    /// primary decl + extensions in any order.
+    mutating func merge(_ other: Self) {
+        hasEqualEqualOperator     = hasEqualEqualOperator || other.hasEqualEqualOperator
+        hasHashIntoMethod         = hasHashIntoMethod || other.hasHashIntoMethod
+        hasLessThanOperator       = hasLessThanOperator || other.hasLessThanOperator
+        hasEncodeToMethod         = hasEncodeToMethod || other.hasEncodeToMethod
+        hasInitFromInitializer    = hasInitFromInitializer || other.hasInitFromInitializer
+    }
+}
+
 /// Cross-file conformance aggregation produced by `ModuleScanner` and
 /// consumed by `GeneratedFileEmitter`. Entries are sorted by `typeName`
 /// for stable output across runs (PRD §5.3 regeneration-as-diff guarantee).
@@ -12,7 +136,7 @@ struct ConformanceMap: Sendable, Equatable {
         let line: Int
         let kind: ProvenanceKind
 
-        static func < (lhs: Provenance, rhs: Provenance) -> Bool {
+        static func < (lhs: Self, rhs: Self) -> Bool {
             if lhs.filePath != rhs.filePath { return lhs.filePath < rhs.filePath }
             if lhs.line != rhs.line { return lhs.line < rhs.line }
             return lhs.kind.rawValue < rhs.kind.rawValue
@@ -127,126 +251,5 @@ struct ConformanceMap: Sendable, Equatable {
         self.topLevelFunctions = topLevelFunctions
         self.shapesByName = shapesByName
         self.aliases = aliases
-    }
-}
-
-/// A type the scanner detected but emitted no suite for. Top-level rather
-/// than nested in `ConformanceMap` so `Reason` stays one level deep.
-struct SkippedType: Sendable, Equatable {
-    enum Reason: Sendable, Equatable {
-        /// `private` / `fileprivate`, which `@testable import` does not
-        /// promote the way it promotes `internal` — the suite could not
-        /// even write `for: Thing.self`.
-        case notNameable(AccessLevel)
-        /// Declared in another module and not `public`. A foreign type is
-        /// reachable only through a plain `import` — `@testable` is emitted for
-        /// the scanned target alone, and across a package boundary it needs the
-        /// dependency built with testability, which is not ours to assume — so
-        /// anything narrower than `public` cannot be named however the imports
-        /// are written.
-        case foreignNonPublic(String)
-        /// `public` or `open` with no `Sendable` conformance in sight.
-        /// Swift infers `Sendable` for non-public types only, and every
-        /// `check…PropertyLaws` entry point constrains its value to
-        /// `Sendable`, so the call fails to type-check.
-        case notSendable
-    }
-
-    let typeName: String
-    let reason: Reason
-
-    /// One-line explanation, shared by the file header and the CLI summary
-    /// so the two never drift.
-    var explanation: String {
-        switch reason {
-        case .notNameable(let level):
-            return "declared `\(level.rawValue)` — not nameable from another file"
-        case .foreignNonPublic(let module):
-            return "declared in `\(module)` and not `public` — a foreign type "
-                + "is only reachable through a plain import"
-        case .notSendable:
-            return "`public` without a `Sendable` conformance — "
-                + "the law entry points require one"
-        }
-    }
-}
-
-/// One round-trip pair candidate emitted by `RoundTripSuggester`
-/// (PRD §5.5 M5 scope). Output is informational only — never a test
-/// failure, never a write to the generated file (preserves the M2
-/// regeneration-as-diff guarantee).
-struct RoundTripSuggestion: Sendable, Equatable {
-    /// Where the pair was detected. Per-type and module-level scopes
-    /// stay separate — a `Codec.encode` member doesn't pair with a
-    /// top-level `decode` free function in M5.
-    enum Scope: Sendable, Equatable, Hashable {
-        case type(String)
-        case module
-    }
-    let scope: Scope
-    /// "Forward" half of the pair. When the names match an entry in
-    /// `RoundTripSuggester.namePairs`, the table's `forward` slot wins;
-    /// otherwise the alphabetically-earlier name takes the forward slot
-    /// so output stays deterministic.
-    let forward: FunctionSignature
-    let backward: FunctionSignature
-    let confidence: SuggestionConfidence
-    /// Human-readable explanation of which signals fired (signature
-    /// inverse, naming pair, `@Discoverable` group). Goes straight into
-    /// the rendered diagnostic.
-    let evidence: String
-}
-
-/// Syntactic record of one function declaration, consumed by
-/// `RoundTripSuggester` (PRD §5.5 M5 scope) to look up inverse-typed
-/// pairs.
-///
-/// Type names are stored as `TypeSyntax.trimmedDescription` strings —
-/// the same syntactic-only stance `WitnessFinder` takes. Two types are
-/// "the same" iff their textual forms match. Generic parameters are
-/// rejected at the finder; they would require type-binding inference
-/// out of M5's syntactic scope.
-struct FunctionSignature: Sendable, Equatable {
-    let name: String
-    /// Parameter types in declaration order. Empty for `() -> U`.
-    let parameterTypes: [String]
-    /// `Void` when the declaration omits the return clause.
-    let returnType: String
-    let isStatic: Bool
-    /// `group:` value from a `@Discoverable(group: "...")` attribute,
-    /// when present and supplied as a string literal. Non-literal
-    /// arguments leave this nil — see `RoundTripFinder` for the
-    /// reasoning.
-    let group: String?
-}
-
-/// Structural evidence that a type may want a particular conformance
-/// (PRD §5.4 Advisory: missing-conformance suggestions, M4 scope).
-///
-/// Each flag is set when the corresponding declaration appears in the
-/// type's own body or any of its same-module extensions. We deliberately
-/// match on signature shape, not full type resolution — false positives
-/// are possible but rare for these specific signatures, and the
-/// suggester only emits HIGH-confidence advice by default.
-struct WitnessSet: Sendable, Equatable {
-    /// `static func ==(lhs:rhs:) -> Bool` — Equatable witness.
-    var hasEqualEqualOperator: Bool = false
-    /// `func hash(into:)` — Hashable witness.
-    var hasHashIntoMethod: Bool = false
-    /// `static func <(lhs:rhs:) -> Bool` — Comparable witness.
-    var hasLessThanOperator: Bool = false
-    /// `func encode(to:)` — Encodable half of the Codable pair.
-    var hasEncodeToMethod: Bool = false
-    /// `init(from:)` — Decodable half of the Codable pair.
-    var hasInitFromInitializer: Bool = false
-
-    /// Element-wise OR — used by the scanner to merge witnesses across
-    /// primary decl + extensions in any order.
-    mutating func merge(_ other: WitnessSet) {
-        hasEqualEqualOperator     = hasEqualEqualOperator     || other.hasEqualEqualOperator
-        hasHashIntoMethod         = hasHashIntoMethod         || other.hasHashIntoMethod
-        hasLessThanOperator       = hasLessThanOperator       || other.hasLessThanOperator
-        hasEncodeToMethod         = hasEncodeToMethod         || other.hasEncodeToMethod
-        hasInitFromInitializer    = hasInitFromInitializer    || other.hasInitFromInitializer
     }
 }

@@ -21,7 +21,7 @@ import PropertyBased
 /// collections/async workplan).
 @discardableResult
 public func checkIteratorProtocolPropertyLaws<S: Sequence & Sendable, Sh: SendableSequenceType>(
-    for type: S.Type = S.self,
+    for _: S.Type = S.self,
     using generator: Generator<S, Sh>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult]
@@ -47,7 +47,7 @@ where S.Element: Sendable {
                 formatCounterexample: { sample, _ in
                     iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
                 }
-            )
+            ),
         ]
     }
 }

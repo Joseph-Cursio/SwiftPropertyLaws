@@ -1,5 +1,31 @@
 import PropertyBased
 
+/// Outcome of a per-trial property run.
+///
+/// `Input` is the sampled input type — usually a tuple `(T, T)` or `(T, T, T)`
+/// for laws that compare multiple values per trial. The kit's per-law helper
+/// formats the counterexample from the failing input rather than asking the
+/// backend to compose the message.
+public enum BackendCheckResult<Input: Sendable>: Sendable {
+    case passed(trialsRun: Int, initialSeed: Seed)
+    case failed(trialsRun: Int, initialSeed: Seed, failingInput: Input, thrownError: ErrorBox?)
+}
+
+/// Sendable wrapper around an error's `String` description. Swift's `Error`
+/// does not require `Sendable`, so we capture the message at the throw site
+/// rather than smuggling the live error across an actor boundary.
+public struct ErrorBox: Sendable, Hashable {
+    public let message: String
+
+    public init(_ error: Error) {
+        self.message = "\(error)"
+    }
+
+    public init(message: String) {
+        self.message = message
+    }
+}
+
 /// Pluggable trial-loop driver for per-trial protocol laws (PRD §4.5).
 ///
 /// v1 ships a single backend (`SwiftPropertyBasedBackend`) — the abstraction
@@ -31,30 +57,4 @@ public protocol PropertyBackend: Sendable {
         sample: @Sendable (inout Xoshiro) -> Input,
         property: @Sendable (Input) async throws -> Bool
     ) async -> BackendCheckResult<Input>
-}
-
-/// Outcome of a per-trial property run.
-///
-/// `Input` is the sampled input type — usually a tuple `(T, T)` or `(T, T, T)`
-/// for laws that compare multiple values per trial. The kit's per-law helper
-/// formats the counterexample from the failing input rather than asking the
-/// backend to compose the message.
-public enum BackendCheckResult<Input: Sendable>: Sendable {
-    case passed(trialsRun: Int, initialSeed: Seed)
-    case failed(trialsRun: Int, initialSeed: Seed, failingInput: Input, thrownError: ErrorBox?)
-}
-
-/// Sendable wrapper around an error's `String` description. Swift's `Error`
-/// does not require `Sendable`, so we capture the message at the throw site
-/// rather than smuggling the live error across an actor boundary.
-public struct ErrorBox: Sendable, Hashable {
-    public let message: String
-
-    public init(_ error: Error) {
-        self.message = "\(error)"
-    }
-
-    public init(message: String) {
-        self.message = message
-    }
 }

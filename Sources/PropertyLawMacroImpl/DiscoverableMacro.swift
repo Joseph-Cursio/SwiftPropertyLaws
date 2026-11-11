@@ -20,7 +20,7 @@ public struct DiscoverableMacro: PeerMacro {
 
     public static func expansion(
         of node: AttributeSyntax,
-        providingPeersOf declaration: some DeclSyntaxProtocol,
+        providingPeersOf _: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         if let nonLiteralArg = nonLiteralGroupArgument(of: node) {

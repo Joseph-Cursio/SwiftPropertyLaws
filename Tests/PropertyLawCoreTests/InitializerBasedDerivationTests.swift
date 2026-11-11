@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Tier 6: structs with a user-defined initializer (which suppresses Swift's
 /// synthesized memberwise init) now derive by lifting through that init,
@@ -44,8 +44,8 @@ struct InitializerBasedDerivationTests {
         let shape = structShape("User", initializers: [
             InitializerSignature(parameters: [
                 InitializerParameter(label: "name", typeName: "String"),
-                InitializerParameter(label: "count", typeName: "Int")
-            ])
+                InitializerParameter(label: "count", typeName: "Int"),
+            ]),
         ])
         let expected = """
             zip(Gen<Character>.letterOrNumber.string(of: 0...8), Gen<Int>.int())
@@ -65,8 +65,8 @@ struct InitializerBasedDerivationTests {
         let shape = structShape("Tagged", initializers: [
             InitializerSignature(parameters: [
                 InitializerParameter(label: nil, typeName: "Int"),
-                InitializerParameter(label: "label", typeName: "String")
-            ])
+                InitializerParameter(label: "label", typeName: "String"),
+            ]),
         ])
         let expected = """
             zip(Gen<Int>.int(), Gen<Character>.letterOrNumber.string(of: 0...8))
@@ -79,8 +79,8 @@ struct InitializerBasedDerivationTests {
         let shape = structShape("Event", initializers: [
             InitializerSignature(parameters: [
                 InitializerParameter(label: "tags", typeName: "[String]"),
-                InitializerParameter(label: "at", typeName: "Date")
-            ])
+                InitializerParameter(label: "at", typeName: "Date"),
+            ]),
         ])
         let strategy = DerivationStrategist.strategy(for: shape)
         guard case .initializerBased = strategy else {
@@ -102,7 +102,7 @@ struct InitializerBasedDerivationTests {
                 parameters: [InitializerParameter(label: "cents", typeName: "Int")],
                 isThrowing: true
             ),
-            InitializerSignature(parameters: [InitializerParameter(label: "cents", typeName: "Int")])
+            InitializerSignature(parameters: [InitializerParameter(label: "cents", typeName: "Int")]),
         ])
         #expect(emitted(shape) == "Gen<Int>.int().map { Money(cents: $0) }")
     }

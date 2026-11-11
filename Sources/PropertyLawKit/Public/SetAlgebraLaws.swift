@@ -65,7 +65,7 @@ public func checkSetAlgebraPropertyLaws<
     Value: SetAlgebra & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -90,7 +90,8 @@ public func checkSetAlgebraPropertyLaws<
             await checkFormIntersectionMatchesIntersection(generator: generator, options: options),
             await checkSubtractMatchesSubtracting(generator: generator, options: options),
             await checkFormSymmetricDifferenceMatchesSymmetricDifference(
-                generator: generator, options: options)
+                generator: generator, options: options
+            ),
         ]
     }
 }

@@ -48,12 +48,13 @@ struct DownstreamPropertyBackendSmokeTests {
         let result = await backend.check(
             trials: 100,
             seed: seed,
-            sample: { rng -> Int in Int.random(in: 0...1000, using: &rng) },
+            sample: { rng -> Int in Int.random(in: 0...1_000, using: &rng) },
             property: { _ in true }
         )
         switch result {
         case .passed(let trialsRun, _):
             #expect(trialsRun == 100)
+
         case .failed:
             Issue.record("Always-true property should not fail")
         }
@@ -66,13 +67,14 @@ struct DownstreamPropertyBackendSmokeTests {
         let result = await backend.check(
             trials: 100,
             seed: seed,
-            sample: { rng -> Int in Int.random(in: 0...1000, using: &rng) },
+            sample: { rng -> Int in Int.random(in: 0...1_000, using: &rng) },
             property: { _ in false }
         )
         switch result {
         case .passed:
             Issue.record("Always-false property should fail")
-        case .failed(let trialsRun, _, _, let error):
+
+        case let .failed(trialsRun, _, _, error):
             // Short-circuit on first false return per `PropertyBackend` doc.
             #expect(trialsRun == 1)
             #expect(error == nil)
@@ -89,12 +91,13 @@ struct DownstreamPropertyBackendSmokeTests {
         let result = await backend.check(
             trials: 100,
             seed: seed,
-            sample: { rng -> Int in Int.random(in: 0...1000, using: &rng) },
+            sample: { rng -> Int in Int.random(in: 0...1_000, using: &rng) },
             property: { _ -> Bool in throw LiftedTestStubError() }
         )
         switch result {
         case .passed:
             Issue.record("Throwing property should fail")
+
         case .failed(_, _, _, let error):
             // ErrorBox preserves the thrown error's description without
             // forcing the error type to be Sendable (PRD §4.5).
@@ -120,14 +123,14 @@ struct DownstreamPropertyBackendSmokeTests {
         let firstResult = await backend.check(
             trials: 100,
             seed: seed,
-            sample: { rng -> Int in Int.random(in: 0...1000, using: &rng) },
+            sample: { rng -> Int in Int.random(in: 0...1_000, using: &rng) },
             property: { value -> Bool in value < 500 }
         )
         if case let .failed(_, _, value, _) = firstResult { firstFailingInput = value }
         let secondResult = await backend.check(
             trials: 100,
             seed: seed,
-            sample: { rng -> Int in Int.random(in: 0...1000, using: &rng) },
+            sample: { rng -> Int in Int.random(in: 0...1_000, using: &rng) },
             property: { value -> Bool in value < 500 }
         )
         if case let .failed(_, _, value, _) = secondResult { secondFailingInput = value }

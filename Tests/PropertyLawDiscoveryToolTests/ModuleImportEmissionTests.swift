@@ -1,6 +1,6 @@
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// **The generated file emitted no import of the module under test at all.**
 ///
@@ -29,9 +29,11 @@ struct ModuleImportEmissionTests {
         ConformanceMap.Entry(
             typeName: name,
             conformances: [.equatable],
-            provenances: [ConformanceMap.Provenance(
-                filePath: "\(name).swift", line: 1, kind: .primary
-            )],
+            provenances: [
+                ConformanceMap.Provenance(
+                    filePath: "\(name).swift", line: 1, kind: .primary
+                ),
+            ],
             derivationStrategy: .userGen
         )
     }

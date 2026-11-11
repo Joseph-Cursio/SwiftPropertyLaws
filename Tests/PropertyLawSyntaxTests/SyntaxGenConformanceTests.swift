@@ -1,8 +1,8 @@
 import PropertyBased
 import PropertyLawKit
+import PropertyLawSyntax
 import SwiftSyntax
 import Testing
-import PropertyLawSyntax
 
 /// The discovery plugin renders a `.todo` strategy as `"\(typeName).gen()"`, so
 /// a generated suite for `Syntax` already reads

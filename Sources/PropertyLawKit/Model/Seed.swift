@@ -37,9 +37,7 @@ public struct Seed: Sendable, Hashable, CustomStringConvertible {
     func makeXoshiro() -> Xoshiro {
         Xoshiro(seed: (stateA, stateB, stateC, stateD))
     }
-}
 
-extension Seed {
     /// Build a `Seed` from a `Xoshiro`'s current state. Inverse of
     /// `makeXoshiro()`.
     init(xoshiro: Xoshiro) {

@@ -1,6 +1,6 @@
-import Testing
-@testable import PropertyLawDiscoveryTool
 @testable import PropertyLawCore
+@testable import PropertyLawDiscoveryTool
+import Testing
 
 /// The generated file imports what its derived generators reference: a
 /// `Date` member pulls in `import Foundation`; a stdlib-only target does

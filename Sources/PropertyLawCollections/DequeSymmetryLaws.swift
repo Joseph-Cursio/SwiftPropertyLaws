@@ -2,39 +2,23 @@ import DequeModule
 import PropertyBased
 import PropertyLawKit
 
-/// Laws for `Deque`'s double-ended surface (Phase 1 M3 of the
-/// collections/async workplan). The protocol chains (M1) already cover
-/// Deque-as-RangeReplaceableCollection; what they can't see is the front
-/// end — `prepend`/`popFirst` have no protocol home, so they get mirror
-/// laws of the append side plus an array-model agreement law:
+/// Checks the `Deque` front-end symmetry laws over values drawn from `generator`.
 ///
-/// - `prependPopFirstRoundTrips` — prepending a value then `popFirst()`
-///   returns it and restores the original deque.
-/// - `appendPopLastRoundTrips` — the back-end mirror.
-/// - `arrayModelRoundTrip` — `Deque(Array(deque)) == deque`: a deque is
-///   observationally its array model.
+/// `prepend` / `popFirst` and `append` / `popLast` must round-trip, and a deque must
+/// agree with an array model. The front end has no protocol of its own, so
+/// `RangeReplaceableCollection`'s laws do not reach it.
 ///
-/// Stated over the concrete `Deque<Element>` (no double-ended protocol
-/// exists to abstract over), so the planted-violator self-test gate doesn't
-/// apply — these exercise swift-collections itself.
-public enum DequeSymmetryLaw: String, Sendable, Hashable, CaseIterable {
-    case prependPopFirstRoundTrips
-    case appendPopLastRoundTrips
-    case arrayModelRoundTrip
-}
-
-extension LawIdentifier {
-    public static func dequeSymmetry(_ law: DequeSymmetryLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Deque", lawName: law.rawValue)
-    }
-}
-
+/// - Parameters:
+///   - generator: The values to check the laws against.
+///   - options: The budget, enforcement and suppressions for the run.
+/// - Returns: One result per law.
+/// - Throws: `PropertyLawViolation` when a law fails at a tier `options.enforcement` escalates.
 @discardableResult
 public func checkDequeSymmetryPropertyLaws<
     Element: Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Deque<Element>.Type = Deque<Element>.self,
+    for _: Deque<Element>.Type = Deque<Element>.self,
     using generator: Generator<Deque<Element>, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -42,7 +26,7 @@ public func checkDequeSymmetryPropertyLaws<
         [
             await checkPrependPopFirstRoundTrips(generator: generator, options: options),
             await checkAppendPopLastRoundTrips(generator: generator, options: options),
-            await checkArrayModelRoundTrip(generator: generator, options: options)
+            await checkArrayModelRoundTrip(generator: generator, options: options),
         ]
     }
 }

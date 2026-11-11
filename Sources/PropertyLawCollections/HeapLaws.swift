@@ -2,44 +2,23 @@ import HeapModule
 import PropertyBased
 import PropertyLawKit
 
-/// Laws for `Heap` — the first model-based family in the kit (Phase 1 M3 of
-/// the collections/async workplan). `Heap` sits outside the stdlib protocol
-/// lattice (not `Sequence`), so instead of protocol-conformance laws it gets
-/// oracle laws against the sorted-array model:
+/// Checks the `Heap` laws over values drawn from `generator`.
 ///
-/// - `drainMinYieldsSortedAscending` — repeatedly `popMin()` until empty
-///   yields exactly `unordered.sorted()`.
-/// - `drainMaxYieldsSortedDescending` — repeatedly `popMax()` yields exactly
-///   `unordered.sorted(by: >)`.
-/// - `minMaxAreUnorderedBounds` — `min` / `max` agree with the model's
-///   `min()` / `max()`.
-/// - `insertDuplicateMinPopsEqual` — inserting a copy of the current
-///   minimum, then `popMin()`, returns a value equal to it (vacuous on the
-///   empty heap).
+/// Draining a heap from either end must agree with sorting its elements, `min` and `max`
+/// must bound the contents, and inserting a duplicate of the minimum must pop an equal
+/// value. `Heap` is not a `Sequence`, so these are model-based laws.
 ///
-/// Unlike the protocol families these laws are stated over the concrete
-/// `Heap<Element>` (there is no heap protocol to abstract over), so the
-/// planted-violator self-test gate doesn't apply — the laws exercise
-/// swift-collections itself, not substitutable user conformances.
-public enum HeapLaw: String, Sendable, Hashable, CaseIterable {
-    case drainMinYieldsSortedAscending
-    case drainMaxYieldsSortedDescending
-    case minMaxAreUnorderedBounds
-    case insertDuplicateMinPopsEqual
-}
-
-extension LawIdentifier {
-    public static func heap(_ law: HeapLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Heap", lawName: law.rawValue)
-    }
-}
-
+/// - Parameters:
+///   - generator: The values to check the laws against.
+///   - options: The budget, enforcement and suppressions for the run.
+/// - Returns: One result per law.
+/// - Throws: `PropertyLawViolation` when a law fails at a tier `options.enforcement` escalates.
 @discardableResult
 public func checkHeapPropertyLaws<
     Element: Comparable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Heap<Element>.Type = Heap<Element>.self,
+    for _: Heap<Element>.Type = Heap<Element>.self,
     using generator: Generator<Heap<Element>, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -48,7 +27,7 @@ public func checkHeapPropertyLaws<
             await checkDrainMinYieldsSortedAscending(generator: generator, options: options),
             await checkDrainMaxYieldsSortedDescending(generator: generator, options: options),
             await checkMinMaxAreUnorderedBounds(generator: generator, options: options),
-            await checkInsertDuplicateMinPopsEqual(generator: generator, options: options)
+            await checkInsertDuplicateMinPopsEqual(generator: generator, options: options),
         ]
     }
 }

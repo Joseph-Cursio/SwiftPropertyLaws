@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Direct coverage of the `GeneratorPlan` tree's rendering and import
 /// aggregation (Phase 1 of generator scaffolding). The composite parser's
@@ -12,7 +12,7 @@ struct GeneratorPlanTests {
 
     @Test func leafRendersItsExpression() {
         #expect(int.rendered == "Gen<Int>.int()")
-        #expect(int.requiredImports == [])
+        #expect(int.requiredImports.isEmpty)
     }
 
     @Test func collectionWrappersRender() {
@@ -36,7 +36,7 @@ struct GeneratorPlanTests {
         #expect(GeneratorPlan.array(date).requiredImports == ["Foundation"])
         #expect(GeneratorPlan.optional(date).requiredImports == ["Foundation"])
         #expect(GeneratorPlan.dictionary(key: int, value: date).requiredImports == ["Foundation"])
-        #expect(GeneratorPlan.dictionary(key: int, value: int).requiredImports == [])
+        #expect(GeneratorPlan.dictionary(key: int, value: int).requiredImports.isEmpty)
     }
 
     /// A dictionary is complete only when both its key and its value are, and

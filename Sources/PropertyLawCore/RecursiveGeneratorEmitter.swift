@@ -113,7 +113,7 @@ public enum RecursiveGeneratorEmitter {
             (".array(of: 0...8).optional", "Gen<[\(typeName)]?>.always(nil)"),
             (".array(of: 0...8)", "Gen<[\(typeName)]>.always([])"),
             (".set(ofAtMost: 0...8)", "Gen<Set<\(typeName)>>.always([])"),
-            (".optional", "Gen<\(typeName)?>.always(nil)")
+            (".optional", "Gen<\(typeName)?>.always(nil)"),
         ]
         for (suffix, terminal) in collapses {
             out = replacing(point + suffix, with: terminal, in: out)

@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct FixedWidthIntegerLawsTests {
 
@@ -83,7 +83,7 @@ struct FixedWidthIntegerLawsTests {
             "FixedWidthInteger.wrappingArithmeticDoesNotTrap",
             "FixedWidthInteger.minMaxBoundsAreReachable",
             "FixedWidthInteger.byteSwappedInvolution",
-            "FixedWidthInteger.nonzeroBitCountRange"
+            "FixedWidthInteger.nonzeroBitCountRange",
         ])
     }
 }

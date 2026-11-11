@@ -48,7 +48,7 @@ enum SendableProtocols {
     /// `SendableMetatype` is not here: `Sendable` refines it, not the reverse.
     static let standardLibraryRefinements: Set<String> = [
         "Actor", "Clock", "CodingKey", "DurationProtocol", "Error", "Executor",
-        "InstantProtocol", "SerialExecutor", "TaskExecutor", "UnsafeSendable"
+        "InstantProtocol", "SerialExecutor", "TaskExecutor", "UnsafeSendable",
     ]
 
     /// Foundation's public protocols that refine `Sendable`, read the same way
@@ -64,7 +64,7 @@ enum SendableProtocols {
     static let foundationRefinements: Set<String> = [
         "CustomNSError", "LocalizedError", "RecoverableError",
         "AttributedStringProtocol", "NotificationCenter.AsyncMessage",
-        "SortComparator", "StandardPredicateExpression"
+        "SortComparator", "StandardPredicateExpression",
     ]
 
     /// Names of protocols that refine `Sendable`, including `Sendable` itself
@@ -128,7 +128,7 @@ enum SendableProtocols {
         for item in items {
             if let proto = item.as(ProtocolDeclSyntax.self) {
                 inherits[proto.name.text] = (proto.inheritanceClause?.inheritedTypes ?? [])
-                    .map { $0.type.trimmedDescription }
+                    .map(\.type.trimmedDescription)
                 collect(from: members(of: proto.memberBlock), into: &inherits)
                 continue
             }

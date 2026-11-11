@@ -2,61 +2,24 @@ import AsyncAlgorithms
 import PropertyBased
 import PropertyLawKit
 
-/// Async-tier-1 laws for swift-async-algorithms (Phase 3 of the
-/// collections/async workplan) — the clock-free subset.
+/// Checks the clock-free `AsyncSequence` laws over values drawn from `generator`.
 ///
-/// **The central pattern is sync-model equivalence**: a deterministic
-/// single-source combinator, fed a finite source, must agree with its
-/// synchronous counterpart on the collected elements. The generated carrier
-/// is the *source array*; each law lifts it with `.async`
-/// (`AsyncSyncSequence`) and compares the collected pipeline against a
-/// plain-array model. This is the Chapter 3/19 oracle pattern applied to
-/// async — no virtual time, no ordering theory. Clock-parameterized
-/// combinators (`debounce`, `throttle`, …) are Phase 4.
+/// Each sample is a source array, lifted to an async sequence per law with `.async`. The
+/// laws compare swift-async-algorithms' `chunks`, `adjacentPairs`, `removeDuplicates`,
+/// `interspersed`, `compacted`, `merge` and `zip` against synchronous models, and check
+/// that an exhausted iterator stays exhausted.
 ///
-/// Laws (`chunk` size, `interspersed` separator, and the optional-injection
-/// pattern for `compacted` are all derived deterministically from the
-/// sample, keeping the seed → outcome chain intact):
-///
-/// - `chunksMatchSyncModel` / `chunksConcatenationRestoresSource`
-/// - `adjacentPairsMatchSyncModel`
-/// - `removeDuplicatesMatchesSyncModel` (consecutive-duplicate semantics)
-/// - `interspersedMatchesSyncModel`
-/// - `compactedMatchesCompactMap`
-/// - `mergePreservesElementMultiset` — `merge` interleaving is
-///   scheduler-dependent, so the law compares *multisets* (sorted
-///   collections), the coarser equivalence under which merge is
-///   deterministic. The order-insensitivity is the point: it is the same
-///   "commutative under which equality?" lesson as OrderPreservationLaws.
-/// - `zipMatchesSyncZip` — zip *is* order-deterministic; pairs and length
-///   (`min` of the inputs) match `Swift.zip` exactly.
-/// - `asyncIteratorStaysExhausted` — after `next()` returns `nil`, it keeps
-///   returning `nil` (the AsyncIteratorProtocol mirror of the sync
-///   `terminationStability` law).
-public enum AsyncSequenceLaw: String, Sendable, Hashable, CaseIterable {
-    case chunksMatchSyncModel
-    case chunksConcatenationRestoresSource
-    case adjacentPairsMatchSyncModel
-    case removeDuplicatesMatchesSyncModel
-    case interspersedMatchesSyncModel
-    case compactedMatchesCompactMap
-    case mergePreservesElementMultiset
-    case zipMatchesSyncZip
-    case asyncIteratorStaysExhausted
-}
-
-extension LawIdentifier {
-    public static func asyncSequence(_ law: AsyncSequenceLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "AsyncSequence", lawName: law.rawValue)
-    }
-}
-
+/// - Parameters:
+///   - generator: The values to check the laws against.
+///   - options: The budget, enforcement and suppressions for the run.
+/// - Returns: One result per law.
+/// - Throws: `PropertyLawViolation` when a law fails at a tier `options.enforcement` escalates.
 @discardableResult
 public func checkAsyncSequencePropertyLaws<
     Element: Comparable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: [Element].Type = [Element].self,
+    for _: [Element].Type = [Element].self,
     using generator: Generator<[Element], Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -70,7 +33,7 @@ public func checkAsyncSequencePropertyLaws<
             await checkCompacted(generator: generator, options: options),
             await checkMergeMultiset(generator: generator, options: options),
             await checkZipMatchesSyncZip(generator: generator, options: options),
-            await checkIteratorStaysExhausted(generator: generator, options: options)
+            await checkIteratorStaysExhausted(generator: generator, options: options),
         ]
     }
 }
@@ -118,7 +81,7 @@ private func checkChunksConcatenation<
         property: { sample in
             let size = sample.count % 4 + 1
             let chunked = try await collect(sample.async.chunks(ofCount: size))
-            return chunked.flatMap { $0 } == sample
+            return chunked.flatMap(\.self) == sample
         },
         formatCounterexample: { sample, _ in
             "source = \(sample); concatenating the chunks did not restore the source"
@@ -211,10 +174,10 @@ private func checkCompacted<
             // Optional injection derived by position, keeping the sampled
             // seed the only randomness.
             let optionals: [Element?] = sample.enumerated().map { pair in
-                pair.offset % 3 == 0 ? nil : pair.element
+                pair.offset.isMultiple(of: 3) ? nil : pair.element
             }
             let compacted = try await collect(optionals.async.compacted())
-            return compacted == optionals.compactMap { $0 }
+            return compacted == optionals.compactMap(\.self)
         },
         formatCounterexample: { sample, _ in
             "source = \(sample); compacted() diverged from compactMap { $0 }"

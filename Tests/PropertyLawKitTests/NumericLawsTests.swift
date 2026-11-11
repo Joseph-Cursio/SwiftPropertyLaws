@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct NumericLawsTests {
 
@@ -64,7 +64,7 @@ struct NumericLawsTests {
             "Numeric.oneMultiplicativeIdentity",
             "Numeric.zeroAnnihilation",
             "Numeric.leftDistributivity",
-            "Numeric.rightDistributivity"
+            "Numeric.rightDistributivity",
         ])
     }
 }

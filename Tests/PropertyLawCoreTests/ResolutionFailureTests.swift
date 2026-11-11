@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// `GeneratorResolver.resolutionFailure(forTypeName:)` — one answer per `nil`
 /// path in the resolver, where a caller used to get only the `nil`.
@@ -83,7 +83,7 @@ struct ResolutionFailureTests {
     func ambiguousName() {
         let resolver = GeneratorResolver(types: [
             structShape("Kind", [("a", "Int")]),
-            structShape("Kind", [("b", "String")])
+            structShape("Kind", [("b", "String")]),
         ])
         #expect(resolver.resolutionFailure(forTypeName: "Kind") == .ambiguous)
     }
@@ -95,7 +95,7 @@ struct ResolutionFailureTests {
     func nestedNameIsScoped() {
         let resolver = GeneratorResolver(types: [
             structShape("Foo.Kind", [("a", "Int")]),
-            structShape("Bar.Kind", [("b", "String")])
+            structShape("Bar.Kind", [("b", "String")]),
         ])
         #expect(resolver.resolutionFailure(forTypeName: "Kind") == .notInUniverse)
         #expect(resolver.resolutionFailure(forTypeName: "Kind", within: "Foo") == nil)

@@ -1,6 +1,6 @@
 # Foundation Generators (kit roadmap)
 
-**Status:** ✅ **Shipped** (v3.10.0). All four generators built in `Sources/PropertyLawKit/Public/FoundationGenerators.swift`, 10 tests in `Tests/PropertyLawKitTests/FoundationGeneratorsTests.swift`. Non-breaking additive minor. Implementation notes below record what shipped; the "why low priority" rationale is retained as history.
+**Status:** ✅ **Shipped** (v3.10.0). All four generators built in `Sources/PropertyLawKit/Public/Gen+Foundation.swift`, 10 tests in `Tests/PropertyLawKitTests/FoundationGeneratorsTests.swift`. Non-breaking additive minor. Implementation notes below record what shipped; the "why low priority" rationale is retained as history.
 **Origin:** Extracted from SwiftInferProperties' `SwiftInferProperties/docs/ideas/ValueSemantic Kit Proposal.md` §5 (workstream 3), which correctly identified these as a *kit* concern, not an engine one. This is their natural home; the downstream proposal now carries only a one-line pointer here.
 
 ## What
@@ -16,7 +16,7 @@ Foundation-typed `Gen<T>` convenience generators, so kit users writing hand-auth
 
 ## Where
 
-`PropertyLawKit/Public/`, alongside the existing `NumericGenerators.swift` (`doubleWithNaN` / `floatWithNaN` / `boundedForArithmetic`). The main line **already imports Foundation** (5 files), so these carry no new dependency and no swift-numerics footprint (Foundation ≠ numerics). A sibling `FoundationGenerators.swift` keeps them grouped. They do NOT belong in `PropertyLawComplex` (that's the opt-in swift-numerics line) — Foundation is free on the main line.
+`PropertyLawKit/Public/`, alongside the existing `Gen+Numeric.swift` (`doubleWithNaN` / `floatWithNaN` / `boundedForArithmetic`). The main line **already imports Foundation** (5 files), so these carry no new dependency and no swift-numerics footprint (Foundation ≠ numerics). A sibling `Gen+Foundation.swift` keeps them grouped. They do NOT belong in `PropertyLawComplex` (that's the opt-in swift-numerics line) — Foundation is free on the main line.
 
 ## Why low priority (no downstream pull)
 

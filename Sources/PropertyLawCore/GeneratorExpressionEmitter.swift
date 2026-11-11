@@ -58,8 +58,10 @@ public enum GeneratorExpressionEmitter {
         switch strategy {
         case .userGen:
             return "\(typeName).gen()"
+
         case .todo:
             return "\(typeName).gen()  \(Self.todoMarker)"
+
         case .caseIterable:
             // `Gen.element(of:)` is declared `where Value == C.Element?`, so it
             // produces a `Generator<T?, _>`. The `Gen<T>` spelling this line
@@ -84,15 +86,19 @@ public enum GeneratorExpressionEmitter {
             // `SwiftInferProperties/docs/measurements/roadtest-self-dogfood.md`
             // §9.2.
             return "Gen<\(typeName)?>.element(of: \(typeName).allCases).compactMap { $0 }"
+
         case .memberwiseArbitrary(let members):
             return MemberwiseEmitter.expression(typeName: typeName, members: members)
+
         case .initializerBased(let arguments):
             return MemberwiseEmitter.compose(
                 typeName: typeName,
                 arguments: arguments.map { (label: $0.label, expression: $0.generatorExpression) }
             )
+
         case .enumCases(let cases):
             return EnumCaseEmitter.expression(typeName: typeName, cases: cases)
+
         case .rawRepresentable(let rawType):
             return """
                 \(rawType.generatorExpression)

@@ -1,6 +1,49 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+/// Test fixture: `Int`-wrapping `Semilattice` whose `combine` is `max`
+/// and `identity` is `Int.min`. Positive control across the Semilattice
+/// suite — the canonical bounded join-semilattice of integers.
+struct MaxInt: Semilattice, Equatable, Sendable, CustomStringConvertible {
+    let value: Int
+
+    static let identity = Self(value: .min)
+
+    static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+        Self(value: max(lhs.value, rhs.value))
+    }
+
+    var description: String { "Max(\(value))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        Gen<Int>.int(in: -100...100).map { Self(value: $0) }
+    }
+}
+
+/// Negative control — integer addition is associative + commutative + has
+/// identity but is NOT idempotent (`1 + 1 = 2 ≠ 1`). Used in the
+/// `tallyFailsIdempotence` test to confirm the Semilattice idempotence
+/// law fires the Strict violation it should. Generator skips 0 so every
+/// sample exposes the bug (0 + 0 = 0 wouldn't fail).
+struct NonIdempotentTally: Semilattice, Equatable, Sendable, CustomStringConvertible {
+    let value: Int
+
+    static let identity = Self(value: 0)
+
+    static func combine(
+        _ lhs: Self,
+        _ rhs: Self
+    ) -> Self {
+        Self(value: lhs.value &+ rhs.value)
+    }
+
+    var description: String { "NIT(\(value))" }
+
+    static func gen() -> Generator<Self, some SendableSequenceType> {
+        Gen<Int>.int(in: 1...100).map { Self(value: $0) }
+    }
+}
 
 struct SemilatticeLawsTests {
 
@@ -54,7 +97,7 @@ struct SemilatticeLawsTests {
             "Monoid.combineLeftIdentity",
             "Monoid.combineRightIdentity",
             "CommutativeMonoid.combineCommutativity",
-            "Semilattice.combineIdempotence"
+            "Semilattice.combineIdempotence",
         ])
     }
 
@@ -70,52 +113,5 @@ struct SemilatticeLawsTests {
                 laws: .ownOnly
             )
         }
-    }
-}
-
-/// Test fixture: `Int`-wrapping `Semilattice` whose `combine` is `max`
-/// and `identity` is `Int.min`. Positive control across the Semilattice
-/// suite — the canonical bounded join-semilattice of integers.
-struct MaxInt: Semilattice, Equatable, Sendable, CustomStringConvertible {
-    let value: Int
-
-    static let identity = MaxInt(value: .min)
-
-    static func combine(_ lhs: MaxInt, _ rhs: MaxInt) -> MaxInt {
-        MaxInt(value: max(lhs.value, rhs.value))
-    }
-
-    var description: String { "Max(\(value))" }
-}
-
-extension MaxInt {
-    static func gen() -> Generator<MaxInt, some SendableSequenceType> {
-        Gen<Int>.int(in: -100...100).map { MaxInt(value: $0) }
-    }
-}
-
-/// Negative control — integer addition is associative + commutative + has
-/// identity but is NOT idempotent (`1 + 1 = 2 ≠ 1`). Used in the
-/// `tallyFailsIdempotence` test to confirm the Semilattice idempotence
-/// law fires the Strict violation it should. Generator skips 0 so every
-/// sample exposes the bug (0 + 0 = 0 wouldn't fail).
-struct NonIdempotentTally: Semilattice, Equatable, Sendable, CustomStringConvertible {
-    let value: Int
-
-    static let identity = NonIdempotentTally(value: 0)
-
-    static func combine(
-        _ lhs: NonIdempotentTally,
-        _ rhs: NonIdempotentTally
-    ) -> NonIdempotentTally {
-        NonIdempotentTally(value: lhs.value &+ rhs.value)
-    }
-
-    var description: String { "NIT(\(value))" }
-}
-
-extension NonIdempotentTally {
-    static func gen() -> Generator<NonIdempotentTally, some SendableSequenceType> {
-        Gen<Int>.int(in: 1...100).map { NonIdempotentTally(value: $0) }
     }
 }

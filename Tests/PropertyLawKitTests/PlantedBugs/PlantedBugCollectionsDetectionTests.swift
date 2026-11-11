@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// PRD §8 framework self-test gate, M3 protocols (IteratorProtocol, Sequence,
 /// Collection, SetAlgebra). Split from `PlantedBugDetectionTests` so neither
@@ -155,7 +155,7 @@ struct PlantedBugCollectionsDetectionTests {
         let symDiffLaws = Set(laws).intersection([
             "SetAlgebra.symmetricDifferenceSelfIsEmpty",
             "SetAlgebra.symmetricDifferenceEmptyIdentity",
-            "SetAlgebra.symmetricDifferenceDefinition"
+            "SetAlgebra.symmetricDifferenceDefinition",
         ])
         #expect(
             !symDiffLaws.isEmpty,
@@ -196,7 +196,7 @@ struct PlantedBugCollectionsDetectionTests {
             "SetAlgebra.symmetricDifferenceDefinition",
             "SetAlgebra.unionDistributivity", "SetAlgebra.intersectionDistributivity",
             "SetAlgebra.unionAbsorption", "SetAlgebra.intersectionAbsorption",
-            "SetAlgebra.deMorganForUnion", "SetAlgebra.deMorganForIntersection"
+            "SetAlgebra.deMorganForUnion", "SetAlgebra.deMorganForIntersection",
         ]
         #expect(
             fired.isDisjoint(with: nonMutatingLaws),
@@ -225,7 +225,7 @@ struct PlantedBugCollectionsDetectionTests {
         let laws = Set(violation?.results.map(\.protocolLaw) ?? [])
         let deMorganLaws: Set<String> = [
             "SetAlgebra.deMorganForUnion",
-            "SetAlgebra.deMorganForIntersection"
+            "SetAlgebra.deMorganForIntersection",
         ]
         #expect(
             laws.isDisjoint(with: deMorganLaws) == false,

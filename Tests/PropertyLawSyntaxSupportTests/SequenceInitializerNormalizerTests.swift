@@ -1,7 +1,7 @@
+@testable import PropertyLawSyntaxSupport
 import SwiftParser
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntaxSupport
 
 /// `init<S: Sequence>(_ items: S) where S.Element == Element` is how essentially every Swift
 /// collection is built, and Tier 6 walked past it: the parameter's declared type is the
@@ -93,13 +93,11 @@ struct SequenceInitializerNormalizerTests {
             struct Bag<Element> { init<S: Sequence>(_ items: S) where S.Element == Element {} }
             """) == "[Element]")
     }
-}
 
-/// The primary-associated-type spelling, which is what real code overwhelmingly uses:
-/// **measured on swift-collections, `some Sequence<Element>` appears 159 times against 8 of
-/// the `init<S: Sequence>` form.** The first version of the normalizer matched only the rare
-/// spelling and did nothing on the corpus it was written for.
-extension SequenceInitializerNormalizerTests {
+    // The primary-associated-type spelling, which is what real code overwhelmingly uses:
+    // **measured on swift-collections, `some Sequence<Element>` appears 159 times against 8 of
+    // the `init<S: Sequence>` form.** The first version of the normalizer matched only the rare
+    // spelling and did nothing on the corpus it was written for.
 
     @Test("some Sequence<Element> normalises")
     func opaqueSequence() {

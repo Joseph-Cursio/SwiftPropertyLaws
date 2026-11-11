@@ -8,13 +8,12 @@ public enum EnforcementMode: Sendable, Hashable {
 
     /// All violations regardless of tier cause `checkXxxPropertyLaws` to throw.
     case strict
-}
 
-extension EnforcementMode {
     func shouldThrow(for tier: StrictnessTier) -> Bool {
         switch self {
         case .default:
             return tier == .strict
+
         case .strict:
             return true
         }

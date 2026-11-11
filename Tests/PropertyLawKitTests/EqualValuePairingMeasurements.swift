@@ -1,7 +1,85 @@
 import Foundation
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
+
+/// Detection over well-mixed seeds at `.standard`, one parameterized case per
+/// bug and pairing so the cases run in parallel. Each prints one row of
+/// `| bug | pairing | caught |`.
+@Suite(
+    "Equal-value pairing detection",
+    .enabled(if: ProcessInfo.processInfo.environment["PROPERTYLAW_MEASURE"] != nil)
+)
+struct EqualValuePairingDetection {
+
+    typealias DollarMoney = RareAntecedentTests.DollarMoney
+    typealias AbsoluteOrder = RareAntecedentTests.AbsoluteOrder
+    typealias Rounding = RareAntecedentTests.Rounding
+
+    struct Bug: Sendable {
+        let name: String
+        let law: String
+        let run: @Sendable (LawCheckOptions) async throws -> Void
+    }
+
+    static let bugs: [Bug] = [
+        Bug(name: "dollar `==`, ±1 000 000", law: "Hashable.equalityConsistency") { options in
+            _ = try await checkHashablePropertyLaws(
+                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(DollarMoney.init(cents:)),
+                options: options, laws: .ownOnly
+            )
+        },
+        Bug(name: "dollar `==`, ±10 000", law: "Hashable.equalityConsistency") { options in
+            _ = try await checkHashablePropertyLaws(
+                using: Gen<Int>.int(in: -10_000 ... 10_000).map(DollarMoney.init(cents:)),
+                options: options, laws: .ownOnly
+            )
+        },
+        Bug(name: "`abs` ordering, ±10 000", law: "Comparable.antisymmetry") { options in
+            _ = try await checkComparablePropertyLaws(
+                using: Gen<Int>.int(in: -10_000 ... 10_000).map(AbsoluteOrder.init(cents:)),
+                options: options, laws: .ownOnly
+            )
+        },
+        Bug(name: "`abs` ordering, ±1 000 000", law: "Comparable.antisymmetry") { options in
+            _ = try await checkComparablePropertyLaws(
+                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(AbsoluteOrder.init(cents:)),
+                options: options, laws: .ownOnly
+            )
+        },
+        Bug(name: "\"within 1\" `==`, 0 … 200", law: "Equatable.transitivity") { options in
+            _ = try await checkEquatablePropertyLaws(
+                using: Gen<Int>.int(in: 0 ... 200).map(Rounding.init(raw:)), options: options
+            )
+        },
+        Bug(name: "\"within 1\" `==`, ±10 000", law: "Equatable.transitivity") { options in
+            _ = try await checkEquatablePropertyLaws(
+                using: Gen<Int>.int(in: -10_000 ... 10_000).map(Rounding.init(raw:)), options: options
+            )
+        },
+    ]
+
+    @Test(arguments: 0 ..< bugs.count, 0 ..< EqualValuePairingMeasurements.pairings.count)
+    func detection(bug index: Int, pairing column: Int) async {
+        let bug = Self.bugs[index]
+        let (name, pairing) = EqualValuePairingMeasurements.pairings[column]
+        let seeds = EqualValuePairingMeasurements.seeds
+        var caught = 0
+        for seed in 0 ..< UInt64(seeds) {
+            let options = LawCheckOptions(
+                budget: .standard, seed: RareAntecedentTests.mixedSeed(seed), equalValuePairing: pairing
+            )
+            do {
+                try await bug.run(options)
+            } catch let violation as PropertyLawViolation {
+                if violation.results.contains(where: { $0.isViolation && $0.protocolLaw == bug.law }) {
+                    caught += 1
+                }
+            } catch {}
+        }
+        print("| \(bug.name) | \(name) | \(caught * 100 / seeds)% |")
+    }
+}
 
 /// **The measurements behind `EqualValuePairing`, reproducible on demand.**
 ///
@@ -38,7 +116,7 @@ struct EqualValuePairingMeasurements {
     static let pairings: [(name: String, pairing: EqualValuePairing)] = [
         ("independent", .independent),
         ("every pair", .everyPairOfDraws),
-        ("last 32", .recentDraws(window: 32))
+        ("last 32", .recentDraws(window: 32)),
     ]
 
     static var seeds: Int {
@@ -51,7 +129,8 @@ struct EqualValuePairingMeasurements {
     /// collection's equality has to. Correct, so every run spends its whole budget.
     struct Bag: Hashable, Sendable {
         let items: [Int]
-        static func == (lhs: Bag, rhs: Bag) -> Bool { lhs.items.sorted() == rhs.items.sorted() }
+
+        static func == (lhs: Self, rhs: Self) -> Bool { lhs.items.sorted() == rhs.items.sorted() }
         func hash(into hasher: inout Hasher) { hasher.combine(items.sorted()) }
     }
 
@@ -64,22 +143,26 @@ struct EqualValuePairingMeasurements {
     private static let subjects: [Subject] = [
         Subject(key: "int", name: "`Int`") { options in
             _ = try await checkHashablePropertyLaws(
-                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000), options: options)
+                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000), options: options
+            )
         },
         Subject(key: "array", name: "`[Int]`, 100 random elements") { options in
             _ = try await checkHashablePropertyLaws(
-                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).array(of: 100), options: options)
+                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).array(of: 100), options: options
+            )
         },
         Subject(key: "prefix", name: "`[Int]`, 100 elements differing in the last") { options in
             _ = try await checkHashablePropertyLaws(
                 using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map { Array(repeating: 7, count: 99) + [$0] },
-                options: options)
+                options: options
+            )
         },
         Subject(key: "bag", name: "`Bag`, 100 elements, sorting `==`") { options in
             _ = try await checkHashablePropertyLaws(
                 using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).array(of: 100).map(Bag.init(items:)),
-                options: options)
-        }
+                options: options
+            )
+        },
     ]
 
     private static func wanted(_ variable: String) -> [String]? {
@@ -112,13 +195,14 @@ struct EqualValuePairingMeasurements {
         let columns = Self.pairings.map(\.name).joined(separator: " | ")
         print("\n| `checkHashablePropertyLaws`, debug CPU | tier | " + columns + " |")
         print("|---|---|" + String(repeating: "---|", count: Self.pairings.count))
-        let subjects = Self.subjects.filter { Self.wanted("PROPERTYLAW_MEASURE_SUBJECTS")?.contains($0.key) ?? true }
-        for subject in subjects {
+        let selected = Self.subjects.filter { Self.wanted("PROPERTYLAW_MEASURE_SUBJECTS")?.contains($0.key) ?? true }
+        for subject in selected {
             for (tierName, budget) in Self.tiers {
                 var cells: [String] = []
                 for (_, pairing) in Self.pairings {
                     let options = LawCheckOptions(
-                        budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: pairing)
+                        budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: pairing
+                    )
                     cells.append(try await Self.cpuTime { try await subject.run(options) })
                 }
                 print("| \(subject.name) | \(tierName) | " + cells.joined(separator: " | ") + " |")
@@ -139,7 +223,8 @@ struct EqualValuePairingMeasurements {
         print("|---|---|---|---|")
         await Self.samePairs("`Int`", Gen<Int>.int(in: -1_000_000 ... 1_000_000))
         await Self.samePairs(
-            "`[Int]`, 100 random elements", Gen<Int>.int(in: -1_000_000 ... 1_000_000).array(of: 100))
+            "`[Int]`, 100 random elements", Gen<Int>.int(in: -1_000_000 ... 1_000_000).array(of: 100)
+        )
     }
 
     private static func samePairs<Value: Hashable & Sendable, Shrinker: SendableSequenceType>(
@@ -147,7 +232,8 @@ struct EqualValuePairingMeasurements {
     ) async {
         func run(_ budget: TrialBudget, _ pairing: EqualValuePairing) async -> String {
             let options = LawCheckOptions(
-                budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: pairing)
+                budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: pairing
+            )
             return await cpuTime {
                 _ = await runEqualValueBinaryLaw(
                     "Hashable.equalityConsistency",
@@ -157,7 +243,8 @@ struct EqualValuePairingMeasurements {
                         guard first == second else { return true }
                         return first.hashValue == second.hashValue
                     },
-                    formatCounterexample: { _, _, _ in "" })
+                    formatCounterexample: { _, _, _ in "" }
+                )
             }
         }
         let baseline = await run(.standard, .independent)
@@ -199,6 +286,11 @@ struct EqualValuePairingMeasurements {
     }
 
     @Test func antisymmetryBySorting() async {
+        await Self.printSortedAntisymmetryDetection()
+        await Self.printSortedAntisymmetryCost()
+    }
+
+    private static func printSortedAntisymmetryDetection() async {
         // Detection: the sorted pool is the pool `.everyPairOfDraws` draws from
         // the same seed, so the two must agree seed for seed.
         print("\n| `abs` ordering, .standard | every pair | sorted | disagreements |")
@@ -215,7 +307,8 @@ struct EqualValuePairingMeasurements {
                     _ = try await checkComparablePropertyLaws(
                         using: generator,
                         options: LawCheckOptions(budget: .standard, seed: seed, equalValuePairing: .everyPairOfDraws),
-                        laws: .ownOnly)
+                        laws: .ownOnly
+                    )
                 } catch is PropertyLawViolation {
                     pairwiseCaught = true
                 } catch {}
@@ -226,14 +319,17 @@ struct EqualValuePairingMeasurements {
             }
             print("| ±\(bound) | \(pairwise * 100 / Self.seeds)% | \(sorted * 100 / Self.seeds)% | \(disagreements) |")
         }
+    }
 
+    private static func printSortedAntisymmetryCost() async {
         // Cost, over a correct `Int` so neither stops early.
         print("\n| antisymmetry alone, correct `Int`, debug CPU | tier | every pair | sorted |")
         print("|---|---|---|---|")
         let generator = Gen<Int>.int(in: -1_000_000 ... 1_000_000)
         for (tierName, budget) in Self.tiers {
             let options = LawCheckOptions(
-                budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: .everyPairOfDraws)
+                budget: budget, seed: RareAntecedentTests.mixedSeed(0), equalValuePairing: .everyPairOfDraws
+            )
             let pairwise = await Self.cpuTime {
                 _ = await runEqualValueBinaryLaw(
                     "Comparable.antisymmetry",
@@ -243,11 +339,13 @@ struct EqualValuePairingMeasurements {
                         guard first <= second, second <= first else { return true }
                         return first == second
                     },
-                    formatCounterexample: { _, _, _ in "" })
+                    formatCounterexample: { _, _, _ in "" }
+                )
             }
             let sorted = await Self.cpuTime {
                 _ = Self.sortedPoolRefutesAntisymmetry(
-                    Self.pool(generator, seed: RareAntecedentTests.mixedSeed(0), count: budget.trialCount))
+                    Self.pool(generator, seed: RareAntecedentTests.mixedSeed(0), count: budget.trialCount)
+                )
             }
             print("| `Int` | \(tierName) | \(pairwise) | \(sorted) |")
         }
@@ -256,76 +354,5 @@ struct EqualValuePairingMeasurements {
     private static func describe(seconds: Double) -> String {
         if seconds < 1 { return "\(Int((seconds * 1_000).rounded())) ms" }
         return String(format: "%.1f s", seconds)
-    }
-}
-
-/// Detection over well-mixed seeds at `.standard`, one parameterized case per
-/// bug and pairing so the cases run in parallel. Each prints one row of
-/// `| bug | pairing | caught |`.
-@Suite(
-    "Equal-value pairing detection",
-    .enabled(if: ProcessInfo.processInfo.environment["PROPERTYLAW_MEASURE"] != nil)
-)
-struct EqualValuePairingDetection {
-
-    typealias DollarMoney = RareAntecedentTests.DollarMoney
-    typealias AbsoluteOrder = RareAntecedentTests.AbsoluteOrder
-    typealias Rounding = RareAntecedentTests.Rounding
-
-    struct Bug: Sendable {
-        let name: String
-        let law: String
-        let run: @Sendable (LawCheckOptions) async throws -> Void
-    }
-
-    static let bugs: [Bug] = [
-        Bug(name: "dollar `==`, ±1 000 000", law: "Hashable.equalityConsistency") { options in
-            _ = try await checkHashablePropertyLaws(
-                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(DollarMoney.init(cents:)),
-                options: options, laws: .ownOnly)
-        },
-        Bug(name: "dollar `==`, ±10 000", law: "Hashable.equalityConsistency") { options in
-            _ = try await checkHashablePropertyLaws(
-                using: Gen<Int>.int(in: -10_000 ... 10_000).map(DollarMoney.init(cents:)),
-                options: options, laws: .ownOnly)
-        },
-        Bug(name: "`abs` ordering, ±10 000", law: "Comparable.antisymmetry") { options in
-            _ = try await checkComparablePropertyLaws(
-                using: Gen<Int>.int(in: -10_000 ... 10_000).map(AbsoluteOrder.init(cents:)),
-                options: options, laws: .ownOnly)
-        },
-        Bug(name: "`abs` ordering, ±1 000 000", law: "Comparable.antisymmetry") { options in
-            _ = try await checkComparablePropertyLaws(
-                using: Gen<Int>.int(in: -1_000_000 ... 1_000_000).map(AbsoluteOrder.init(cents:)),
-                options: options, laws: .ownOnly)
-        },
-        Bug(name: "\"within 1\" `==`, 0 … 200", law: "Equatable.transitivity") { options in
-            _ = try await checkEquatablePropertyLaws(
-                using: Gen<Int>.int(in: 0 ... 200).map(Rounding.init(raw:)), options: options)
-        },
-        Bug(name: "\"within 1\" `==`, ±10 000", law: "Equatable.transitivity") { options in
-            _ = try await checkEquatablePropertyLaws(
-                using: Gen<Int>.int(in: -10_000 ... 10_000).map(Rounding.init(raw:)), options: options)
-        }
-    ]
-
-    @Test(arguments: 0 ..< bugs.count, 0 ..< EqualValuePairingMeasurements.pairings.count)
-    func detection(bug index: Int, pairing column: Int) async {
-        let bug = Self.bugs[index]
-        let (name, pairing) = EqualValuePairingMeasurements.pairings[column]
-        let seeds = EqualValuePairingMeasurements.seeds
-        var caught = 0
-        for seed in 0 ..< UInt64(seeds) {
-            let options = LawCheckOptions(
-                budget: .standard, seed: RareAntecedentTests.mixedSeed(seed), equalValuePairing: pairing)
-            do {
-                try await bug.run(options)
-            } catch let violation as PropertyLawViolation {
-                if violation.results.contains(where: { $0.isViolation && $0.protocolLaw == bug.law }) {
-                    caught += 1
-                }
-            } catch {}
-        }
-        print("| \(bug.name) | \(name) | \(caught * 100 / seeds)% |")
     }
 }

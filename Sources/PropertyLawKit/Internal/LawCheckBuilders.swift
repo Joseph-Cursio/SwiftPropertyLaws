@@ -52,6 +52,7 @@ package func runUnaryLaw<Value: Sendable>(
             ),
             observation: observation
         )
+
     case .enumerated(let space):
         return await EnumerationDriver.run(
             protocolLaw: protocolLaw,
@@ -61,6 +62,7 @@ package func runUnaryLaw<Value: Sendable>(
             property: property,
             describeFailure: formatCounterexample
         )
+
     case .sampledFromSpace(let space):
         let sampler = SpaceSampler(space)
         let result = await PerLawDriver.run(
@@ -135,6 +137,7 @@ package func runBinaryLaw<Value: Sendable>(
                 shrink: liftToPairShrinker(shrink)
             )
         )
+
     case .enumerated(let space):
         return await EnumerationDriver.run(
             protocolLaw: protocolLaw,
@@ -144,10 +147,12 @@ package func runBinaryLaw<Value: Sendable>(
             property: { try await property($0.0, $0.1) },
             describeFailure: { formatCounterexample($0.0, $0.1, $1) }
         )
+
     case .sampledFromSpace(let space):
         return await runBinaryLawSampling(
             protocolLaw, tier: tier, space: space, options: options,
-            property: property, formatCounterexample: formatCounterexample)
+            property: property, formatCounterexample: formatCounterexample
+        )
     }
 }
 
@@ -178,7 +183,8 @@ private func runBinaryLawSampling<Value: Sendable>(
             formatCounterexample: { pair, error in
                 sampler.describe(
                     [pair.0, pair.1],
-                    formatCounterexample(pair.0.value, pair.1.value, error))
+                    formatCounterexample(pair.0.value, pair.1.value, error)
+                )
             },
             shrink: { pair in
                 sampler.shrink(pair.0).map { ($0, pair.1) }
@@ -272,6 +278,7 @@ package func runTernaryLaw<Value: Sendable>(
                 shrink: liftToTripleShrinker(shrink)
             )
         )
+
     case .enumerated(let space):
         return await EnumerationDriver.run(
             protocolLaw: protocolLaw,
@@ -281,10 +288,12 @@ package func runTernaryLaw<Value: Sendable>(
             property: { try await property($0.first, $0.second, $0.third) },
             describeFailure: { formatCounterexample($0.first, $0.second, $0.third, $1) }
         )
+
     case .sampledFromSpace(let space):
         return await runTernaryLawSampling(
             protocolLaw, tier: tier, space: space, options: options,
-            property: property, formatCounterexample: formatCounterexample)
+            property: property, formatCounterexample: formatCounterexample
+        )
     }
 }
 
@@ -308,7 +317,8 @@ private func runTernaryLawSampling<Value: Sendable>(
                 let triple = Triple(
                     first: sampler.draw(&rng),
                     second: sampler.draw(&rng),
-                    third: sampler.draw(&rng))
+                    third: sampler.draw(&rng)
+                )
                 sampler.record([triple.first, triple.second, triple.third])
                 return triple
             },
@@ -317,7 +327,9 @@ private func runTernaryLawSampling<Value: Sendable>(
                 sampler.describe(
                     [triple.first, triple.second, triple.third],
                     formatCounterexample(
-                        triple.first.value, triple.second.value, triple.third.value, error))
+                        triple.first.value, triple.second.value, triple.third.value, error
+                    )
+                )
             },
             shrink: { triple in
                 let firsts = sampler.shrink(triple.first).map {

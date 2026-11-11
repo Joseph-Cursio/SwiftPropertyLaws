@@ -11,14 +11,15 @@ import PropertyBased
 /// transitivity, negationConsistency) silently ignore the classifier.
 @discardableResult
 public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     coverage: AnyCoverageClassifier<Value>? = nil,
     shrink: (@Sendable (Value) -> [Value])? = nil
 ) async throws -> [CheckResult] {
     try await checkEquatablePropertyLaws(
-        from: .sampling(generator), options: options, coverage: coverage, shrink: shrink)
+        from: .sampling(generator), options: options, coverage: coverage, shrink: shrink
+    )
 }
 
 /// The same four laws over **every case** of a bounded carrier.
@@ -41,7 +42,7 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable, Shrinker: Se
 /// failure is already the smallest.
 @discardableResult
 public func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -53,7 +54,7 @@ public func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
 /// still reports a denominator.
 @discardableResult
 public func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     sampling carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
@@ -73,7 +74,7 @@ func checkEquatablePropertyLaws<Value: Equatable & Sendable>(
             await checkReflexivity(source: source, options: options, coverage: coverage, shrink: shrink),
             await checkSymmetry(source: source, options: options, shrink: shrink),
             await checkTransitivity(source: source, options: options, shrink: shrink),
-            await checkNegationConsistency(source: source, options: options, shrink: shrink)
+            await checkNegationConsistency(source: source, options: options, shrink: shrink),
         ]
     }
 }
@@ -95,6 +96,7 @@ private func checkReflexivity<Value: Equatable & Sendable>(
         source: source,
         options: options,
         observation: PerLawDriver.Observation(classify: classify),
+        // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
         property: { sample in sample == sample },
         formatCounterexample: { sample, _ in
             "x = \(sample); x == x evaluated to false"

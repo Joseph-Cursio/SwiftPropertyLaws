@@ -44,7 +44,7 @@ public protocol DefensiveCopy: AnyObject, Equatable {
 
     /// The type's mutation surface — one case per mutating operation. Drives the
     /// copy through reachable states + exercises copy-independence.
-    associatedtype Mutation: CaseIterable & Sendable
+    associatedtype Mutation: CaseIterable, Sendable
 
     /// A deterministic base instance (equal-valued + independently constructed).
     static func makeProbe() -> Self

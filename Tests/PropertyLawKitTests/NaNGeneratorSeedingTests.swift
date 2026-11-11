@@ -1,6 +1,6 @@
 import PropertyBased
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// **Seeded reproducibility for the NaN-injecting generators.**
 ///

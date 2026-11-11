@@ -23,4 +23,14 @@ public enum CodableRoundTripMode<T: Sendable>: @unchecked Sendable {
     case strict
     case semantic(equivalent: @Sendable (T, T) -> Bool)
     case partial(fields: [PartialKeyPath<T>])
+
+    /// `.semantic` and `.partial` can pass with field-level diffs; `.strict`
+    /// can't (any diff is the violation), so near-miss tracking is moot
+    /// there.
+    var tracksFieldLevelNearMisses: Bool {
+        switch self {
+        case .strict: return false
+        case .semantic, .partial: return true
+        }
+    }
 }

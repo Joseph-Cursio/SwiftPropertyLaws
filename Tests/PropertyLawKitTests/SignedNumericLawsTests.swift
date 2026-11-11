@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct SignedNumericLawsTests {
 
@@ -64,7 +64,7 @@ struct SignedNumericLawsTests {
             "SignedNumeric.negationInvolution",
             "SignedNumeric.additiveInverse",
             "SignedNumeric.negationDistributesOverAddition",
-            "SignedNumeric.negateMutationConsistency"
+            "SignedNumeric.negateMutationConsistency",
         ])
     }
 }

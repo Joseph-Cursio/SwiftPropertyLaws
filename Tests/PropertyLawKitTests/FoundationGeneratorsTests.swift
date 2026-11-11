@@ -40,7 +40,7 @@ struct FoundationGeneratorsTests {
             let year = calendar.component(.year, from: date)
             // date(inYear: 1970...2100) is UTC; allow a one-year slop for the
             // local-calendar boundary at Jan 1 / Dec 31.
-            #expect(year >= 1969 && year <= 2101, "date \(date) fell in year \(year), outside 1970...2100")
+            #expect(year >= 1_969 && year <= 2_101, "date \(date) fell in year \(year), outside 1970...2100")
         }
     }
 

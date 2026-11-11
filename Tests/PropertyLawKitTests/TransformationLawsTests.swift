@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct TransformationLawsTests {
 
@@ -16,7 +16,7 @@ struct TransformationLawsTests {
         // TransformationFunctionLawsTests.
         let closureFree: [TransformationLaw] = [
             .sortedIdempotence, .sortedIsNonDecreasing,
-            .sortedPreservesCount, .reversedInvolution
+            .sortedPreservesCount, .reversedInvolution,
         ]
         for law in closureFree {
             #expect(

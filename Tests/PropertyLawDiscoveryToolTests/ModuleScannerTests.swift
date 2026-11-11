@@ -1,7 +1,7 @@
 import Foundation
-import Testing
-@testable import PropertyLawDiscoveryTool
 @testable import PropertyLawCore
+@testable import PropertyLawDiscoveryTool
+import Testing
 
 // One scenario per recognized conformance shape; the suite legitimately
 // grows past SwiftLint's default body-length threshold as new protocols
@@ -18,7 +18,7 @@ struct ModuleScannerTests {
                 struct Foo: Equatable, Hashable {
                     let value: Int
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -41,7 +41,7 @@ struct ModuleScannerTests {
                     let cents: Int
                     init(cents: Int) { self.cents = cents }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -64,7 +64,7 @@ struct ModuleScannerTests {
                     let id: Int
                     let customer: Customer
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -89,7 +89,7 @@ struct ModuleScannerTests {
                     case circle(radius: Int)
                     case rect(width: Int, height: Int)
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -117,7 +117,7 @@ struct ModuleScannerTests {
                     let id: UserID
                     let name: String
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -137,7 +137,7 @@ struct ModuleScannerTests {
                     let raw: String
                     init?(raw: String) { self.raw = raw }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -155,7 +155,7 @@ struct ModuleScannerTests {
                 enum Direction: String, Codable, CaseIterable {
                     case north, south
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -182,7 +182,7 @@ struct ModuleScannerTests {
                 extension Foo: Hashable {
                     func hash(into hasher: inout Hasher) { hasher.combine(value) }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -213,7 +213,7 @@ struct ModuleScannerTests {
                 extension Container: Equatable where T: Equatable {
                     static func == (lhs: Container, rhs: Container) -> Bool { false }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -221,7 +221,7 @@ struct ModuleScannerTests {
         try #require(map.entries.count == 1)
         // Primary decl recorded (no inheritance), conditional extension
         // skipped → no recognized conformances.
-        #expect(map.entries[0].conformances == [])
+        #expect(map.entries[0].conformances.isEmpty)
     }
 
     // MARK: - Multiple types
@@ -235,7 +235,7 @@ struct ModuleScannerTests {
                 struct Bar: Hashable {
                     let other: Int
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -256,7 +256,7 @@ struct ModuleScannerTests {
                 struct Record: Encodable, Decodable {
                     let id: Int
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -273,13 +273,13 @@ struct ModuleScannerTests {
                 struct Cursor: IteratorProtocol {
                     mutating func next() -> Int? { nil }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
         let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
         try #require(map.entries.count == 1)
-        #expect(map.entries[0].conformances == [])
+        #expect(map.entries[0].conformances.isEmpty)
     }
 
     @Test func caseIterableOnlyFiltersToEmptyConformances() throws {
@@ -291,13 +291,13 @@ struct ModuleScannerTests {
                 enum Direction: CaseIterable {
                     case north, south
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
         let map = ModuleScanner.scan(sourceFiles: filePaths(in: dir))
         try #require(map.entries.count == 1)
-        #expect(map.entries[0].conformances == [])
+        #expect(map.entries[0].conformances.isEmpty)
     }
 
     // MARK: - v1.8 kit-defined algebraic protocols
@@ -311,7 +311,7 @@ struct ModuleScannerTests {
                         Counter(value: lhs.value + rhs.value)
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -333,7 +333,7 @@ struct ModuleScannerTests {
                         Tally(value: lhs.value + rhs.value)
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -352,7 +352,7 @@ struct ModuleScannerTests {
                         Tally(value: lhs.value + rhs.value)
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -377,7 +377,7 @@ struct ModuleScannerTests {
                         Tally(value: lhs.value + rhs.value)
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -404,7 +404,7 @@ struct ModuleScannerTests {
                         AdditiveInt(value: -x.value)
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -429,7 +429,7 @@ struct ModuleScannerTests {
                         AdditiveInt(value: -x.value)
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -450,7 +450,7 @@ struct ModuleScannerTests {
                         MaxInt(value: max(lhs.value, rhs.value))
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -469,7 +469,7 @@ struct ModuleScannerTests {
                         MaxInt(value: max(lhs.value, rhs.value))
                     }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -491,7 +491,7 @@ struct ModuleScannerTests {
                     func distance(to other: Step) -> Int { other.value - value }
                     func advanced(by step: Int) -> Step { Step(value: value + step) }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -505,7 +505,7 @@ struct ModuleScannerTests {
     @Test func sortedFileOrderProducesDeterministicOutput() throws {
         let dir = try makeFixtureDir([
             "z.swift": "struct Last: Equatable { let v: Int }",
-            "a.swift": "struct First: Equatable { let v: Int }"
+            "a.swift": "struct First: Equatable { let v: Int }",
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -537,7 +537,7 @@ struct ModuleScannerTests {
                     func encode(to encoder: Encoder) throws {}
                     init(from decoder: Decoder) throws {}
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -567,7 +567,7 @@ struct ModuleScannerTests {
                 extension Foo {
                     func hash(into hasher: inout Hasher) {}
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -590,7 +590,7 @@ struct ModuleScannerTests {
                     let value: Int
                     func describe() -> String { "" }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 
@@ -607,7 +607,7 @@ struct ModuleScannerTests {
                 struct Foo {
                     func equals(_ other: Foo) -> Bool { false }
                 }
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
 

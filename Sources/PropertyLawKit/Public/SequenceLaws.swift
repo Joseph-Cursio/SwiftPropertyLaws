@@ -26,7 +26,7 @@ import PropertyBased
 /// §4.6 "this law doesn't track" semantic.
 @discardableResult
 public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     sequenceOptions: SequenceLawOptions = SequenceLawOptions(),
@@ -59,7 +59,7 @@ where Value.Element: Equatable & Sendable {
 /// ```
 @discardableResult
 public func checkSequencePropertyLaws<Value: Sequence & Sendable, Shrinker: SendableSequenceType>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     elementSameResult: @escaping SameResult<Value.Element>,
     options: LawCheckOptions = LawCheckOptions(),

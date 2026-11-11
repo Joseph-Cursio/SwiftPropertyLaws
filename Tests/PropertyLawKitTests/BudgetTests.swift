@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct BudgetTests {
 
@@ -58,7 +58,7 @@ struct BudgetTests {
             .sanity: 100,
             .standard: 1_000,
             .thorough: 10_000,
-            .custom(trials: 7): 7
+            .custom(trials: 7): 7,
         ]
         for (budget, expected) in counts {
             #expect(budget.trialCount == expected)

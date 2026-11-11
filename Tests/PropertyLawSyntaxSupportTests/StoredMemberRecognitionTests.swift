@@ -1,8 +1,8 @@
 import PropertyLawCore
+@testable import PropertyLawSyntaxSupport
 import SwiftParser
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntaxSupport
 
 /// Which bindings `MemberBlockInspector` counts as stored. The synthesized
 /// memberwise initializer takes every stored property, so a stored property

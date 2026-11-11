@@ -52,7 +52,7 @@ public func checkFixedWidthIntegerPropertyLaws<
             await checkWrappingArithmeticDoesNotTrap(generator: generator, options: options),
             await checkMinMaxBoundsAreReachable(generator: generator, options: options),
             await checkByteSwappedInvolution(generator: generator, options: options),
-            await checkNonzeroBitCountRange(generator: generator, options: options)
+            await checkNonzeroBitCountRange(generator: generator, options: options),
         ])
         return results
     }

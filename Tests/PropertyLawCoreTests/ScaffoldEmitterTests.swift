@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Generator scaffolding (Phases 2–3): a partially-derivable type yields a
 /// `gen()` stub with the derivable slots filled and the rest as placeholders;
@@ -41,10 +41,12 @@ struct ScaffoldEmitterTests {
         let shape = TypeShape(
             name: "Money", kind: .struct, inheritedTypes: ["Equatable"], hasUserGen: false,
             hasUserInit: true,
-            initializers: [InitializerSignature(parameters: [
-                InitializerParameter(label: "amount", typeName: "Int"),
-                InitializerParameter(label: "currency", typeName: "Currency")
-            ])]
+            initializers: [
+                InitializerSignature(parameters: [
+                    InitializerParameter(label: "amount", typeName: "Int"),
+                    InitializerParameter(label: "currency", typeName: "Currency"),
+                ]),
+            ]
         )
         let text = ScaffoldEmitter.stub(for: shape) ?? ""
         #expect(text.contains("Gen<Int>.int()"))
@@ -55,9 +57,11 @@ struct ScaffoldEmitterTests {
     @Test func enumWithUnresolvablePayloadScaffolds() {
         let shape = TypeShape(
             name: "Node", kind: .enum, inheritedTypes: ["Equatable"], hasUserGen: false,
-            enumCases: [EnumCase(name: "leaf", associatedValues: [
-                InitializerParameter(label: nil, typeName: "Widget")
-            ])]
+            enumCases: [
+                EnumCase(name: "leaf", associatedValues: [
+                    InitializerParameter(label: nil, typeName: "Widget")
+                ]),
+            ]
         )
         let text = ScaffoldEmitter.stub(for: shape) ?? ""
         #expect(text.contains("<#Generator<Widget>#>.map { Node.leaf($0) }"))

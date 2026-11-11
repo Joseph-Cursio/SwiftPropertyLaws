@@ -17,6 +17,7 @@ protocol MinimalLeaf {
 
 extension Bool: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .bool(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .bool(payload) = tree else { return nil }
         self = payload
@@ -25,6 +26,7 @@ extension Bool: MinimalLeaf {
 
 extension Int: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .int(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .int(payload) = tree else { return nil }
         self = payload
@@ -33,6 +35,7 @@ extension Int: MinimalLeaf {
 
 extension Int8: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .int8(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .int8(payload) = tree else { return nil }
         self = payload
@@ -41,6 +44,7 @@ extension Int8: MinimalLeaf {
 
 extension Int16: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .int16(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .int16(payload) = tree else { return nil }
         self = payload
@@ -49,6 +53,7 @@ extension Int16: MinimalLeaf {
 
 extension Int32: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .int32(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .int32(payload) = tree else { return nil }
         self = payload
@@ -57,6 +62,7 @@ extension Int32: MinimalLeaf {
 
 extension Int64: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .int64(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .int64(payload) = tree else { return nil }
         self = payload
@@ -65,6 +71,7 @@ extension Int64: MinimalLeaf {
 
 extension UInt: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .uint(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .uint(payload) = tree else { return nil }
         self = payload
@@ -73,6 +80,7 @@ extension UInt: MinimalLeaf {
 
 extension UInt8: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .uint8(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .uint8(payload) = tree else { return nil }
         self = payload
@@ -81,6 +89,7 @@ extension UInt8: MinimalLeaf {
 
 extension UInt16: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .uint16(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .uint16(payload) = tree else { return nil }
         self = payload
@@ -89,6 +98,7 @@ extension UInt16: MinimalLeaf {
 
 extension UInt32: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .uint32(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .uint32(payload) = tree else { return nil }
         self = payload
@@ -97,6 +107,7 @@ extension UInt32: MinimalLeaf {
 
 extension UInt64: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .uint64(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .uint64(payload) = tree else { return nil }
         self = payload
@@ -105,6 +116,7 @@ extension UInt64: MinimalLeaf {
 
 extension Float: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .float(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .float(payload) = tree else { return nil }
         self = payload
@@ -113,6 +125,7 @@ extension Float: MinimalLeaf {
 
 extension Double: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .double(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .double(payload) = tree else { return nil }
         self = payload
@@ -121,6 +134,7 @@ extension Double: MinimalLeaf {
 
 extension String: MinimalLeaf {
     var minimalValue: MinimalCodableValue { .string(self) }
+
     init?(minimalValue tree: MinimalCodableValue) {
         guard case let .string(payload) = tree else { return nil }
         self = payload

@@ -22,7 +22,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
     try await runPropertyLawSuite(options: options) {
         [
             await checkCopyIsDistinctInstance(for: type, length: length, options: options),
-            await checkCopyIsIndependent(for: type, length: length, options: options)
+            await checkCopyIsIndependent(for: type, length: length, options: options),
         ]
     }
 }
@@ -32,7 +32,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
 /// `x.copyUnderTest() !== x` — after driving `x` to an arbitrary reachable state,
 /// its copy must be a distinct object. `false` ⇒ the copy method returned `self`.
 private func checkCopyIsDistinctInstance<Value: DefensiveCopy & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     length: ClosedRange<Int>,
     options: LawCheckOptions
 ) async -> CheckResult
@@ -64,7 +64,7 @@ where Value.Mutation.AllCases: Sendable & RandomAccessCollection {
 /// independent-twin check with copy via `copyUnderTest()`; `false` ⇒ the copy
 /// shares mutable reference state with the source (a shallow copy).
 private func checkCopyIsIndependent<Value: DefensiveCopy & Sendable>(
-    for type: Value.Type,
+    for _: Value.Type,
     length: ClosedRange<Int>,
     options: LawCheckOptions
 ) async -> CheckResult

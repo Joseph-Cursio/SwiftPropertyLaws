@@ -1,16 +1,3 @@
-/// The counterpart to ``MinimalEncoder``, reading a ``MinimalCodableValue`` tree.
-///
-/// Strict about width and signedness: a value encoded as `.int64` decodes into `Int64` and
-/// **not** into `Int`. Foundation's decoders convert freely between number types, which is why a
-/// JSON round trip can succeed on a type whose encoding lost information.
-public enum MinimalDecoder {
-
-    /// Decodes `type` from a typed tree.
-    public static func decode<T: Decodable>(_ type: T.Type, from value: MinimalCodableValue) throws -> T {
-        try T(from: BoxedDecoder(value: value, codingPath: []))
-    }
-}
-
 struct MinimalDecodingError: Error, CustomStringConvertible {
     let description: String
 }
@@ -42,7 +29,7 @@ struct BoxedDecoder: Decoder {
 /// Reads one value, requiring a leaf's tree case to match the requested type exactly.
 enum PrimitiveReading {
     static func value<T: Decodable>(
-        _ type: T.Type,
+        _: T.Type,
         from value: MinimalCodableValue,
         at path: [any CodingKey]
     ) throws -> T {
@@ -86,7 +73,7 @@ struct KeyedDecoding<Key: CodingKey>: KeyedDecodingContainerProtocol {
         return false
     }
 
-    func decode<T: Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
+    func decode<T: Decodable>(_: T.Type, forKey key: Key) throws -> T {
         try PrimitiveReading.value(T.self, from: require(key), at: codingPath + [key])
     }
 
@@ -133,7 +120,7 @@ struct UnkeyedDecoding: UnkeyedDecodingContainer {
         return false
     }
 
-    mutating func decode<T: Decodable>(_ type: T.Type) throws -> T {
+    mutating func decode<T: Decodable>(_: T.Type) throws -> T {
         try PrimitiveReading.value(T.self, from: try next(), at: codingPath)
     }
 
@@ -150,7 +137,7 @@ struct UnkeyedDecoding: UnkeyedDecodingContainer {
         guard case let .array(nested) = try next() else {
             throw MinimalDecodingError(description: "expected array in unkeyed container")
         }
-        return UnkeyedDecoding(items: nested, codingPath: codingPath)
+        return Self(items: nested, codingPath: codingPath)
     }
 
     mutating func superDecoder() throws -> any Decoder {
@@ -167,7 +154,20 @@ struct SingleValueDecoding: SingleValueDecodingContainer {
         return false
     }
 
-    func decode<T: Decodable>(_ type: T.Type) throws -> T {
+    func decode<T: Decodable>(_: T.Type) throws -> T {
         try PrimitiveReading.value(T.self, from: value, at: codingPath)
+    }
+}
+
+/// The counterpart to ``MinimalEncoder``, reading a ``MinimalCodableValue`` tree.
+///
+/// Strict about width and signedness: a value encoded as `.int64` decodes into `Int64` and
+/// **not** into `Int`. Foundation's decoders convert freely between number types, which is why a
+/// JSON round trip can succeed on a type whose encoding lost information.
+public enum MinimalDecoder {
+
+    /// Decodes `type` from a typed tree.
+    public static func decode<T: Decodable>(_: T.Type, from value: MinimalCodableValue) throws -> T {
+        try T(from: BoxedDecoder(value: value, codingPath: []))
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 import PropertyLawCore
-import Testing
 @testable import PropertyLawDiscoveryTool
+import Testing
 
 /// Three small syntactic signals the scanner reads. A swift-mutation-testing
 /// run over `Sources/PropertyLawDiscoveryTool` (2026-10-29) inverted each of
@@ -43,16 +43,18 @@ struct ScannerSignalTests {
     @Test(
         "a `static func gen()` makes the generator the user's",
         arguments: [
-            ["Foo.swift": """
+            [
+                "Foo.swift": """
             public struct Foo: Equatable, Sendable {
                 public let a: Int
                 public static func gen() -> Int { 0 }
             }
-            """],
+            """,
+            ],
             [
                 "Foo.swift": "public struct Foo: Equatable, Sendable { public let a: Int }",
-                "Foo+Gen.swift": "extension Foo { public static func gen() -> Int { 0 } }"
-            ]
+                "Foo+Gen.swift": "extension Foo { public static func gen() -> Int { 0 } }",
+            ],
         ]
     )
     func staticGenIsTheUsersGenerator(files: [String: String]) {
@@ -63,16 +65,18 @@ struct ScannerSignalTests {
         "an instance `gen()` or another static method is not the user's generator",
         arguments: [
             "public func gen() -> Int { 0 }",
-            "public static func make() -> Int { 0 }"
+            "public static func make() -> Int { 0 }",
         ]
     )
     func otherMethodsAreNotTheUsersGenerator(member: String) {
-        let map = scan(["Foo.swift": """
+        let map = scan([
+            "Foo.swift": """
         public struct Foo: Equatable, Sendable {
             public let a: Int
             \(member)
         }
-        """])
+        """,
+        ])
         guard case .memberwiseArbitrary = strategy(of: "Foo", in: map) else {
             Issue.record("expected the memberwise derivation, not \(String(describing: strategy(of: "Foo", in: map)))")
             return
@@ -83,12 +87,14 @@ struct ScannerSignalTests {
 
     @Test("a static method other than `==` or `<` is no witness")
     func staticMethodIsNoOperatorWitness() {
-        let map = scan(["Plain.swift": """
+        let map = scan([
+            "Plain.swift": """
         struct Plain {
             let value: Int
             static func make() -> Plain { Plain(value: 0) }
         }
-        """])
+        """,
+        ])
         #expect(map.witnesses["Plain"] == nil)
     }
 
@@ -108,7 +114,7 @@ struct ScannerSignalTests {
 
             extension Foo: Hashable {}
             """,
-            "B.swift": "extension Foo: Comparable { public static func < (lhs: Foo, rhs: Foo) -> Bool { false } }"
+            "B.swift": "extension Foo: Comparable { public static func < (lhs: Foo, rhs: Foo) -> Bool { false } }",
         ])
         let provenances = map.entries.first { $0.typeName == "Foo" }?.provenances ?? []
         let listed = provenances.map {

@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 struct FloatingPointLawsTests {
 
@@ -91,7 +91,7 @@ struct FloatingPointLawsTests {
             "FloatingPoint.nanInequality",
             "FloatingPoint.nanPropagatesAddition",
             "FloatingPoint.nanPropagatesMultiplication",
-            "FloatingPoint.nanComparisonIsUnordered"
+            "FloatingPoint.nanComparisonIsUnordered",
         ])
     }
 }

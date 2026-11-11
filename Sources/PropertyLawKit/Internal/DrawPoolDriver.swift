@@ -188,7 +188,8 @@ enum DrawPoolDriver {
             var minimal = PerLawDriver.Minimized(input: failure.input, steps: 0, error: failure.error)
             if let shrink = verdict.shrink {
                 minimal = await PerLawDriver.minimize(
-                    failure.input, firstError: failure.error, shrink: shrink, property: verdict.property)
+                    failure.input, firstError: failure.error, shrink: shrink, property: verdict.property
+                )
             }
             result.outcome = .failed(counterexample: verdict.formatCounterexample(minimal.input, minimal.error))
             result.shrinkSteps = minimal.steps

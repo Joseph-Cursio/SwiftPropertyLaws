@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// **Every enum that failed to derive was reported the same way**, with a
 /// sentence written before Tier 4 case enumeration existed:
@@ -71,7 +71,7 @@ struct EnumTodoReasonTests {
             ]),
             EnumCase(name: "opaque", associatedValues: [
                 InitializerParameter(label: nil, typeName: "UnsafeContinuation<Void, Error>")
-            ])
+            ]),
         ]))
         #expect(text.contains("case `opaque`"))
         #expect(text.contains("`UnsafeContinuation<Void, Error>`"))
@@ -85,7 +85,7 @@ struct EnumTodoReasonTests {
         let text = reason(for: enumShape([
             EnumCase(name: "opaque", associatedValues: [
                 InitializerParameter(label: nil, typeName: "SomeOpaqueThing")
-            ])
+            ]),
         ]))
         #expect(text.contains("CaseIterable") == false)
     }
@@ -105,7 +105,7 @@ struct EnumTodoReasonTests {
             ]),
             EnumCase(name: "opaque", associatedValues: [
                 InitializerParameter(label: nil, typeName: "Opaque")
-            ])
+            ]),
         ])
         let resolve: DerivationStrategist.CustomTypeResolver = { name in
             name == "Custom"
@@ -132,7 +132,7 @@ struct EnumTodoReasonTests {
         let shape = enumShape([
             EnumCase(name: "wrapped", associatedValues: [
                 InitializerParameter(label: nil, typeName: "Custom")
-            ])
+            ]),
         ])
         let resolve: DerivationStrategist.CustomTypeResolver = { name in
             name == "Custom"
@@ -169,7 +169,7 @@ struct EnumTodoReasonTests {
     func payloadFreeStillDerives() {
         let shape = enumShape([
             EnumCase(name: "a", associatedValues: []),
-            EnumCase(name: "b", associatedValues: [])
+            EnumCase(name: "b", associatedValues: []),
         ])
         guard case .enumCases = DerivationStrategist.strategy(for: shape) else {
             Issue.record("expected case enumeration")

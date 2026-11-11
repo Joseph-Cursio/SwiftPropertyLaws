@@ -39,9 +39,7 @@ package enum InputSource<Value: Sendable>: Sendable {
     /// `Value`. That is the whole reason this is a source rather than a
     /// generator.
     case sampledFromSpace(Enumeration<Value>)
-}
 
-extension InputSource {
     /// Draw from a generator — the shape every existing law entry point uses.
     package static func sampling<Shrinker: SendableSequenceType>(
         _ generator: Generator<Value, Shrinker>

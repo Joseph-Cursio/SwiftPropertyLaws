@@ -1,60 +1,22 @@
 import PropertyBased
 
-/// Transformation-algebra laws over `Sequence` values (Phase 2 of the
-/// collections/async workplan) — the higher-order counterpart to the
-/// conformance families: instead of checking what a *type* promises, these
-/// check what the stdlib's transformation methods promise over that type.
+/// Checks the closure-free transformation laws over values drawn from `generator`.
 ///
-/// Four closure-free Strict-tier laws (the closure-parameterized laws —
-/// map fusion, map/filter commutation, lazy-vs-eager — ship separately and
-/// take caller-supplied functions):
+/// `sorted()` must be idempotent, non-decreasing and count-preserving, and `reversed()`
+/// must be an involution. These are promises of standard-library methods rather than of a
+/// conformance.
 ///
-/// - `sortedIdempotence` — `x.sorted().sorted() == x.sorted()`
-/// - `sortedIsNonDecreasing` — no adjacent pair of `x.sorted()` is
-///   out of order
-/// - `sortedPreservesCount` — sorting neither drops nor invents elements
-/// - `reversedInvolution` — reversing twice restores the original element
-///   order (the *value* transform; distinct from
-///   `BidirectionalCollection.reverseTraversalConsistency`, which checks
-///   index walking)
-///
-/// **Multi-pass assumption.** Each property iterates its sample more than
-/// once, so carriers must be multi-pass (every `Collection` is). Don't run
-/// this family over single-pass sequences.
-///
-/// **No planted violator, deliberately.** `sorted()`/`reversed()` are
-/// protocol-extension methods — a conforming type can't override them, so
-/// there is no substitutable "buggy conformance" to plant (the M3
-/// collections families note the same gap for concrete types). What these
-/// laws *can* catch is a broken `Comparable` element corrupting `sorted()`
-/// — but a violator's broken `<` would corrupt the law's own oracle
-/// identically, so detection is not guaranteed; the family's evidence base
-/// is upstream archaeology (the swift-collections Pass 3 precedent), not
-/// the planted-bug gate.
-public enum TransformationLaw: String, Sendable, Hashable, CaseIterable {
-    case sortedIdempotence
-    case sortedIsNonDecreasing
-    case sortedPreservesCount
-    case reversedInvolution
-    // Parameterized half — see TransformationFunctionLaws.swift.
-    case mapFusion
-    case mapFilterCommutation
-    case lazyMapEquivalence
-    case lazyFilterEquivalence
-}
-
-extension LawIdentifier {
-    public static func transformation(_ law: TransformationLaw) -> LawIdentifier {
-        LawIdentifier(protocolName: "Transformation", lawName: law.rawValue)
-    }
-}
-
+/// - Parameters:
+///   - generator: The values to check the laws against.
+///   - options: The budget, enforcement and suppressions for the run.
+/// - Returns: One result per law.
+/// - Throws: `PropertyLawViolation` when a law fails at a tier `options.enforcement` escalates.
 @discardableResult
 public func checkTransformationPropertyLaws<
     Value: Sequence & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] where Value.Element: Comparable & Sendable {
@@ -63,7 +25,7 @@ public func checkTransformationPropertyLaws<
             await checkSortedIdempotence(generator: generator, options: options),
             await checkSortedIsNonDecreasing(generator: generator, options: options),
             await checkSortedPreservesCount(generator: generator, options: options),
-            await checkReversedInvolution(generator: generator, options: options)
+            await checkReversedInvolution(generator: generator, options: options),
         ]
     }
 }

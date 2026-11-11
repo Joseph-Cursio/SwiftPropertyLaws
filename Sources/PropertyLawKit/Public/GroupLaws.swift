@@ -20,7 +20,7 @@ public func checkGroupPropertyLaws<
     Value: Group & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -41,7 +41,7 @@ public func checkGroupPropertyLaws<
 /// result reports the shortfall rather than claiming completeness.
 @discardableResult
 public func checkGroupPropertyLaws<Value: Group & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -57,7 +57,7 @@ public func checkGroupPropertyLaws<Value: Group & Equatable & Sendable>(
 /// `options.budget` decides the number of draws.
 @discardableResult
 public func checkGroupPropertyLaws<Value: Group & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     sampling carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -81,7 +81,7 @@ func checkGroupPropertyLaws<Value: Group & Equatable & Sendable>(
         }
         results.append(contentsOf: [
             await checkCombineLeftInverse(source: source, options: options),
-            await checkCombineRightInverse(source: source, options: options)
+            await checkCombineRightInverse(source: source, options: options),
         ])
         return results
     }

@@ -1,7 +1,42 @@
 import Foundation
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
+
+// MARK: - Test fixtures
+
+/// Codable record whose `whitespaceField` is round-tripped through a custom
+/// init that strips the leading whitespace. Under `.strict` this is a
+/// violation; under `.semantic` (with a trim-aware predicate) or `.partial`
+/// (listing only `id`) the law passes — but the per-field diff should surface
+/// as a near-miss.
+struct SemanticDriftRecord: Codable, Equatable, Sendable, CustomStringConvertible {
+    let id: Int
+    let whitespaceField: String
+
+    init(id: Int, whitespaceField: String) {
+        self.id = id
+        self.whitespaceField = whitespaceField
+    }
+
+    enum CodingKeys: String, CodingKey { case id, whitespaceField }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(Int.self, forKey: .id)
+        let raw = try container.decode(String.self, forKey: .whitespaceField)
+        // The lossy step: strip a leading space if present.
+        self.whitespaceField = raw.hasPrefix(" ") ? String(raw.dropFirst()) : raw
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(whitespaceField, forKey: .whitespaceField)
+    }
+
+    var description: String { "SDR(\(id), \"\(whitespaceField)\")" }
+}
 
 struct NearMissTests {
 
@@ -87,7 +122,7 @@ struct NearMissTests {
         )
         let result = try #require(results.first)
         #expect(result.outcome == .passed)
-        #expect(result.nearMisses == [])
+        #expect(result.nearMisses?.isEmpty == true)
     }
 
     // MARK: - Collection.countConsistency records off-by-one diffs
@@ -121,41 +156,6 @@ struct NearMissTests {
     // (where `underestimatedCount == count`, making any "tight" criterion
     // vacuous). Tracking deferred until either a real-world report or a
     // targeted planted-bug fixture surfaces.
-}
-
-// MARK: - Test fixtures
-
-/// Codable record whose `whitespaceField` is round-tripped through a custom
-/// init that strips the leading whitespace. Under `.strict` this is a
-/// violation; under `.semantic` (with a trim-aware predicate) or `.partial`
-/// (listing only `id`) the law passes — but the per-field diff should surface
-/// as a near-miss.
-struct SemanticDriftRecord: Codable, Equatable, Sendable, CustomStringConvertible {
-    let id: Int
-    let whitespaceField: String
-
-    init(id: Int, whitespaceField: String) {
-        self.id = id
-        self.whitespaceField = whitespaceField
-    }
-
-    enum CodingKeys: String, CodingKey { case id, whitespaceField }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(Int.self, forKey: .id)
-        let raw = try container.decode(String.self, forKey: .whitespaceField)
-        // The lossy step: strip a leading space if present.
-        self.whitespaceField = raw.hasPrefix(" ") ? String(raw.dropFirst()) : raw
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(whitespaceField, forKey: .whitespaceField)
-    }
-
-    var description: String { "SDR(\(id), \"\(whitespaceField)\")" }
 }
 
 extension Gen where Value == SemanticDriftRecord {

@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// Summed-size product ordering. The design note that proposed it recorded it
 /// as *reasoned, not built*, and said it should be checked against a

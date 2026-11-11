@@ -64,7 +64,7 @@ public protocol ValueSemantic: Equatable {
     /// The type's mutation surface — one case per mutating operation a
     /// copy-independence bug could leak through. `CaseIterable` so the harness
     /// can sample mutation scripts via `ActionSequenceFactory`.
-    associatedtype Mutation: CaseIterable & Sendable
+    associatedtype Mutation: CaseIterable, Sendable
 
     /// A deterministic base instance. Called repeatedly; every call must
     /// return an equal-valued, independently-constructed instance that shares

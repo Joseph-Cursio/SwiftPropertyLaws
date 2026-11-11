@@ -1,60 +1,5 @@
 import Foundation
 
-/// A `Clock` whose time moves only when ``runInVirtualTime(horizon:_:)``
-/// finds every task in the run blocked.
-///
-/// The clock itself never advances. It records who is sleeping until when;
-/// the scheduler, having drained every runnable job, wakes the earliest
-/// sleeper and moves `now` to its deadline. Because that happens only at
-/// quiescence, a task that is slow to reach its next sleep is waited for
-/// rather than overtaken — which is the property a yield-counting clock
-/// cannot offer, and the reason this one exists. See `VirtualTimeScheduler`.
-///
-/// Sleepers sharing a deadline wake in registration order, one at a time,
-/// each running to quiescence before the next. Real timers that fire
-/// together have no defined order; this one is arbitrary but fixed, which
-/// is what a determinism law needs.
-struct VirtualClock: Clock {
-    struct Instant: InstantProtocol {
-        let offset: Duration
-
-        func advanced(by duration: Duration) -> Instant {
-            Instant(offset: offset + duration)
-        }
-
-        func duration(to other: Instant) -> Duration {
-            other.offset - offset
-        }
-
-        static func < (lhs: Instant, rhs: Instant) -> Bool {
-            lhs.offset < rhs.offset
-        }
-    }
-
-    let timeline: VirtualTimeline
-
-    var now: Instant { timeline.now }
-
-    var minimumResolution: Duration { .zero }
-
-    /// Suspends until the scheduler reaches `deadline`.
-    ///
-    /// A deadline that is not in the future returns at once, as it would on
-    /// a real clock. Cancellation wakes the sleeper with `CancellationError`
-    /// without moving time — a cancelled sleep costs nothing virtual.
-    func sleep(until deadline: Instant, tolerance: Duration? = nil) async throws {
-        try Task.checkCancellation()
-        let ticket = timeline.issueTicket()
-        try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                timeline.suspend(ticket, until: deadline, continuation)
-            }
-        } onCancel: {
-            timeline.cancel(ticket)
-        }
-    }
-}
-
 /// The sleepers of one virtual-time run, and the time they agree on.
 final class VirtualTimeline: @unchecked Sendable {
     private struct Sleeper {
@@ -159,6 +104,61 @@ final class VirtualTimeline: @unchecked Sendable {
         lock.unlock()
         for sleeper in woken {
             sleeper.continuation.resume(throwing: CancellationError())
+        }
+    }
+}
+
+/// A `Clock` whose time moves only when ``runInVirtualTime(horizon:_:)``
+/// finds every task in the run blocked.
+///
+/// The clock itself never advances. It records who is sleeping until when;
+/// the scheduler, having drained every runnable job, wakes the earliest
+/// sleeper and moves `now` to its deadline. Because that happens only at
+/// quiescence, a task that is slow to reach its next sleep is waited for
+/// rather than overtaken — which is the property a yield-counting clock
+/// cannot offer, and the reason this one exists. See `VirtualTimeScheduler`.
+///
+/// Sleepers sharing a deadline wake in registration order, one at a time,
+/// each running to quiescence before the next. Real timers that fire
+/// together have no defined order; this one is arbitrary but fixed, which
+/// is what a determinism law needs.
+struct VirtualClock: Clock {
+    struct Instant: InstantProtocol {
+        let offset: Duration
+
+        func advanced(by duration: Duration) -> Self {
+            Self(offset: offset + duration)
+        }
+
+        func duration(to other: Self) -> Duration {
+            other.offset - offset
+        }
+
+        static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.offset < rhs.offset
+        }
+    }
+
+    let timeline: VirtualTimeline
+
+    var now: Instant { timeline.now }
+
+    var minimumResolution: Duration { .zero }
+
+    /// Suspends until the scheduler reaches `deadline`.
+    ///
+    /// A deadline that is not in the future returns at once, as it would on
+    /// a real clock. Cancellation wakes the sleeper with `CancellationError`
+    /// without moving time — a cancelled sleep costs nothing virtual.
+    func sleep(until deadline: Instant, tolerance _: Duration? = nil) async throws {
+        try Task.checkCancellation()
+        let ticket = timeline.issueTicket()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                timeline.suspend(ticket, until: deadline, continuation)
+            }
+        } onCancel: {
+            timeline.cancel(ticket)
         }
     }
 }

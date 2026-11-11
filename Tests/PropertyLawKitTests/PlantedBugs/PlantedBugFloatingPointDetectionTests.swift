@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// PRD §8 framework self-test gate — v1.4 floating-point cluster (M4 + M5).
 ///
@@ -35,7 +35,7 @@ struct PlantedBugFloatingPointDetectionTests {
             "FloatingPoint.nanInequality",
             "FloatingPoint.nanPropagatesAddition",
             "FloatingPoint.nanPropagatesMultiplication",
-            "FloatingPoint.nanComparisonIsUnordered"
+            "FloatingPoint.nanComparisonIsUnordered",
         ]
         #expect(
             expected.isSubset(of: laws),
@@ -63,7 +63,7 @@ struct PlantedBugFloatingPointDetectionTests {
             "BinaryFloatingPoint.radix2Constraint",
             "BinaryFloatingPoint.significandExponentReconstruction",
             "BinaryFloatingPoint.binadeMembership",
-            "BinaryFloatingPoint.convertingFromIntegerExactness"
+            "BinaryFloatingPoint.convertingFromIntegerExactness",
         ]
         #expect(
             expected.isSubset(of: laws),

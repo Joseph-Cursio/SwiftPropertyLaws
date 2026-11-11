@@ -1,6 +1,6 @@
-import Testing
-import PropertyBased
 import Foundation
+import PropertyBased
+import Testing
 
 /// Validation that the generator expressions `DerivationStrategist`
 /// (PropertyLawCore, Tier 1) emits for composite members actually compile
@@ -23,6 +23,7 @@ struct CompositeGeneratorCompileTests {
     private struct Tagged: Equatable {
         let id: Int
         let label: String
+
         init(_ id: Int, label: String) {
             self.id = id
             self.label = label
@@ -63,6 +64,7 @@ struct CompositeGeneratorCompileTests {
         .run(using: &rng)
         // The point is that it compiled and ran; equality with itself is a
         // no-op use that keeps the binding from being optimized to a warning.
+        // swiftlint:disable:next identical_operands - a no-op use of the binding, as the comment above says
         #expect(wide == wide)
     }
 
@@ -85,7 +87,9 @@ struct CompositeGeneratorCompileTests {
         ).dictionary(ofAtMost: 0...8).run(using: &rng)
         // "[Int?]"
         let arrayOfOptional: [Int?] = Gen<Int>.int()
-            .optional.array(of: 0...8).run(using: &rng)
+            .optional
+            .array(of: 0...8)
+            .run(using: &rng)
 
         // Known value types (Tier 2): "Character", "Date", "[Date]".
         let character: Character = Gen<Character>.letterOrNumber.run(using: &rng)
@@ -94,24 +98,28 @@ struct CompositeGeneratorCompileTests {
 
         // Memberwise composition lifted through the synthesized init.
         let bag: Bag = Gen<Int>.int()
-            .array(of: 0...8).map { Bag(items: $0) }.run(using: &rng)
+            .array(of: 0...8)
+            .map { Bag(items: $0) }
+            .run(using: &rng)
         let order: Order = zip(
             Gen<Int>.int(),
             Gen<Character>.letterOrNumber.string(of: 0...8).array(of: 0...8)
         ).map { Order(id: $0.0, skus: $0.1) }.run(using: &rng)
 
         // Tier 6 — lift through a user init (unlabeled first arg, labeled second).
-        let tagged: Tagged = zip(
+        let taggedGenerator = zip(
             Gen<Int>.int(),
             Gen<Character>.letterOrNumber.string(of: 0...8)
-        ).map { Tagged($0.0, label: $0.1) }.run(using: &rng)
+        )
+        let tagged: Tagged = taggedGenerator.map { Tagged($0.0, label: $0.1) }.run(using: &rng)
 
         // Tier 4 — oneOf over plain + payload enum cases.
-        let shape: Shape = Gen.oneOf(
+        let shapeGenerator = Gen.oneOf(
             Gen.always(Shape.empty).eraseToAny(),
             Gen<Int>.int().map { Shape.circle(radius: $0) }.eraseToAny(),
             zip(Gen<Int>.int(), Gen<Int>.int()).map { Shape.rect(width: $0.0, height: $0.1) }.eraseToAny()
-        ).run(using: &rng)
+        )
+        let shape: Shape = shapeGenerator.run(using: &rng)
 
         // Reaching here means every expression type-checked and produced a
         // value of the asserted type. Touch each so nothing is dead.

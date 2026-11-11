@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawKit
+import Testing
 
 /// The space type and its base constructors. The bucket invariant is the
 /// ordering contract, so it is asserted directly on every constructor rather
@@ -129,7 +129,7 @@ struct EnumerationTests {
     @Test func prefixTruncatesButRemembersTheFullSpace() {
         let space = Every.subsets("subset", of: 10).prefix(100)
         #expect(space.count == 100)
-        #expect(space.fullCount == 1024)
+        #expect(space.fullCount == 1_024)
         #expect(space.isComplete == false)
         assertBucketInvariant(space, "prefix(100)")
         // Truncation keeps the smallest cases, so the empty set survives.
@@ -144,7 +144,7 @@ struct EnumerationTests {
 
     @Test func mapKeepsOrderSizesAndAddresses() {
         let base = Every.subsets("subset", of: 5)
-        let mapped = base.map { $0.count }
+        let mapped = base.map(\.count)
         #expect(mapped.count == base.count)
         #expect(mapped.buckets == base.buckets)
         #expect(mapped.indices.allSatisfy { mapped[$0] == base[$0].count })

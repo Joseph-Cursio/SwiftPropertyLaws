@@ -1,16 +1,10 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// A normal CaseIterable enum — synthesized allCases is well-formed.
 enum TrafficLight: CaseIterable, Hashable, Sendable {
     case red, yellow, green
-}
-
-extension Gen where Value == TrafficLight {
-    static func trafficLight() -> Generator<TrafficLight, some SendableSequenceType> {
-        Gen<TrafficLight?>.element(of: TrafficLight.allCases).compactMap { $0 }
-    }
 }
 
 struct CaseIterableLawsTests {
@@ -35,5 +29,11 @@ struct CaseIterableLawsTests {
         #expect(results.count == 1)
         #expect(results[0].protocolLaw == "CaseIterable.exactlyOnce")
         #expect(results[0].tier == .strict)
+    }
+}
+
+extension Gen where Value == TrafficLight {
+    static func trafficLight() -> Generator<TrafficLight, some SendableSequenceType> {
+        Gen<TrafficLight?>.element(of: TrafficLight.allCases).compactMap(\.self)
     }
 }

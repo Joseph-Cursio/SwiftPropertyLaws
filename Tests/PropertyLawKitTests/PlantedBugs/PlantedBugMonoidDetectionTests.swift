@@ -1,6 +1,6 @@
-import Testing
 import PropertyBased
 @testable import PropertyLawKit
+import Testing
 
 /// PRD §8 framework self-test gate — v1.8 kit-defined-algebraic cluster
 /// (Monoid share). Plants violations against the two own Strict-tier

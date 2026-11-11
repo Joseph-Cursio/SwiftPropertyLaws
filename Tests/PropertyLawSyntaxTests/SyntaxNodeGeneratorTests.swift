@@ -1,8 +1,8 @@
 import PropertyBased
 import PropertyLawKit
+@testable import PropertyLawSyntax
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntax
 
 /// `Gen<T>.syntaxNode()` covers every typed node in swift-syntax, not just the
 /// three the corpus asked for — `ExprSyntax` (34 placeholder slots),
@@ -88,7 +88,7 @@ struct SyntaxNodeGeneratorTests {
     /// The constraint that decided `Gen<Syntax>.syntax()` applies identically
     /// here: a fixed pool would cap unique hashes and trip
     /// `Hashable.distribution` against correct code.
-    @Test("typed generators keep hash distribution healthy", arguments: [100, 1000])
+    @Test("typed generators keep hash distribution healthy", arguments: [100, 1_000])
     func distributionStaysHealthy(_ trials: Int) {
         let exprs = sample(Gen<ExprSyntax>.syntaxNode(), count: trials)
         let ratio = Double(Set(exprs.map(\.hashValue)).count) / Double(trials)

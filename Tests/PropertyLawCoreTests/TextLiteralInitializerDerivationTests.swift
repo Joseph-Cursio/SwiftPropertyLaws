@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// A text-literal initializer is passed over: the compiler calls it with source text, and
 /// `BigUInt`'s force-unwraps a decimal parse of it, trapping on nearly every drawn scalar.
@@ -22,7 +22,7 @@ struct TextLiteralInitializerDerivationTests {
             InitializerSignature(parameters: [
                 InitializerParameter(label: "unicodeScalarLiteral", typeName: "Unicode.Scalar")
             ]),
-            InitializerSignature(parameters: [InitializerParameter(label: "value", typeName: "Int")])
+            InitializerSignature(parameters: [InitializerParameter(label: "value", typeName: "Int")]),
         ])
         #expect(emitted(found) == "Gen<Int>.int().map { Big(value: $0) }")
     }

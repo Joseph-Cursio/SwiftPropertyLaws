@@ -20,7 +20,7 @@ struct OrderedDictionaryLawsTests {
         let results = try await checkCollectionPropertyLaws(
             for: OrderedDictionary<Int, Int>.Elements.self,
             using: Gen<OrderedDictionary<Int, Int>>.smallIntOrderedDictionary()
-                .map { dictionary in dictionary.elements },
+                .map(\.elements),
             elementSameResult: { $0.key == $1.key && $0.value == $1.value },
             options: LawCheckOptions(budget: .standard)
         )
@@ -45,14 +45,14 @@ struct OrderedDictionaryLawsTests {
         let randomAccessResults = try await checkRandomAccessCollectionPropertyLaws(
             for: OrderedDictionary<Int, Int>.Values.self,
             using: Gen<OrderedDictionary<Int, Int>>.smallIntOrderedDictionary()
-                .map { dictionary in dictionary.values },
+                .map(\.values),
             options: LawCheckOptions(budget: .sanity),
             laws: .all
         )
         let mutableResults = try await checkMutableCollectionPropertyLaws(
             for: OrderedDictionary<Int, Int>.Values.self,
             using: Gen<OrderedDictionary<Int, Int>>.smallIntOrderedDictionary()
-                .map { dictionary in dictionary.values },
+                .map(\.values),
             options: LawCheckOptions(budget: .sanity),
             laws: .ownOnly
         )

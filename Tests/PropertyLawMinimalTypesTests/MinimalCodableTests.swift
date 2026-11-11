@@ -139,8 +139,8 @@ struct MinimalCodableTests {
     @Test("Codable laws hold under the minimal codec")
     func codableLawsHoldUnderMinimalCodec() async throws {
         let generator = zip(
-            Gen<Int>.int(in: -1000 ... 1000),
-            Gen<Int>.int(in: -1000 ... 1000)
+            Gen<Int>.int(in: -1_000 ... 1_000),
+            Gen<Int>.int(in: -1_000 ... 1_000)
         ).map { Point(x: $0, y: $1) }
         let results = try await checkCodablePropertyLaws(
             for: Point.self,

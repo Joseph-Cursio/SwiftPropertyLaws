@@ -1,8 +1,8 @@
 import PropertyLawCore
+@testable import PropertyLawSyntaxSupport
 import SwiftParser
 import SwiftSyntax
 import Testing
-@testable import PropertyLawSyntaxSupport
 
 /// `MemberBlockInspector` is where the access level enters the pipeline. The
 /// strategist's rule is only as sound as this reading, and the reading has one

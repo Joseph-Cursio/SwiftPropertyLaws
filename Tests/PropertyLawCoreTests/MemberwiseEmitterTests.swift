@@ -1,5 +1,5 @@
-import Testing
 @testable import PropertyLawCore
+import Testing
 
 /// Direct `#expect` pins on the rendered text. These guard against drift
 /// in either the macro impl's `generatorExpression` or the discovery
@@ -29,7 +29,7 @@ struct MemberwiseEmitterTests {
             typeName: "Coordinate",
             members: [
                 MemberSpec(name: "easting", rawType: .int),
-                MemberSpec(name: "northing", rawType: .int)
+                MemberSpec(name: "northing", rawType: .int),
             ]
         )
         let expected = """
@@ -45,7 +45,7 @@ struct MemberwiseEmitterTests {
             members: [
                 MemberSpec(name: "id", rawType: .int),
                 MemberSpec(name: "label", rawType: .string),
-                MemberSpec(name: "active", rawType: .bool)
+                MemberSpec(name: "active", rawType: .bool),
             ]
         )
         let expected = """

@@ -19,7 +19,7 @@ public func checkCommutativeMonoidPropertyLaws<
     Value: CommutativeMonoid & Equatable & Sendable,
     Shrinker: SendableSequenceType
 >(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     using generator: Generator<Value, Shrinker>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -40,7 +40,7 @@ public func checkCommutativeMonoidPropertyLaws<
 /// result reports the shortfall rather than claiming completeness.
 @discardableResult
 public func checkCommutativeMonoidPropertyLaws<Value: CommutativeMonoid & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     overEvery carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all
@@ -56,7 +56,7 @@ public func checkCommutativeMonoidPropertyLaws<Value: CommutativeMonoid & Equata
 /// `options.budget` decides the number of draws.
 @discardableResult
 public func checkCommutativeMonoidPropertyLaws<Value: CommutativeMonoid & Equatable & Sendable>(
-    for type: Value.Type = Value.self,
+    for _: Value.Type = Value.self,
     sampling carrier: Enumeration<Value>,
     options: LawCheckOptions = LawCheckOptions(),
     laws: LawSelection = .all

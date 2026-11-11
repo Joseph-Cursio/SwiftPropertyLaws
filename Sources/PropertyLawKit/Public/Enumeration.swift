@@ -44,7 +44,7 @@ public struct EnumerationBucket: Sendable, Hashable {
     /// ``EnumerationBucket`` makes no claim that `buckets` is well formed — the layout
     /// invariant is `Enumeration.init`'s to enforce — so this is stated over *sorted*
     /// starts alone, which is the weakest precondition the search needs.
-    public static func containing(_ index: Int, in buckets: [EnumerationBucket]) -> EnumerationBucket? {
+    public static func containing(_ index: Int, in buckets: [Self]) -> Self? {
         guard buckets.isEmpty == false else { return nil }
         var low = 0
         var high = buckets.count - 1
@@ -224,7 +224,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
             kept.append(EnumerationBucket(size: bucket.size, start: bucket.start, count: take))
             taken += take
         }
-        return Enumeration(buckets: kept, fullCount: fullCount, build: build, describe: describe)
+        return Self(buckets: kept, fullCount: fullCount, build: build, describe: describe)
     }
 
     /// Transform each case, keeping the order, the sizes and the addresses.
@@ -232,17 +232,14 @@ public struct Enumeration<Element: Sendable>: Sendable {
     public func map<Mapped: Sendable>(
         _ transform: @escaping @Sendable (Element) -> Mapped
     ) -> Enumeration<Mapped> {
-        let build = self.build
+        let buildCase = self.build
         return Enumeration<Mapped>(
             buckets: buckets,
             fullCount: fullCount,
-            build: { transform(build($0)) },
+            build: { transform(buildCase($0)) },
             describe: describe
         )
     }
-}
-
-extension Enumeration {
 
     /// Draw from this space at random, as an ordinary kit `Generator`.
     ///
