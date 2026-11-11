@@ -9,6 +9,7 @@
 /// final class Node: StableIdentity { /* makeProbe / Mutation / apply / Hashable */ }
 /// ```
 @attached(peer, names: suffixed(StableIdentityTests))
+// swiftlint:disable:next unused_declaration - public macro; clients apply it as an attribute
 public macro StableIdentityTests() = #externalMacro(
     module: "PropertyLawMacroImpl",
     type: "StableIdentityTestsMacro"

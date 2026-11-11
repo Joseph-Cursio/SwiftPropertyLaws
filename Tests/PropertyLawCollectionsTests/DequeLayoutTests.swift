@@ -48,7 +48,7 @@ struct DequeLayoutTests {
     @Test("arrangements of one size are equal as values")
     func sameSizedLayoutsAreEqualValues() {
         let space = DequeLayouts.everyLayout()
-        let bySize = Dictionary(grouping: space.indices, by: { space[$0].count })
+        let bySize = Dictionary(grouping: space.indices) { space[$0].count }
         for (size, indices) in bySize where size > 1 {
             let values = Set(indices.map { Array(space[$0]) })
             #expect(values.count == 1, "size \(size) produced differing contents")

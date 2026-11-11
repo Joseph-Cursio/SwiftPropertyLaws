@@ -27,6 +27,7 @@
 /// }
 /// ```
 @attached(peer, names: suffixed(ValueSemanticTests))
+// swiftlint:disable:next unused_declaration - public macro; clients apply it as an attribute
 public macro ValueSemanticTests() = #externalMacro(
     module: "PropertyLawMacroImpl",
     type: "ValueSemanticTestsMacro"

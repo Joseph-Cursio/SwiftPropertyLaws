@@ -1,5 +1,3 @@
-import Foundation
-
 enum InvocationError: Error, CustomStringConvertible {
     case missingValue(String)
     case unknownArgument(String)

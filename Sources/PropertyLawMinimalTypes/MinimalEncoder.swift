@@ -2,8 +2,6 @@
 /// its parent has moved on is visible rather than silently dropped.
 final class EncodedBox {
     var value: MinimalCodableValue = .null
-
-    init() {}
 }
 
 final class BoxedEncoder: Encoder {
@@ -150,7 +148,9 @@ struct SingleValueContainer: SingleValueEncodingContainer {
 public final class MinimalEncoder {
 
     /// Creates an encoder. Encoding goes through the static `encode(_:)`.
-    public init() {}
+    public init() {
+        // Stateless: encoding goes through the static `encode(_:)`.
+    }
 
     /// Encodes `value` to a typed tree.
     public static func encode(_ value: some Encodable) throws -> MinimalCodableValue {

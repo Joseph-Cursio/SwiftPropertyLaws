@@ -9,8 +9,6 @@ internal final class CoverageAccumulator: @unchecked Sendable {
     private var inputClasses: [String: Int] = [:]
     private var boundaryHits: [String: Int] = [:]
 
-    init() {}
-
     func record(classes: Set<String>, boundaries: Set<String>) {
         lock.lock()
         for label in classes { inputClasses[label, default: 0] += 1 }

@@ -29,7 +29,9 @@ public struct AnyCoverageClassifier<Input: Sendable>: Sendable {
 /// boundary hits. Expected use: `coverage: AnyCoverageClassifier(IntCoverage())`
 /// on `checkEquatablePropertyLaws(for: Int.self, ...)` etc.
 public struct IntCoverage: CoverageClassifier {
-    public init() {}
+    public init() {
+        // Stateless: nothing to configure.
+    }
 
     public func classify(_ input: Int) -> (classes: Set<String>, boundaries: Set<String>) {
         var classes: Set<String> = []
@@ -46,7 +48,9 @@ public struct IntCoverage: CoverageClassifier {
 
 /// Classifier for `Bool` samples — straightforward true/false bucketing.
 public struct BoolCoverage: CoverageClassifier {
-    public init() {}
+    public init() {
+        // Stateless: nothing to configure.
+    }
 
     public func classify(_ input: Bool) -> (classes: Set<String>, boundaries: Set<String>) {
         ([input ? "true" : "false"], [])
@@ -56,7 +60,9 @@ public struct BoolCoverage: CoverageClassifier {
 /// Classifier for `String` samples — emptiness / ASCII vs Unicode classes,
 /// single-character boundary.
 public struct StringCoverage: CoverageClassifier {
-    public init() {}
+    public init() {
+        // Stateless: nothing to configure.
+    }
 
     public func classify(_ input: String) -> (classes: Set<String>, boundaries: Set<String>) {
         var classes: Set<String> = []
@@ -77,7 +83,9 @@ public struct StringCoverage: CoverageClassifier {
 /// Classifier for `Array<Element>` samples — empty / single-element /
 /// multi-element classes.
 public struct ArrayCoverage<Element: Sendable>: CoverageClassifier {
-    public init() {}
+    public init() {
+        // Stateless: nothing to configure.
+    }
 
     public func classify(_ input: [Element]) -> (classes: Set<String>, boundaries: Set<String>) {
         var classes: Set<String> = []

@@ -97,7 +97,7 @@ struct CodableLawsTests {
         let results = try await checkCodablePropertyLaws(
             for: Invoice.self,
             using: Gen<Invoice>.invoice(),
-            config: CodableLawConfig(mode: .semantic(equivalent: { _, _ in true })),
+            config: CodableLawConfig(mode: .semantic { _, _ in true }),
             options: LawCheckOptions(budget: .sanity)
         )
         #expect(results[0].isViolation == false)

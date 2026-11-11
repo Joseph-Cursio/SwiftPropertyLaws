@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Run the strict-weak-ordering laws over a **supplied comparator**, the
@@ -178,7 +177,6 @@ private func checkComparatorDiscriminates<Value: Sendable>(
         [
             await requiringApplicableCases(await runBinaryLaw(
                 "StrictWeakOrdering.discrimination",
-                tier: .conventional,
                 source: source,
                 options: options,
                 property: { first, second in
@@ -192,7 +190,8 @@ private func checkComparatorDiscriminates<Value: Sendable>(
                     orders before the other, so their relative order after a sort \
                     is unspecified — `sorted(by:)` is not guaranteed stable.
                     """
-                }
+                },
+                tier: .conventional
             ), applications, needing: "two distinct values"),
         ]
     }
@@ -273,7 +272,6 @@ private func checkComparatorIsCongruent<Value: Equatable & Sendable>(
         [
             await requiringApplicableCases(await runTernaryLaw(
                 "StrictWeakOrdering.congruence",
-                tier: .conventional,
                 source: source,
                 options: options,
                 property: { first, second, probe in
@@ -288,7 +286,8 @@ private func checkComparatorIsCongruent<Value: Equatable & Sendable>(
                     compare differently against the probe, so the comparator reads \
                     something `==` does not — storage identity is the usual cause.
                     """
-                }
+                },
+                tier: .conventional
             ), applications, needing: "two values that are equal but not identical"),
         ]
     }

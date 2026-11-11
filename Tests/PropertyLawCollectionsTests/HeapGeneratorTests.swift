@@ -10,7 +10,7 @@ import Testing
 /// collections/async workplan.
 struct HeapGeneratorTests {
 
-    @Test func generatedHeapPreservesElementCountAndBounds() async throws {
+    @Test func generatedHeapPreservesElementCountAndBounds() throws {
         var rng: any SeededRandomNumberGenerator =
             Xoshiro(seed: (7, 8, 9, 10))
         let generator = Gen<Heap<Int>>.smallIntHeap()

@@ -69,9 +69,8 @@ struct SampledSpaceTests {
         let sampled = try await checkSampledCases(
             of: space,
             law: "Spike.alwaysHolds",
-            options: LawCheckOptions(budget: .standard),
-            satisfies: { _ in true }
-        )
+            options: LawCheckOptions(budget: .standard)
+        ) { _ in true }
         let coverage = try #require(sampled.first?.coverage)
         #expect(coverage.spaceSize == 64)
         #expect(coverage.casesRun == 64, "1 000 draws should reach all 64 cases")
@@ -94,9 +93,8 @@ struct SampledSpaceTests {
         let results = try await checkSampledCases(
             of: space,
             law: "Spike.alwaysHolds",
-            options: LawCheckOptions(budget: .custom(trials: 500)),
-            satisfies: { _ in true }
-        )
+            options: LawCheckOptions(budget: .custom(trials: 500))
+        ) { _ in true }
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.spaceSize == 16)
         #expect(coverage.casesRun <= 16,
@@ -110,9 +108,8 @@ struct SampledSpaceTests {
         let results = try await checkSampledCases(
             of: Every.subsets("subset", of: 10),
             law: "Spike.alwaysHolds",
-            options: LawCheckOptions(budget: .custom(trials: 50)),
-            satisfies: { _ in true }
-        )
+            options: LawCheckOptions(budget: .custom(trials: 50))
+        ) { _ in true }
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.spaceSize == 1_024)
         #expect(coverage.casesRun <= 50)
@@ -125,15 +122,13 @@ struct SampledSpaceTests {
         let space = Every.subsets("subset", of: 8)
         let walked = try await checkEveryCase(
             of: space.prefix(40),
-            law: "Spike.alwaysHolds",
-            satisfies: { _ in true }
-        )
+            law: "Spike.alwaysHolds"
+        ) { _ in true }
         let sampled = try await checkSampledCases(
             of: space,
             law: "Spike.alwaysHolds",
-            options: LawCheckOptions(budget: .custom(trials: 40)),
-            satisfies: { _ in true }
-        )
+            options: LawCheckOptions(budget: .custom(trials: 40))
+        ) { _ in true }
         #expect(walked.first?.coverage?.spaceSize == 256)
         #expect(sampled.first?.coverage?.spaceSize == 256)
         #expect(walked.first?.coverage?.casesRun == 40, "a prefix walk sees exactly its first 40")

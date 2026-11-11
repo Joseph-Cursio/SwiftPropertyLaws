@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Run `Codable` protocol laws over `Value` (PRD §4.3, §4.7).

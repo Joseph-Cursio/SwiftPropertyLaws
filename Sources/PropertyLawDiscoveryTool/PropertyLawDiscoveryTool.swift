@@ -11,6 +11,7 @@ import PropertyLawCore
 /// output file, and writes the rendered output.
 @main
 enum PropertyLawDiscoveryTool {
+    // swiftlint:disable:next unused_declaration - the @main entry point
     static func main() throws {
         let args = Array(CommandLine.arguments.dropFirst())
         if args.isEmpty || args.first == "--help" || args.first == "-h" {

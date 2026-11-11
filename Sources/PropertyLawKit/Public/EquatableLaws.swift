@@ -95,12 +95,12 @@ private func checkReflexivity<Value: Equatable & Sendable>(
         "Equatable.reflexivity",
         source: source,
         options: options,
-        observation: PerLawDriver.Observation(classify: classify),
         // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
         property: { sample in sample == sample },
         formatCounterexample: { sample, _ in
             "x = \(sample); x == x evaluated to false"
         },
+        observation: PerLawDriver.Observation(classify: classify),
         shrink: shrink
     )
 }

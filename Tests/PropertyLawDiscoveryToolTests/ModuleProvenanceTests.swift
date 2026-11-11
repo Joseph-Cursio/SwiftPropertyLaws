@@ -1,5 +1,4 @@
 import Foundation
-import PropertyLawCore
 @testable import PropertyLawDiscoveryTool
 import Testing
 
@@ -114,7 +113,7 @@ struct ModuleProvenanceTests {
             target: ["T.swift": "public struct Foreign: Equatable, Sendable { public let a: Int }"],
             context: [ContextFile(module: "OtherModule", name: "F.swift", source: foreignPublic)]
         )
-        #expect(map.entries.first(where: { $0.typeName == "Foreign" })?.declaringModule == nil)
+        #expect(map.entries.first { $0.typeName == "Foreign" }?.declaringModule == nil)
         let output = GeneratedFileEmitter.emit(target: "MyTarget", map: map)
         #expect(output.contains("import OtherModule") == false)
     }

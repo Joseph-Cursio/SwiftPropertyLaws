@@ -196,9 +196,8 @@ public enum Every {
         }
         return Enumeration(
             buckets: buckets,
-            build: decode,
-            describe: { "\(label)=\(decode($0))" }
-        )
+            build: decode
+        ) { "\(label)=\(decode($0))" }
     }
 }
 

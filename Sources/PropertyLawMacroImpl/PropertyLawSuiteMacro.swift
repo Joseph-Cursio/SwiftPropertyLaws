@@ -197,7 +197,7 @@ public struct PropertyLawSuiteMacro: PeerMacro {
         // for the method's first line, so strip the shared stub's 4-space
         // base indent there; the remaining lines keep their indentation.
         let adjusted = lines.enumerated().map { index, line in
-            index == 0 ? String(line.drop(while: { $0 == " " })) : line
+            index == 0 ? String(line.drop { $0 == " " }) : line
         }
         return adjusted.joined(separator: "\n")
     }

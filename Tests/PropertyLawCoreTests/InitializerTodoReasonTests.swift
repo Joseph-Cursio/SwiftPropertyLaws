@@ -56,9 +56,8 @@ struct InitializerTodoReasonTests {
     func consultsResolver() throws {
         let resolved = DerivationStrategist.ComposedGenerator(expression: "Known.gen()")
         let text = try #require(reason(
-            shape([InitializerSignature(parameters: [parameter("known", "Known"), parameter("other", "Other")])]),
-            resolve: { $0 == "Known" ? resolved : nil }
-        ))
+            shape([InitializerSignature(parameters: [parameter("known", "Known"), parameter("other", "Other")])])
+        ) { $0 == "Known" ? resolved : nil })
         #expect(text.contains("takes `other: Other`"))
         #expect(!text.contains("known: Known"))
     }

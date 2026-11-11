@@ -1,5 +1,3 @@
-import DequeModule
-import PropertyBased
 import PropertyLawKit
 
 /// Laws for `Deque`'s double-ended surface (Phase 1 M3 of the

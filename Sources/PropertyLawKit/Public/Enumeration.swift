@@ -21,6 +21,9 @@ public struct EnumerationBucket: Sendable, Hashable {
         self.count = count
     }
 
+    /// Whether the run holds no cases. A space's buckets never are.
+    public var isEmpty: Bool { count == 0 } // swiftlint:disable:this empty_count - defines isEmpty
+
     /// The half-open range of indices this run holds.
     public var indices: Range<Int> { start ..< (start + count) }
 
@@ -131,6 +134,9 @@ public struct Enumeration<Element: Sendable>: Sendable {
         return last.start + last.count
     }
 
+    /// Whether this enumeration walks no cases.
+    public var isEmpty: Bool { buckets.isEmpty }
+
     /// Whether this enumeration covers the whole space it was derived from.
     public var isComplete: Bool { count == fullCount }
 
@@ -149,7 +155,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
         var expectedStart = 0
         var previousSize: Int?
         for bucket in buckets {
-            precondition(bucket.count > 0, "Enumeration: empty size bucket at index \(bucket.start)")
+            precondition(!bucket.isEmpty, "Enumeration: empty size bucket at index \(bucket.start)")
             precondition(
                 bucket.start == expectedStart,
                 "Enumeration: bucket starting at \(bucket.start) leaves a gap; expected \(expectedStart)"
@@ -277,7 +283,7 @@ public struct Enumeration<Element: Sendable>: Sendable {
     /// property survives sampling intact, and it is the reason this is worth
     /// having despite the two paragraphs above.
     public var generator: Generator<Element, Shrink.Integer<Int>> {
-        precondition(count > 0, "Enumeration.generator: cannot draw from an empty space")
+        precondition(!isEmpty, "Enumeration.generator: cannot draw from an empty space")
         let space = self
         return Gen<Int>.int(in: 0 ..< count).map { space[$0] }
     }

@@ -36,9 +36,8 @@ struct EveryCaseLawsTests {
     @Test func aPassingWalkReportsCompleteCoverage() async throws {
         let results = try await checkEveryCase(
             of: Every.subsets("subset", of: 6),
-            law: "Spike.subsetsAreSorted",
-            satisfies: { $0 == $0.sorted() }
-        )
+            law: "Spike.subsetsAreSorted"
+        ) { $0 == $0.sorted() }
         let result = try #require(results.first)
         #expect(!result.isViolation)
         let coverage = try #require(result.coverage)
@@ -54,9 +53,8 @@ struct EveryCaseLawsTests {
     @Test func theFirstFailureFoundIsTheSmallestFailureThatExists() async {
         let result = await walk(
             Every.subsets("subset", of: 10),
-            law: "Spike.cardinalityUnderThree",
-            satisfies: { $0.count < 3 }
-        )
+            law: "Spike.cardinalityUnderThree"
+        ) { $0.count < 3 }
         #expect(result?.isViolation == true)
         // The minimal witness of "cardinality >= 3" is the first three-element
         // subset, and no shrinking step was needed to say so.
@@ -71,9 +69,8 @@ struct EveryCaseLawsTests {
         let counter = Counter()
         _ = await walk(
             Every.elements("value", in: 0 ..< 100),
-            law: "Spike.underTen",
-            satisfies: { value in counter.record(); return value < 10 }
-        )
+            law: "Spike.underTen"
+        ) { value in counter.record(); return value < 10 }
         #expect(counter.total == 11, "the walk should stop at the first failure, not finish the space")
     }
 
@@ -81,9 +78,8 @@ struct EveryCaseLawsTests {
         struct Boom: Error {}
         let result = await walk(
             Every.elements("value", in: 0 ..< 5),
-            law: "Spike.throwsAtThree",
-            satisfies: { value in if value == 3 { throw Boom() }; return true }
-        )
+            law: "Spike.throwsAtThree"
+        ) { value in if value == 3 { throw Boom() }; return true }
         let counterexample = result?.counterexample
         #expect(counterexample?.hasPrefix("value=3; threw") == true, "got \(counterexample ?? "nil")")
     }
@@ -91,9 +87,8 @@ struct EveryCaseLawsTests {
     @Test func aTruncatedWalkReportsTheShortfallRatherThanClaimingCompleteness() async throws {
         let results = try await checkEveryCase(
             of: Every.subsets("subset", of: 10).prefix(100),
-            law: "Spike.cardinalityUnderFive",
-            satisfies: { $0.count < 5 }
-        )
+            law: "Spike.cardinalityUnderFive"
+        ) { $0.count < 5 }
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.casesRun == 100)
         #expect(coverage.spaceSize == 1_024)
@@ -104,9 +99,8 @@ struct EveryCaseLawsTests {
         await #expect(throws: PropertyLawViolation.self) {
             try await checkEveryCase(
                 of: Every.elements("value", in: 0 ..< 3),
-                law: "Spike.alwaysFails",
-                satisfies: { _ in false }
-            )
+                law: "Spike.alwaysFails"
+            ) { _ in false }
         }
     }
 
@@ -122,12 +116,14 @@ struct EveryCaseLawsTests {
                         reason: "spike"
                     ),
                 ]
-            ),
-            satisfies: { _ in false }
-        )
+            )
+        ) { _ in false }
         let result = try #require(results.first)
         #expect(!result.isViolation)
-        if case .suppressed = result.outcome {} else { Issue.record("expected a suppressed outcome") }
+        guard case .suppressed = result.outcome else {
+            Issue.record("expected a suppressed outcome")
+            return
+        }
     }
 
     // MARK: - The headline application: an algebraic law, walked rather than sampled
@@ -142,12 +138,11 @@ struct EveryCaseLawsTests {
 
         let result = await walk(
             space,
-            law: "Semigroup.combineAssociativity",
-            satisfies: { triple in
-                subtract(subtract(triple.first, triple.second), triple.third)
-                    == subtract(triple.first, subtract(triple.second, triple.third))
-            }
-        )
+            law: "Semigroup.combineAssociativity"
+        ) { triple in
+            subtract(subtract(triple.first, triple.second), triple.third)
+                == subtract(triple.first, subtract(triple.second, triple.third))
+        }
         #expect(result?.isViolation == true)
         // (0 - 0) - 1 = 7, but 0 - (0 - 1) = 1. The second case in the walk.
         #expect(result?.counterexample == "value=0 / value=0 / value=1")
@@ -161,12 +156,11 @@ struct EveryCaseLawsTests {
         let space = Every.triples(of: Every.elements("value", in: 0 ..< 8))
         let results = try await checkEveryCase(
             of: space,
-            law: "Semigroup.combineAssociativity",
-            satisfies: { triple in
-                ((triple.first + triple.second) % 8 + triple.third) % 8
-                    == (triple.first + (triple.second + triple.third) % 8) % 8
-            }
-        )
+            law: "Semigroup.combineAssociativity"
+        ) { triple in
+            ((triple.first + triple.second) % 8 + triple.third) % 8
+                == (triple.first + (triple.second + triple.third) % 8) % 8
+        }
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.isComplete)
         #expect(coverage.casesRun == 512)

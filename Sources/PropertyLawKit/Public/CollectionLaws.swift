@@ -103,7 +103,6 @@ where C.Element: Sendable {
         "Collection.countConsistency",
         generator: generator,
         options: options,
-        observation: PerLawDriver.Observation(nearMissCollector: collector),
         property: { sample in
             let detail = countDetail(for: sample)
             if let detail, detail.isOffByOne {
@@ -116,7 +115,8 @@ where C.Element: Sendable {
         },
         formatCounterexample: { sample, _ in
             countDetail(for: sample)?.message ?? "<no counterexample>"
-        }
+        },
+        observation: PerLawDriver.Observation(nearMissCollector: collector)
     )
 }
 
@@ -145,13 +145,13 @@ private func checkNonMutation<C: Collection & Sendable, Sh: SendableSequenceType
 where C.Element: Sendable {
     await runUnaryLaw(
         "Collection.nonMutation",
-        tier: .conventional,
         generator: generator,
         options: options,
         property: { sample in nonMutationCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
             nonMutationCounterexample(for: sample, same: same) ?? "<no counterexample>"
-        }
+        },
+        tier: .conventional
     )
 }
 

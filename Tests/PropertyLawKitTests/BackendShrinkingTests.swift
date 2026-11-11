@@ -152,9 +152,8 @@ struct BackendShrinkingTests {
             _ = try await checkEquatablePropertyLaws(
                 for: BrokenAboveThreshold.self,
                 using: Gen<Int>.int(in: 0...1_000_000).map(BrokenAboveThreshold.init),
-                options: LawCheckOptions(budget: .standard, enforcement: .default),
-                shrink: { value in value.raw.shrink(towards: 0).map(BrokenAboveThreshold.init) }
-            )
+                options: LawCheckOptions(budget: .standard, enforcement: .default)
+            ) { value in value.raw.shrink(towards: 0).map(BrokenAboveThreshold.init) }
             Issue.record("expected the broken Equatable to throw a PropertyLawViolation")
         } catch let violation as PropertyLawViolation {
             let reflexivity = try #require(

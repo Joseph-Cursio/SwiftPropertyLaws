@@ -75,7 +75,9 @@ struct EqualValuePairingDetection {
                 if violation.results.contains(where: { $0.isViolation && $0.protocolLaw == bug.law }) {
                     caught += 1
                 }
-            } catch {}
+            } catch {
+                Issue.record(error)
+            }
         }
         print("| \(bug.name) | \(name) | \(caught * 100 / seeds)% |")
     }
@@ -109,9 +111,7 @@ struct EqualValuePairingDetection {
 )
 struct EqualValuePairingMeasurements {
 
-    typealias DollarMoney = RareAntecedentTests.DollarMoney
     typealias AbsoluteOrder = RareAntecedentTests.AbsoluteOrder
-    typealias Rounding = RareAntecedentTests.Rounding
 
     static let pairings: [(name: String, pairing: EqualValuePairing)] = [
         ("independent", .independent),
@@ -311,7 +311,9 @@ struct EqualValuePairingMeasurements {
                     )
                 } catch is PropertyLawViolation {
                     pairwiseCaught = true
-                } catch {}
+                } catch {
+                    Issue.record(error)
+                }
                 let sortedCaught = Self.sortedPoolRefutesAntisymmetry(Self.pool(generator, seed: seed, count: 1_000))
                 pairwise += pairwiseCaught ? 1 : 0
                 sorted += sortedCaught ? 1 : 0

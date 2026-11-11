@@ -10,7 +10,7 @@ struct ElementEquivalenceSequenceLawsTests {
 
     private static func dictionaryGen() -> Generator<[Int: Int], some SendableSequenceType> {
         TestGen.smallInt().array(of: 0...8).map { keys in
-            Dictionary(keys.map { ($0, $0 &* 3) }, uniquingKeysWith: { first, _ in first })
+            Dictionary(keys.map { ($0, $0 &* 3) }) { first, _ in first }
         }
     }
 

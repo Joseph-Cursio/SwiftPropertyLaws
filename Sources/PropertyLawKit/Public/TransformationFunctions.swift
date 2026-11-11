@@ -1,5 +1,3 @@
-import PropertyBased
-
 /// Caller-supplied element functions for the parameterized transformation
 /// laws. The kit cannot invent functions over a generic `Element`, so —
 /// like `Strideable`'s `strideGenerator:` — the caller names them

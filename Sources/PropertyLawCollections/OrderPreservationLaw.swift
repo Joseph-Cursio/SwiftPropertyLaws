@@ -1,5 +1,3 @@
-import OrderedCollections
-import PropertyBased
 import PropertyLawKit
 
 /// Laws for `OrderedSet`'s defining behavior — insertion-order preservation

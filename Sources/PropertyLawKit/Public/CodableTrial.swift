@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Whole-trial sample for Codable: captures the original input, the restored

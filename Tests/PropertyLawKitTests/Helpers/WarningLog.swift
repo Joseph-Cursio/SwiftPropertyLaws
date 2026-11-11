@@ -29,20 +29,20 @@ func recordedWarnings(
         "collected by recordedWarnings(_:)",
         isIntermittent: true,
         isolation: isolation,
-        sourceLocation: sourceLocation,
-        body,
-        matching: { issue in
-            #if compiler(>=6.3)
-            guard issue.severity == .warning else { return false }
-            #else
-            // No severity before Swift 6.3, and the kit records at `.error` there. Collect what
-            // `Issue.record` produced, which still lets a failed `#expect` or a thrown error through.
-            guard case .unconditional = issue.kind else { return false }
-            #endif
-            log.append(issue.comments.map(\.rawValue).joined(separator: "\n"))
-            return true
-        }
-    )
+        sourceLocation: sourceLocation
+    ) {
+        try await body()
+    } matching: { issue in
+        #if compiler(>=6.3)
+        guard issue.severity == .warning else { return false }
+        #else
+        // No severity before Swift 6.3, and the kit records at `.error` there. Collect what
+        // `Issue.record` produced, which still lets a failed `#expect` or a thrown error through.
+        guard case .unconditional = issue.kind else { return false }
+        #endif
+        log.append(issue.comments.map(\.rawValue).joined(separator: "\n"))
+        return true
+    }
     return log.messages
 }
 

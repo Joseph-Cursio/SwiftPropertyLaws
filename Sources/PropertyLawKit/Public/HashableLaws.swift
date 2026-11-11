@@ -113,16 +113,16 @@ private func checkStabilityWithinProcess<Value: Hashable & Sendable>(
     }
     return await runUnaryLaw(
         "Hashable.stabilityWithinProcess",
-        tier: .conventional,
         source: source,
         options: options,
-        observation: PerLawDriver.Observation(classify: classify),
         // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
         property: { sample in sample.hashValue == sample.hashValue },
         formatCounterexample: { sample, _ in
             "x = \(sample); hashValue returned \(sample.hashValue) "
                 + "then \(sample.hashValue) within the same process"
-        }
+        },
+        tier: .conventional,
+        observation: PerLawDriver.Observation(classify: classify)
     )
 }
 

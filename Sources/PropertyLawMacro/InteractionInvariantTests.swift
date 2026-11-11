@@ -45,6 +45,7 @@
 /// }
 /// ```
 @attached(peer, names: suffixed(InteractionInvariantTests))
+// swiftlint:disable:next unused_declaration - public macro; clients apply it as an attribute
 public macro InteractionInvariantTests() = #externalMacro(
     module: "PropertyLawMacroImpl",
     type: "InteractionInvariantTestsMacro"

@@ -135,9 +135,7 @@ struct EmittedExpressionCompilesTests {
     }
 
     /// A struct with no stored properties — `.initializerBased(arguments: [])`.
-    private struct Stateless: Sendable, Equatable {
-        var name: String { "stateless" }
-    }
+    private struct Stateless: Sendable, Equatable {}
 
     private static let statelessGenerator = Gen.always(Stateless())
 

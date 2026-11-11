@@ -14,9 +14,8 @@ public extension Gen where Value == OrderedDictionary<Int, Int> {
     ) -> Generator<OrderedDictionary<Int, Int>, some SendableSequenceType> {
         Gen<Int>.int(in: -100 ... 100).array(of: count).map { keys in
             OrderedDictionary(
-                keys.map { key in (key, key &* 3) },
-                uniquingKeysWith: { first, _ in first }
-            )
+                keys.map { key in (key, key &* 3) }
+            ) { first, _ in first }
         }
     }
 }

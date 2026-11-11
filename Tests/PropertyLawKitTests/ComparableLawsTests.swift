@@ -33,9 +33,8 @@ struct ComparableLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstComparableIndex = laws.firstIndex { $0.hasPrefix("Comparable.") }
-        #expect(firstComparableIndex != nil)
-        let inheritedLaws = laws[..<firstComparableIndex!]
+        let firstComparableIndex = try #require(laws.firstIndex { $0.hasPrefix("Comparable.") })
+        let inheritedLaws = laws[..<firstComparableIndex]
         #expect(inheritedLaws.allSatisfy { $0.hasPrefix("Equatable.") })
         #expect(inheritedLaws.count == 4)
     }

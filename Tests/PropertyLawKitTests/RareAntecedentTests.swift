@@ -69,7 +69,9 @@ struct RareAntecedentTests {
                 _ = try await checkEquatablePropertyLaws(overEvery: carrier(upTo: bound))
             } catch is PropertyLawViolation {
                 caught = true
-            } catch {}
+            } catch {
+                Issue.record(error)
+            }
             #expect(caught, "the walk missed the violation at 0...\(bound)")
         }
     }
@@ -83,7 +85,9 @@ struct RareAntecedentTests {
             _ = try await checkEquatablePropertyLaws(overEvery: carrier(upTo: 200))
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first { $0.protocolLaw == "Equatable.transitivity" }
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let result = try? #require(reported)
         #expect(result?.counterexample?.contains("R(0)") == true)
         // 201 values means 8 120 601 triples exist; the walk examines a handful.
@@ -250,8 +254,8 @@ struct RareAntecedentTests {
     /// the report is `±1` rather than whichever pair a sample stumbled on.
     @Test func walkingCatchesAnAbsoluteValueOrdering() async throws {
         let carrier = Every.elements(
-            "a", in: (-3 ... 3).map(AbsoluteOrder.init(cents:)), size: { abs($0.cents) }
-        )
+            "a", in: (-3 ... 3).map(AbsoluteOrder.init(cents:))
+        ) { abs($0.cents) }
         let violation = await #expect(throws: PropertyLawViolation.self) {
             try await checkComparablePropertyLaws(overEvery: carrier)
         }
@@ -295,7 +299,9 @@ struct RareAntecedentTests {
                 try await run(LawCheckOptions(budget: .standard, seed: Self.mixedSeed(index)))
             } catch is PropertyLawViolation {
                 caught += 1
-            } catch {}
+            } catch {
+                Issue.record(error)
+            }
         }
         return caught
     }

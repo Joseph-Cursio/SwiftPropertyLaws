@@ -144,7 +144,6 @@ private func checkTotality<Value: Comparable & Sendable>(
 ) async -> CheckResult {
     await runBinaryLaw(
         "Comparable.totality",
-        tier: .conventional,
         source: source,
         options: options,
         property: { first, second in
@@ -152,7 +151,8 @@ private func checkTotality<Value: Comparable & Sendable>(
         },
         formatCounterexample: { first, second, _ in
             "x = \(first), y = \(second); neither x <= y nor y <= x (NaN-like)"
-        }
+        },
+        tier: .conventional
     )
 }
 

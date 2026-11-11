@@ -1,5 +1,3 @@
-import PropertyBased
-
 /// Transformation-algebra laws over `Sequence` values (Phase 2 of the
 /// collections/async workplan) — the higher-order counterpart to the
 /// conformance families: instead of checking what a *type* promises, these

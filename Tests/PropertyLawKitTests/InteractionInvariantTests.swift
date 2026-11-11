@@ -54,7 +54,8 @@ struct InteractionInvariantTests {
 
     struct InboxReferentialIntegrity: ReferentialIntegrityInvariant {
         static func invariantHolds(in state: State) -> Bool {
-            state.selectedID == nil || state.items.contains(state.selectedID!)
+            guard let selectedID = state.selectedID else { return true }
+            return state.items.contains(selectedID)
         }
     }
 
@@ -159,7 +160,9 @@ struct InteractionInvariantTests {
     func familiesAreMutuallyIndependent() {
         // Static-typechecked: each protocol's parent is InteractionInvariant,
         // not another family. Pure type-level assertion.
-        func acceptsRoot<I: InteractionInvariant>(_: I.Type) {}
+        func acceptsRoot<I: InteractionInvariant>(_: I.Type) {
+            // The call compiling is the assertion.
+        }
         acceptsRoot(InboxCardinality.self)
         acceptsRoot(InboxReferentialIntegrity.self)
         acceptsRoot(InboxLoadingBiconditional.self)

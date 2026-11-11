@@ -68,7 +68,7 @@ struct SpaceSampler<Value: Sendable>: Sendable {
     let drawn = DrawnCombinations()
 
     init(_ space: Enumeration<Value>) {
-        precondition(space.count > 0, "InputSource.sampledFromSpace: cannot draw from an empty space")
+        precondition(!space.isEmpty, "InputSource.sampledFromSpace: cannot draw from an empty space")
         self.space = space
     }
 

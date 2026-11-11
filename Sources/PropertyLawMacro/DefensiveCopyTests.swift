@@ -8,6 +8,7 @@
 /// final class Buffer: DefensiveCopy { /* makeProbe / copyUnderTest / Mutation / apply / == */ }
 /// ```
 @attached(peer, names: suffixed(DefensiveCopyTests))
+// swiftlint:disable:next unused_declaration - public macro; clients apply it as an attribute
 public macro DefensiveCopyTests() = #externalMacro(
     module: "PropertyLawMacroImpl",
     type: "DefensiveCopyTestsMacro"

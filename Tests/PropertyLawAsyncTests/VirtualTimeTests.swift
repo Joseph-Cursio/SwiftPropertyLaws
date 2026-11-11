@@ -81,7 +81,9 @@ private struct SlowToSleepSource: AsyncSequence, Sendable {
         mutating func next() async throws -> Int? {
             guard position < source.elements.count else { return nil }
             let end = ContinuousClock.now.advanced(by: source.busy)
-            while ContinuousClock.now < end {}
+            while ContinuousClock.now < end {
+                // Spin: this source holds its thread busy instead of sleeping.
+            }
             try await source.clock.sleep(for: .milliseconds(1))
             defer { position += 1 }
             return source.elements[position]
@@ -335,7 +337,9 @@ struct VirtualTimeTests {
         async let sawOutsideTask = runInVirtualTime { _ in
             started.set()
             let giveUp = ContinuousClock.now.advanced(by: .seconds(10))
-            while observed.isSet == false, ContinuousClock.now < giveUp {}
+            while observed.isSet == false, ContinuousClock.now < giveUp {
+                // Poll until the flag is set or the deadline passes.
+            }
             return observed.isSet
         }
         while started.isSet == false { try await Task.sleep(for: .milliseconds(1)) }

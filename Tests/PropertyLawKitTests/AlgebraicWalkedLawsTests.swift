@@ -168,7 +168,9 @@ struct AlgebraicWalkedLawsTests {
             )
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let result = try? #require(reported)
         #expect(result?.isViolation == true)
         #expect(result?.coverage?.spaceSize == 32_768)
@@ -208,7 +210,9 @@ struct AlgebraicWalkedLawsTests {
             _ = try await checkSemigroupPropertyLaws(overEvery: rareCarrier())
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let result = try? #require(reported)
         #expect(result?.isViolation == true)
         // Lexicographically first violating triple over 0 ..< 32.

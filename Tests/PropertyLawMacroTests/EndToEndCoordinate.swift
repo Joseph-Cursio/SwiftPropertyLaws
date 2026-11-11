@@ -1,7 +1,7 @@
-import PropertyBased
-import PropertyLawKit
+import PropertyBased // swiftlint:disable:this unused_import - used by the @PropertyLawSuite expansion
+import PropertyLawKit // swiftlint:disable:this unused_import - used by the @PropertyLawSuite expansion
 import PropertyLawMacro
-import Testing
+import Testing // swiftlint:disable:this unused_import - used by the @PropertyLawSuite expansion
 
 /// The `.sameFile` half of the access-level rule, proved the only way it can
 /// be: by compiling.
@@ -18,9 +18,11 @@ import Testing
 /// `private` is deliberately not exercised here — there is no version of this
 /// type that compiles, which is the point of the rule.
 @PropertyLawSuite
+// swiftlint:disable:next unused_declaration - referenced only by the @PropertyLawSuite expansion
 struct EndToEndFileprivateMember: Equatable, Hashable, Sendable {
+    // swiftlint:disable:next unused_declaration - referenced only by the @PropertyLawSuite expansion
     let visible: Int
-    // swiftlint:disable:next strict_fileprivate - the fileprivate member is what this fixture tests
+    // swiftlint:disable:next strict_fileprivate unused_declaration - the fixture's subject; the expansion reads it
     fileprivate let hidden: Int
 }
 
@@ -40,6 +42,7 @@ struct EndToEndFileprivateMember: Equatable, Hashable, Sendable {
 /// running clean is the proof it produces a generator that exercises the
 /// laws.
 @PropertyLawSuite
+// swiftlint:disable:next unused_declaration - referenced only by the @PropertyLawSuite expansion
 struct EndToEndCoordinate: Equatable, Hashable, Sendable, CustomStringConvertible {
     let easting: Int
     let northing: Int

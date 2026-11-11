@@ -90,11 +90,11 @@ public func checkSampledCases<Element: Sendable>(
         [
             await runUnaryLaw(
                 protocolLaw,
-                tier: tier,
                 source: .sampledFromSpace(space),
                 options: options,
                 property: property,
-                formatCounterexample: { element, _ in "\(element)" }
+                formatCounterexample: { element, _ in "\(element)" },
+                tier: tier
             ),
         ]
     }

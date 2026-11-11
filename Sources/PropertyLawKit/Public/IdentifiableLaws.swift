@@ -38,7 +38,6 @@ private func checkIdStability<
 ) async -> CheckResult where Value.ID: Sendable {
     await runUnaryLaw(
         "Identifiable.idStability",
-        tier: .conventional,
         generator: generator,
         options: options,
         // swiftlint:disable:next identical_operands - reflexivity is the law: the same value on both sides is the point
@@ -47,6 +46,7 @@ private func checkIdStability<
             let first = sample.id
             let second = sample.id
             return "x = \(sample); x.id evaluated twice: \(first) ≠ \(second)"
-        }
+        },
+        tier: .conventional
     )
 }

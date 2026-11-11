@@ -103,8 +103,6 @@ struct BrokenByteSwapped: FixedWidthInteger, SignedInteger, Sendable, CustomStri
     static func & (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value & rhs.value) }
     static func | (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value | rhs.value) }
     static func ^ (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value ^ rhs.value) }
-    static func &+ (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value &+ rhs.value) }
-    static func &- (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value &- rhs.value) }
     static func &* (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value &* rhs.value) }
     static func += (lhs: inout Self, rhs: Self) { lhs = lhs + rhs }
     static func -= (lhs: inout Self, rhs: Self) { lhs = lhs - rhs }
@@ -238,8 +236,6 @@ struct ChaoticFixedWidth: FixedWidthInteger, SignedInteger, Sendable, CustomStri
     static func & (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value & rhs.value) }
     static func | (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value | rhs.value) }
     static func ^ (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value ^ rhs.value) }
-    static func &+ (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value &+ rhs.value) }
-    static func &- (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value &- rhs.value) }
     static func &* (lhs: Self, rhs: Self) -> Self { Self(value: lhs.value &* rhs.value) }
     static func += (lhs: inout Self, rhs: Self) { lhs = lhs + rhs }
     static func -= (lhs: inout Self, rhs: Self) { lhs = lhs - rhs }

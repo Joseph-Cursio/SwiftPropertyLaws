@@ -57,9 +57,8 @@ struct EnumerationGeneratorBridgeTests {
 
         let walked = try await checkEveryCase(
             of: space,
-            law: "Spike.alwaysHolds",
-            satisfies: { _ in true }
-        )
+            law: "Spike.alwaysHolds"
+        ) { _ in true }
         #expect(walked.first?.coverage?.spaceSize == 64)
     }
 

@@ -79,8 +79,9 @@ struct EnumerationBucketSearchTests {
         #expect(EnumerationBucket.containing(-1, in: []) == nil)
         #expect(EnumerationBucket.containing(Int.max, in: []) == nil)
 
-        for buckets in Self.everyLayout where buckets.isEmpty == false {
-            let total = buckets.last!.start + buckets.last!.count
+        for buckets in Self.everyLayout {
+            guard let last = buckets.last else { continue }
+            let total = last.start + last.count
             #expect(EnumerationBucket.containing(-1, in: buckets) == nil)
             #expect(EnumerationBucket.containing(total, in: buckets) == nil)
         }
@@ -101,8 +102,9 @@ struct EnumerationBucketSearchTests {
     /// **Completeness.** Every in-range index finds a bucket. Paired with soundness above, this
     /// is what makes the pair a decision rather than a one-sided check.
     @Test func everyInRangeIndexFindsABucket() {
-        for buckets in Self.everyLayout where buckets.isEmpty == false {
-            let total = buckets.last!.start + buckets.last!.count
+        for buckets in Self.everyLayout {
+            guard let last = buckets.last else { continue }
+            let total = last.start + last.count
             for index in 0 ..< total {
                 #expect(EnumerationBucket.containing(index, in: buckets) != nil, "index \(index)")
             }
@@ -113,8 +115,9 @@ struct EnumerationBucketSearchTests {
     /// of the shape `Enumeration.init` enforces — and the search's completeness rests on it, so
     /// it is stated rather than assumed.
     @Test func theLayoutsWalkedHereTileTheirRangeExactly() {
-        for buckets in Self.everyLayout where buckets.isEmpty == false {
-            let total = buckets.last!.start + buckets.last!.count
+        for buckets in Self.everyLayout {
+            guard let last = buckets.last else { continue }
+            let total = last.start + last.count
             let covered = buckets.flatMap { Array($0.indices) }
             #expect(covered == Array(0 ..< total), "layout \(buckets.map(\.count))")
         }

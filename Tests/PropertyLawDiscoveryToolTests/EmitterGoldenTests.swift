@@ -61,8 +61,8 @@ struct EmitterGoldenTests {
         )
         #expect(output.contains("@Test func equatable_Record() async throws {"))
         #expect(output.contains("@Test func codable_Record() async throws {"))
-        let equatableRange = output.range(of: "equatable_Record")!
-        let codableRange = output.range(of: "codable_Record")!
+        let equatableRange = try #require(output.range(of: "equatable_Record"))
+        let codableRange = try #require(output.range(of: "codable_Record"))
         #expect(equatableRange.lowerBound < codableRange.lowerBound)
         // One blank line between two tests, and none after the opening brace.
         let lines = output.components(separatedBy: "\n")

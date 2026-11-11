@@ -136,8 +136,7 @@ struct ActionSequenceFactoryTests {
         let gen = ActionSequenceFactory.actionSequence(from: Gen<TestAction>.case)
         var rng = makeRNG()
         let result = gen.run(using: &rng)
-        #expect(result.count >= 0)
-        #expect(result.count <= 16)
+        #expect((0 ... 16).contains(result.count))
     }
 
     @Test("primary entry with .denyAll guard yields an empty sequence")
@@ -218,8 +217,7 @@ struct ActionSequenceFactoryTests {
         let gen = ActionSequenceFactory.actionSequence(forCaseIterable: TestAction.self)
         var rng = makeRNG()
         let result = gen.run(using: &rng)
-        #expect(result.count >= 0)
-        #expect(result.count <= 16)
+        #expect((0 ... 16).contains(result.count))
     }
 
     @Test("convenience entry threads stateful guards through")

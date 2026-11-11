@@ -1,4 +1,3 @@
-import PropertyBased
 @testable import PropertyLawKit
 import Testing
 
@@ -57,6 +56,7 @@ struct BrokenBuffer: ValueSemantic, Sendable {
         var bytes: [UInt8]
 
         init(_ bytes: [UInt8] = []) { self.bytes = bytes }
+        // swiftlint:disable:next unused_declaration - the broken buffer never calls it; that is its bug
         func clone() -> Storage { Storage(bytes) }
     }
 

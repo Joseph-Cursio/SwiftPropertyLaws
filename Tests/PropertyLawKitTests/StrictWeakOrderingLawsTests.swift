@@ -67,8 +67,8 @@ struct StrictWeakOrderingLawsTests {
         let warnings = try await recordedWarnings {
             results = try await checkStrictWeakOrderingLaws(overEvery: declSpace(), by: byLineThenColumn)
             results += try await checkComparatorDiscriminates(
-                overEvery: declSpace(), by: byLineThenColumn, distinct: { $0 != $1 }
-            )
+                overEvery: declSpace(), by: byLineThenColumn
+            ) { $0 != $1 }
             results += try await checkComparatorIsCongruent(overEvery: declSpace(), by: byLineThenColumn)
         }
         #expect(results.count == 6)
@@ -82,8 +82,8 @@ struct StrictWeakOrderingLawsTests {
     func nonStrictComparatorFails() async {
         await #expect(throws: PropertyLawViolation.self) {
             try await checkStrictWeakOrderingLaws(
-                overEvery: declSpace(), by: { $0.line <= $1.line }
-            )
+                overEvery: declSpace()
+            ) { $0.line <= $1.line }
         }
     }
 
@@ -92,9 +92,8 @@ struct StrictWeakOrderingLawsTests {
         // Orders by line modulo 3 — a cycle, so a < b < c < a.
         await #expect(throws: PropertyLawViolation.self) {
             try await checkStrictWeakOrderingLaws(
-                overEvery: declSpace(),
-                by: { ($0.line + 1) % 3 == $1.line % 3 }
-            )
+                overEvery: declSpace()
+            ) { ($0.line + 1) % 3 == $1.line % 3 }
         }
     }
 
@@ -104,9 +103,8 @@ struct StrictWeakOrderingLawsTests {
         // 0 ~ 1 and 1 ~ 2, but 0 is ordered against 2.
         await #expect(throws: PropertyLawViolation.self) {
             try await checkStrictWeakOrderingLaws(
-                overEvery: declSpace(),
-                by: { $1.line - $0.line > 1 }
-            )
+                overEvery: declSpace()
+            ) { $1.line - $0.line > 1 }
         }
     }
 
@@ -153,8 +151,8 @@ struct StrictWeakOrderingLawsTests {
         var walked: [CheckResult] = []
         let walkedWarnings = try await recordedWarnings {
             walked = try await checkComparatorDiscriminates(
-                overEvery: Every.elements("only", in: [42]), by: compare, distinct: { $0 != $1 }
-            )
+                overEvery: Every.elements("only", in: [42]), by: compare
+            ) { $0 != $1 }
         }
         #expect(lawsReported(in: walkedWarnings) == ["StrictWeakOrdering.discrimination"])
         let walkedText = walked.first?.counterexample ?? ""
@@ -177,8 +175,8 @@ struct StrictWeakOrderingLawsTests {
         // `incomparabilityTransitivity`'s antecedent holds only for a value
         // against itself. A guard here would call that a defect.
         let results = try await checkStrictWeakOrderingLaws(
-            overEvery: Every.elements("n", in: 0 ..< 6), by: { $0 < $1 }
-        )
+            overEvery: Every.elements("n", in: 0 ..< 6)
+        ) { $0 < $1 }
         #expect(results.allSatisfy { !$0.isViolation })
         let incomparability = results.first { $0.protocolLaw.hasSuffix("incomparabilityTransitivity") }
         #expect(incomparability != nil)
@@ -195,11 +193,13 @@ struct StrictWeakOrderingLawsTests {
         var reported: String?
         do {
             _ = try await checkStrictWeakOrderingLaws(
-                overEvery: declSpace(), by: { $0.line <= $1.line }
-            )
+                overEvery: declSpace()
+            ) { $0.line <= $1.line }
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first { $0.protocolLaw.hasSuffix("irreflexivity") }?.counterexample
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let text = try? #require(reported)
         #expect(text?.hasPrefix("decl=0:0 — ") == true, "missing the address: \(text ?? "nil")")
         #expect(text?.contains("compare(x, x) is true") == true, "missing the law's reason")
@@ -228,8 +228,8 @@ struct StrictWeakOrderingLawsTests {
         var results: [CheckResult] = []
         let warnings = try await recordedWarnings {
             results = try await checkComparatorDiscriminates(
-                overEvery: declSpace(), by: byLineOnly, distinct: { $0 != $1 }
-            )
+                overEvery: declSpace(), by: byLineOnly
+            ) { $0 != $1 }
         }
         #expect(failed(results, "StrictWeakOrdering.discrimination"),
                 "the line-only comparator must fail discrimination")
@@ -241,8 +241,8 @@ struct StrictWeakOrderingLawsTests {
     @Test("deliberate equivalence classes are not a suite failure")
     func groupingComparatorIsNotReportedBySuite() async throws {
         try await checkStrictWeakOrderingLaws(
-            overEvery: declSpace(), by: { $0.line < $1.line }
-        )
+            overEvery: declSpace()
+        ) { $0.line < $1.line }
     }
 
     // MARK: - Congruence
@@ -300,7 +300,7 @@ struct StrictWeakOrderingLawsTests {
 
         var results: [CheckResult] = []
         let warnings = try await recordedWarnings {
-            results = try await checkComparatorIsCongruent(overEvery: space, by: { $0.key < $1.tag })
+            results = try await checkComparatorIsCongruent(overEvery: space) { $0.key < $1.tag }
         }
         #expect(failed(results, "StrictWeakOrdering.congruence"))
         #expect(lawsReported(in: warnings) == ["StrictWeakOrdering.congruence"])

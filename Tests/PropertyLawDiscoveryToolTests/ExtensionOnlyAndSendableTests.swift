@@ -274,9 +274,9 @@ struct ExtensionOnlyAndSendableTests {
         extension SomeForeignType: Equatable {}
         """,
         ])
-        let empty = map.entries.first(where: { $0.typeName == "Empty" })
+        let empty = map.entries.first { $0.typeName == "Empty" }
         #expect(empty?.derivationStrategy == .initializerBased(arguments: []))
-        let foreign = map.entries.first(where: { $0.typeName == "SomeForeignType" })
+        let foreign = map.entries.first { $0.typeName == "SomeForeignType" }
         guard case .todo = foreign?.derivationStrategy else {
             Issue.record("an extension-only type must not derive `SomeForeignType()`")
             return

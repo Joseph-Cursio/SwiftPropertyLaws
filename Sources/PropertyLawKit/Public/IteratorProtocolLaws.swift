@@ -30,23 +30,23 @@ where S.Element: Sendable {
         [
             await runUnaryLaw(
                 "IteratorProtocol.terminationStability",
-                tier: .conventional,
                 generator: generator,
                 options: options,
                 property: { sample in iteratorTerminationCounterexample(for: sample) == nil },
                 formatCounterexample: { sample, _ in
                     iteratorTerminationCounterexample(for: sample) ?? "<no counterexample>"
-                }
+                },
+                tier: .conventional
             ),
             await runUnaryLaw(
                 "IteratorProtocol.singlePassYield",
-                tier: .conventional,
                 generator: generator,
                 options: options,
                 property: { sample in iteratorSinglePassCounterexample(for: sample) == nil },
                 formatCounterexample: { sample, _ in
                     iteratorSinglePassCounterexample(for: sample) ?? "<no counterexample>"
-                }
+                },
+                tier: .conventional
             ),
         ]
     }

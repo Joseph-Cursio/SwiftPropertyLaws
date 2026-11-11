@@ -1,4 +1,3 @@
-import PropertyBased
 @testable import PropertyLawKit
 import Testing
 

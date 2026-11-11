@@ -1,10 +1,9 @@
 diff --git a/Sources/PropertyLawKit/Public/Enumeration.swift b/Sources/PropertyLawKit/Public/Enumeration.swift
-index 31d779b..d85451d 100644
 --- a/Sources/PropertyLawKit/Public/Enumeration.swift
 +++ b/Sources/PropertyLawKit/Public/Enumeration.swift
-@@ -279,6 +279,6 @@ public struct Enumeration<Element: Sendable>: Sendable {
+@@ -285,6 +285,6 @@
      public var generator: Generator<Element, Shrink.Integer<Int>> {
-         precondition(count > 0, "Enumeration.generator: cannot draw from an empty space")
+         precondition(!isEmpty, "Enumeration.generator: cannot draw from an empty space")
          let space = self
 -        return Gen<Int>.int(in: 0 ..< count).map { space[$0] }
 +        return Gen<Int>.int(in: 0 ..< min(count, 4)).map { space[$0] }

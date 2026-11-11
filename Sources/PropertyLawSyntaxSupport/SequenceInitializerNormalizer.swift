@@ -111,6 +111,6 @@ public enum SequenceInitializerNormalizer {
             }
             break
         }
-        return String(text.drop(while: { $0 == " " }))
+        return String(text.drop { $0 == " " })
     }
 }

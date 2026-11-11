@@ -32,7 +32,9 @@ struct EqualValuePairingTests {
                 try await run(Self.options(pairing, seed: index))
             } catch is PropertyLawViolation {
                 caught += 1
-            } catch {}
+            } catch {
+                Issue.record(error)
+            }
         }
         return caught
     }

@@ -24,6 +24,7 @@
 /// the encode/decode-style naming table. Output goes to stderr only;
 /// the generated file is unchanged (preserves regeneration-as-diff).
 @attached(peer, names: arbitrary)
+// swiftlint:disable:next unused_declaration - public macro; clients apply it as an attribute
 public macro Discoverable(group: String? = nil) = #externalMacro(
     module: "PropertyLawMacroImpl",
     type: "DiscoverableMacro"

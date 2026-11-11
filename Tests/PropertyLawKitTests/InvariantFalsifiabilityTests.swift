@@ -21,6 +21,7 @@ struct InvariantFalsifiabilityTests {
     /// The §20.4.2 shape: a predicate that lost the field it used to read.
     private enum VacuousInvariant: InteractionInvariant, Sendable {
         static func invariantHolds(in state: AppState) -> Bool {
+            // swiftlint:disable:next empty_count - a comparison that reads state and can never fail is the point
             state.items.count >= 0   // always true; forbids nothing
         }
     }

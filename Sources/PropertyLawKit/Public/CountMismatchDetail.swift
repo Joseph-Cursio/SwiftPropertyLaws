@@ -1,5 +1,3 @@
-import PropertyBased
-
 /// Detail record for a `count` mismatch — `nil` when the law holds. Returned
 /// from a single helper so the property closure, the formatter, and the
 /// near-miss recorder all see a consistent view.

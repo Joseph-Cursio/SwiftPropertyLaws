@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Opaque, replayable seed for a property law check.

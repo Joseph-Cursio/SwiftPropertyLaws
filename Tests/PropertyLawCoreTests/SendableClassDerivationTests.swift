@@ -17,9 +17,9 @@ struct SendableClassDerivationTests {
 
     private func classShape(
         _ name: String,
-        kind: TypeShape.Kind = .class,
         inheritedTypes: [String],
-        initializers: [InitializerSignature]
+        initializers: [InitializerSignature],
+        kind: TypeShape.Kind = .class
     ) -> TypeShape {
         TypeShape(
             name: name,
@@ -66,7 +66,7 @@ struct SendableClassDerivationTests {
     }
 
     @Test func actorStillDeclines() {
-        let shape = classShape("Store", kind: .actor, inheritedTypes: ["Sendable"], initializers: [emailInit])
+        let shape = classShape("Store", inheritedTypes: ["Sendable"], initializers: [emailInit], kind: .actor)
         #expect(reason(shape) != nil)
     }
 

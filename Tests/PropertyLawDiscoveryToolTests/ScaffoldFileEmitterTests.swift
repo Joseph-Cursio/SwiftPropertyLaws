@@ -1,5 +1,4 @@
 import Foundation
-@testable import PropertyLawCore
 @testable import PropertyLawDiscoveryTool
 import Testing
 

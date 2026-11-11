@@ -1,6 +1,6 @@
 import ComplexModule
 import PropertyBased
-import RealModule
+import RealModule // swiftlint:disable:this unused_import - public API uses Double's Real conformance
 
 /// Edge-case-biased generators for `Complex<RealType>`.
 ///

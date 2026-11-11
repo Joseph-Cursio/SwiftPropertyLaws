@@ -71,9 +71,8 @@ struct EnumerationReportingTests {
     @Test func anEmptySpaceWalksCleanlyAndSaysItCoveredEverything() async throws {
         let results = try await checkEveryCase(
             of: Every.elements("nothing", in: [Int]()),
-            law: "Spike.neverApplies",
-            satisfies: { _ in false }
-        )
+            law: "Spike.neverApplies"
+        ) { _ in false }
         let coverage = try #require(results.first?.coverage)
         #expect(coverage.casesRun == 0)
         #expect(coverage.spaceSize == 0)

@@ -61,7 +61,9 @@ struct WalkedActionSequenceTests {
             )
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         #expect(reported?.isViolation == true)
         // 4 moves, lengths 0...4: 1 + 4 + 16 + 64 + 256 = 341 sequences.
         #expect(reported?.coverage?.spaceSize == 341)

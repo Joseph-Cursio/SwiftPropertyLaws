@@ -1,5 +1,3 @@
-import HeapModule
-import PropertyBased
 import PropertyLawKit
 
 /// Laws for `Heap` — the first model-based family in the kit (Phase 1 M3 of

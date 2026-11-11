@@ -130,6 +130,7 @@ private func checkIsEmptyMatchesCountZero<
         "StringProtocol.isEmptyMatchesCountZero",
         generator: generator,
         options: options,
+        // swiftlint:disable:next empty_count - the law compares isEmpty with count == 0
         property: { sample in sample.isEmpty == (sample.count == 0) },
         formatCounterexample: isEmptyMatchesCountZeroCounterexample
     )
@@ -139,6 +140,7 @@ func isEmptyMatchesCountZeroCounterexample<Value: StringProtocol & Sendable>(
     _ sample: Value,
     _: ErrorBox?
 ) -> String {
+    // swiftlint:disable:next empty_count - reports both sides of the isEmpty == (count == 0) law
     "x = \(sample); x.isEmpty = \(sample.isEmpty), x.count == 0 = \(sample.count == 0)"
 }
 

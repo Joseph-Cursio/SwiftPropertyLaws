@@ -1,4 +1,3 @@
-import PropertyBased
 @testable import PropertyLawKit
 import Testing
 
@@ -43,7 +42,7 @@ struct BudgetTests {
         }
     }
 
-    @Test func thoroughRuns10000Trials() async throws {
+    @Test func thoroughRuns10000Trials() throws {
         // Not run through a law: 10 000 trials x several laws is real time, and
         // the tier's whole content is its count.
         #expect(TrialBudget.thorough.trialCount == 10_000)
@@ -87,7 +86,9 @@ struct BudgetTests {
             )
         } catch let violation as PropertyLawViolation {
             return violation.results.first
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         return nil
     }
 

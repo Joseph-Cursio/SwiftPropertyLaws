@@ -95,7 +95,6 @@ struct BrokenFloat: BinaryFloatingPoint, Sendable, CustomStringConvertible {
     var significandWidth: Int { v.significandWidth }
     var exponentBitPattern: UInt { v.exponentBitPattern }
     var significandBitPattern: UInt64 { v.significandBitPattern }
-    var bitPattern: UInt64 { v.bitPattern }
 
     var isNormal: Bool { v.isNormal }
     var isFinite: Bool { v.isFinite }

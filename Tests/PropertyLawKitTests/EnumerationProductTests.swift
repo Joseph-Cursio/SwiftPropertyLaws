@@ -84,7 +84,7 @@ struct EnumerationProductTests {
 
     @Test func productWithAnEmptyFactorIsEmpty() {
         let space = Every.product(Every.elements("nothing", in: [Int]()), Every.subsets("subset", of: 3))
-        #expect(space.count == 0)
+        #expect(space.isEmpty)
         #expect(space.buckets.isEmpty)
     }
 

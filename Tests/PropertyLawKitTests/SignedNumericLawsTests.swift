@@ -1,4 +1,3 @@
-import PropertyBased
 @testable import PropertyLawKit
 import Testing
 
@@ -22,9 +21,8 @@ struct SignedNumericLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstSignedNumericIndex = laws.firstIndex { $0.hasPrefix("SignedNumeric.") }
-        #expect(firstSignedNumericIndex != nil)
-        let inheritedLaws = laws[..<firstSignedNumericIndex!]
+        let firstSignedNumericIndex = try #require(laws.firstIndex { $0.hasPrefix("SignedNumeric.") })
+        let inheritedLaws = laws[..<firstSignedNumericIndex]
         #expect(inheritedLaws.contains { $0.hasPrefix("AdditiveArithmetic.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Numeric.") })
         // 5 AdditiveArithmetic + 6 Numeric = 11 inherited

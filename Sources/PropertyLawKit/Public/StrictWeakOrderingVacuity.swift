@@ -1,5 +1,3 @@
-import Foundation
-
 /// Turn a vacuous pass into a reported failure, saying accurately *why* the law
 /// never applied.
 ///

@@ -1,6 +1,5 @@
 import ComplexModule
 import PropertyBased
-import RealModule
 import Testing
 
 @testable import PropertyLawComplex
@@ -68,7 +67,7 @@ struct EdgeCaseBiasedGeneratorsTests {
     }
 
     @Test
-    func distributionMatches90PercentFinite10PercentEdge() async throws {
+    func distributionMatches90PercentFinite10PercentEdge() throws {
         let samples = Self.sample(seedTag: 1)
         let edgeHits = samples.filter(Self.matchesAnyEdgeCase).count
         let edgeFraction = Double(edgeHits) / Double(Self.trialCount)
@@ -79,7 +78,7 @@ struct EdgeCaseBiasedGeneratorsTests {
     }
 
     @Test
-    func coverageHitsEveryCuratedEdgeCase() async throws {
+    func coverageHitsEveryCuratedEdgeCase() throws {
         let samples = Self.sample(seedTag: 100)
         let edgeCases = Gen<Complex<Double>>.complexEdgeCases
         for (index, edgeCase) in edgeCases.enumerated() {
@@ -89,7 +88,7 @@ struct EdgeCaseBiasedGeneratorsTests {
     }
 
     @Test
-    func determinismOnSeededTagDecisions() async throws {
+    func determinismOnSeededTagDecisions() throws {
         let runA = Self.sample(seedTag: 42)
         let runB = Self.sample(seedTag: 42)
         // Project both streams to "is this trial an edge case, and if so,

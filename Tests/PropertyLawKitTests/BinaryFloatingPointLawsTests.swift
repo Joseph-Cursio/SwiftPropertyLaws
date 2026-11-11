@@ -35,9 +35,8 @@ struct BinaryFloatingPointLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstBinaryFPIndex = laws.firstIndex { $0.hasPrefix("BinaryFloatingPoint.") }
-        #expect(firstBinaryFPIndex != nil)
-        let inheritedLaws = laws[..<firstBinaryFPIndex!]
+        let firstBinaryFPIndex = try #require(laws.firstIndex { $0.hasPrefix("BinaryFloatingPoint.") })
+        let inheritedLaws = laws[..<firstBinaryFPIndex]
         #expect(inheritedLaws.allSatisfy { $0.hasPrefix("FloatingPoint.") })
         // 11 always-on FloatingPoint laws (allowNaN: false by default)
         #expect(inheritedLaws.count == 11)

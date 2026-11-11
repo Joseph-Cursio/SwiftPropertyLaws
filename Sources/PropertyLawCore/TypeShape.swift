@@ -127,7 +127,7 @@ public struct TypeShape: Sendable, Equatable {
         // Whitespace-split rather than trimmed: `PropertyLawCore` imports no Foundation, and the
         // spelling is `Sendable` or `@unchecked Sendable` with arbitrary spacing between words.
         return inheritedTypes.contains { (entry: String) -> Bool in
-            let words = entry.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
+            let words = entry.split { $0 == " " || $0 == "\t" }.map(String.init)
             let bare = words.first == "@unchecked" ? Array(words.dropFirst()) : words
             return bare == ["Sendable"] || bare == ["Swift.Sendable"]
         }

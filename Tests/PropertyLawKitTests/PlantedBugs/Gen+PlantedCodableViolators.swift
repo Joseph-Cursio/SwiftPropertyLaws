@@ -1,4 +1,3 @@
-import Foundation
 import PropertyBased
 
 /// Violates Codable.roundTripFidelity: `encode` writes both fields but

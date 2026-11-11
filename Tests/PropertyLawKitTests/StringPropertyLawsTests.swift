@@ -38,9 +38,8 @@ struct StringPropertyLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstStringIndex = laws.firstIndex { $0.hasPrefix("StringProtocol.") }
-        #expect(firstStringIndex != nil)
-        let inheritedLaws = laws[..<firstStringIndex!]
+        let firstStringIndex = try #require(laws.firstIndex { $0.hasPrefix("StringProtocol.") })
+        let inheritedLaws = laws[..<firstStringIndex]
         #expect(inheritedLaws.contains { $0.hasPrefix("BidirectionalCollection.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Collection.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Sequence.") })

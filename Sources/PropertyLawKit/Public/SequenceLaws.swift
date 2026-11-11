@@ -132,13 +132,13 @@ private func checkMultiPass<S: Sequence & Sendable, Sh: SendableSequenceType>(
 where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.multiPassConsistency",
-        tier: .conventional,
         generator: generator,
         options: options,
         property: { sample in multiPassCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
             multiPassCounterexample(for: sample, same: same) ?? "<no counterexample>"
-        }
+        },
+        tier: .conventional
     )
 }
 
@@ -150,13 +150,13 @@ private func checkIndependence<S: Sequence & Sendable, Sh: SendableSequenceType>
 where S.Element: Sendable {
     await runUnaryLaw(
         "Sequence.makeIteratorIndependence",
-        tier: .conventional,
         generator: generator,
         options: options,
         property: { sample in independenceCounterexample(for: sample, same: same) == nil },
         formatCounterexample: { sample, _ in
             independenceCounterexample(for: sample, same: same) ?? "<no counterexample>"
-        }
+        },
+        tier: .conventional
     )
 }
 

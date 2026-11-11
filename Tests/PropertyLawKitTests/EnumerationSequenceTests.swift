@@ -1,4 +1,4 @@
-import Foundation
+import Foundation // swiftlint:disable:this unused_import - for pow, which the analyzer credits to Darwin
 @testable import PropertyLawKit
 import Testing
 
@@ -7,7 +7,7 @@ import Testing
 struct EnumerationSequenceTests {
 
     private func letters(_ count: Int) -> Enumeration<String> {
-        Every.elements("letter", in: (0 ..< count).map { String(UnicodeScalar(97 + $0)!) })
+        Every.elements("letter", in: (0 ..< count).map { String(UnicodeScalar(UInt8(97 + $0))) })
     }
 
     @Test func countMatchesTheGeometricSeries() {

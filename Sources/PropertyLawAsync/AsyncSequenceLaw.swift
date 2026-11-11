@@ -1,5 +1,3 @@
-import AsyncAlgorithms
-import PropertyBased
 import PropertyLawKit
 
 /// Async-tier-1 laws for swift-async-algorithms (Phase 3 of the

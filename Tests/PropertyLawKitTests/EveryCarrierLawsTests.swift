@@ -26,13 +26,12 @@ struct EveryCarrierLawsTests {
     private func lengths(upTo bound: Int) -> Enumeration<LyingCount> {
         Every.elements(
             "length",
-            in: (0 ... bound).map { LyingCount(elements: Array(0 ..< $0)) },
-            size: { $0.elements.count }
-        )
+            in: (0 ... bound).map { LyingCount(elements: Array(0 ..< $0)) }
+        ) { $0.elements.count }
     }
 
     private func honestCarriers() -> Enumeration<[Int]> {
-        Every.elements("array", in: (0 ... 6).map { Array(0 ..< $0) }, size: { $0.count })
+        Every.elements("array", in: (0 ... 6).map { Array(0 ..< $0) }) { $0.count }
     }
 
     // MARK: - Shape
@@ -93,7 +92,9 @@ struct EveryCarrierLawsTests {
             }
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first(where: \.isViolation)
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         let result = try? #require(reported)
         #expect(result?.isViolation == true)
         // Carriers are walked smallest first, so the reported one is the
@@ -114,14 +115,15 @@ struct EveryCarrierLawsTests {
         do {
             _ = try await checkEveryCarrier(of: Every.elements(
                 "length",
-                in: (7 ... 10).map { LyingCount(elements: Array(0 ..< $0)) },
-                size: { $0.elements.count }
-            )) { carrier, options in
+                in: (7 ... 10).map { LyingCount(elements: Array(0 ..< $0)) }
+            ) { $0.elements.count }) { carrier, options in
                 try await checkCollectionPropertyLaws(using: Gen.always(carrier), options: options)
             }
         } catch let violation as PropertyLawViolation {
             reported = violation.results.first(where: \.isViolation)
-        } catch {}
+        } catch {
+            Issue.record(error)
+        }
         #expect(reported?.counterexample?.hasPrefix("length=count 7 — ") == true)
         #expect(reported?.coverage?.casesRun == 1, "got \(String(describing: reported?.coverage))")
     }

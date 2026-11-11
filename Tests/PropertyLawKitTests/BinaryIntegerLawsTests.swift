@@ -106,9 +106,8 @@ struct BinaryIntegerLawsTests {
             options: LawCheckOptions(budget: .sanity)
         )
         let laws = results.map(\.protocolLaw)
-        let firstBinaryIntegerIndex = laws.firstIndex { $0.hasPrefix("BinaryInteger.") }
-        #expect(firstBinaryIntegerIndex != nil)
-        let inheritedLaws = laws[..<firstBinaryIntegerIndex!]
+        let firstBinaryIntegerIndex = try #require(laws.firstIndex { $0.hasPrefix("BinaryInteger.") })
+        let inheritedLaws = laws[..<firstBinaryIntegerIndex]
         #expect(inheritedLaws.contains { $0.hasPrefix("AdditiveArithmetic.") })
         #expect(inheritedLaws.contains { $0.hasPrefix("Numeric.") })
         // 5 AdditiveArithmetic + 6 Numeric = 11 inherited

@@ -133,8 +133,9 @@ struct SuppressionTests {
         let stability = try #require(
             results.first { $0.protocolLaw == "Hashable.stabilityWithinProcess" }
         )
-        if case .suppressed = stability.outcome { } else {
+        guard case .suppressed = stability.outcome else {
             Issue.record("expected .suppressed under .strict enforcement")
+            return
         }
     }
 
@@ -158,8 +159,9 @@ struct SuppressionTests {
         let reflexivity = try #require(
             results.first { $0.protocolLaw == "Equatable.reflexivity" }
         )
-        if case .suppressed = reflexivity.outcome { } else {
+        guard case .suppressed = reflexivity.outcome else {
             Issue.record("inherited suite ignored suppression; got \(reflexivity.outcome)")
+            return
         }
     }
 

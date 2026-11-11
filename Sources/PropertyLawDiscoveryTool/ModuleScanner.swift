@@ -1,6 +1,5 @@
 import Foundation
 import PropertyLawCore
-import PropertyLawSyntaxSupport
 import SwiftParser
 import SwiftSyntax
 
@@ -371,12 +370,5 @@ enum ModuleScanner {
         aggregate.witnesses.merge(request.witnesses)
         aggregate.memberFunctions.append(contentsOf: request.memberFunctions)
         perType[request.name] = aggregate
-    }
-
-    /// Extension extends `Foo` or `Module.Foo` — return the leaf identifier.
-    /// Nested-type extensions (`extension Outer.Inner`) are M2+ scope.
-    private static func topLevelExtendedTypeName(of extensionDecl: ExtensionDeclSyntax) -> String? {
-        let typeText = extensionDecl.extendedType.trimmedDescription
-        return typeText.split(separator: ".").last.map(String.init)
     }
 }
