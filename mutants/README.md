@@ -99,6 +99,7 @@ Requires a clean working tree.
 | `namesakes-extension-not-hidden` | discovery-namesakes | killed | `nestedInNamesakeIsHidden` |
 | `namesakes-alias-not-hidden` | discovery-namesakes | killed | `namesakeAliasIsHidden` |
 | `summary-ties-in-dictionary-order` | discovery-summary | killed | `tiesSortByName` |
+| `usage-omits-a-flag` | discovery-usage | killed | `everyFlagIsDocumented` |
 | `enum-cases-ignore-their-column` | expression-layout | killed | `payloadCaseKeepsItsMapUnderItsZip` |
 | `nested-zip-bakes-column-twelve` | expression-layout | killed | `elevenMembersNestIntoAnOuterZipOfGroups` |
 | `stub-splices-without-its-column` | expression-layout | killed | `anEnumsCasesSitUnderUsing` |
@@ -268,8 +269,8 @@ default" passed it, each absorbing the throw as a known issue. The last two
 would survive a severity change made without its tests: a warning does not
 fail a test, so "nothing is recorded" has to be asserted rather than assumed.
 
-**`discovery-sendable`, `discovery-namesakes` and `discovery-summary` guard the
-discovery tool rather than the kit.** A law mutant leaves a planted violator
+**`discovery-sendable`, `discovery-namesakes`, `discovery-summary` and
+`discovery-usage` guard the discovery tool rather than the kit.** A law mutant leaves a planted violator
 uncaught. These change what the tool writes for a scanned package, which shows
 only when someone compiles or reads the generated file. Each was first run by
 hand when its fix landed, on 2026-10-29, and is kept here so that a later change
@@ -289,3 +290,10 @@ to the scanner reruns it.
 - **`discovery-summary`** has one mutant, and no single scan shows it: it only
   makes two identical runs disagree. Its killer has ten tied buckets, so the
   mutant passes only if `Dictionary` happens to iterate them in name order.
+- **`discovery-usage`** (2026-11-11, issue #89) guards the `--help` text, the
+  one copy of the flag list a user reads and nothing compiles. Its mutant drops
+  `--advisory` from the Options section, the flag a search of the whole text
+  would still find inside `--advisory-min`. Two more faults were run by hand
+  and not kept: a stale `--verbose` line fails `theOptionsListIsExactlyTheFlags`,
+  and a `--dry-run` added to `ToolFlag` alone fails `everyFlagIsDocumented` and
+  the plugin's parity test.

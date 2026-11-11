@@ -627,6 +627,14 @@
       "label": "The summary's gap buckets sort by count alone, so ties come out in Dictionary order, which Swift randomizes per process, and the committed `.summary.txt` files change between identical runs."
     },
     {
+      "id": "usage-omits-a-flag",
+      "patch": "patches/usage-omits-a-flag.patch",
+      "shape": "discovery-usage",
+      "expected": "killed",
+      "test": "everyFlagIsDocumented",
+      "label": "The `--help` text's Options section loses its `--advisory` line while `--advisory-min` keeps its own, so the tool accepts a flag its help never mentions. A search of the whole text would still find `--advisory`, inside `--advisory-min`."
+    },
+    {
       "id": "enum-cases-ignore-their-column",
       "patch": "patches/enum-cases-ignore-their-column.patch",
       "shape": "expression-layout",

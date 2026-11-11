@@ -8,6 +8,9 @@
 /// flags behind with nothing to say so. `PropertyLawDiscoveryPluginTests` now
 /// checks that the plugin accepts and forwards every case except the two it
 /// supplies itself.
+///
+/// `PropertyLawDiscoveryTool.usage` is a third copy, written by hand, and
+/// `UsageTextTests` checks that its Options section lists exactly these cases.
 enum ToolFlag: String, CaseIterable, Sendable {
     case target = "--target"
     case output = "--output"
