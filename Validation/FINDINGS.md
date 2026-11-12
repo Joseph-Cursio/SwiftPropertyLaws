@@ -65,11 +65,19 @@ git diff Validation/results/
 
 The first run per package resolves its dependencies into the copy and builds the plugin's tool, under a minute each here. Later runs are incremental. Two runs over the same revisions produce byte-identical results. Record the scanned revision of each package in the table above. Results are only comparable between runs at the same upstream revision.
 
-**Dependencies are part of the revision.** A package that ignores its `Package.resolved` resolves its dependencies afresh in a new copy, and dependency sources are context for the scan. On 2026-11-11, rerunning Hummingbird at its recorded revision picked up a newer swift-nio, which moved one line number in a provenance comment. That file was not replaced.
+**Dependencies are part of the revision.** A package that ignores its `Package.resolved` resolves its dependencies afresh in a new copy, and dependency sources are context for the scan. Hummingbird ignores its own, and rerunning it at its recorded revision resolved swift-nio 2.105.0 (released 2026-11-02, after the 2026-10-29 run). That release moves `NIOTooManyBytesError` from line 410 of `AsyncAwaitSupport.swift` to line 433, which changes one provenance comment and nothing else. Pin it in the copy before running:
+
+```bash
+(cd .build/validation-pass1/Hummingbird && swift package resolve swift-nio --version 2.104.0)
+```
+
+The copy keeps its `Package.resolved` between runs, so the pin holds until the copy is deleted. With only that pin, the other dependencies as resolved on 2026-11-12 reproduce the 2026-10-29 results apart from the layout change below.
+
+**`~/github_projects/Hummingbird` is no longer at the recorded revision.** It was re-cloned on 2026-10-30 at `7cd70ea`, 15 commits past `0806106`. The 2026-11-12 rerun used a separate clone checked out at `0806106` and rewrote its paths to `~/github_projects/Hummingbird`, so the provenance comments read as before.
 
 **Sitrep can no longer be scanned at `ae446f9`.** That revision requires swift-syntax `602.0.0..<603.0.0`, and SwiftPropertyLaws has required 603 since 2026-10-30, so the copy fails to resolve. Its committed results predate the move and are still accurate: no suites, nothing to regenerate.
 
-**Only `ArgumentParser.generated.swift` was regenerated on 2026-11-11**, to pick up the corrected indentation of multi-line generators (issue #90, and the `ExpressionLayout` convention that followed it). Each diff was whitespace only. `AWSLambdaRuntime` reproduced byte for byte: its multi-line generators are all memberwise, whose `.map` lands at column 12 under either convention, and it has no `Gen.oneOf(`. `Hummingbird.generated.swift` still has the old layout: its enum `Gen.oneOf(` cases sit at column 4, and a payload case's `.map` at column 12 under a `zip(` at 4. A rerun with its dependencies resolved as they were would change only that whitespace.
+**`ArgumentParser.generated.swift` (2026-11-11) and `Hummingbird.generated.swift` (2026-11-12) were regenerated** to pick up the corrected indentation of multi-line generators (issue #90, and the `ExpressionLayout` convention that followed it). Both diffs are whitespace only, and both summaries are unchanged. In Hummingbird's, 113 lines moved and none changed text: 89 enum `Gen.oneOf(` cases from column 4 to 16, 10 closing `)` from 0 to 12, and 14 payload-case `.map` lines from 12 to 16, level with their `zip(`. `AWSLambdaRuntime` reproduced byte for byte: its multi-line generators are all memberwise, whose `.map` lands at column 12 under either convention, and it has no `Gen.oneOf(`.
 
 ## Pass 2: law checks against external code
 

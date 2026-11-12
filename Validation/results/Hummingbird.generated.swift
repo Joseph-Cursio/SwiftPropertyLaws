@@ -293,10 +293,10 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: KeyParser.KeyType.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { KeyParser.KeyType.map($0) }.eraseToAny(),
-    Gen.always(KeyParser.KeyType.array).eraseToAny(),
-    Gen<Int>.int().map { KeyParser.KeyType.arrayWithIndices($0) }.eraseToAny()
-)
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { KeyParser.KeyType.map($0) }.eraseToAny(),
+                Gen.always(KeyParser.KeyType.array).eraseToAny(),
+                Gen<Int>.int().map { KeyParser.KeyType.arrayWithIndices($0) }.eraseToAny()
+            )
         )
     }
 }
@@ -332,18 +332,18 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: MediaType.Category.self,
             using: Gen.oneOf(
-    Gen.always(MediaType.Category.Internal.application).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.audio).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.example).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.font).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.image).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.message).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.model).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.multipart).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.text).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.video).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.any).eraseToAny()
-).map { MediaType.Category(value: $0) }
+                Gen.always(MediaType.Category.Internal.application).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.audio).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.example).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.font).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.image).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.message).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.model).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.multipart).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.text).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.video).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.any).eraseToAny()
+            ).map { MediaType.Category(value: $0) }
         )
     }
 
@@ -351,18 +351,18 @@ import NIOCore
         try await checkRawRepresentablePropertyLaws(
             for: MediaType.Category.self,
             using: Gen.oneOf(
-    Gen.always(MediaType.Category.Internal.application).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.audio).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.example).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.font).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.image).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.message).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.model).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.multipart).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.text).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.video).eraseToAny(),
-    Gen.always(MediaType.Category.Internal.any).eraseToAny()
-).map { MediaType.Category(value: $0) }
+                Gen.always(MediaType.Category.Internal.application).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.audio).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.example).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.font).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.image).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.message).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.model).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.multipart).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.text).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.video).eraseToAny(),
+                Gen.always(MediaType.Category.Internal.any).eraseToAny()
+            ).map { MediaType.Category(value: $0) }
         )
     }
 }
@@ -509,18 +509,18 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: RouterPath.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
-).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+            ).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }
         )
     }
 
@@ -528,18 +528,18 @@ import NIOCore
         try await checkCollectionPropertyLaws(
             for: RouterPath.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
-).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+            ).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }
         )
     }
 }
@@ -550,18 +550,18 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: RouterPath.Element.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
-).map { RouterPath.Element($0) }
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+            ).map { RouterPath.Element($0) }
         )
     }
 }
@@ -572,18 +572,18 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: RouterPath.Element._Internal.self,
             using: Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
-)
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+            )
         )
     }
 }
@@ -606,30 +606,30 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: RouterValidationError.self,
             using: zip(Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
-).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }, Gen.oneOf(
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
-    zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
-            .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
-    Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
-    Gen.always(RouterPath.Element._Internal.null).eraseToAny()
-).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) })
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+            ).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) }, Gen.oneOf(
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.path($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.capture($0) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.prefixCapture(suffix: $0.0, parameter: $0.1) }.eraseToAny(),
+                zip(Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }, Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) })
+                .map { RouterPath.Element._Internal.suffixCapture(prefix: $0.0, parameter: $0.1) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.wildcard).eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.prefixWildcard($0) }.eraseToAny(),
+                Gen<Character>.letterOrNumber.string(of: 0...8).map { Substring($0) }.map { RouterPath.Element._Internal.suffixWildcard($0) }.eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.recursiveWildcard).eraseToAny(),
+                Gen.always(RouterPath.Element._Internal.null).eraseToAny()
+            ).map { RouterPath.Element($0) }.array(of: 0...8).map { RouterPath(components: $0) })
             .map { RouterValidationError(path: $0.0, override: $0.1) }
         )
     }
@@ -703,19 +703,19 @@ import NIOCore
         try await checkEquatablePropertyLaws(
             for: TrieToken.self,
             using: Gen.oneOf(
-    Gen.always(TrieToken.null).eraseToAny(),
-    Gen<UInt32>.uint32().map { TrieToken.path(constantIndex: $0) }.eraseToAny(),
-    Gen<UInt32>.uint32().map { TrieToken.capture(parameterIndex: $0) }.eraseToAny(),
-    zip(Gen<UInt32>.uint32(), Gen<UInt32>.uint32())
-            .map { TrieToken.prefixCapture(parameterIndex: $0.0, suffixIndex: $0.1) }.eraseToAny(),
-    zip(Gen<UInt32>.uint32(), Gen<UInt32>.uint32())
-            .map { TrieToken.suffixCapture(prefixIndex: $0.0, parameterIndex: $0.1) }.eraseToAny(),
-    Gen<UInt32>.uint32().map { TrieToken.prefixWildcard(suffixIndex: $0) }.eraseToAny(),
-    Gen<UInt32>.uint32().map { TrieToken.suffixWildcard(prefixIndex: $0) }.eraseToAny(),
-    Gen.always(TrieToken.wildcard).eraseToAny(),
-    Gen.always(TrieToken.recursiveWildcard).eraseToAny(),
-    Gen.always(TrieToken.deadEnd).eraseToAny()
-)
+                Gen.always(TrieToken.null).eraseToAny(),
+                Gen<UInt32>.uint32().map { TrieToken.path(constantIndex: $0) }.eraseToAny(),
+                Gen<UInt32>.uint32().map { TrieToken.capture(parameterIndex: $0) }.eraseToAny(),
+                zip(Gen<UInt32>.uint32(), Gen<UInt32>.uint32())
+                .map { TrieToken.prefixCapture(parameterIndex: $0.0, suffixIndex: $0.1) }.eraseToAny(),
+                zip(Gen<UInt32>.uint32(), Gen<UInt32>.uint32())
+                .map { TrieToken.suffixCapture(prefixIndex: $0.0, parameterIndex: $0.1) }.eraseToAny(),
+                Gen<UInt32>.uint32().map { TrieToken.prefixWildcard(suffixIndex: $0) }.eraseToAny(),
+                Gen<UInt32>.uint32().map { TrieToken.suffixWildcard(prefixIndex: $0) }.eraseToAny(),
+                Gen.always(TrieToken.wildcard).eraseToAny(),
+                Gen.always(TrieToken.recursiveWildcard).eraseToAny(),
+                Gen.always(TrieToken.deadEnd).eraseToAny()
+            )
         )
     }
 }
