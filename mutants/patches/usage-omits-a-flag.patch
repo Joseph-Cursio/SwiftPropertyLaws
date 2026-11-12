@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift b/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift
+index 4a63ee5..47c3665 100644
+--- a/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift
++++ b/Sources/PropertyLawDiscoveryTool/PropertyLawDiscoveryTool.swift
+@@ -109,7 +109,7 @@ enum PropertyLawDiscoveryTool {
+                                       this target merely extends. Each path may be
+                                       prefixed `Module=` so the emitter knows which
+                                       module to import for a foreign type.
+-            --advisory                Optional. Emit missing-conformance suggestions
++                                      Optional. Emit missing-conformance suggestions
+                                       to stderr (PRD §5.4). Off by default. Output
+                                       is informational only and does not change the
+                                       generated file.
