@@ -148,7 +148,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         let edges = Self.stringEdgeCases
             .map(Self.swiftStringLiteral)
             .joined(separator: ", ")
-        let token = "Gen<String?>.element(of: [\(edges)] as [String]).map { $0! }"
+        let token = "Gen<String?>.element(of: [\(edges)] as [String]).compactMap(\\.self)"
         let filler = "Gen<Character>.letterOrNumber.string(of: 0...4)"
         return "Gen.frequency("
             + "(3.0, \(Self.subjectBaseline(subjectTokens))), "
@@ -215,7 +215,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         let hostile = Self.hostileTokens
             .map(Self.swiftStringLiteral)
             .joined(separator: ", ")
-        let token = "Gen<String?>.element(of: [\(hostile)] as [String]).map { $0! }"
+        let token = "Gen<String?>.element(of: [\(hostile)] as [String]).compactMap(\\.self)"
         return "Gen.frequency("
             + "(3.0, \(Self.subjectBaseline(subjectTokens))), "
             + "(3.0, \(token)), "
@@ -255,7 +255,7 @@ public enum RawType: String, Sendable, Equatable, CaseIterable {
         let tokens = subjectTokens.filter { !$0.isEmpty && seen.insert($0).inserted }.prefix(subjectTokenCap)
         guard !tokens.isEmpty else { return baseline }
         let literals = tokens.map(Self.swiftStringLiteral).joined(separator: ", ")
-        let subject = "Gen<String?>.element(of: [\(literals)] as [String]).map { $0! }"
+        let subject = "Gen<String?>.element(of: [\(literals)] as [String]).compactMap(\\.self)"
         let short = "Gen<Character>.letterOrNumber.string(of: 0...4)"
         let embedded = "zip(zip(\(short), \(subject)).map { $0 + $1 }, \(short)).map { $0 + $1 }"
         return "Gen.frequency((2.0, \(baseline)), (1.0, \(subject)), (1.0, \(embedded)))"
