@@ -127,6 +127,18 @@ struct FoundationGeneratorsTests {
         #expect(paths == ["", "/path", "/a/b", "/users/42", "/search", "/docs/guide"], "\(paths)")
     }
 
+    /// A generated law runs real code, so a URL it draws must not reach a server or this machine:
+    /// every host is under `.invalid` (RFC 6761), and every curated host is reached.
+    @Test
+    func urlHostsAreAllUnderInvalidAndAllReached() throws {
+        let hosts = Set(Self.sample(Gen<URL>.url(), seedTag: 2).compactMap(\.host))
+        #expect(
+            hosts == ["example.invalid", "test.invalid", "host.invalid", "local.invalid", "api.example.invalid"],
+            "\(hosts)"
+        )
+        #expect(hosts.allSatisfy { $0.hasSuffix(".invalid") }, "\(hosts)")
+    }
+
     @Test
     func urlIsDeterministicUnderTheSameSeed() throws {
         let runA = Self.sample(Gen<URL>.url(), seedTag: 77)

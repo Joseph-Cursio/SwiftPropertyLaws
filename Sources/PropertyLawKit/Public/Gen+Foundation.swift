@@ -65,9 +65,17 @@ extension Gen where Value == URL {
     /// URLs rather than fuzzing arbitrary strings through `URL(string:)`.
     private static var urlSchemes: [String] { ["https", "http"] }
 
-    /// Curated host components — registrable names plus `localhost`.
+    /// Curated host components, every one under RFC 6761's `.invalid`, which never resolves.
+    ///
+    /// A generated law runs real code, and a subject that opens or fetches its URL reaches the
+    /// host. These were `example.com`, `example.org`, `test.example`, `localhost` and
+    /// `api.example.com`: the first two are live servers and `localhost` is whatever listens on
+    /// the machine. A law over a `NSWorkspace.shared.open(url)` wrapper opened about 4,500 of
+    /// them in a browser in one measurement run (SwiftInferProperties, 2026-11-12). The shape is
+    /// kept: five hosts, four of two labels and one of three, so a subject's subdomain branch is
+    /// still reached.
     private static var urlHosts: [String] {
-        ["example.com", "example.org", "test.example", "localhost", "api.example.com"]
+        ["example.invalid", "test.invalid", "host.invalid", "local.invalid", "api.example.invalid"]
     }
 
     /// Curated path components. The empty entry yields a bare `scheme://host`.
@@ -78,7 +86,7 @@ extension Gen where Value == URL {
     /// A guaranteed-valid fallback. Only reachable if a curated component were
     /// edited into an unparseable combination — the single force-unwrap is on a
     /// constant literal and is provably safe.
-    private static var fallbackURL: URL { URL(string: "https://example.com")! }
+    private static var fallbackURL: URL { URL(string: "https://example.invalid")! }
 
     /// A `URL` generator yielding only **valid** URLs, composed from curated
     /// scheme / host / path components indexed by three seeded draws.
