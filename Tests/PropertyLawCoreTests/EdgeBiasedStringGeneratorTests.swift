@@ -19,6 +19,10 @@ struct EdgeBiasedStringGeneratorTests {
         #expect(expression.contains("\"-\""))
         #expect(expression.contains("\"- \""))
         #expect(expression.contains("\"\\n\""))
+        // The list arm lands in the user's generated test file, so it must not force-unwrap
+        // (`force_unwrapping`); the list is never empty, so `compactMap` drops nothing.
+        #expect(expression.contains(".compactMap(\\.self)"))
+        #expect(!expression.contains("$0!"))
     }
 
     @Test("non-String raw types have no edge-biased variant")
