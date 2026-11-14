@@ -34,10 +34,8 @@ struct HostileStringGeneratorTests {
     /// emitter still says this; this copy proves it compiles and runs.
     private static let live = Gen.frequency(
         (3.0, Gen<Character>.letterOrNumber.string(of: 0...8)),
-        // swiftlint:disable:next force_unwrapping - verbatim copy of the emitted expression
-        (3.0, Gen<String?>.element(of: RawType.hostileTokens).map { $0! }),
-        // swiftlint:disable:next force_unwrapping - verbatim copy of the emitted expression
-        (2.0, Gen<String?>.element(of: RawType.hostileTokens).map { $0! }.map { $0 + $0 }),
+        (3.0, Gen<String?>.element(of: RawType.hostileTokens).compactMap(\.self)),
+        (2.0, Gen<String?>.element(of: RawType.hostileTokens).compactMap(\.self).map { $0 + $0 }),
         (1.0, Gen<Character>.latin1.string(of: 0...24)),
         (1.0, Gen<Character>.ascii.string(of: 0...120))
     )
@@ -93,6 +91,10 @@ struct HostileStringGeneratorTests {
         #expect(expression.contains("Gen<Character>.ascii.string(of: 0...120)"))
         #expect(expression.contains("Gen<Character>.letterOrNumber.string(of: 0...8)"))
         #expect(expression.contains("\"[[\""))
+        // The list arm lands in the user's generated test file, so it must not force-unwrap
+        // (`force_unwrapping`); the list is never empty, so `compactMap` drops nothing.
+        #expect(expression.contains(".compactMap(\\.self)"))
+        #expect(!expression.contains("$0!"))
     }
 
     @Test func nonStringRawTypesHaveNoHostileVariant() {

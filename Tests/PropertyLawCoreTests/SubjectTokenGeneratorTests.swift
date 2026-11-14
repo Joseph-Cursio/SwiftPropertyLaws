@@ -58,13 +58,11 @@ struct SubjectTokenGeneratorTests {
     /// it — **do not simplify it**; the assertion below pins the emitter to this text.
     private static let hashBaseline = Gen.frequency(
         (2.0, Gen<Character>.letterOrNumber.string(of: 0...8)),
-        // swiftlint:disable:next force_unwrapping - verbatim copy of the emitted expression
-        (1.0, Gen<String?>.element(of: ["#"] as [String]).map { $0! }),
+        (1.0, Gen<String?>.element(of: ["#"] as [String]).compactMap(\.self)),
         (1.0, zip(
             zip(
                 Gen<Character>.letterOrNumber.string(of: 0...4),
-                // swiftlint:disable:next force_unwrapping - verbatim copy of the emitted expression
-                Gen<String?>.element(of: ["#"] as [String]).map { $0! }
+                Gen<String?>.element(of: ["#"] as [String]).compactMap(\.self)
             ).map { $0 + $1 },
             Gen<Character>.letterOrNumber.string(of: 0...4)
         ).map { $0 + $1 })
@@ -81,9 +79,9 @@ struct SubjectTokenGeneratorTests {
         #expect(draws.contains { !$0.contains("#") }, "the alphanumeric baseline still draws")
         #expect(RawType.subjectBaseline(["#"]) == """
         Gen.frequency((2.0, Gen<Character>.letterOrNumber.string(of: 0...8)), \
-        (1.0, Gen<String?>.element(of: ["#"] as [String]).map { $0! }), \
+        (1.0, Gen<String?>.element(of: ["#"] as [String]).compactMap(\\.self)), \
         (1.0, zip(zip(Gen<Character>.letterOrNumber.string(of: 0...4), \
-        Gen<String?>.element(of: ["#"] as [String]).map { $0! }).map { $0 + $1 }, \
+        Gen<String?>.element(of: ["#"] as [String]).compactMap(\\.self)).map { $0 + $1 }, \
         Gen<Character>.letterOrNumber.string(of: 0...4)).map { $0 + $1 }))
         """)
     }
