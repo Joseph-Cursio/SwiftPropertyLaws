@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+index f921d07..56528ab 100644
+--- a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
++++ b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+@@ -73,7 +73,7 @@ public func checkEveryCarrier<Carrier: Sendable>(
+                 results = try await collectingInheritedLaws(rebasing: perCarrierOptions) {
+                     try await suite(carriers[index], $0)
+                 }
+-            } catch where passesThroughUnwrapped(error) {
++            } catch where false && passesThroughUnwrapped(error) {
+                 throw error
+             } catch {
+                 throw CarrierSuiteError(carrier: carriers.address(of: index), underlying: error)

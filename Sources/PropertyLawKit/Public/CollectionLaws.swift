@@ -74,7 +74,7 @@ where Value.Element: Sendable {
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { inherited in
+            results.append(contentsOf: try await collectingInheritedLaws(rebasing: options) { inherited in
                 try await checkSequencePropertyLaws(
                     for: Value.self,
                     using: generator,

@@ -26,7 +26,7 @@ public func checkBinaryFloatingPointPropertyLaws<
         if laws == .all {
             // `allowNaN` gates five of the inherited laws and arrives through the
             // collector's copy, like every other field — no rebuild here.
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            results.append(contentsOf: try await collectingInheritedLaws(rebasing: options) {
                 try await checkFloatingPointPropertyLaws(
                     for: type,
                     using: generator,

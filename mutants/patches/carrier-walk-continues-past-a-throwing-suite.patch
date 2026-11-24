@@ -1,0 +1,27 @@
+diff --git a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+index f921d07..e86e5a2 100644
+--- a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
++++ b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+@@ -67,6 +67,7 @@ public func checkEveryCarrier<Carrier: Sendable>(
+         var merged = MergedCarrierResults(spaceSize: carriers.fullCount)
+         var perCarrierOptions = options
+         perCarrierOptions.budget = perCarrier
++        var firstError: CarrierSuiteError?
+         for index in carriers.indices {
+             let results: [CheckResult]
+             do {
+@@ -76,11 +77,13 @@ public func checkEveryCarrier<Carrier: Sendable>(
+             } catch where passesThroughUnwrapped(error) {
+                 throw error
+             } catch {
+-                throw CarrierSuiteError(carrier: carriers.address(of: index), underlying: error)
++                if firstError == nil { firstError = CarrierSuiteError(carrier: carriers.address(of: index), underlying: error) }
++                continue
+             }
+             merged.absorb(results, carrier: carriers.address(of: index))
+             if merged.sawViolation { break }
+         }
++        if let firstError { throw firstError }
+         return merged.assembled()
+     }
+ }

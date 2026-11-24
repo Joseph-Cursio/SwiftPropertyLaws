@@ -26,14 +26,14 @@ public func checkSignedIntegerPropertyLaws<
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            results.append(contentsOf: try await collectingInheritedLaws(rebasing: options) {
                 try await checkBinaryIntegerPropertyLaws(
                     for: type,
                     using: generator,
                     options: $0
                 )
             })
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) { inherited in
+            results.append(contentsOf: try await collectingInheritedLaws(rebasing: options) { inherited in
                 // SignedNumeric's own laws only — skipping its inherited Numeric suite
                 // here because the BinaryInteger collector already ran Numeric. Without
                 // the .ownOnly cap we'd run Numeric's six laws twice.

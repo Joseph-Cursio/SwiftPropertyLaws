@@ -25,7 +25,7 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable, Shrinker: Send
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            results.append(contentsOf: try await collectingInheritedLaws(rebasing: options) {
                 try await checkEquatablePropertyLaws(
                     for: type,
                     using: generator,
@@ -67,7 +67,7 @@ public func checkHashablePropertyLaws<Value: Hashable & Sendable>(
     try await runPropertyLawSuite(options: options) {
         var results: [CheckResult] = []
         if laws == .all {
-            results.append(contentsOf: await collectingInheritedLaws(rebasing: options) {
+            results.append(contentsOf: try await collectingInheritedLaws(rebasing: options) {
                 try await checkEquatablePropertyLaws(from: .enumerated(carrier), options: $0)
             })
         }

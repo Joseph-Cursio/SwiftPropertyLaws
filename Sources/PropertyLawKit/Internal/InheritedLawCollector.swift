@@ -1,5 +1,6 @@
 /// Runs an inherited protocol's `check…PropertyLaws` suite and folds its
-/// outcome into a `[CheckResult]` without rethrowing.
+/// outcome into a `[CheckResult]`. A thrown `PropertyLawViolation` becomes its
+/// results; anything else is rethrown.
 ///
 /// Every `check<Protocol>PropertyLaws` that chains its parent under
 /// `laws: .all` previously hand-rolled an identical private
@@ -18,7 +19,7 @@
 func collectingInheritedLaws(
     rebasing options: LawCheckOptions,
     _ check: (LawCheckOptions) async throws -> [CheckResult]
-) async -> [CheckResult] {
+) async throws -> [CheckResult] {
     // **Mutate a copy.** The rebuild this replaces named five of `LawCheckOptions`' EIGHT fields,
     // so `expectedReplayEnvironment`, `replayRelaxation` and `allowNaN` were silently reset to
     // their defaults for every inherited law — a caller who set `allowNaN: true` had it quietly
@@ -32,7 +33,9 @@ func collectingInheritedLaws(
         return try await check(inheritedOptions)
     } catch let violation as PropertyLawViolation {
         return violation.results
-    } catch {
-        return []
     }
+    // **Anything else is rethrown.** A catch-all here once returned `[]`, so a check that threw
+    // tested nothing and looked like a pass: through `checkEveryCarrier`, a suite that threw for
+    // every carrier returned no results and its test passed. A parent protocol's check throws
+    // only a violation, or a replay mismatch its child has already ruled out with the same options.
 }
