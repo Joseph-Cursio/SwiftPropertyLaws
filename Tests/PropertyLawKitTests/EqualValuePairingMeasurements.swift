@@ -177,7 +177,13 @@ struct EqualValuePairingMeasurements {
     /// Seconds of CPU this process has used, user and system.
     private static func processCPUSeconds() -> Double {
         var usage = rusage()
+        #if canImport(Glibc)
+        // Glibc imports `RUSAGE_SELF` as a case of the C enum `__rusage_who`, while
+        // `getrusage` takes `__rusage_who_t`, which is `Int32`.
+        getrusage(__rusage_who_t(RUSAGE_SELF.rawValue), &usage)
+        #else
         getrusage(RUSAGE_SELF, &usage)
+        #endif
         let user = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) / 1e6
         let system = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1e6
         return user + system
