@@ -181,6 +181,12 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         let failure: VirtualTimeError
         while true {
             drain()
+            // An empty queue is the moment `settle()` waits for: resume its
+            // callers and run what they do next before anything else is
+            // decided, so time moves only once they block again.
+            if timeline.resumeSettled() {
+                continue
+            }
             if let result = outcome.result {
                 // The body is done, but a task it started may still be asleep.
                 // Wake it with `CancellationError` rather than leave it parked
@@ -234,9 +240,20 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     private func tearDown(_ root: Task<Void, Never>, _ timeline: VirtualTimeline) {
         root.cancel()
         for _ in 0 ..< 8 {
-            drain()
+            drainAndSettle(timeline)
             guard timeline.pendingSleeperCount > 0 else { return }
             timeline.cancelAll()
+        }
+        drainAndSettle(timeline)
+    }
+
+    /// Drain, resuming `settle()` callers each time the queue empties, so a
+    /// task that settles while being torn down is not left parked forever.
+    /// Bounded like teardown itself.
+    private func drainAndSettle(_ timeline: VirtualTimeline) {
+        for _ in 0 ..< 8 {
+            drain()
+            guard timeline.resumeSettled() else { return }
         }
         drain()
     }
