@@ -13,6 +13,7 @@ final class VirtualTimeline: @unchecked Sendable {
     private var sleepers: [Sleeper] = []
     private var cancelledTickets: Set<Int> = []
     private var nextTicket = 0
+    private var settleWaiters: [CheckedContinuation<Void, Never>] = []
 
     var now: VirtualClock.Instant {
         lock.lock()
@@ -95,6 +96,29 @@ final class VirtualTimeline: @unchecked Sendable {
         return true
     }
 
+    /// Park a ``VirtualClock/settle()`` caller until the scheduler next finds
+    /// its queue empty.
+    func awaitSettle(_ continuation: CheckedContinuation<Void, Never>) {
+        lock.lock()
+        settleWaiters.append(continuation)
+        lock.unlock()
+    }
+
+    /// Resume every ``VirtualClock/settle()`` caller. The scheduler calls this
+    /// only with its queue empty, before it moves time. Returns `false` when
+    /// nobody was waiting.
+    @discardableResult
+    func resumeSettled() -> Bool {
+        lock.lock()
+        let woken = settleWaiters
+        settleWaiters.removeAll()
+        lock.unlock()
+        for waiter in woken {
+            waiter.resume()
+        }
+        return !woken.isEmpty
+    }
+
     /// Wake every sleeper with `CancellationError`, for tearing down a run
     /// that could not finish.
     func cancelAll() {
@@ -159,6 +183,26 @@ struct VirtualClock: Clock {
             }
         } onCancel: {
             timeline.cancel(ticket)
+        }
+    }
+
+    /// Suspends until every other task in the run is blocked, without moving
+    /// time.
+    ///
+    /// A virtual sleep also waits for quiescence, but then moves `now`, which
+    /// can wake a sleeper the caller meant to inspect while still asleep — a
+    /// source parked "forever", say. `settle()` returns at the first moment
+    /// the scheduler's queue is empty, before it would wake anyone, so what a
+    /// lifetime law checks afterwards is what the run left behind, not what a
+    /// later deadline undid. Cancellation does not cut it short: the wait
+    /// already ends as soon as nothing else can run.
+    ///
+    /// Not for calling in a loop: the scheduler resumes settlers before it
+    /// checks the horizon, so a task that only ever settles would keep the run
+    /// from ending, and teardown resumes a bounded number of settles.
+    func settle() async {
+        await withCheckedContinuation { continuation in
+            timeline.awaitSettle(continuation)
         }
     }
 }

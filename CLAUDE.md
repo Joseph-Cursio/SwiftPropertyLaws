@@ -4,6 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**`checkAsyncLifetimePropertyLaws` adds four lifetime laws to `PropertyLawAsync`, additively, for 4.14.0 (2026-11-25, unreleased).** The caller passes an operator built on a `LifetimeProbeSource` and a `LawClock`. Both are opaque public types with no public initializers. The check runs four laws in virtual time:
+- `releasesUpstreamWhenConsumerLeaves`;
+- `cancellationReachesUpstream`;
+- `failureReachesConsumerWithoutDemand`;
+- `finishedStaysFinished`.
+
+The probe counts the iterators it makes and the ones released, and records whether it threw its failure. A run that deadlocks or passes its horizon is a `hang:` counterexample. It says "ignores cancellation" when the consumer had been cancelled. Counterexamples shrink by removing single elements, then adjacent pairs. `VirtualClock.settle()` (internal) waits for quiescence without moving time.
+
+Measured from the umbrella prototype's harness at real swift-async-algorithms revisions:
+- each planted defect fails only its own law;
+- the debounce failure and cancellation bugs and the buffer release leak fail before their fixes and pass after;
+- 0 false positives over a 53-row operator table.
+
+The PRD's PropertyLawAsync row has the summary. What a later change must not undo:
+- **The release and cancellation laws read the probe's snapshot inside the run, after `settle()`.** Teardown cancels every sleeper, which wakes a parked source and releases what a leaking operator held, so a snapshot read after the run hides every leak.
+- **`settle()` resumes at the empty-queue point, before `fireEarliest`.** A virtual sleep would move `now` and wake the parked source the law is about to inspect. The drive loop resumes settlers before the outcome check, so `settle()` must not be called in a loop.
+- **Release is counted by `IteratorTracker.deinit`**, shared by every copy of one iterator. `released <= made` always holds.
+- **`parkDuration` (3,600 s) is longer than any law's horizon.** A parked source ends by cancellation or not at all.
+- **The failure law owes delivery only when `probe.snapshot.failed`.** An operator that stops reading early, like `prefix` or a timeout, never makes the source fail, and owes its consumer nothing.
+- **`lifetimeEmissionCap` is a flat 10,000 reads or emissions.** The failure and finished laws stop there with a cap message, so an operator that emits forever fails instead of hanging.
+- **The `ConsumerSignal` raise comes before the law waits for the consumer.** The hang message is decided after teardown. A raise placed after `await consumer.value` is never reached when the consumer cannot return. `NeverReturnsSequence` pins this.
+- **`for:` is required in both public overloads**, `(for:using:options:applying:)` and `(for:using:applying:)`, following the repo's `for type:`-first convention.
+
+SwiftPropertyLaws' own tests use planted fixtures only, one per file in `Tests/PropertyLawAsyncTests/`. The real-operator rows live in the umbrella prototype.
+
+Hand mutation testing: 85 mutants, 77 killed, 8 equivalent. Each equivalent one was traced: dropping `settle()` when the consumer already returned, `<` for `!=` on released vs made, and six placements of the cancelled flag that no hang can observe. `AsyncLifetimeLawPrecisionTests` pins the cap's size with fixed counts, 9,000 within and 11,000 past it, and the shrinker's pairs and their order. 70 async tests, 1,398 in all.
+
 **`PropertyBackend` takes random choices from any `SeededRandomNumberGenerator`, additively, for 4.13.0 (2026-11-24, unreleased).** A second requirement, `check(trials:seed:drawing:property:)`, hands the sampling closure an `inout any SeededRandomNumberGenerator`; `PerLawDriver` now calls it, so an engine that implements only this one is driven by its own generator. `PropertyBackend` supplies the default `drawing:` and the new `DrawingPropertyBackend` supplies the default `sample:`: a backend that implements only `sample:` keeps compiling and conforms to `PropertyBackend` as before, and a new engine implements `drawing:` and conforms to `DrawingPropertyBackend`. **No seed changes value on the default backend:** `BackendSeedPinTests` pins three seeds' draws through the backend, `PerLawDriver`, a sampled space and the draw pool, captured on `main` at 8316521 before the change; `sampleOnlyBackendContinuesFromAReplacedGenerator` covers a closure that swaps the generator for another type. **Not yet backend-driven:** `AggregateDriver`, `DrawPoolDriver` and `EnumerationDriver` still draw from the kit's own `Xoshiro` whatever `LawCheckOptions.backend` is. Versions are tagged at release, so nothing was bumped. 1,350 tests.
 
 PRD §4.5 has the design. What a later change must not undo:
