@@ -23,7 +23,7 @@ import PropertyBased
 /// shrinking stays a separate `shrink:` argument, and `.enumerated` needs none:
 /// walking smallest-first leaves nothing to shrink.
 package enum InputSource<Value: Sendable>: Sendable {
-    case sampled(@Sendable (inout Xoshiro) -> Value)
+    case sampled(@Sendable (inout any SeededRandomNumberGenerator) -> Value)
     case enumerated(Enumeration<Value>)
     /// Random draws **from a bounded space**, keeping the index.
     ///

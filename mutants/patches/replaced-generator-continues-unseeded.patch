@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Public/PropertyBackend.swift b/Sources/PropertyLawKit/Public/PropertyBackend.swift
+--- a/Sources/PropertyLawKit/Public/PropertyBackend.swift
++++ b/Sources/PropertyLawKit/Public/PropertyBackend.swift
+@@ -51,7 +51,7 @@
+     /// the replacement, which keeps the run deterministic.
+     static func xoshiro(after generator: inout any SeededRandomNumberGenerator) -> Xoshiro {
+         if let xoshiro = generator as? Xoshiro { return xoshiro }
+-        return xoshiro(seededFrom: &generator)
++        return Xoshiro()
+     }
+ 
+     /// A `Xoshiro` seeded from the next four words of `generator`.

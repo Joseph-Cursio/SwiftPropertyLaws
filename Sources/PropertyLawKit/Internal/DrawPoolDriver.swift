@@ -23,7 +23,7 @@ enum DrawPoolDriver {
     /// A two-value law over the pool: each new draw is paired with every earlier
     /// draw within `lookback`, earlier draw first.
     struct PairCheck<Value: Sendable>: Sendable {
-        let sample: @Sendable (inout Xoshiro) -> Value
+        let sample: @Sendable (inout any SeededRandomNumberGenerator) -> Value
         let property: @Sendable (Value, Value) async throws -> Bool
         let formatCounterexample: @Sendable (Value, Value, ErrorBox?) -> String
         let shrink: (@Sendable (Value) -> [Value])?
@@ -73,7 +73,7 @@ enum DrawPoolDriver {
     /// so it could not have failed. Each chain is examined once, at the draw of
     /// its latest member, in both directions.
     struct ChainCheck<Value: Sendable>: Sendable {
-        let sample: @Sendable (inout Xoshiro) -> Value
+        let sample: @Sendable (inout any SeededRandomNumberGenerator) -> Value
         let link: @Sendable (Value, Value) -> Bool
         let property: @Sendable (Value, Value, Value) async throws -> Bool
         let formatCounterexample: @Sendable (Value, Value, Value, ErrorBox?) -> String
@@ -164,7 +164,7 @@ enum DrawPoolDriver {
         _ identity: Identity,
         options: LawCheckOptions,
         verdict: Verdict<Input>,
-        loop: (inout Xoshiro, Int) async -> Walk<Input>
+        loop: (inout any SeededRandomNumberGenerator, Int) async -> Walk<Input>
     ) async -> CheckResult {
         let environment = Environment.current(backend: options.backend)
         if let early = CheckPreflight.earlyResult(
@@ -172,8 +172,9 @@ enum DrawPoolDriver {
         ) {
             return early
         }
-        var rng = options.seed?.makeXoshiro() ?? Xoshiro()
-        let initialSeed = Seed(xoshiro: rng)
+        let start = options.seed?.makeXoshiro() ?? Xoshiro()
+        let initialSeed = Seed(xoshiro: start)
+        var rng: any SeededRandomNumberGenerator = start
         let walk = await loop(&rng, options.budget.trialCount)
         var result = CheckResult(
             protocolLaw: identity.protocolLaw,

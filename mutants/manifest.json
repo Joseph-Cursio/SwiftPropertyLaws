@@ -673,6 +673,38 @@
       "expected": "killed",
       "test": "continuationLinesAreReindented",
       "label": "The recursive helper's outer `return` (column 4) moves its expression 8, like the base arm inside the `if`, so its `.map` sits 4 deeper than its `return`. Each placement site must add its own column, not a shared one."
+    },
+    {
+      "id": "drawing-default-loses-xoshiro-state",
+      "patch": "patches/drawing-default-loses-xoshiro-state.patch",
+      "shape": "backend-seam",
+      "expected": "killed",
+      "test": "sampleOnlyBackendReplaysTheHistoricalDraws",
+      "label": "The default `drawing:` for a backend that implements only `sample:` boxes its `Xoshiro`, draws, and drops the advanced copy instead of writing it back, so every trial redraws the first input. Every law still passes."
+    },
+    {
+      "id": "per-trial-driver-bypasses-the-backend",
+      "patch": "patches/per-trial-driver-bypasses-the-backend.patch",
+      "shape": "backend-seam",
+      "expected": "killed",
+      "test": "drawingOnlyBackendDrivesPerTrialLawsWithItsOwnGenerator",
+      "label": "`PerLawDriver` runs the default backend instead of `options.backend`, while the result still records the configured backend's identifier."
+    },
+    {
+      "id": "sample-default-loses-xoshiro-state",
+      "patch": "patches/sample-default-loses-xoshiro-state.patch",
+      "shape": "backend-seam",
+      "expected": "killed",
+      "test": "sampleCallOnAXoshiroEngineReplaysTheHistoricalDraws",
+      "label": "The default `sample:` for a `DrawingPropertyBackend` runs the closure on a copy of the engine's `Xoshiro` and never writes it back, so a `sample:` call on a new engine redraws one input every trial."
+    },
+    {
+      "id": "replaced-generator-continues-unseeded",
+      "patch": "patches/replaced-generator-continues-unseeded.patch",
+      "shape": "backend-seam",
+      "expected": "killed",
+      "test": "sampleOnlyBackendContinuesFromAReplacedGenerator",
+      "label": "When a `drawing` closure swaps the generator for another type, the default `drawing:` continues from a system-seeded `Xoshiro` instead of one seeded from the replacement, so the rest of the run no longer replays from its seed."
     }
   ]
 }

@@ -9,7 +9,7 @@ enum CodableTrial<Value: Codable & Equatable & Sendable>: Sendable {
 
     static func run<Shrinker: SendableSequenceType>(
         generator: Generator<Value, Shrinker>,
-        rng: inout Xoshiro,
+        rng: inout any SeededRandomNumberGenerator,
         codec: CodableCodec<Value>
     ) -> CodableTrial<Value> {
         let value = generator.run(using: &rng)
