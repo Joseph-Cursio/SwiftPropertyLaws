@@ -4,7 +4,7 @@ import PropertyBased
 /// `PerLawDriver.run` under the function-parameter-count lint without
 /// inflating individual call sites.
 package struct LawCheck<Input: Sendable>: Sendable {
-    let sample: @Sendable (inout Xoshiro) -> Input
+    let sample: @Sendable (inout any SeededRandomNumberGenerator) -> Input
     let property: @Sendable (Input) async throws -> Bool
     let formatCounterexample: @Sendable (Input, ErrorBox?) -> String
 
@@ -16,7 +16,7 @@ package struct LawCheck<Input: Sendable>: Sendable {
     let shrink: (@Sendable (Input) -> [Input])?
 
     init(
-        sample: @escaping @Sendable (inout Xoshiro) -> Input,
+        sample: @escaping @Sendable (inout any SeededRandomNumberGenerator) -> Input,
         property: @escaping @Sendable (Input) async throws -> Bool,
         formatCounterexample: @escaping @Sendable (Input, ErrorBox?) -> String,
         shrink: (@Sendable (Input) -> [Input])? = nil
@@ -88,10 +88,13 @@ package enum PerLawDriver {
             classify: observation.classify,
             into: coverageAccumulator
         )
+        // The `drawing:` requirement, so a backend that implements only that one
+        // is driven by its own generator; a `sample:`-only backend reaches it
+        // through the protocol's default.
         let backendResult = await options.backend.check(
             trials: options.budget.trialCount,
             seed: options.seed,
-            sample: check.sample,
+            drawing: check.sample,
             property: wrappedProperty
         )
         let observed = ObservedSnapshots(

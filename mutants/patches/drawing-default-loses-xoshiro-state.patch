@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Public/PropertyBackend.swift b/Sources/PropertyLawKit/Public/PropertyBackend.swift
+--- a/Sources/PropertyLawKit/Public/PropertyBackend.swift
++++ b/Sources/PropertyLawKit/Public/PropertyBackend.swift
+@@ -180,7 +180,7 @@
+                     // redraw the same input.
+                     var generator: any SeededRandomNumberGenerator = xoshiro
+                     let input = drawing(&generator)
+-                    xoshiro = BackendBridge.xoshiro(after: &generator)
++                    _ = BackendBridge.xoshiro(after: &generator)
+                     return input
+                 },
+                 property: property

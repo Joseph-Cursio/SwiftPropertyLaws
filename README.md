@@ -306,7 +306,7 @@ Replay-validation is opt-in: pass an `expectedReplayEnvironment` and the kit ref
 | Experimental layer (pattern warnings, Codable-derived generators) | Not started |
 | 1.0 External validation gate (PRD v0.3 §8 — three-pass) | All three passes shipped: Pass 1 (discovery scan ≥4 packages), Pass 2 (composition with `swift-argument-parser`), Pass 3 (git-archaeology, results in `Validation/FINDINGS.md`) |
 
-The PropertyBackend abstraction (PRD §4.5) is shipped public with `SwiftPropertyBasedBackend` as the single implementation. `swift-property-based` is the only backend v1 ships; the abstraction stays open for future alternatives but the kit doesn't chase parity for its own sake.
+The PropertyBackend abstraction (PRD §4.5) is shipped public with `SwiftPropertyBasedBackend` as the single implementation. `swift-property-based` is the only backend v1 ships; the abstraction stays open for future alternatives but the kit doesn't chase parity for its own sake. From 4.13.0 (unreleased) a backend can conform to `DrawingPropertyBackend` and implement `check(trials:seed:drawing:property:)`, whose sampling closure takes any `SeededRandomNumberGenerator`, instead of the original `Xoshiro` form; existing backends and their callers compile unchanged, and the aggregate, draw-pool and enumeration drivers do not go through the backend yet (PRD §4.5).
 
 ## Documentation
 

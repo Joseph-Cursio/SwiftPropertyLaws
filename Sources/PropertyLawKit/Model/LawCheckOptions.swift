@@ -22,8 +22,13 @@ public struct LawCheckOptions: Sendable {
 
     /// Property-based backend that drives the per-trial loop (PRD §4.5).
     /// Default is `SwiftPropertyBasedBackend` — the only backend v1 ships.
-    /// The protocol stays open for future alternatives; aggregate-mode laws
-    /// (`Hashable.distribution`) bypass the backend.
+    /// The protocol stays open for future alternatives. Only per-trial laws
+    /// reach the backend: aggregate-mode laws (`Hashable.distribution`,
+    /// `InteractionInvariant.isFalsifiable`), the equal-value laws under
+    /// `equalValuePairing`, and walks over an `Enumeration` draw from the
+    /// kit's own `Xoshiro` and record this backend's identifier only in the
+    /// environment fingerprint. See "What the backend does not drive" on
+    /// ``PropertyBackend``.
     public var backend: any PropertyBackend
 
     /// When non-nil, the kit verifies this fingerprint matches

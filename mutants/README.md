@@ -105,6 +105,10 @@ Requires a clean working tree.
 | `stub-splices-without-its-column` | expression-layout | killed | `anEnumsCasesSitUnderUsing` |
 | `scaffold-body-not-placed` | expression-layout | killed | `aMultiLineBodySitsUnderTheFunction` |
 | `recursive-arms-share-a-column` | expression-layout | killed | `continuationLinesAreReindented` |
+| `drawing-default-loses-xoshiro-state` | backend-seam | killed | `sampleOnlyBackendReplaysTheHistoricalDraws` |
+| `per-trial-driver-bypasses-the-backend` | backend-seam | killed | `drawingOnlyBackendDrivesPerTrialLawsWithItsOwnGenerator` |
+| `sample-default-loses-xoshiro-state` | backend-seam | killed | `sampleCallOnAXoshiroEngineReplaysTheHistoricalDraws` |
+| `replaced-generator-continues-unseeded` | backend-seam | killed | `sampleOnlyBackendContinuesFromAReplacedGenerator` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -162,6 +166,22 @@ defect is only that a `.map` or a `Gen.oneOf(` case lands somewhere a reader
 would not put it. `stub-splices-without-its-column` is issue #90's defect
 itself. `nested-zip-bakes-column-twelve` restores the old absolute convention
 on the one line whose test once checked only `hasPrefix`.
+
+**`backend-seam` guards the two sampling requirements of `PropertyBackend`
+(4.13.0).** Each default bridges a `Xoshiro`, a value type, through an
+`inout any SeededRandomNumberGenerator`, and both mutants that drop the
+write-back leave every law passing: the trials just keep redrawing their first
+input. The killers compare the draws with values pinned on `main` before the
+change. `per-trial-driver-bypasses-the-backend` keeps every result's backend
+identifier while running the default backend, so only a backend that counts
+its calls and draws from its own generator sees it.
+`replaced-generator-continues-unseeded` breaks the fallback for a closure that
+swaps the generator for another type: the run goes on, but no longer replays.
+A further fault, a
+`DrawingPropertyBackend` that implements neither requirement with the trap
+removed, is not kept: the async defaults then recurse on the heap, never
+overflow the stack, and hang the runner. `implementingNeitherRequirementTraps`
+covers the trap instead.
 
 ## Adding a mutant
 

@@ -75,7 +75,7 @@ struct SpaceSampler<Value: Sendable>: Sendable {
     /// Draw one case. Recording is deliberately *not* done here — a law's input
     /// is the whole tuple, so the combination is recorded once per trial by
     /// ``record(_:)`` after every position is drawn.
-    func draw(_ rng: inout Xoshiro) -> IndexedDraw<Value> {
+    func draw(_ rng: inout any SeededRandomNumberGenerator) -> IndexedDraw<Value> {
         let index = Gen<Int>.int(in: 0 ..< space.count).run(using: &rng)
         return IndexedDraw(index: index, value: space[index])
     }

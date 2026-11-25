@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Internal/PerLawDriver.swift b/Sources/PropertyLawKit/Internal/PerLawDriver.swift
+--- a/Sources/PropertyLawKit/Internal/PerLawDriver.swift
++++ b/Sources/PropertyLawKit/Internal/PerLawDriver.swift
+@@ -91,7 +91,7 @@ package enum PerLawDriver {
+         // The `drawing:` requirement, so a backend that implements only that one
+         // is driven by its own generator; a `sample:`-only backend reaches it
+         // through the protocol's default.
+-        let backendResult = await options.backend.check(
++        let backendResult = await SwiftPropertyBasedBackend().check(
+             trials: options.budget.trialCount,
+             seed: options.seed,
+             drawing: check.sample,
