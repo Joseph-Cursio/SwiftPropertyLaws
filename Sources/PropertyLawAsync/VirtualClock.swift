@@ -13,6 +13,14 @@ final class VirtualTimeline: @unchecked Sendable {
     private var sleepers: [Sleeper] = []
     private var cancelledTickets: Set<Int> = []
     private var nextTicket = 0
+    private var settleWaiters: [CheckedContinuation<Void, Never>] = []
+    /// The run this timeline belongs to, if any. A sleep or settle from any
+    /// other thread is work that escaped it.
+    private let owner: VirtualTimeScheduler?
+
+    init(owner: VirtualTimeScheduler? = nil) {
+        self.owner = owner
+    }
 
     var now: VirtualClock.Instant {
         lock.lock()
@@ -46,6 +54,7 @@ final class VirtualTimeline: @unchecked Sendable {
         until deadline: VirtualClock.Instant,
         _ continuation: CheckedContinuation<Void, Error>
     ) {
+        noteCallingThread()
         lock.lock()
         // The cancellation handler can run before the continuation exists —
         // it runs at once for a task cancelled on entry — so a cancel that
@@ -93,6 +102,37 @@ final class VirtualTimeline: @unchecked Sendable {
         lock.unlock()
         sleeper.continuation.resume()
         return true
+    }
+
+    /// Park a ``VirtualClock/settle()`` caller until the scheduler next finds
+    /// its queue empty.
+    func awaitSettle(_ continuation: CheckedContinuation<Void, Never>) {
+        noteCallingThread()
+        lock.lock()
+        settleWaiters.append(continuation)
+        lock.unlock()
+    }
+
+    /// Resume every ``VirtualClock/settle()`` caller. The scheduler calls this
+    /// only with its queue empty, before it moves time. Returns `false` when
+    /// nobody was waiting.
+    @discardableResult
+    func resumeSettled() -> Bool {
+        lock.lock()
+        let woken = settleWaiters
+        settleWaiters.removeAll()
+        lock.unlock()
+        for waiter in woken {
+            waiter.resume()
+        }
+        return !woken.isEmpty
+    }
+
+    /// Tell the owning run when its clock is used from a thread outside it.
+    private func noteCallingThread() {
+        if let owner, VirtualTimeScheduler.current !== owner {
+            owner.noteEscape(.clockUsedFromOutside)
+        }
     }
 
     /// Wake every sleeper with `CancellationError`, for tearing down a run
@@ -159,6 +199,26 @@ struct VirtualClock: Clock {
             }
         } onCancel: {
             timeline.cancel(ticket)
+        }
+    }
+
+    /// Suspends until every other task in the run is blocked, without moving
+    /// time.
+    ///
+    /// A virtual sleep also waits for quiescence, but then moves `now`, which
+    /// can wake a sleeper the caller meant to inspect while still asleep — a
+    /// source parked "forever", say. `settle()` returns at the first moment
+    /// the scheduler's queue is empty, before it would wake anyone, so what a
+    /// lifetime law checks afterwards is what the run left behind, not what a
+    /// later deadline undid. Cancellation does not cut it short: the wait
+    /// already ends as soon as nothing else can run.
+    ///
+    /// Not for calling in a loop: the scheduler resumes settlers before it
+    /// checks the horizon, so a task that only ever settles would keep the run
+    /// from ending, and teardown resumes a bounded number of settles.
+    func settle() async {
+        await withCheckedContinuation { continuation in
+            timeline.awaitSettle(continuation)
         }
     }
 }

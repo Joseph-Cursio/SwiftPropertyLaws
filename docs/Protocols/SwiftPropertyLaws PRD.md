@@ -655,7 +655,9 @@ Failures report which specific protocol law was violated, the strictness tier, a
 
 ### 4.5 Backend Abstraction
 
-PropertyLawKit defines a public `PropertyBackend` protocol so teams can swap the underlying runner. The signature accommodates async, throwing properties (the common case in Swift code under test) and `Sendable` types (Swift 6 strict concurrency):
+PropertyLawKit defines a public `PropertyBackend` protocol so teams can swap the underlying runner. The signature accommodates async, throwing properties (the common case in Swift code under test) and `Sendable` types (Swift 6 strict concurrency).
+
+**4.13.0 (unreleased) adds a second sampling requirement, and existing backends keep compiling unchanged.** `check(trials:seed:drawing:property:)` hands the sampling closure an `inout any SeededRandomNumberGenerator` instead of an `inout Xoshiro`, so an engine can draw from a generator of its own, and the per-trial driver now calls it. A backend implements one of the two requirements: `PropertyBackend` supplies the default `drawing:`, and `DrawingPropertyBackend` supplies the default `sample:`. Every historical seed draws the same inputs on the default backend (`BackendSeedPinTests` pins them against values captured before the change).
 
 ```swift
 public protocol PropertyBackend: Sendable {
@@ -667,14 +669,40 @@ public protocol PropertyBackend: Sendable {
         sample: @Sendable (inout Xoshiro) -> Input,
         property: @Sendable (Input) async throws -> Bool
     ) async -> BackendCheckResult<Input>
+
+    // 4.13.0
+    @_disfavoredOverload
+    func check<Input: Sendable>(
+        trials: Int,
+        seed: Seed?,
+        drawing: @Sendable (inout any SeededRandomNumberGenerator) -> Input,
+        property: @Sendable (Input) async throws -> Bool
+    ) async -> BackendCheckResult<Input>
 }
+
+// 4.13.0: supplies the default `sample:` for an engine that implements only `drawing:`.
+public protocol DrawingPropertyBackend: PropertyBackend {}
 ```
 
-The backend owns the trial loop and the random stream. `sample` draws one input from a seeded `Xoshiro`, so a backend never needs to know about `Generator`. It returns `.passed(trialsRun:initialSeed:)` or `.failed(trialsRun:initialSeed:failingInput:thrownError:)`. Everything above that stays in the kit: the law, its tier, shrinking a failing input, near-miss collection, suppression and formatting.
+The backend owns the trial loop and the random stream. The sampling closure draws one input from the generator it is handed, so a backend never needs to know about `Generator`. It returns `.passed(trialsRun:initialSeed:)` or `.failed(trialsRun:initialSeed:failingInput:thrownError:)`. Everything above that stays in the kit: the law, its tier, shrinking a failing input, near-miss collection, suppression and formatting.
 
-**Single-backend by design.** The kit ships only `SwiftPropertyBasedBackend`, the default for `LawCheckOptions.backend`, and deliberately does not chase a second implementation. The surface was shaped against `swift-property-based`, with SwiftQC's documented shrinking and async semantics as the design check that it generalizes. A second backend (e.g., a SwiftQC adapter) can drop in without changing law definitions, the moment one becomes a useful addition rather than a parity exercise.
+**Which requirement to implement.**
 
-Some checks bypass the backend: aggregate laws that judge a whole budget at once (`Hashable.distribution`, and the pooled equal-value laws of §4.4) draw from the kit's own seeded stream, and walks over an `Enumeration` run in a fixed order that no backend may vary.
+- **A backend written before 4.13.0** implements `sample:` and conforms to `PropertyBackend`. The default `drawing:` runs the kit's closure on the backend's own `Xoshiro`. `Xoshiro` is a value type, and boxing it in the existential copies it, so the default writes the advanced state back after every draw; a seed replays as the same inputs.
+- **A new engine** implements `drawing:` and conforms to `DrawingPropertyBackend`, whose default `sample:` serves callers of the `Xoshiro` form. When the engine's generator is a `Xoshiro`, the closure runs on it directly and the state is written back. Otherwise each call runs on a fresh `Xoshiro` seeded from four of the engine's words: deterministic for a seed, but not the values the default backend would draw.
+- **Implementing neither.** A plain `PropertyBackend` that implements neither does not compile, because `sample:` has no default there. A `DrawingPropertyBackend` that implements neither compiles, since Swift cannot require "at least one of two"; its first `check` call traps with a message naming the type. Without the trap the two `async` defaults would call each other forever, growing the heap rather than overflowing the stack.
+
+- **Calls that pass the sampling closure unlabeled.** Swift drops the label of a first trailing closure, so `backend.check(trials: n, seed: s) { rng in … } property: { … }` matches both requirements. The `drawing:` declarations are `@_disfavoredOverload`, so such a call resolves to `sample:` as it did before 4.13.0 instead of failing as ambiguous. A third-party type that implements both requirements should mark its `drawing:` method the same way for calls on the concrete type.
+
+`Seed` is still four `UInt64`s, the `Xoshiro` state. An engine with another generator maps it to its own state and reports a `Seed` back.
+
+**Single-backend by design.** The kit ships only `SwiftPropertyBasedBackend`, the default for `LawCheckOptions.backend`, and deliberately does not chase a second implementation. It implements both requirements over one loop. The surface was shaped against `swift-property-based`, with SwiftQC's documented shrinking and async semantics as the design check that it generalizes. A second backend (e.g., a SwiftQC adapter) can drop in without changing law definitions, the moment one becomes a useful addition rather than a parity exercise.
+
+**Not yet backend-driven.** Three drivers bypass the backend and draw from the kit's own `Xoshiro`, whatever `LawCheckOptions.backend` is; they record the backend's identifier only in the environment fingerprint:
+
+- `AggregateDriver`, for laws that judge a whole budget at once (`Hashable.distribution`, `InteractionInvariant.isFalsifiable`);
+- `DrawPoolDriver`, for the three equal-value laws under `LawCheckOptions.equalValuePairing` (§4.4);
+- `EnumerationDriver`, for walks over an `Enumeration`, which run in a fixed order that no backend may vary.
 
 #### Sendable Types
 
@@ -839,7 +867,7 @@ Laws and generators that need a third-party dependency ship as separate products
 |---|---|---|
 | `PropertyLawComplex` | `swift-numerics` | `Gen<Complex<Double>>.edgeCaseBiased()`: 90% finite values, 10% drawn from a curated set of twelve edge cases |
 | `PropertyLawCollections` | `swift-collections` | Generators for `Deque`, `OrderedSet`, `OrderedDictionary`, `BitSet`, `Heap`, `TreeSet` and `TreeDictionary`; `DequeLayouts.everyLayout()`, an `Enumeration` of deque buffer layouts including wrapped ones; and three law families over concrete types: `checkHeapPropertyLaws` (draining matches a sorted model), `checkDequeSymmetryPropertyLaws` (front-end operations mirror the back end and agree with an array model) and `checkOrderPreservationPropertyLaws` (`OrderedSet` order) |
-| `PropertyLawAsync` | `swift-async-algorithms` | `checkAsyncSequencePropertyLaws` — nine clock-free laws over a source array lifted to an async sequence: chunks, adjacent pairs, `removeDuplicates`, interspersed and compacted agree with sync models; `merge` preserves the element multiset; `zip` matches sync `zip`; an exhausted iterator stays exhausted. `checkTimedAsyncSequencePropertyLaws` — four `debounce` and cancellation laws run in virtual time on the product's own scheduler, which advances the clock only when every task is idle, so a run cannot hang |
+| `PropertyLawAsync` | `swift-async-algorithms` | `checkAsyncSequencePropertyLaws` — nine clock-free laws over a source array lifted to an async sequence: chunks, adjacent pairs, `removeDuplicates`, interspersed and compacted agree with sync models; `merge` preserves the element multiset; `zip` matches sync `zip`; an exhausted iterator stays exhausted. `checkTimedAsyncSequencePropertyLaws` — four `debounce` and cancellation laws run in virtual time on the product's own scheduler, which advances the clock only when every task is idle, so a run cannot hang. `checkAsyncLifetimePropertyLaws` — four lifetime laws over an operator the caller supplies, applied to a release-tracking probe source in virtual time: upstream released when the consumer leaves, cancellation reaches upstream, failure reaches the consumer without demand, finished stays finished |
 | `PropertyLawSyntax` | `swift-syntax` (`SwiftParser`) | `Gen<Syntax>.syntax()` and `Gen<T>.syntaxNode()` for any typed node, drawn from a pool of parsed trees kept alive so node identities stay distinct; `static func gen()` on `Syntax`, `ExprSyntax`, `DeclSyntax`, `StmtSyntax`, `PatternSyntax`, `TypeSyntax` and `TokenSyntax`, so derived code that spells `T.gen()` resolves |
 | `PropertyLawMinimalTypes` | — | `MinimalSequence`, `MinimalCollection` and `MinimalBidirectionalCollection`, the weakest legal conformances, for running a suite against something that is not `Array`; plus a minimal codec |
 

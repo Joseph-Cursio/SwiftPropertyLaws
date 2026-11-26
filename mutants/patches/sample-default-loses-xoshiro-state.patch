@@ -1,0 +1,11 @@
+diff --git a/Sources/PropertyLawKit/Public/PropertyBackend.swift b/Sources/PropertyLawKit/Public/PropertyBackend.swift
+--- a/Sources/PropertyLawKit/Public/PropertyBackend.swift
++++ b/Sources/PropertyLawKit/Public/PropertyBackend.swift
+@@ -210,7 +210,6 @@
+             drawing: { generator in
+                 if var xoshiro = generator as? Xoshiro {
+                     let input = sample(&xoshiro)
+-                    generator = xoshiro
+                     return input
+                 }
+                 var derived = BackendBridge.xoshiro(seededFrom: &generator)

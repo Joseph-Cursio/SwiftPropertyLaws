@@ -105,6 +105,35 @@ struct DownstreamPropertyBackendSmokeTests {
         }
     }
 
+    // MARK: - Unlabeled trailing sampling closure
+
+    /// Code written before 4.13.0 may pass the sampling closure as an
+    /// unlabeled trailing closure. Swift drops a first trailing closure's
+    /// label, so the call matches both `sample:` and `drawing:`; the
+    /// `drawing:` requirement is `@_disfavoredOverload` so the call still
+    /// resolves. If that ever regresses, this file stops compiling with
+    /// "ambiguous use of 'check'".
+    @Test
+    func unlabeledTrailingSamplingClosureStillCompiles() async {
+        let backend = SwiftPropertyBasedBackend()
+        let existential: any PropertyBackend = backend
+        let seed = Seed(stateA: 1, stateB: 2, stateC: 3, stateD: 4)
+        let concrete = await backend.check(trials: 10, seed: seed) { rng in
+            Gen<Int>.int(in: 0 ... 9).run(using: &rng)
+        } property: { _ in true }
+        let boxed = await existential.check(trials: 10, seed: seed) {
+            Int.random(in: 0 ... 9, using: &$0)
+        } property: { _ in true }
+        for result in [concrete, boxed] {
+            guard case let .passed(trialsRun, initialSeed) = result else {
+                Issue.record("Always-true property should not fail")
+                continue
+            }
+            #expect(trialsRun == 10)
+            #expect(initialSeed == seed)
+        }
+    }
+
     // MARK: - Replay reproducibility
 
     @Test
