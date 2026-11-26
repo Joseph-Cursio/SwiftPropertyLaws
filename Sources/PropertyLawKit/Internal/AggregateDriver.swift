@@ -41,7 +41,7 @@ internal enum AggregateDriver {
         observation: Observation = Observation(),
         check: @Sendable (inout Xoshiro, Int) async throws -> Outcome
     ) async -> CheckResult {
-        let environment = Environment.current(backend: options.backend)
+        let environment = Environment.current(options: options)
         if let early = CheckPreflight.earlyResult(
             protocolLaw: protocolLaw, tier: tier, options: options, environment: environment
         ) {

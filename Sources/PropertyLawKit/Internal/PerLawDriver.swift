@@ -74,7 +74,7 @@ package enum PerLawDriver {
         check: LawCheck<Input>,
         observation: Observation<Input> = Observation()
     ) async -> CheckResult {
-        let environment = Environment.current(backend: options.backend)
+        let environment = Environment.current(options: options)
         if let early = CheckPreflight.earlyResult(
             protocolLaw: protocolLaw, tier: tier, options: options, environment: environment
         ) {

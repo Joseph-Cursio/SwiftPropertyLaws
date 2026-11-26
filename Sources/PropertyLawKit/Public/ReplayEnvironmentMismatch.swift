@@ -1,19 +1,27 @@
 /// Replay-strictness policy for `LawCheckOptions.expectedReplayEnvironment`.
 /// Defaults to `.exact`; relaxations are escape hatches for legitimate
 /// toolchain bumps where the seed is still expected to be deterministic.
+///
+/// A relaxation accepts environment drift. It never relaxes
+/// `Environment.scheduling`: a different scheduling strategy is not drift, it
+/// draws different inputs and schedules from the same seed, so a stored seed
+/// cannot replay under it whatever the toolchain or backend.
 public enum EnvironmentRelaxation: Sendable, Hashable {
     /// Every fingerprint field must match.
     case exact
 
-    /// Only the backend identity must match. Useful when bumping the Swift
+    /// The backend identity and the scheduling strategy must match; the Swift
+    /// version and generator schema may differ. Useful when bumping the Swift
     /// toolchain across a CI run on a backend whose RNG didn't change.
     case matchBackendOnly
 
-    /// Only the Swift version must match. Useful when swapping backends in
+    /// The Swift version and the scheduling strategy must match; the backend
+    /// and generator schema may differ. Useful when swapping backends in
     /// development and the test is generator-schema-stable.
     case matchSwiftVersionOnly
 
     func matches(expected: Environment, actual: Environment) -> Bool {
+        guard expected.scheduling == actual.scheduling else { return false }
         switch self {
         case .exact:
             return expected == actual
@@ -57,6 +65,10 @@ public struct ReplayEnvironmentMismatch: Error, Sendable, CustomStringConvertibl
             diffs.append(
                 "generatorSchema: \(expected.generatorSchemaHash) → \(actual.generatorSchemaHash)"
             )
+        }
+        if expected.scheduling != actual.scheduling {
+            // `nil` is how a FIFO fingerprint records its strategy.
+            diffs.append("scheduling: \(expected.scheduling ?? "fifo") → \(actual.scheduling ?? "fifo")")
         }
         let body = diffs.isEmpty ? "<no field-level diff>" : diffs.joined(separator: "; ")
         return "ReplayEnvironmentMismatch — \(body)"
