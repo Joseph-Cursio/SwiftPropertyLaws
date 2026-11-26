@@ -48,6 +48,10 @@ Requires a clean working tree.
 | `carrier-walk-does-not-stop-at-first-failure` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
 | `carrier-run-ignores-the-per-carrier-budget` | carrier-walk | killed | `perCarrierBudgetIsWhatCounts` |
 | `carrier-coverage-always-reports-complete` | carrier-walk | killed | `carrierEnumerationFindsWhatOneCarrierCannot` |
+| `carrier-suite-error-swallowed` | carrier-walk | killed | `aThrowingSuiteFailsTheWalk` |
+| `carrier-suite-error-names-the-first-carrier` | carrier-walk | killed | `theErrorNamesTheThrowingCarrier` |
+| `carrier-walk-continues-past-a-throwing-suite` | carrier-walk | killed | `theWalkStopsAtTheThrowingCarrier` |
+| `carrier-suite-error-wraps-control-flow` | carrier-walk | killed | `cancellationIsNotWrapped` |
 | `thorough-is-not-ten-thousand` | budget-naming | killed | `everyBudgetIsATrialCountAndNothingElse` |
 | `deprecated-exhaustive-loses-its-argument` | budget-naming | killed | `theDeprecatedExhaustiveSpellingStillResolvesToACount` |
 | `comparable-antisymmetry-never-counts` | rare-antecedent | killed | `comparableConditionalLawsReportHowOftenTheyApplied` |
@@ -75,6 +79,7 @@ Requires a clean working tree.
 | `nested-run-is-not-refused` | virtual-time | killed | `aRunInsideARunIsRefused` |
 | `collector-drops-allow-nan` | inherited-options | killed | `allowNaNPropagatesToInheritedFloatingPointSuite` |
 | `binary-float-rebuild-drops-allow-nan` | inherited-options | killed | `allowNaNPropagatesToInheritedFloatingPointSuite` |
+| `collector-swallows-non-violations` | inherited-options | killed | `inheritedCollectorRethrowsNonViolations` |
 | `nonfatal-violation-records-as-error` | enforcement-reporting | killed | `subStrictViolationUnderDefaultIsAWarningNotAFailure` |
 | `nonfatal-violation-is-silent` | enforcement-reporting | killed | `subStrictViolationUnderDefaultIsAWarningNotAFailure` |
 | `default-enforcement-escalates-every-tier` | enforcement-reporting | killed | `unstableHasherDoesNotThrowByDefault` |
@@ -206,6 +211,17 @@ precisely what the separate `perCarrier` parameter exists to prevent.
 `carrier-coverage-always-reports-complete` lets a walk that stopped at the
 eighth of eleven carriers claim it covered everything. Neither would be noticed
 by any assertion about pass or fail.
+
+**Four more `carrier-walk` mutants guard a suite that throws (2026-11-24).** A
+suite that throws anything but a violation tested nothing for that carrier, so
+the walk stops there with `CarrierSuiteError`. `carrier-suite-error-swallowed`
+is the old behaviour: the carrier counts as visited with no results, and a suite
+that throws for every carrier passes. `carrier-walk-continues-past-a-throwing-suite`
+is the subtle one: it throws the first error at the end, so the error still
+names the right carrier, and only `theWalkStopsAtTheThrowingCarrier`, which
+records the carriers visited, tells them apart. `carrier-suite-error-wraps-control-flow`
+wraps cancellation and Swift Testing's own errors too, so `Test.cancel()` fails
+the test and a failed `#require` is recorded twice.
 
 **`budget-naming` guards a migration, which is a different risk again.**
 `deprecated-exhaustive-loses-its-argument` is the one worth reading: the

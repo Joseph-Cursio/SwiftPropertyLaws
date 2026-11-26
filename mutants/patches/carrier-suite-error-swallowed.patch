@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+index f921d07..c71b8f4 100644
+--- a/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
++++ b/Sources/PropertyLawKit/Public/EveryCarrierLaws.swift
+@@ -76,7 +76,7 @@ public func checkEveryCarrier<Carrier: Sendable>(
+             } catch where passesThroughUnwrapped(error) {
+                 throw error
+             } catch {
+-                throw CarrierSuiteError(carrier: carriers.address(of: index), underlying: error)
++                results = []
+             }
+             merged.absorb(results, carrier: carriers.address(of: index))
+             if merged.sawViolation { break }

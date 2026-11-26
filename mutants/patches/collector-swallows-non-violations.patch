@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift b/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift
+index 839350f..2a9765a 100644
+--- a/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift
++++ b/Sources/PropertyLawKit/Internal/InheritedLawCollector.swift
+@@ -33,6 +33,8 @@ func collectingInheritedLaws(
+         return try await check(inheritedOptions)
+     } catch let violation as PropertyLawViolation {
+         return violation.results
++    } catch {
++        return []
+     }
+     // **Anything else is rethrown.** A catch-all here once returned `[]`, so a check that threw
+     // tested nothing and looked like a pass: through `checkEveryCarrier`, a suite that threw for

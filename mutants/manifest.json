@@ -675,6 +675,46 @@
       "label": "The recursive helper's outer `return` (column 4) moves its expression 8, like the base arm inside the `if`, so its `.map` sits 4 deeper than its `return`. Each placement site must add its own column, not a shared one."
     },
     {
+      "id": "carrier-suite-error-swallowed",
+      "patch": "patches/carrier-suite-error-swallowed.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "aThrowingSuiteFailsTheWalk",
+      "label": "checkEveryCarrier folds a suite that threw into the walk as no results, so a suite that throws for every carrier returns nothing and passes: the swallow this shape's newest test exists to catch."
+    },
+    {
+      "id": "carrier-suite-error-names-the-first-carrier",
+      "patch": "patches/carrier-suite-error-names-the-first-carrier.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "theErrorNamesTheThrowingCarrier",
+      "label": "CarrierSuiteError always names the first carrier walked, so a suite that throws on the fourth carrier is reported against the first."
+    },
+    {
+      "id": "carrier-walk-continues-past-a-throwing-suite",
+      "patch": "patches/carrier-walk-continues-past-a-throwing-suite.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "theWalkStopsAtTheThrowingCarrier",
+      "label": "checkEveryCarrier keeps walking after a suite throws and throws the first error at the end. The error names the right carrier, so only a record of the carriers visited shows the walk did not stop."
+    },
+    {
+      "id": "carrier-suite-error-wraps-control-flow",
+      "patch": "patches/carrier-suite-error-wraps-control-flow.patch",
+      "shape": "carrier-walk",
+      "expected": "killed",
+      "test": "cancellationIsNotWrapped",
+      "label": "checkEveryCarrier wraps every error, cancellation and Swift Testing's control flow included: `catch is CancellationError` misses, Test.cancel() fails the test, and a failed #require is recorded twice."
+    },
+    {
+      "id": "collector-swallows-non-violations",
+      "patch": "patches/collector-swallows-non-violations.patch",
+      "shape": "inherited-options",
+      "expected": "killed",
+      "test": "inheritedCollectorRethrowsNonViolations",
+      "label": "collectingInheritedLaws ends in `catch { return [] }` again, so a check that throws anything but a violation tested nothing and looks like a pass."
+    },
+    {
       "id": "drawing-default-loses-xoshiro-state",
       "patch": "patches/drawing-default-loses-xoshiro-state.patch",
       "shape": "backend-seam",
