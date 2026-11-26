@@ -11,13 +11,37 @@ import Foundation
 /// *is* quiescence. Only then does it wake the earliest sleeper.
 ///
 /// A run cannot hang. With the queue empty, the body unfinished and nobody
-/// asleep, every task is waiting on something no task will do; that is
-/// reported as ``VirtualTimeError/deadlock(stuckAt:)`` rather than awaited.
+/// asleep, every task is waiting on something no task in the run will do.
+/// The run then waits ``VirtualTimeScheduler/graceWindow`` of real time for
+/// work from outside, and if none comes it reports
+/// ``VirtualTimeError/deadlock(stuckAt:)`` rather than wait any longer.
 ///
 /// **Contract.** Every job of the run must be created or resumed from inside
-/// the run. Real I/O, wall-clock sleeps and callbacks from other threads
-/// escape the scheduler, and a run that depends on them will be judged
-/// quiescent while they are still pending.
+/// the run. A real `Task.sleep`, `MainActor`, an actor on a custom executor,
+/// real I/O and callbacks from other threads take work out of the scheduler,
+/// and `Task.yield()` inside an actor usually does. When that work shows
+/// itself — a task of the run enqueued from another thread, the body
+/// finishing on one, the clock used from one, or one of its tasks run by
+/// another live run — the run ends with
+/// ``VirtualTimeError/escaped(at:evidence:)``, whatever the body returned,
+/// because virtual time may have moved while the work was away.
+///
+/// A task is the run's once one of its jobs has run in the run's queue, and
+/// only if it was created after the run's root task (see ``RunRegistry``).
+/// What is not seen:
+/// - work that stays away past the grace window, which is why a deadlock's
+///   message says it may be an escape;
+/// - work still away when the body returns, since the run ends then;
+/// - a task created before the run that it resumes: not the run's, so its
+///   later trips away are left to the runtime;
+/// - a task the run created whose jobs never reach its queue — started on
+///   `MainActor` or another executor, or begun inside an actor's job and
+///   leaving the actor without an enqueue — which is never the run's.
+///
+/// And one false escape: an outside task created after the run started and
+/// resumed by it counts as the run's, so its own later trip away is blamed
+/// on the run. Concurrent runs that share an actor can fail this way, or as
+/// ``EscapeEvidence/Kind/sharedWithAnotherRun``, depending on timing.
 ///
 /// - Parameter horizon: the furthest virtual time the run may reach. A run
 ///   whose next sleeper lies beyond it fails with
@@ -45,9 +69,12 @@ func runInVirtualTime<Value: Sendable>(
 
 /// Why a virtual-time run ended without its body's result.
 enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
-    /// Every task was blocked and nothing was asleep, so nothing could ever
-    /// run again.
+    /// Every task was blocked, nothing was asleep, and no work came back from
+    /// outside the run within the grace window.
     case deadlock(stuckAt: Duration)
+    /// Some of the run's work ran outside its scheduler, so its verdict
+    /// cannot be trusted.
+    case escaped(at: Duration, evidence: EscapeEvidence.Kind)
     /// The next sleeper's deadline lies beyond the run's horizon.
     case horizonExceeded(horizon: Duration, nextDeadline: Duration)
     /// The runtime's global enqueue hook could not be found.
@@ -61,8 +88,14 @@ enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
     var description: String {
         switch self {
         case .deadlock(let now):
-            return "virtual-time deadlock at \(now): every task is blocked and "
-                + "none is sleeping on the clock"
+            return "virtual-time deadlock at \(now), or work that escaped the scheduler: every task is blocked, "
+                + "none is sleeping on the clock, and nothing came back from outside the run within "
+                + "\(VirtualTimeScheduler.graceWindow)"
+
+        case let .escaped(now, evidence):
+            return "work escaped the virtual-time scheduler by \(now): \(evidence). A real sleep, MainActor, "
+                + "a custom executor, Task.yield() inside an actor or a callback from another thread can run "
+                + "outside virtual time, so the run's result cannot be trusted"
 
         case let .horizonExceeded(horizon, nextDeadline):
             return "virtual time would pass its horizon of \(horizon): the next "
@@ -110,9 +143,22 @@ private final class RunOutcome<Value: Sendable>: @unchecked Sendable {
 /// same thread, so it is diverted too. Jobs from every other thread pass
 /// through untouched.
 final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
+    /// How long a run that looks deadlocked waits for work from outside before
+    /// it says so. Escaped work that takes longer to come back is not seen.
+    static let graceWindow: Duration = .milliseconds(100)
+
     private let lock = NSLock()
     private var jobs: [UnownedJob] = []
     private var head = 0
+    private let evidence = EscapeEvidence()
+    // Touched only on the run's own thread.
+    /// The root task's ID. Task IDs only grow, so a task with a smaller one
+    /// was created before the run and is not the run's.
+    private var rootID: UInt64?
+    /// Every task whose jobs this run has run, so each is claimed once.
+    private var seenIDs: Set<UInt64> = []
+    /// The tasks this run claimed in ``RunRegistry``, to forget at the end.
+    private var ownedIDs: Set<UInt64> = []
 
     /// The scheduler that owns the calling thread, if any. Read by the
     /// enqueue hook on every global enqueue in the process.
@@ -128,7 +174,12 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         return key
     }()
 
+    /// A job for this executor. From a thread outside the run, it is work
+    /// coming back from wherever it escaped to.
     func enqueue(_ job: consuming ExecutorJob) {
+        if Self.current !== self {
+            evidence.record(.taskResumedFromOutside)
+        }
         schedule(UnownedJob(job))
     }
 
@@ -140,6 +191,17 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
 
     func asUnownedSerialExecutor() -> UnownedSerialExecutor {
         UnownedSerialExecutor(ordinary: self)
+    }
+
+    /// A task of this run, enqueued from another thread: back from wherever it
+    /// escaped to. Run it here, and report the escape.
+    func takeBack(_ job: UnownedJob) {
+        evidence.record(.taskResumedFromOutside)
+        schedule(job)
+    }
+
+    func noteEscape(_ kind: EscapeEvidence.Kind) {
+        evidence.record(kind)
     }
 
     /// Run `body` to completion on the calling thread, which this scheduler
@@ -160,7 +222,13 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         // from this thread once `run` is done — is not diverted into a queue
         // nobody will drain again.
         defer { pthread_setspecific(Self.threadKey, nil) }
-        return drive(horizon: horizon, hook: hook, body)
+        let result = drive(horizon: horizon, hook: hook, body)
+        // From here a task of this run enqueued from another thread goes to
+        // the runtime. One handed back before the registry forgot it is still
+        // queued; run it rather than strand it.
+        RunRegistry.shared.forget(ownedIDs, of: self)
+        drain(recording: false)
+        return result
     }
 
     private func drive<Value: Sendable>(
@@ -168,15 +236,22 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         hook: GlobalEnqueueHook,
         _ body: @escaping @Sendable (VirtualClock) async throws -> Value
     ) -> Result<Value, Error> {
-        let timeline = VirtualTimeline()
+        let timeline = VirtualTimeline(owner: self)
         let clock = VirtualClock(timeline: timeline)
         let outcome = RunOutcome<Value>()
         let root = Task {
+            let result: Result<Value, Error>
             do {
-                outcome.record(.success(try await body(clock)))
+                result = .success(try await body(clock))
             } catch {
-                outcome.record(.failure(error))
+                result = .failure(error)
             }
+            // Before the result, so a run that sees the result also sees why
+            // it cannot keep it.
+            if Self.current !== self {
+                self.evidence.record(.bodyFinishedOutside)
+            }
+            outcome.record(result)
         }
         let failure: VirtualTimeError
         while true {
@@ -187,7 +262,15 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
             if timeline.resumeSettled() {
                 continue
             }
-            if let result = outcome.result {
+            // The result before the evidence: a body finishing on another
+            // thread records its evidence first, so a result read here comes
+            // with any evidence it carries.
+            let finished = outcome.result
+            if let kind = evidence.kind {
+                failure = .escaped(at: timeline.now.offset, evidence: kind)
+                break
+            }
+            if let result = finished {
                 // The body is done, but a task it started may still be asleep.
                 // Wake it with `CancellationError` rather than leave it parked
                 // on a clock nobody will advance again.
@@ -199,6 +282,11 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
                 break
             }
             guard let next = timeline.earliestDeadline else {
+                // Only work outside the run can change anything now. Give it
+                // the grace window to come back before calling this a deadlock.
+                if awaitEvidence() {
+                    continue
+                }
                 failure = .deadlock(stuckAt: timeline.now.offset)
                 break
             }
@@ -213,10 +301,49 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     }
 
     /// Run every queued job, and every job those enqueue, until none remain.
-    private func drain() {
+    /// While `recording`, claim each job's task first, so the task is
+    /// recognised if it ever comes back from another thread.
+    private func drain(recording: Bool = true) {
         while let job = dequeue() {
+            if recording, let id = TaskIdentity.id(of: job), seenIDs.insert(id).inserted {
+                claim(id)
+            }
             job.runSynchronously(on: asUnownedSerialExecutor())
         }
+    }
+
+    /// Claim a task seen for the first time. The first job a run drains is
+    /// its root's, since the root's is the first enqueued.
+    private func claim(_ id: UInt64) {
+        let floor = rootID ?? id
+        rootID = floor
+        switch RunRegistry.shared.claim(id, for: self, createdSince: floor) {
+        case .claimed:
+            ownedIDs.insert(id)
+
+        case .createdBeforeTheRun:
+            break
+
+        case .ownedBy(let other):
+            // The other run's work left it; this run's own did not. Blaming
+            // this run too would depend on which of the other run's tasks
+            // happened to reach this queue.
+            other.noteEscape(.sharedWithAnotherRun)
+        }
+    }
+
+    /// Wait up to ``graceWindow`` of real time for evidence of an escape.
+    /// Every way work from outside can show itself — a job handed back or
+    /// enqueued here, the body finishing, the clock used — records evidence
+    /// before it changes anything else, so evidence is the one thing to watch.
+    /// Polls, because a run that reaches here is already a failure.
+    private func awaitEvidence() -> Bool {
+        let giveUp = ContinuousClock.now.advanced(by: Self.graceWindow)
+        while evidence.kind == nil {
+            guard ContinuousClock.now < giveUp else { return false }
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+        return true
     }
 
     private func dequeue() -> UnownedJob? {

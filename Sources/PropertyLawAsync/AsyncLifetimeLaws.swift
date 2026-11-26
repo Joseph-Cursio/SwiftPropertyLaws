@@ -55,6 +55,11 @@ private func runLifetimeTrial<Value: Sendable>(
                     + "needs longer, or whose output outlives its source, is out of its scope)"
             )
 
+        case .escaped:
+            throw LifetimeLawViolation(
+                description: "escaped: \(error); the lifetime laws need the operator's work to stay in virtual time"
+            )
+
         case .hookUnavailable, .foreignHookInstalled, .nestedRun:
             throw error
         }

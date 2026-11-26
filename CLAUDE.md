@@ -4,6 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**The virtual-time scheduler reports work that escaped it as `escaped`, not as a deadlock, for 4.14.0 (2026-11-25, unreleased).** Before, work that left the scheduler (a real `Task.sleep`, `MainActor.run`, an actor on a custom executor, a continuation resumed by Dispatch) made a run look stuck, and the run called it a deadlock. Now each run claims the tasks it creates in `RunRegistry`, by task ID (`TaskIdentity`: the runtime's `swift_task_getJobTaskId` via `dlsym`, falling back to parsing `UnownedJob.description`). When the global enqueue hook sees a claimed task enqueued from outside the run, it hands the task back, and the run records the escape. There are four more signs: the body finishing on another thread, a sleep or settle on the virtual clock from another thread, the scheduler's own `enqueue(_:)` called from outside, and another live run draining one of the run's tasks (`sharedWithAnotherRun`). Before calling anything a deadlock, the run waits `graceWindow` (100 ms of real time) for a sign. The deadlock message now says the run may have escaped. The lifetime laws fail an escaped run with `escaped:`, not `hang:`. All of it is internal, so there is no API change.
+
+The umbrella prototype's `docs/async-plan.md` (M2) has the probes and both reviews. What a later change must not undo:
+- **Any sign fails the run as `escaped`, even if the body returned.** Virtual time may have moved while the work was away, so a result is not trusted.
+- **A run claims only tasks whose ID is at least its root's.** Task IDs only grow, and the root's job is the first one drained. Claiming every task whose job ran on the run's thread would claim an outside task the run merely resumed, so that task's own trip to Dispatch became an escape of the run. `anOutsideTaskTheRunResumesIsNotTheRuns` pins this. An outside task created after the root and resumed by the run is still claimed, a documented false escape.
+- **The first live run to claim a task keeps it.** When another run drains that task's job, only the owner records `sharedWithAnotherRun`.
+- **The hook tries the current scheduler first, then the registry, then the runtime.** `returnToOwner` hands the job back under the registry's lock, and `run()` forgets its tasks before its last `drain(recording: false)`. A late job therefore either reaches the run before it ends or goes to the runtime, never a dead scheduler.
+- **The grace window is waited only on the deadlock path** and polls nothing but the evidence. A run that finishes or sleeps on the virtual clock pays nothing.
+
+Known limits, stated in the scheduler's doc comment:
+- work still away past the window, or when the body returns, is not seen;
+- a task created before the run that the run resumes is not the run's, so its later trips away are not seen;
+- a task the run created is never the run's if none of its jobs reaches the run's queue: one started on `MainActor` or another executor, or one begun inside an actor's job that the run never resumes. One the run does resume is the run's (`aTaskFirstSeenAfterALaterOneIsStillTheRuns`);
+- `Task.yield()` inside an actor usually escapes.
+
+Linux's Dispatch has no `DispatchSerialQueue`, so the tests' custom executor is written out (`QueueExecutor`). Escape probes go through `escapingVerdict`, which retries a deadlock twice. Under load the trip back can outlast the window: measured at a load average of 160, p99 40 ms and worst 98 ms.
+
+Two independent reviews. None of the umbrella's 53 real operators changed verdict or recorded an escape. Hand mutation testing: 42 and 22 mutants, all killed except equivalents and four races that only a test seam could reach. The async tests passed 20 of 20 runs on macOS with every core busy. 92 async tests, 1,420 in all.
+
 **`checkAsyncLifetimePropertyLaws` adds four lifetime laws to `PropertyLawAsync`, additively, for 4.14.0 (2026-11-25, unreleased).** The caller passes an operator built on a `LifetimeProbeSource` and a `LawClock`. Both are opaque public types with no public initializers. The check runs four laws in virtual time:
 - `releasesUpstreamWhenConsumerLeaves`;
 - `cancellationReachesUpstream`;
