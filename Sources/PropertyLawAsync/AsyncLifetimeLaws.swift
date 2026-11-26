@@ -12,7 +12,7 @@ import PropertyLawKit
 let lifetimeSlack: Swift.Duration = .milliseconds(200)
 
 /// `steps` slacks: the operator's allowance for that many steps.
-private func allowance(steps: Int) -> Swift.Duration {
+func allowance(steps: Int) -> Swift.Duration {
     lifetimeSlack * steps
 }
 
@@ -34,13 +34,14 @@ private func passedTheCap(_ when: String) -> String {
 /// so; every other run error passes through. When `cancelled` was raised
 /// first, the hang is a cancelled consumer whose `next()` never returned, an
 /// operator fault rather than a limit of the law, and the message says so.
-private func runLifetimeTrial<Value: Sendable>(
+func runLifetimeTrial<Value: Sendable>(
     horizon: Swift.Duration,
+    order: JobOrder,
     cancelled: ConsumerSignal? = nil,
     _ body: @escaping @Sendable (VirtualClock) async throws -> Value
 ) async throws -> Value {
     do {
-        return try await runInVirtualTime(horizon: horizon, body)
+        return try await runInVirtualTime(horizon: horizon, order: order, body)
     } catch let error as VirtualTimeError {
         switch error {
         case .deadlock, .horizonExceeded, .stepLimitExceeded:
@@ -71,7 +72,7 @@ private func runLifetimeTrial<Value: Sendable>(
     }
 }
 
-private func instant(_ offset: Swift.Duration) -> VirtualClock.Instant {
+func instant(_ offset: Swift.Duration) -> VirtualClock.Instant {
     VirtualClock.Instant(offset: offset)
 }
 
@@ -85,13 +86,16 @@ private func instant(_ offset: Swift.Duration) -> VirtualClock.Instant {
 /// a consumer cancelled inside `next()` is the cancellation law's case.
 func releasesUpstreamWhenConsumerLeaves<Element: Sendable, Output: AsyncSequence & Sendable>(
     of sample: [Element],
-    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output
+    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output,
+    order: JobOrder = .fifo
 ) async throws -> String? {
     let gaps = derivedGaps(count: sample.count)
     let deadline = gaps.reduce(Swift.Duration.zero, +) + allowance(steps: 1)
     let probe = LifetimeProbe()
     let cancelled = ConsumerSignal()
-    let (left, seen) = try await runLifetimeTrial(horizon: deadline + lifetimeSlack, cancelled: cancelled) { clock in
+    let (left, seen) = try await runLifetimeTrial(
+        horizon: deadline + lifetimeSlack, order: order, cancelled: cancelled
+    ) { clock in
         let source = LifetimeProbeSource(
             clock: clock, gaps: gaps, elements: sample, ending: .park, tailGap: .zero, probe: probe
         )
@@ -125,14 +129,17 @@ func releasesUpstreamWhenConsumerLeaves<Element: Sendable, Output: AsyncSequence
 /// cancelled at the deadline, inside `next()`, and the same holds.
 func cancellationReachesUpstream<Element: Sendable, Output: AsyncSequence & Sendable>(
     of sample: [Element],
-    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output
+    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output,
+    order: JobOrder = .fifo
 ) async throws -> String? {
     let gaps = derivedGaps(count: sample.count)
     let pause = gaps.reduce(Swift.Duration.zero, +) + allowance(steps: 1)
     let deadline = pause + lifetimeSlack
     let probe = LifetimeProbe()
     let cancelled = ConsumerSignal()
-    let seen = try await runLifetimeTrial(horizon: deadline + lifetimeSlack, cancelled: cancelled) { clock in
+    let seen = try await runLifetimeTrial(
+        horizon: deadline + lifetimeSlack, order: order, cancelled: cancelled
+    ) { clock in
         let source = LifetimeProbeSource(
             clock: clock, gaps: gaps, elements: sample, ending: .park, tailGap: .zero, probe: probe
         )
@@ -168,7 +175,8 @@ func cancellationReachesUpstream<Element: Sendable, Output: AsyncSequence & Send
 /// partner — owes no failure, and passes.
 func failureReachesConsumerWithoutDemand<Element: Sendable, Output: AsyncSequence & Sendable>(
     of sample: [Element],
-    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output
+    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output,
+    order: JobOrder = .fifo
 ) async throws -> String? {
     let gaps = derivedGaps(count: sample.count)
     let elementsEnd = gaps.reduce(Swift.Duration.zero, +)
@@ -180,7 +188,7 @@ func failureReachesConsumerWithoutDemand<Element: Sendable, Output: AsyncSequenc
     // with an allowance per step.
     let horizon = pause + elementsEnd + lifetimeSlack + allowance(steps: sample.count + 2)
     let probe = LifetimeProbe()
-    return try await runLifetimeTrial(horizon: horizon) { clock in
+    return try await runLifetimeTrial(horizon: horizon, order: order) { clock in
         let source = LifetimeProbeSource(
             clock: clock, gaps: gaps, elements: sample, ending: .fail, tailGap: lifetimeSlack, probe: probe
         )
@@ -216,12 +224,13 @@ func failureReachesConsumerWithoutDemand<Element: Sendable, Output: AsyncSequenc
 /// three more times: each must return `nil`.
 func finishedStaysFinished<Element: Sendable, Output: AsyncSequence & Sendable>(
     of sample: [Element],
-    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output
+    applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output,
+    order: JobOrder = .fifo
 ) async throws -> String? {
     let gaps = derivedGaps(count: sample.count)
     let ending: LifetimeProbeSource<Element>.Ending = sample.count.isMultiple(of: 2) ? .finish : .fail
     let horizon = gaps.reduce(Swift.Duration.zero, +) + allowance(steps: sample.count + 1)
-    return try await runLifetimeTrial(horizon: horizon) { clock in
+    return try await runLifetimeTrial(horizon: horizon, order: order) { clock in
         let source = LifetimeProbeSource(
             clock: clock, gaps: gaps, elements: sample, ending: ending, tailGap: .zero, probe: LifetimeProbe()
         )
@@ -280,22 +289,25 @@ private func checkLifetimeLaw<
     _ law: AsyncLifetimeLaw,
     generator: Generator<[Element], Shrinker>,
     options: LawCheckOptions,
-    property: @escaping @Sendable ([Element]) async throws -> String?
+    property: @escaping @Sendable ([Element], JobOrder) async throws -> String?
 ) async -> CheckResult {
     await runUnaryLaw(
         LawIdentifier.asyncLifetime(law).qualifiedName,
-        generator: generator,
+        source: scheduledSampler(generator, options: options),
         options: options,
-        property: { sample in
-            if let reason = try await property(sample) {
+        property: { input in
+            if let reason = try await property(input.value, input.order) {
                 throw LifetimeLawViolation(description: reason)
             }
             return true
         },
-        formatCounterexample: { sample, error in
-            "source = \(sample); " + (error?.message ?? "the law did not hold")
+        formatCounterexample: { input, error in
+            "source = \(input.value); " + (error?.message ?? "the law did not hold") + input.scheduleSuffix
         },
-        shrink: shrinkingByRemoval
+        // Same order of candidates as before; each keeps the seed that found
+        // the failure, which under a seed is a different interleaving of a
+        // smaller input but still a real failure, and replays the same.
+        shrink: { input in shrinkingByRemoval(input.value).map(input.with) }
     )
 }
 
@@ -345,19 +357,25 @@ public func checkAsyncLifetimePropertyLaws<
     options: LawCheckOptions,
     applying operation: @escaping @Sendable (LifetimeProbeSource<Element>, LawClock) -> Output
 ) async throws -> [CheckResult] {
-    try await runPropertyLawSuite(options: options) {
+    let suite = inVirtualTime(options)
+    return try await runPropertyLawSuite(options: suite) {
         [
-            await checkLifetimeLaw(.releasesUpstreamWhenConsumerLeaves, generator: generator, options: options) {
-                try await releasesUpstreamWhenConsumerLeaves(of: $0, applying: operation)
+            await checkLifetimeLaw(.releasesUpstreamWhenConsumerLeaves, generator: generator, options: suite) {
+                try await releasesUpstreamWhenConsumerLeaves(of: $0, applying: operation, order: $1)
             },
-            await checkLifetimeLaw(.cancellationReachesUpstream, generator: generator, options: options) {
-                try await cancellationReachesUpstream(of: $0, applying: operation)
+            await checkLifetimeLaw(.cancellationReachesUpstream, generator: generator, options: suite) {
+                try await cancellationReachesUpstream(of: $0, applying: operation, order: $1)
             },
-            await checkLifetimeLaw(.failureReachesConsumerWithoutDemand, generator: generator, options: options) {
-                try await failureReachesConsumerWithoutDemand(of: $0, applying: operation)
+            await checkLifetimeLaw(.failureReachesConsumerWithoutDemand, generator: generator, options: suite) {
+                try await failureReachesConsumerWithoutDemand(of: $0, applying: operation, order: $1)
             },
-            await checkLifetimeLaw(.finishedStaysFinished, generator: generator, options: options) {
-                try await finishedStaysFinished(of: $0, applying: operation)
+            await checkLifetimeLaw(.finishedStaysFinished, generator: generator, options: suite) {
+                try await finishedStaysFinished(of: $0, applying: operation, order: $1)
+            },
+            await checkLifetimeLaw(
+                .releasesUpstreamWhenSequenceDroppedLast, generator: generator, options: suite
+            ) {
+                try await releasesUpstreamWhenSequenceDroppedLast(of: $0, applying: operation, order: $1)
             },
         ]
     }

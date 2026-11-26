@@ -18,10 +18,10 @@ let debounceInterval: Swift.Duration = .milliseconds(10)
 /// arrives at the sum of the gaps and debounce owes it one interval later.
 /// A pipeline that still needs a sleeper past two intervals has stopped
 /// settling, and fails as `horizonExceeded` rather than running on.
-func debouncedOutput<Element: Sendable>(of sample: [Element]) async throws -> [Element] {
+func debouncedOutput<Element: Sendable>(of sample: [Element], order: JobOrder = .fifo) async throws -> [Element] {
     let gaps = derivedGaps(count: sample.count)
     let horizon = gaps.reduce(Swift.Duration.zero, +) + debounceInterval + debounceInterval
-    return try await runInVirtualTime(horizon: horizon) { clock in
+    return try await runInVirtualTime(horizon: horizon, order: order) { clock in
         try await collect(
             TimedSource(clock: clock, gaps: gaps, elements: sample)
                 .debounce(for: debounceInterval, clock: clock)
@@ -41,11 +41,12 @@ func debouncedOutput<Element: Sendable>(of sample: [Element]) async throws -> [E
 /// does ignore cancellation, to show the law notices.
 func cancellationCeasesEmission<Element: Equatable & Sendable, SourceClock: Clock & Sendable>(
     of sample: [Element],
+    order: JobOrder = .fifo,
     sourceClock: @escaping @Sendable (VirtualClock) -> SourceClock
 ) async throws -> Bool where SourceClock.Duration == Swift.Duration {
     let gaps = derivedGaps(count: sample.count)
     let half = gaps.reduce(Swift.Duration.zero, +) / 2
-    let (seen, stoppedPromptly) = try await runInVirtualTime { clock in
+    let (seen, stoppedPromptly) = try await runInVirtualTime(order: order) { clock in
         let source = TimedSource(clock: sourceClock(clock), gaps: gaps, elements: sample)
         let consumer = Task { () -> [Element] in
             var seen: [Element] = []
@@ -94,14 +95,14 @@ private func checkDebounceSubsequence<
 ) async -> CheckResult {
     await runUnaryLaw(
         "TimedAsyncSequence.debounceOutputIsSubsequenceOfInput",
-        generator: generator,
+        source: scheduledSampler(generator, options: options),
         options: options,
-        property: { sample in
-            isSubsequence(try await debouncedOutput(of: sample), of: sample)
+        property: { input in
+            isSubsequence(try await debouncedOutput(of: input.value, order: input.order), of: input.value)
         },
-        formatCounterexample: { sample, error in
-            "source = \(sample); debounce emitted elements that are not a "
-                + "subsequence of the input" + thrownSuffix(error)
+        formatCounterexample: { input, error in
+            "source = \(input.value); debounce emitted elements that are not a "
+                + "subsequence of the input" + thrownSuffix(error) + input.scheduleSuffix
         }
     )
 }
@@ -115,15 +116,15 @@ private func checkDebounceFinalElement<
 ) async -> CheckResult {
     await runUnaryLaw(
         "TimedAsyncSequence.debounceEmitsFinalElement",
-        generator: generator,
+        source: scheduledSampler(generator, options: options),
         options: options,
-        property: { sample in
-            guard sample.isEmpty == false else { return true }
-            return try await debouncedOutput(of: sample).last == sample.last
+        property: { input in
+            guard input.value.isEmpty == false else { return true }
+            return try await debouncedOutput(of: input.value, order: input.order).last == input.value.last
         },
-        formatCounterexample: { sample, error in
-            "source = \(sample); debounce did not surface the final element "
-                + "after quiescence" + thrownSuffix(error)
+        formatCounterexample: { input, error in
+            "source = \(input.value); debounce did not surface the final element "
+                + "after quiescence" + thrownSuffix(error) + input.scheduleSuffix
         }
     )
 }
@@ -137,19 +138,20 @@ private func checkDebounceDeterminism<
 ) async -> CheckResult {
     await runUnaryLaw(
         "TimedAsyncSequence.debounceIsDeterministicUnderTestClock",
-        generator: generator,
+        source: scheduledSampler(generator, options: options),
         options: options,
-        property: { sample in
+        property: { input in
             // The Phase 4 headline: with the clock injected and time moved
             // only at quiescence, the async pipeline is a pure function of
-            // (elements, gaps, interval).
-            let first = try await debouncedOutput(of: sample)
-            let second = try await debouncedOutput(of: sample)
+            // (elements, gaps, interval) and, under a seeded strategy, the
+            // schedule seed, which both runs share.
+            let first = try await debouncedOutput(of: input.value, order: input.order)
+            let second = try await debouncedOutput(of: input.value, order: input.order)
             return first == second
         },
-        formatCounterexample: { sample, error in
-            "source = \(sample); two debounce runs under fresh virtual clocks "
-                + "produced different outputs" + thrownSuffix(error)
+        formatCounterexample: { input, error in
+            "source = \(input.value); two debounce runs under fresh virtual clocks "
+                + "produced different outputs" + thrownSuffix(error) + input.scheduleSuffix
         }
     )
 }
@@ -163,14 +165,14 @@ private func checkCancellationCeasesEmission<
 ) async -> CheckResult {
     await runUnaryLaw(
         "TimedAsyncSequence.cancellationCeasesEmission",
-        generator: generator,
+        source: scheduledSampler(generator, options: options),
         options: options,
-        property: { sample in
-            try await cancellationCeasesEmission(of: sample) { $0 }
+        property: { input in
+            try await cancellationCeasesEmission(of: input.value, order: input.order) { $0 }
         },
-        formatCounterexample: { sample, error in
-            "source = \(sample); cancelled consumer observed non-prefix "
-                + "elements or needed virtual time to stop" + thrownSuffix(error)
+        formatCounterexample: { input, error in
+            "source = \(input.value); cancelled consumer observed non-prefix "
+                + "elements or needed virtual time to stop" + thrownSuffix(error) + input.scheduleSuffix
         }
     )
 }
@@ -196,12 +198,13 @@ public func checkTimedAsyncSequencePropertyLaws<
     using generator: Generator<[Element], Shrinker>,
     options: LawCheckOptions = LawCheckOptions()
 ) async throws -> [CheckResult] {
-    try await runPropertyLawSuite(options: options) {
+    let suite = inVirtualTime(options)
+    return try await runPropertyLawSuite(options: suite) {
         [
-            await checkDebounceSubsequence(generator: generator, options: options),
-            await checkDebounceFinalElement(generator: generator, options: options),
-            await checkDebounceDeterminism(generator: generator, options: options),
-            await checkCancellationCeasesEmission(generator: generator, options: options),
+            await checkDebounceSubsequence(generator: generator, options: suite),
+            await checkDebounceFinalElement(generator: generator, options: suite),
+            await checkDebounceDeterminism(generator: generator, options: suite),
+            await checkCancellationCeasesEmission(generator: generator, options: suite),
         ]
     }
 }

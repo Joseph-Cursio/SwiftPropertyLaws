@@ -5,7 +5,9 @@ import Testing
 
 /// The lifetime laws over planted operators only (async-plan decision 2):
 /// two correct operators that every law must pass, and one planted defect
-/// per law that must fail that law and no other. The real swift-async-algorithms
+/// per law that must fail that law and no other. The one exception is the
+/// defect that keeps its upstream after the iterator goes: it leaks whichever
+/// goes last, so it fails both release laws. The real swift-async-algorithms
 /// operators are checked outside this package, against pinned revisions,
 /// because the release this package resolves still has the bugs the defects
 /// model.
@@ -22,12 +24,18 @@ struct AsyncLifetimeLawsTests {
         #expect(failed.isEmpty, "\(failed)")
     }
 
-    @Test func keepingUpstreamAfterTheIteratorIsDroppedFailsOnlyTheReleaseLaw() async throws {
+    /// It never stops its producer when the iterator goes, so dropping the
+    /// sequence afterwards leaks too: both release laws fail, and no other.
+    @Test func keepingUpstreamAfterTheIteratorIsDroppedFailsOnlyTheReleaseLaws() async throws {
         let failed = try await LifetimeLawResults.failures { source, _ in
             ForwardingSequence(base: source, defect: .keepsUpstreamAfterDrop)
         }
-        #expect(Set(failed.keys) == [.releasesUpstreamWhenConsumerLeaves], "\(failed)")
+        #expect(
+            Set(failed.keys) == [.releasesUpstreamWhenConsumerLeaves, .releasesUpstreamWhenSequenceDroppedLast],
+            "\(failed)"
+        )
         #expect(failed[.releasesUpstreamWhenConsumerLeaves]?.contains("never released") == true)
+        #expect(failed[.releasesUpstreamWhenSequenceDroppedLast]?.contains("then the sequence") == true)
     }
 
     @Test func forgettingUpstreamOnACancelledNextFailsOnlyTheCancellationLaw() async throws {
