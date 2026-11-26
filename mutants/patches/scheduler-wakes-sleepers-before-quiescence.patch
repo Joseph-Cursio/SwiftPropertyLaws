@@ -1,13 +1,13 @@
 diff --git a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
-index 547e66e..70163b2 100644
+index f72fad3..bb4b006 100644
 --- a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
 +++ b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
-@@ -171,7 +171,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
- 
-     /// Run every queued job, and every job those enqueue, until none remain.
-     private func drain() {
+@@ -304,7 +304,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
+     /// While `recording`, claim each job's task first, so the task is
+     /// recognised if it ever comes back from another thread.
+     private func drain(recording: Bool = true) {
 -        while let job = dequeue() {
 +        if let job = dequeue() {
-             job.runSynchronously(on: asUnownedSerialExecutor())
-         }
-     }
+             if recording, let id = TaskIdentity.id(of: job), seenIDs.insert(id).inserted {
+                 claim(id)
+             }
