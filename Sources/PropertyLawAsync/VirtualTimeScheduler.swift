@@ -50,6 +50,7 @@ import Foundation
 ///   simulated forever.
 func runInVirtualTime<Value: Sendable>(
     horizon: Duration? = nil,
+    trace: ScheduleTrace? = nil,
     _ body: @escaping @Sendable (VirtualClock) async throws -> Value
 ) async throws -> Value {
     // From inside a run, the outer body would be resumed from the inner
@@ -61,7 +62,7 @@ func runInVirtualTime<Value: Sendable>(
         // blocks for the whole run, and a blocked pool thread is one the rest
         // of the process cannot use.
         let thread = Thread {
-            continuation.resume(with: VirtualTimeScheduler().run(horizon: horizon, body))
+            continuation.resume(with: VirtualTimeScheduler(trace: trace).run(horizon: horizon, body))
         }
         thread.start()
     }
@@ -159,6 +160,14 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     private var seenIDs: Set<UInt64> = []
     /// The tasks this run claimed in ``RunRegistry``, to forget at the end.
     private var ownedIDs: Set<UInt64> = []
+    /// Where the run records the order it ran its jobs in, if anyone asked.
+    private let trace: ScheduleTrace?
+    /// Each task's ordinal within the run, in first-seen order, for the trace.
+    private var ordinals: [UInt64: Int] = [:]
+
+    init(trace: ScheduleTrace? = nil) {
+        self.trace = trace
+    }
 
     /// The scheduler that owns the calling thread, if any. Read by the
     /// enqueue hook on every global enqueue in the process.
@@ -274,6 +283,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
                 // The body is done, but a task it started may still be asleep.
                 // Wake it with `CancellationError` rather than leave it parked
                 // on a clock nobody will advance again.
+                trace?.markVerdict()
                 tearDown(root, timeline)
                 return result
             }
@@ -296,20 +306,37 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
             }
             timeline.fireEarliest()
         }
+        trace?.markVerdict()
         tearDown(root, timeline)
         return .failure(failure)
     }
 
     /// Run every queued job, and every job those enqueue, until none remain.
     /// While `recording`, claim each job's task first, so the task is
-    /// recognised if it ever comes back from another thread.
+    /// recognised if it ever comes back from another thread, and add the job
+    /// to the trace.
     private func drain(recording: Bool = true) {
-        while let job = dequeue() {
-            if recording, let id = TaskIdentity.id(of: job), seenIDs.insert(id).inserted {
-                claim(id)
+        while let (job, pending, picked) = dequeue() {
+            if recording {
+                let id = TaskIdentity.id(of: job)
+                if let id, seenIDs.insert(id).inserted {
+                    claim(id)
+                }
+                if let trace {
+                    trace.record(ScheduleTrace.Step(pending: pending, picked: picked, task: id.map(ordinal(of:))))
+                }
             }
             job.runSynchronously(on: asUnownedSerialExecutor())
         }
+    }
+
+    private func ordinal(of id: UInt64) -> Int {
+        if let known = ordinals[id] {
+            return known
+        }
+        let next = ordinals.count
+        ordinals[id] = next
+        return next
     }
 
     /// Claim a task seen for the first time. The first job a run drains is
@@ -346,7 +373,8 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         return true
     }
 
-    private func dequeue() -> UnownedJob? {
+    /// The next job, how many were pending, and its position among them.
+    private func dequeue() -> (job: UnownedJob, pending: Int, picked: Int)? {
         lock.lock()
         defer { lock.unlock() }
         guard head < jobs.count else {
@@ -354,9 +382,10 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
             head = 0
             return nil
         }
+        let pending = jobs.count - head
         let job = jobs[head]
         head += 1
-        return job
+        return (job, pending, 0)
     }
 
     /// End a run so that none of it outlives the scheduler: cancel the body
