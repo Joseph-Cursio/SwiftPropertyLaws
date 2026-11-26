@@ -1,12 +1,12 @@
 diff --git a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
-index 870dd70..7b053e5 100644
+index 6f73df6..5b11ced 100644
 --- a/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
 +++ b/Sources/PropertyLawAsync/VirtualTimeScheduler.swift
-@@ -154,7 +154,6 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
-                 // The body is done, but a task it started may still be asleep.
+@@ -196,7 +196,6 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
                  // Wake it with `CancellationError` rather than leave it parked
                  // on a clock nobody will advance again.
+                 trace?.markVerdict()
 -                tearDown(root, timeline)
                  return result
              }
-             guard hook.isIntact else {
+             if let stuck = advanceTime(horizon: horizon, hook: hook, timeline: timeline) {
