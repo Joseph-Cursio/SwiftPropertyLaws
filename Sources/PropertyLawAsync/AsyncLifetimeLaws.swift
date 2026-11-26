@@ -43,12 +43,17 @@ private func runLifetimeTrial<Value: Sendable>(
         return try await runInVirtualTime(horizon: horizon, body)
     } catch let error as VirtualTimeError {
         switch error {
-        case .deadlock, .horizonExceeded:
+        case .deadlock, .horizonExceeded, .stepLimitExceeded:
             if cancelled?.isRaised == true {
                 throw LifetimeLawViolation(
                     description: "hang: the consumer was cancelled and its next() never returned, so the operator "
                         + "ignores cancellation (\(error))"
                 )
+            }
+            if case .stepLimitExceeded = error {
+                // A livelock, not a wait on the clock, so the allowance per
+                // step says nothing about it.
+                throw LifetimeLawViolation(description: "hang: \(error)")
             }
             throw LifetimeLawViolation(
                 description: "hang: \(error) (the law allows \(lifetimeSlack) per step; an operator that "

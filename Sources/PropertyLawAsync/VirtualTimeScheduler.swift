@@ -1,122 +1,5 @@
 import Foundation
 
-/// Run `body` against a ``VirtualClock`` on a private single-threaded
-/// scheduler, and return what it returned.
-///
-/// Virtual time is only deterministic if time moves when — and only when —
-/// every task is blocked. Nothing in Swift concurrency reports that, so a
-/// clock driven from outside has to guess, and `TestClock` guesses by
-/// yielding a fixed number of times. The scheduler removes the guess: every
-/// job of the run executes on one thread it drains itself, so an empty queue
-/// *is* quiescence. Only then does it wake the earliest sleeper.
-///
-/// A run cannot hang. With the queue empty, the body unfinished and nobody
-/// asleep, every task is waiting on something no task in the run will do.
-/// The run then waits ``VirtualTimeScheduler/graceWindow`` of real time for
-/// work from outside, and if none comes it reports
-/// ``VirtualTimeError/deadlock(stuckAt:)`` rather than wait any longer.
-///
-/// **Contract.** Every job of the run must be created or resumed from inside
-/// the run. A real `Task.sleep`, `MainActor`, an actor on a custom executor,
-/// real I/O and callbacks from other threads take work out of the scheduler,
-/// and `Task.yield()` inside an actor usually does. When that work shows
-/// itself — a task of the run enqueued from another thread, the body
-/// finishing on one, the clock used from one, or one of its tasks run by
-/// another live run — the run ends with
-/// ``VirtualTimeError/escaped(at:evidence:)``, whatever the body returned,
-/// because virtual time may have moved while the work was away.
-///
-/// A task is the run's once one of its jobs has run in the run's queue, and
-/// only if it was created after the run's root task (see ``RunRegistry``).
-/// What is not seen:
-/// - work that stays away past the grace window, which is why a deadlock's
-///   message says it may be an escape;
-/// - work still away when the body returns, since the run ends then;
-/// - a task created before the run that it resumes: not the run's, so its
-///   later trips away are left to the runtime;
-/// - a task the run created whose jobs never reach its queue — started on
-///   `MainActor` or another executor, or begun inside an actor's job and
-///   leaving the actor without an enqueue — which is never the run's.
-///
-/// And one false escape: an outside task created after the run started and
-/// resumed by it counts as the run's, so its own later trip away is blamed
-/// on the run. Concurrent runs that share an actor can fail this way, or as
-/// ``EscapeEvidence/Kind/sharedWithAnotherRun``, depending on timing.
-///
-/// - Parameter horizon: the furthest virtual time the run may reach. A run
-///   whose next sleeper lies beyond it fails with
-///   ``VirtualTimeError/horizonExceeded(horizon:nextDeadline:)`` instead of
-///   advancing, so a pipeline that never settles is reported rather than
-///   simulated forever.
-func runInVirtualTime<Value: Sendable>(
-    horizon: Duration? = nil,
-    trace: ScheduleTrace? = nil,
-    _ body: @escaping @Sendable (VirtualClock) async throws -> Value
-) async throws -> Value {
-    // From inside a run, the outer body would be resumed from the inner
-    // run's thread, escape the outer scheduler, and leave it reporting a
-    // deadlock that is not one. Refused instead.
-    guard VirtualTimeScheduler.current == nil else { throw VirtualTimeError.nestedRun }
-    return try await withCheckedThrowingContinuation { continuation in
-        // A thread of its own rather than a cooperative one: the run loop
-        // blocks for the whole run, and a blocked pool thread is one the rest
-        // of the process cannot use.
-        let thread = Thread {
-            continuation.resume(with: VirtualTimeScheduler(trace: trace).run(horizon: horizon, body))
-        }
-        thread.start()
-    }
-}
-
-/// Why a virtual-time run ended without its body's result.
-enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
-    /// Every task was blocked, nothing was asleep, and no work came back from
-    /// outside the run within the grace window.
-    case deadlock(stuckAt: Duration)
-    /// Some of the run's work ran outside its scheduler, so its verdict
-    /// cannot be trusted.
-    case escaped(at: Duration, evidence: EscapeEvidence.Kind)
-    /// The next sleeper's deadline lies beyond the run's horizon.
-    case horizonExceeded(horizon: Duration, nextDeadline: Duration)
-    /// The runtime's global enqueue hook could not be found.
-    case hookUnavailable
-    /// Another global enqueue hook was installed — `withMainSerialExecutor`,
-    /// for one — so this run cannot see its own tasks.
-    case foreignHookInstalled
-    /// `runInVirtualTime` was called from inside a run. Runs do not nest.
-    case nestedRun
-
-    var description: String {
-        switch self {
-        case .deadlock(let now):
-            return "virtual-time deadlock at \(now), or work that escaped the scheduler: every task is blocked, "
-                + "none is sleeping on the clock, and nothing came back from outside the run within "
-                + "\(VirtualTimeScheduler.graceWindow)"
-
-        case let .escaped(now, evidence):
-            return "work escaped the virtual-time scheduler by \(now): \(evidence). A real sleep, MainActor, "
-                + "a custom executor, Task.yield() inside an actor or a callback from another thread can run "
-                + "outside virtual time, so the run's result cannot be trusted"
-
-        case let .horizonExceeded(horizon, nextDeadline):
-            return "virtual time would pass its horizon of \(horizon): the next "
-                + "sleeper wakes at \(nextDeadline)"
-
-        case .hookUnavailable:
-            return "the Swift runtime's global enqueue hook was not found, so "
-                + "virtual time cannot capture the tasks under test"
-
-        case .foreignHookInstalled:
-            return "another global enqueue hook is installed (is this running "
-                + "inside withMainSerialExecutor?); virtual time cannot share it"
-
-        case .nestedRun:
-            return "runInVirtualTime was called from inside a virtual-time run; "
-                + "runs do not nest"
-        }
-    }
-}
-
 /// The body's result, set once from inside the run.
 private final class RunOutcome<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
@@ -148,9 +31,25 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     /// it says so. Escaped work that takes longer to come back is not seen.
     static let graceWindow: Duration = .milliseconds(100)
 
-    private let lock = NSLock()
-    private var jobs: [UnownedJob] = []
-    private var head = 0
+    /// How many jobs a run may run before its verdict without the queue ever
+    /// emptying. A lifetime-law trial reads at most 10,000 elements, a few jobs
+    /// each, so only a task that re-enqueues itself forever comes near it.
+    static let defaultStepLimit = 1_000_000
+    /// How many jobs teardown may run, all rounds together. The verdict is
+    /// decided before teardown, so this only bounds the clean-up: a livelock
+    /// that outlives the verdict is abandoned, not run forever.
+    static let teardownStepLimit = 10_000
+    /// How many jobs the run's last drain may run, apart from teardown's, so a
+    /// job handed back before the registry forgot the run still runs after a
+    /// teardown that used up its own allowance.
+    static let finalDrainStepLimit = 1_000
+
+    private let queue: JobQueue<UnownedJob>
+    private let stepLimit: Int
+    /// What each phase may still run: the drive loop, teardown, the last drain.
+    private var driveSteps: Int
+    private var teardownSteps = VirtualTimeScheduler.teardownStepLimit
+    private var finalSteps = VirtualTimeScheduler.finalDrainStepLimit
     private let evidence = EscapeEvidence()
     // Touched only on the run's own thread.
     /// The root task's ID. Task IDs only grow, so a task with a smaller one
@@ -165,7 +64,14 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     /// Each task's ordinal within the run, in first-seen order, for the trace.
     private var ordinals: [UInt64: Int] = [:]
 
-    init(trace: ScheduleTrace? = nil) {
+    init(
+        order: JobOrder = .fifo,
+        stepLimit: Int = VirtualTimeScheduler.defaultStepLimit,
+        trace: ScheduleTrace? = nil
+    ) {
+        queue = JobQueue(order: order)
+        self.stepLimit = stepLimit
+        driveSteps = stepLimit
         self.trace = trace
     }
 
@@ -193,9 +99,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     }
 
     func schedule(_ job: UnownedJob) {
-        lock.lock()
-        jobs.append(job)
-        lock.unlock()
+        queue.append(job)
     }
 
     func asUnownedSerialExecutor() -> UnownedSerialExecutor {
@@ -236,7 +140,7 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         // the runtime. One handed back before the registry forgot it is still
         // queued; run it rather than strand it.
         RunRegistry.shared.forget(ownedIDs, of: self)
-        drain(recording: false)
+        _ = drain(.final)
         return result
     }
 
@@ -264,7 +168,13 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         }
         let failure: VirtualTimeError
         while true {
-            drain()
+            if drain(.drive) == .stoppedAtLimit {
+                // Escaped work can keep in-run code spinning while it waits;
+                // the escape is the cause, as it is for any other verdict.
+                failure = evidence.kind.map { .escaped(at: timeline.now.offset, evidence: $0) }
+                    ?? .stepLimitExceeded(steps: stepLimit)
+                break
+            }
             // An empty queue is the moment `settle()` waits for: resume its
             // callers and run what they do next before anything else is
             // decided, so time moves only once they block again.
@@ -287,47 +197,88 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
                 tearDown(root, timeline)
                 return result
             }
-            guard hook.isIntact else {
-                failure = .foreignHookInstalled
+            if let stuck = advanceTime(horizon: horizon, hook: hook, timeline: timeline) {
+                failure = stuck
                 break
             }
-            guard let next = timeline.earliestDeadline else {
-                // Only work outside the run can change anything now. Give it
-                // the grace window to come back before calling this a deadlock.
-                if awaitEvidence() {
-                    continue
-                }
-                failure = .deadlock(stuckAt: timeline.now.offset)
-                break
-            }
-            if let horizon, next.offset > horizon {
-                failure = .horizonExceeded(horizon: horizon, nextDeadline: next.offset)
-                break
-            }
-            timeline.fireEarliest()
         }
         trace?.markVerdict()
         tearDown(root, timeline)
         return .failure(failure)
     }
 
-    /// Run every queued job, and every job those enqueue, until none remain.
-    /// While `recording`, claim each job's task first, so the task is
-    /// recognised if it ever comes back from another thread, and add the job
-    /// to the trace.
-    private func drain(recording: Bool = true) {
-        while let (job, pending, picked) = dequeue() {
-            if recording {
-                let id = TaskIdentity.id(of: job)
-                if let id, seenIDs.insert(id).inserted {
-                    claim(id)
-                }
-                if let trace {
-                    trace.record(ScheduleTrace.Step(pending: pending, picked: picked, task: id.map(ordinal(of:))))
-                }
-            }
-            job.runSynchronously(on: asUnownedSerialExecutor())
+    /// Nothing in the run can go on: wake the earliest sleeper, or say why the
+    /// run cannot go on. `nil` means go round the loop again.
+    private func advanceTime(
+        horizon: Duration?,
+        hook: GlobalEnqueueHook,
+        timeline: VirtualTimeline
+    ) -> VirtualTimeError? {
+        guard hook.isIntact else {
+            return .foreignHookInstalled
         }
+        guard let next = timeline.earliestDeadline else {
+            // Only work outside the run can change anything now. Give it the
+            // grace window to come back before calling this a deadlock.
+            return awaitEvidence() ? nil : .deadlock(stuckAt: timeline.now.offset)
+        }
+        if let horizon, next.offset > horizon {
+            return .horizonExceeded(horizon: horizon, nextDeadline: next.offset)
+        }
+        timeline.fireEarliest()
+        return nil
+    }
+
+    /// The three phases that drain the queue, each with its own allowance.
+    private enum Phase {
+        case drive, teardown, final
+    }
+
+    private enum DrainEnd {
+        /// The queue is empty: quiescence.
+        case settled
+        /// The phase's allowance ran out with jobs still pending.
+        case stoppedAtLimit
+    }
+
+    /// Run every queued job, and every job those enqueue, until none remain or
+    /// `phase`'s allowance runs out. A job that ends on the last step with the
+    /// queue empty still settles. Outside the last drain, claim each job's task
+    /// first, so the task is recognised if it ever comes back from another
+    /// thread, and add the job to the trace.
+    private func drain(_ phase: Phase) -> DrainEnd {
+        while allowance(phase) > 0, let pick = queue.next() {
+            spend(phase)
+            if phase != .final {
+                record(pick)
+            }
+            pick.job.runSynchronously(on: asUnownedSerialExecutor())
+        }
+        return queue.isEmpty ? .settled : .stoppedAtLimit
+    }
+
+    private func allowance(_ phase: Phase) -> Int {
+        switch phase {
+        case .drive: driveSteps
+        case .teardown: teardownSteps
+        case .final: finalSteps
+        }
+    }
+
+    private func spend(_ phase: Phase) {
+        switch phase {
+        case .drive: driveSteps -= 1
+        case .teardown: teardownSteps -= 1
+        case .final: finalSteps -= 1
+        }
+    }
+
+    private func record(_ pick: JobQueue<UnownedJob>.Pick) {
+        let id = TaskIdentity.id(of: pick.job)
+        if let id, seenIDs.insert(id).inserted {
+            claim(id)
+        }
+        trace?.record(ScheduleTrace.Step(pending: pick.pending, picked: pick.picked, task: id.map(ordinal(of:))))
     }
 
     private func ordinal(of id: UInt64) -> Int {
@@ -373,44 +324,31 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
         return true
     }
 
-    /// The next job, how many were pending, and its position among them.
-    private func dequeue() -> (job: UnownedJob, pending: Int, picked: Int)? {
-        lock.lock()
-        defer { lock.unlock() }
-        guard head < jobs.count else {
-            jobs.removeAll(keepingCapacity: true)
-            head = 0
-            return nil
-        }
-        let pending = jobs.count - head
-        let job = jobs[head]
-        head += 1
-        return (job, pending, 0)
-    }
-
     /// End a run so that none of it outlives the scheduler: cancel the body
     /// (a no-op once it has returned), wake every sleeper with
-    /// `CancellationError`, and let the tasks run out. Bounded, because a
-    /// task that ignores cancellation and sleeps again would keep it going;
-    /// whatever is left after the rounds is leaked.
+    /// `CancellationError`, and let the tasks run out. Bounded in rounds,
+    /// because a task that ignores cancellation and sleeps again would keep it
+    /// going, and in steps (``teardownStepLimit``), because one that re-enqueues
+    /// itself would too. A sleeper left after the rounds is leaked; jobs left
+    /// when the steps run out are abandoned, never run, and an actor one of
+    /// them held stays unusable.
     private func tearDown(_ root: Task<Void, Never>, _ timeline: VirtualTimeline) {
         root.cancel()
         for _ in 0 ..< 8 {
-            drainAndSettle(timeline)
-            guard timeline.pendingSleeperCount > 0 else { return }
+            guard drainAndSettle(timeline) == .settled, timeline.pendingSleeperCount > 0 else { return }
             timeline.cancelAll()
         }
-        drainAndSettle(timeline)
+        _ = drainAndSettle(timeline)
     }
 
     /// Drain, resuming `settle()` callers each time the queue empties, so a
     /// task that settles while being torn down is not left parked forever.
-    /// Bounded like teardown itself.
-    private func drainAndSettle(_ timeline: VirtualTimeline) {
+    /// Bounded like teardown itself; stops at once when its steps run out.
+    private func drainAndSettle(_ timeline: VirtualTimeline) -> DrainEnd {
         for _ in 0 ..< 8 {
-            drain()
-            guard timeline.resumeSettled() else { return }
+            guard drain(.teardown) == .settled else { return .stoppedAtLimit }
+            guard timeline.resumeSettled() else { return .settled }
         }
-        drain()
+        return drain(.teardown)
     }
 }

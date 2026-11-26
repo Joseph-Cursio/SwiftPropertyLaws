@@ -2,10 +2,12 @@
 
 /// How a run ended: its value, or the scheduler's error.
 func verdict<Value: Sendable>(
+    order: JobOrder = .fifo,
+    stepLimit: Int = VirtualTimeScheduler.defaultStepLimit,
     _ body: @escaping @Sendable (VirtualClock) async throws -> Value
 ) async throws -> Result<Value, VirtualTimeError> {
     do {
-        return .success(try await runInVirtualTime(body))
+        return .success(try await runInVirtualTime(order: order, stepLimit: stepLimit, body))
     } catch let error as VirtualTimeError {
         return .failure(error)
     }
