@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Internal/ReplayEnvironmentValidator.swift b/Sources/PropertyLawKit/Internal/ReplayEnvironmentValidator.swift
+index 48fa2af..675718e 100644
+--- a/Sources/PropertyLawKit/Internal/ReplayEnvironmentValidator.swift
++++ b/Sources/PropertyLawKit/Internal/ReplayEnvironmentValidator.swift
+@@ -15,7 +15,7 @@
+ internal enum ReplayEnvironmentValidator {
+     static func verify(_ options: LawCheckOptions) throws {
+         guard let expected = options.expectedReplayEnvironment else { return }
+-        let actual = Environment.current(options: options)
++        let actual = Environment.current(backend: options.backend)
+         if options.replayRelaxation.matches(expected: expected, actual: actual) { return }
+         throw ReplayEnvironmentMismatch(expected: expected, actual: actual)
+     }
