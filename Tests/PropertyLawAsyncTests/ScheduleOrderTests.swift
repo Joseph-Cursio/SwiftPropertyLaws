@@ -236,14 +236,15 @@ struct ScheduleOrderTests {
         #expect(woke.isSet, "teardown never woke the sleeper")
     }
 
-    /// Teardown still runs out work that fits its allowance: 1,500 yields
-    /// after the sleeper wakes, a few thousand steps, finish within 10,000.
+    /// Teardown still runs out work that fits its allowance: 600 yields after
+    /// the sleeper wakes, about 3,000 steps in a debug build, finish within
+    /// 10,000, and are more than the last drain's 1,000 could run.
     @Test func teardownFinishesWorkWithinItsAllowance() async throws {
         let finished = Latch()
         let ended = try await verdict { clock in
             Task {
                 try? await clock.sleep(for: .seconds(100))
-                for _ in 0 ..< 1_500 {
+                for _ in 0 ..< 600 {
                     await Task.yield()
                 }
                 finished.set()

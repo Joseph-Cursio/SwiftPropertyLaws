@@ -16,8 +16,13 @@ internal enum ViolationFormatter {
     /// Whether this process runs with `SWIFT_DETERMINISTIC_HASHING=1`. Read
     /// once: the standard library fixes its hashing seed at launch, so a
     /// later change to the variable would not change what a replay does.
-    static let processHasDeterministicHashing =
-        ProcessInfo.processInfo.environment["SWIFT_DETERMINISTIC_HASHING"] == "1"
+    static let processHasDeterministicHashing = hasDeterministicHashing(ProcessInfo.processInfo.environment)
+
+    /// Whether `environment` turns deterministic hashing on: only the exact
+    /// value `"1"` does, as the standard library reads it.
+    static func hasDeterministicHashing(_ environment: [String: String]) -> Bool {
+        environment["SWIFT_DETERMINISTIC_HASHING"] == "1"
+    }
 
     /// `deterministicHashing` is the test seam for the replay line's hashing
     /// note; production passes ``processHasDeterministicHashing``.

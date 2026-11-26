@@ -17,8 +17,9 @@ enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
     case foreignHookInstalled
     /// `runInVirtualTime` was called from inside a run. Runs do not nest.
     case nestedRun
-    /// The run made `steps` scheduling steps without its queue ever emptying:
-    /// a task that re-enqueues itself forever, such as a `Task.yield()` loop.
+    /// The run ran `steps` jobs in all without reaching a verdict: a task that
+    /// re-enqueues itself forever, such as a `Task.yield()` loop, or one that
+    /// settles in a loop.
     /// Its tasks are abandoned, so an actor one of them held can stay unusable
     /// for the rest of the process.
     case stepLimitExceeded(steps: Int)
@@ -52,8 +53,8 @@ enum VirtualTimeError: Error, Equatable, CustomStringConvertible {
                 + "runs do not nest"
 
         case .stepLimitExceeded(let steps):
-            return "the virtual-time run made \(steps) scheduling steps without settling: a task that "
-                + "re-enqueues itself forever, such as a Task.yield() loop, keeps its queue from ever emptying"
+            return "the virtual-time run ran \(steps) jobs without reaching a verdict: a task that re-enqueues "
+                + "itself forever, such as a Task.yield() loop, or that settles in a loop keeps the run from ending"
         }
     }
 }

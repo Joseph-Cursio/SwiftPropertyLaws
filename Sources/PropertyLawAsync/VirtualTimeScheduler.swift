@@ -31,9 +31,11 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     /// it says so. Escaped work that takes longer to come back is not seen.
     static let graceWindow: Duration = .milliseconds(100)
 
-    /// How many jobs a run may run before its verdict without the queue ever
-    /// emptying. A lifetime-law trial reads at most 10,000 elements, a few jobs
-    /// each, so only a task that re-enqueues itself forever comes near it.
+    /// How many jobs a run may run in all before its verdict, counted across
+    /// every drain, so a run that settles in a loop is caught as well as one
+    /// whose queue never empties. The most any lifetime-law trial over the real
+    /// swift-async-algorithms operators has taken is 198, and this package's
+    /// own tests stay under about 20,000.
     static let defaultStepLimit = 1_000_000
     /// How many jobs teardown may run, all rounds together. The verdict is
     /// decided before teardown, so this only bounds the clean-up: a livelock
@@ -254,7 +256,10 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
             }
             pick.job.runSynchronously(on: asUnownedSerialExecutor())
         }
-        return queue.isEmpty ? .settled : .stoppedAtLimit
+        // Decided by why the loop ended, not by a second look at the queue: a
+        // job handed back from another thread just after `next()` came back
+        // empty is the caller's next round's, not a spent allowance.
+        return allowance(phase) == 0 && !queue.isEmpty ? .stoppedAtLimit : .settled
     }
 
     private func allowance(_ phase: Phase) -> Int {
@@ -330,8 +335,8 @@ final class VirtualTimeScheduler: SerialExecutor, @unchecked Sendable {
     /// because a task that ignores cancellation and sleeps again would keep it
     /// going, and in steps (``teardownStepLimit``), because one that re-enqueues
     /// itself would too. A sleeper left after the rounds is leaked; jobs left
-    /// when the steps run out are abandoned, never run, and an actor one of
-    /// them held stays unusable.
+    /// when the steps run out are abandoned, apart from what the last drain's
+    /// own allowance runs, and an actor one of them held stays unusable.
     private func tearDown(_ root: Task<Void, Never>, _ timeline: VirtualTimeline) {
         root.cancel()
         for _ in 0 ..< 8 {

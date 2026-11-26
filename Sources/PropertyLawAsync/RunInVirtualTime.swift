@@ -15,10 +15,11 @@ import Foundation
 /// will do. The run then waits ``VirtualTimeScheduler/graceWindow`` of real
 /// time for work from outside, and if none comes it reports
 /// ``VirtualTimeError/deadlock(stuckAt:)`` rather than wait any longer. A
-/// queue that never empties, because a task re-enqueues itself forever, ends
-/// the run with ``VirtualTimeError/stepLimitExceeded(steps:)`` after
-/// `stepLimit` jobs. A single job that never suspends is still beyond what the
-/// scheduler can stop: it never hands the thread back.
+/// run that takes `stepLimit` jobs in all without reaching a verdict, because
+/// a task re-enqueues itself forever or settles in a loop, ends with
+/// ``VirtualTimeError/stepLimitExceeded(steps:)``; the most any real-operator
+/// trial has taken is a few hundred. A single job that never suspends is still
+/// beyond what the scheduler can stop: it never hands the thread back.
 ///
 /// **Order.** Under ``JobOrder/fifo`` jobs run in the order they were
 /// enqueued. Under ``JobOrder/seeded(_:)`` each choice among two or more
@@ -72,6 +73,7 @@ func runInVirtualTime<Value: Sendable>(
     // run's thread, escape the outer scheduler, and leave it reporting a
     // deadlock that is not one. Refused instead.
     guard VirtualTimeScheduler.current == nil else { throw VirtualTimeError.nestedRun }
+    RunOrderLog.current?.record(order)
     return try await withCheckedThrowingContinuation { continuation in
         // A thread of its own rather than a cooperative one: the run loop
         // blocks for the whole run, and a blocked pool thread is one the rest

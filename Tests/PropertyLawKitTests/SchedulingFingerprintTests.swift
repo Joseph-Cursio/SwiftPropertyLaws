@@ -285,7 +285,16 @@ struct SchedulingFingerprintTests {
         #expect(ViolationFormatter.format(seeded)
             == ViolationFormatter.format(seeded, deterministicHashing: processSetting))
         #expect(ViolationFormatter.processHasDeterministicHashing
-            == (ProcessInfo.processInfo.environment["SWIFT_DETERMINISTIC_HASHING"] == "1"))
+            == ViolationFormatter.hasDeterministicHashing(ProcessInfo.processInfo.environment))
+    }
+
+    /// Only the exact value `"1"` turns deterministic hashing on.
+    @Test func onlyTheValueOneCountsAsDeterministicHashing() {
+        let name = "SWIFT_DETERMINISTIC_HASHING"
+        #expect(ViolationFormatter.hasDeterministicHashing([name: "1"]))
+        #expect(!ViolationFormatter.hasDeterministicHashing([name: "0"]))
+        #expect(!ViolationFormatter.hasDeterministicHashing([name: "true"]))
+        #expect(!ViolationFormatter.hasDeterministicHashing([:]))
     }
 
     @Test func aWalkStillOffersNoSeed() {

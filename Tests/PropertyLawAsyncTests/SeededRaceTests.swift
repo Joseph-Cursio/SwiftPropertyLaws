@@ -40,6 +40,16 @@ struct SeededRaceTests {
         try await failures(fixed: false, options)[.releasesUpstreamWhenSequenceDroppedLast]
     }
 
+    /// The first run seed in 1...20 whose seeded run finds the planted race,
+    /// so the replay tests depend on no particular seed finding it.
+    private static func failingRun() async throws -> UInt64 {
+        for run: UInt64 in 1 ... 20 where try await caseTwelve(options(run, .seeded)) != nil {
+            return run
+        }
+        Issue.record("no seeded run in 1...20 found the planted race")
+        throw CancellationError()
+    }
+
     @Test(arguments: [false, true])
     func fifoPassesEveryLaw(fixed: Bool) async throws {
         let failed = try await Self.failures(fixed: fixed, Self.options(1, .fifo))
@@ -73,9 +83,10 @@ struct SeededRaceTests {
     /// The same run seed and strategy reproduce the failure: the same trial,
     /// counterexample and shrinking, with every earlier trial passing again.
     @Test func aFailingRunReplaysFromItsSeed() async throws {
-        let first = try #require(try await Self.caseTwelve(Self.options(1, .seeded)))
+        let run = try await Self.failingRun()
+        let first = try #require(try await Self.caseTwelve(Self.options(run, .seeded)))
         for _ in 0 ..< 3 {
-            let again = try #require(try await Self.caseTwelve(Self.options(1, .seeded)))
+            let again = try #require(try await Self.caseTwelve(Self.options(run, .seeded)))
             #expect(again.trials == first.trials)
             #expect(again.counterexample == first.counterexample)
             #expect(again.shrunkFrom == first.shrunkFrom)
@@ -86,7 +97,8 @@ struct SeededRaceTests {
     /// The schedule seed in the counterexample is enough to replay that one
     /// trial on its own, and FIFO on the same input passes.
     @Test func theCounterexamplesScheduleSeedReplaysOneTrial() async throws {
-        let result = try #require(try await Self.caseTwelve(Self.options(1, .seeded)))
+        let run = try await Self.failingRun()
+        let result = try #require(try await Self.caseTwelve(Self.options(run, .seeded)))
         let text = try #require(result.counterexample)
         let source = try #require(text.split(separator: ";").first?.dropFirst("source = ".count))
         let sample = source.dropFirst().dropLast().split(separator: ",").compactMap {
@@ -107,12 +119,13 @@ struct SeededRaceTests {
     /// A seeded result's own fingerprint replays under the seeded strategy and
     /// is refused under FIFO, which would silently test a different run.
     @Test func theFingerprintPinsTheStrategy() async throws {
-        let result = try #require(try await Self.caseTwelve(Self.options(1, .seeded)))
-        var replay = Self.options(1, .seeded)
+        let run = try await Self.failingRun()
+        let result = try #require(try await Self.caseTwelve(Self.options(run, .seeded)))
+        var replay = Self.options(run, .seeded)
         replay.expectedReplayEnvironment = result.environment
         let again = try await Self.failures(fixed: false, replay)[.releasesUpstreamWhenSequenceDroppedLast]
         #expect(again?.counterexample == result.counterexample)
-        var underFifo = Self.options(1, .fifo)
+        var underFifo = Self.options(run, .fifo)
         underFifo.expectedReplayEnvironment = result.environment
         await #expect(throws: ReplayEnvironmentMismatch.self) {
             _ = try await Self.failures(fixed: false, underFifo)
@@ -121,9 +134,10 @@ struct SeededRaceTests {
 
     /// The failure text names the strategy the seed replays under.
     @Test func theFailureTextNamesTheStrategy() async throws {
+        let run = try await Self.failingRun()
         do {
             try await checkAsyncLifetimePropertyLaws(
-                for: [Int].self, using: LifetimeLawResults.samples, options: Self.options(1, .seeded)
+                for: [Int].self, using: LifetimeLawResults.samples, options: Self.options(run, .seeded)
             ) { source, _ in RacingShareSequence(base: source, fixed: false) }
             Issue.record("expected the planted race to be found")
         } catch let violation as PropertyLawViolation {
