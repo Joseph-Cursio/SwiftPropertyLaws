@@ -12,6 +12,7 @@ The umbrella prototype's `docs/async-plan.md` (M2) has the probes and both revie
 - **The first live run to claim a task keeps it.** When another run drains that task's job, only the owner records `sharedWithAnotherRun`.
 - **The hook tries the current scheduler first, then the registry, then the runtime.** `returnToOwner` hands the job back under the registry's lock, and `run()` forgets its tasks before its last `drain(recording: false)`. A late job therefore either reaches the run before it ends or goes to the runtime, never a dead scheduler.
 - **The grace window is waited only on the deadlock path** and polls nothing but the evidence. A run that finishes or sleeps on the virtual clock pays nothing.
+- **The escape tests never assume the cooperative pool or `DispatchQueue.global()` runs anything soon.** Before Swift 6.4, `swift test` runs every test target in one process. On CI's 3-core macos-15 runner, the other suites held every pool thread for about 12 s, and the first CI run failed 15 escape tests. Locally, Swift 6.4 runs each target in its own process, so it never showed. Every real-time wait is bounded by `patience` (60 s) and ends as soon as its condition holds. Outside work goes through the private serial `outsideQueue`, which gets a thread when the pool has none. Escape probes retry a deadlock until `patience` runs out. Tests that could pass without taking their path check that they took it (`resumedInTheRun`, `calling`). The stand-in for CI is a test that holds every pool thread for 15 s in the same process.
 
 Known limits, stated in the scheduler's doc comment:
 - work still away past the window, or when the body returns, is not seen;
@@ -19,9 +20,9 @@ Known limits, stated in the scheduler's doc comment:
 - a task the run created is never the run's if none of its jobs reaches the run's queue: one started on `MainActor` or another executor, or one begun inside an actor's job that the run never resumes. One the run does resume is the run's (`aTaskFirstSeenAfterALaterOneIsStillTheRuns`);
 - `Task.yield()` inside an actor usually escapes.
 
-Linux's Dispatch has no `DispatchSerialQueue`, so the tests' custom executor is written out (`QueueExecutor`). Escape probes go through `escapingVerdict`, which retries a deadlock twice. Under load the trip back can outlast the window: measured at a load average of 160, p99 40 ms and worst 98 ms.
+Linux's Dispatch has no `DispatchSerialQueue`, so the tests' custom executor is written out (`QueueExecutor`). Escape probes go through `escapingVerdict`, which retries a deadlock until `patience` runs out. The trip back can outlast the window: under load (at a load average of 160, p99 40 ms and worst 98 ms), and for seconds while other tests hold the pool.
 
-Two independent reviews. None of the umbrella's 53 real operators changed verdict or recorded an escape. Hand mutation testing: 42 and 22 mutants, all killed except equivalents and four races that only a test seam could reach. The async tests passed 20 of 20 runs on macOS with every core busy. 92 async tests, 1,420 in all.
+Two independent reviews. None of the umbrella's 53 real operators changed verdict or recorded an escape. Hand mutation testing: 42 and 22 mutants, all killed except equivalents and four races that only a test seam could reach. The async tests passed 20 of 20 runs on macOS with every core busy, and 5 of 5 beside a test holding every pool thread for 15 s. 92 async tests, 1,420 in all.
 
 **`checkAsyncLifetimePropertyLaws` adds four lifetime laws to `PropertyLawAsync`, additively, for 4.14.0 (2026-11-25, unreleased).** The caller passes an operator built on a `LifetimeProbeSource` and a `LawClock`. Both are opaque public types with no public initializers. The check runs four laws in virtual time:
 - `releasesUpstreamWhenConsumerLeaves`;

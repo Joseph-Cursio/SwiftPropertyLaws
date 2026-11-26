@@ -25,7 +25,7 @@ struct EscapeDetectionTests {
         let ended = try await verdict { _ in
             Task {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    DispatchQueue.global().asyncAfter(deadline: .now() + insideTheGraceWindow) {
+                    outsideQueue.asyncAfter(deadline: .now() + insideTheGraceWindow) {
                         continuation.resume()
                     }
                 }
@@ -34,7 +34,7 @@ struct EscapeDetectionTests {
             return 1
         }
         #expect(ended == .success(1))
-        #expect(try await ran.isSet(within: .seconds(2)), "the task was stranded in the ended run")
+        #expect(try await ran.isSet(within: patience), "the task was stranded in the ended run")
     }
 
     /// A task from outside the run that calls an actor on the run's own
@@ -44,7 +44,7 @@ struct EscapeDetectionTests {
             let scheduler = try #require(VirtualTimeScheduler.current)
             let actor = SchedulerBoundActor(scheduler: scheduler)
             return await withCheckedContinuation { (continuation: CheckedContinuation<Int, Never>) in
-                DispatchQueue.global().asyncAfter(deadline: .now() + insideTheGraceWindow) {
+                outsideQueue.asyncAfter(deadline: .now() + insideTheGraceWindow) {
                     Task {
                         continuation.resume(returning: await actor.touch())
                     }
@@ -66,10 +66,10 @@ struct EscapeDetectionTests {
     @Test func aSleepFromOutsideThatLeavesNoSleeperIsStillAnEscape() async throws {
         let ended = try await escapingVerdict { clock in
             await withCheckedContinuation { (continuation: CheckedContinuation<Int, Never>) in
-                DispatchQueue.global().asyncAfter(deadline: .now() + insideTheGraceWindow) {
+                outsideQueue.asyncAfter(deadline: .now() + insideTheGraceWindow) {
                     Task {
                         try? await clock.sleep(until: clock.now)
-                        DispatchQueue.global().asyncAfter(deadline: .now() + pastTheGraceWindow) {
+                        outsideQueue.asyncAfter(deadline: .now() + pastTheGraceWindow) {
                             continuation.resume(returning: 1)
                         }
                     }
@@ -87,7 +87,7 @@ struct EscapeDetectionTests {
     @Test func aSettleFromOutsideIsReportedAsTheClockUsedFromOutside() async throws {
         let ended = try await escapingVerdict { clock in
             await withCheckedContinuation { (continuation: CheckedContinuation<Int, Never>) in
-                DispatchQueue.global().asyncAfter(deadline: .now() + insideTheGraceWindow) {
+                outsideQueue.asyncAfter(deadline: .now() + insideTheGraceWindow) {
                     Task {
                         await clock.settle()
                         continuation.resume(returning: 1)
@@ -101,22 +101,29 @@ struct EscapeDetectionTests {
         }
     }
 
-    /// The body waits on a default actor held by a task outside the run. The
-    /// holder's thread then runs the body's call, and the body carries on and
-    /// finishes there, with no enqueue for the hook to see.
+    /// The body waits on a default actor held by a task outside the run. When
+    /// the holder lets go, the actor's processing job, which belongs to no
+    /// task, runs the body's call on the runtime, and the body carries on and
+    /// finishes there, with no task of the run's enqueued for the hook to hand
+    /// back. That job needs a pool thread inside the grace window, so a run
+    /// that missed it is set up again until ``patience`` runs out.
     @Test func aBodyThatFinishesOnAnotherThreadIsReportedAsSuch() async throws {
-        let actor = HeldActor()
-        let holding = Latch()
-        let reached = Latch()
-        let holder = Task.detached {
-            await actor.hold(holding: holding, until: reached, thenFor: 0.03)
-        }
-        #expect(try await holding.isSet(within: .seconds(2)))
-        let ended = try await verdict { _ in
-            reached.set()
-            return await actor.touch()
-        }
-        await holder.value
+        let giveUp = ContinuousClock.now.advanced(by: patience)
+        var ended: Result<Int, VirtualTimeError>
+        repeat {
+            let actor = HeldActor()
+            let holding = Latch()
+            let reached = Latch()
+            let holder = Task.detached {
+                await actor.hold(holding: holding, until: reached, thenFor: 0.03)
+            }
+            #expect(try await holding.isSet(within: patience))
+            ended = try await verdict { _ in
+                reached.set()
+                return await actor.touch()
+            }
+            await holder.value
+        } while ended == .failure(.deadlock(stuckAt: .zero)) && ContinuousClock.now < giveUp
         guard case .failure(.escaped(_, evidence: .bodyFinishedOutside)) = ended else {
             Issue.record("expected an escape seen as the body finishing outside, got \(ended)")
             return
@@ -129,7 +136,7 @@ struct EscapeDetectionTests {
         let resumed = Latch()
         let ended = try await escapingVerdict { _ in
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                DispatchQueue.global().asyncAfter(deadline: .now() + insideTheGraceWindow) {
+                outsideQueue.asyncAfter(deadline: .now() + insideTheGraceWindow) {
                     continuation.resume()
                 }
             }
@@ -145,40 +152,51 @@ struct EscapeDetectionTests {
 
     /// An actor's processing job belongs to no task. A run that ran one must
     /// not claim the next one enqueued from outside, here while the body
-    /// holds the run's thread.
+    /// holds the run's thread. The outside task needs a pool thread, so the
+    /// body holds the run until the outside call is under way; a run that
+    /// ended first would pass without testing anything.
     @Test func aJobOfNoTaskFromOutsideIsNotClaimedByTheRun() async throws {
         let inside = IsolatedTaskSpawner()
         let outside = IsolatedTaskSpawner()
+        let calling = Latch()
         let spawned = Latch()
         let ended = try await verdict { _ in
             await inside.spawn()
-            DispatchQueue.global().async {
+            outsideQueue.async {
                 Task.detached {
+                    calling.set()
                     await outside.spawn()
                     spawned.set()
                 }
             }
+            let giveUp = ContinuousClock.now.advanced(by: patience)
+            while !calling.isSet, ContinuousClock.now < giveUp {
+                restThisThread()
+            }
             blockThisThread(seconds: 0.05)
-            return 1
+            return calling.isSet
         }
-        #expect(ended == .success(1))
-        #expect(try await spawned.isSet(within: .seconds(2)))
+        #expect(ended == .success(true), "\(ended)")
+        #expect(try await spawned.isSet(within: patience))
     }
 
     /// The lifetime laws report an operator whose work leaves virtual time as
     /// escaping, not as a hang or a bare scheduler error.
-    /// A MainActor trip that outlasts the grace window under heavy load is a
-    /// hang instead, so the check runs again, twice at most, as
-    /// `escapingVerdict` does.
+    /// A MainActor trip that outlasts the grace window under load is a hang
+    /// instead, so a check whose only other counterexamples are hangs runs
+    /// again until ``patience`` runs out, as `escapingVerdict` does for a
+    /// deadlock. Any other counterexample fails at once.
     @Test func anOperatorThatEscapesFailsTheLifetimeLawsAsAnEscape() async throws {
+        let giveUp = ContinuousClock.now.advanced(by: patience)
         var failed: [AsyncLifetimeLaw: String] = [:]
-        for _ in 0 ..< 3 {
+        var settled = false
+        while !settled {
             failed = try await LifetimeLawResults.failures { source, _ in
                 MainActorHopSequence(base: source)
             }
-            if failed.values.allSatisfy({ $0.contains("escaped:") }) {
-                break
-            }
+            let onlyHangsLeft = failed.values.allSatisfy { $0.contains("escaped:") || $0.hasPrefix("hang:") }
+            let allEscaped = failed.values.allSatisfy { $0.contains("escaped:") }
+            settled = allEscaped || !onlyHangsLeft || ContinuousClock.now >= giveUp
         }
         #expect(!failed.isEmpty)
         for (law, counterexample) in failed {
@@ -199,14 +217,14 @@ struct EscapeDetectionTests {
                     await taskOfA.park()
                     ranInB.set()
                 }
-                let giveUp = ContinuousClock.now.advanced(by: .seconds(5))
+                let giveUp = ContinuousClock.now.advanced(by: patience)
                 while !ranInB.isSet, ContinuousClock.now < giveUp {
-                    await Task.yield()
+                    await yieldAndRest()
                 }
                 return 1
             }
         }
-        #expect(try await taskOfA.stored.isSet(within: .seconds(2)))
+        #expect(try await taskOfA.stored.isSet(within: patience))
         let endedB = try await verdict { _ in
             taskOfA.resume()
             return 2
@@ -239,14 +257,14 @@ struct EscapeDetectionTests {
                     }
                     finished.set()
                 }
-                let giveUp = ContinuousClock.now.advanced(by: .seconds(5))
+                let giveUp = ContinuousClock.now.advanced(by: patience)
                 while !finished.isSet, ContinuousClock.now < giveUp {
-                    await Task.yield()
+                    await yieldAndRest()
                 }
                 return 1
             }
         }
-        #expect(try await first.stored.isSet(within: .seconds(2)))
+        #expect(try await first.stored.isSet(within: patience))
         _ = try await verdict { _ in
             first.resume()
             return 2
@@ -269,7 +287,7 @@ struct EscapeDetectionTests {
         let ended = try await verdict { _ in
             await starter.start(parkingIn: slot) {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(10)) {
+                    outsideQueue.asyncAfter(deadline: .now() + .milliseconds(10)) {
                         continuation.resume()
                     }
                 }
@@ -280,9 +298,9 @@ struct EscapeDetectionTests {
                 await Task.yield()
             }
             slot.resume()
-            let giveUp = ContinuousClock.now.advanced(by: .seconds(2))
+            let giveUp = ContinuousClock.now.advanced(by: patience)
             while !done.isSet, ContinuousClock.now < giveUp {
-                await Task.yield()
+                await yieldAndRest()
             }
             return done.isSet
         }

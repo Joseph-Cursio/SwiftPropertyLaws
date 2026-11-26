@@ -336,9 +336,11 @@ struct VirtualTimeTests {
         let observed = Flag()
         async let sawOutsideTask = runInVirtualTime { _ in
             started.set()
-            let giveUp = ContinuousClock.now.advanced(by: .seconds(10))
+            let giveUp = ContinuousClock.now.advanced(by: patience)
             while observed.isSet == false, ContinuousClock.now < giveUp {
-                // Poll until the flag is set or the deadline passes.
+                // Poll until the flag is set or the deadline passes, holding
+                // the run's thread without keeping a core busy.
+                restThisThread()
             }
             return observed.isSet
         }

@@ -122,7 +122,7 @@ struct EscapeProbeTests {
     @Test func aContinuationResumedByDispatchIsReportedAsAnEscape() async throws {
         let ended = try await escapingVerdict { _ in
             await withCheckedContinuation { (continuation: CheckedContinuation<Int, Never>) in
-                DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(10)) {
+                outsideQueue.asyncAfter(deadline: .now() + .milliseconds(10)) {
                     continuation.resume(returning: 1)
                 }
             }
@@ -156,7 +156,7 @@ struct EscapeProbeTests {
     @Test func theClockUsedFromAnotherThreadIsReportedAsAnEscape() async throws {
         let ended = try await escapingVerdict { clock in
             await withCheckedContinuation { (continuation: CheckedContinuation<Int, Never>) in
-                DispatchQueue.global().async {
+                outsideQueue.async {
                     Task {
                         try? await clock.sleep(for: .seconds(1))
                         continuation.resume(returning: 1)
@@ -199,16 +199,16 @@ struct EscapeProbeTests {
         let ended = try await verdict { _ in
             await worker.start {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(10)) {
+                    outsideQueue.asyncAfter(deadline: .now() + .milliseconds(10)) {
                         continuation.resume()
                     }
                 }
                 done.set()
             }
             await Task {}.value
-            let giveUp = ContinuousClock.now.advanced(by: .seconds(2))
+            let giveUp = ContinuousClock.now.advanced(by: patience)
             while !done.isSet, ContinuousClock.now < giveUp {
-                await Task.yield()
+                await yieldAndRest()
             }
             return done.isSet
         }
@@ -228,32 +228,43 @@ struct EscapeProbeTests {
     }
 
     /// An outside task the run resumes is not the run's: when it later leaves
-    /// for Dispatch in its own code, the run is not blamed.
+    /// for Dispatch in its own code, the run is not blamed. The task must be
+    /// waiting on the stream when the run yields, or it reads the buffered
+    /// element on its own and the run never resumes it; `resumedInTheRun`
+    /// checks that the path was taken.
     @Test func anOutsideTaskTheRunResumesIsNotTheRuns() async throws {
         let (stream, continuation) = AsyncStream<Int>.makeStream()
+        let started = Latch()
+        let resumedInTheRun = Latch()
         let done = Latch()
         let outside = Task.detached {
+            started.set()
             for await _ in stream {
+                if VirtualTimeScheduler.current != nil {
+                    resumedInTheRun.set()
+                }
                 break
             }
             await withCheckedContinuation { (resume: CheckedContinuation<Void, Never>) in
-                DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(2)) {
+                outsideQueue.asyncAfter(deadline: .now() + .milliseconds(2)) {
                     resume.resume()
                 }
             }
             done.set()
         }
-        try await Task.sleep(for: .milliseconds(1))
+        #expect(try await started.isSet(within: patience))
+        try await Task.sleep(for: .milliseconds(10))
         let ended = try await verdict { _ in
             continuation.yield(1)
-            let giveUp = ContinuousClock.now.advanced(by: .seconds(2))
+            let giveUp = ContinuousClock.now.advanced(by: patience)
             while !done.isSet, ContinuousClock.now < giveUp {
-                await Task.yield()
+                await yieldAndRest()
             }
             return done.isSet
         }
         await outside.value
         #expect(ended == .success(true), "\(ended)")
+        #expect(resumedInTheRun.isSet, "the outside task read the element without the run resuming it")
     }
 
     @Test func aDefaultActorStaysInTheRun() async throws {
