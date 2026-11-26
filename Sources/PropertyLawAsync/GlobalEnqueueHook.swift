@@ -17,7 +17,10 @@ import Foundation
 /// **Why it does not serialise the process.** That function sends *every*
 /// global job to the main thread. This hook diverts only jobs enqueued from
 /// a virtual-time scheduler's own thread and hands the rest to the runtime
-/// untouched, so tests running alongside keep their concurrency.
+/// untouched, so tests running alongside keep their concurrency. The one
+/// exception is a task of a live run enqueued from another thread: that is
+/// work coming back after escaping its run, and ``RunRegistry`` returns it to
+/// the run, which reports the escape.
 ///
 /// Another hook already in the slot is refused rather than replaced: taking
 /// it would silently change scheduling for whoever installed it.
@@ -67,7 +70,7 @@ final class GlobalEnqueueHook: @unchecked Sendable {
             slot.pointee = { job, original in
                 if let scheduler = VirtualTimeScheduler.current {
                     scheduler.schedule(job)
-                } else {
+                } else if !RunRegistry.shared.returnToOwner(job) {
                     original(job)
                 }
             }

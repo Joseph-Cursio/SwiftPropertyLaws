@@ -14,6 +14,13 @@ final class VirtualTimeline: @unchecked Sendable {
     private var cancelledTickets: Set<Int> = []
     private var nextTicket = 0
     private var settleWaiters: [CheckedContinuation<Void, Never>] = []
+    /// The run this timeline belongs to, if any. A sleep or settle from any
+    /// other thread is work that escaped it.
+    private let owner: VirtualTimeScheduler?
+
+    init(owner: VirtualTimeScheduler? = nil) {
+        self.owner = owner
+    }
 
     var now: VirtualClock.Instant {
         lock.lock()
@@ -47,6 +54,7 @@ final class VirtualTimeline: @unchecked Sendable {
         until deadline: VirtualClock.Instant,
         _ continuation: CheckedContinuation<Void, Error>
     ) {
+        noteCallingThread()
         lock.lock()
         // The cancellation handler can run before the continuation exists —
         // it runs at once for a task cancelled on entry — so a cancel that
@@ -99,6 +107,7 @@ final class VirtualTimeline: @unchecked Sendable {
     /// Park a ``VirtualClock/settle()`` caller until the scheduler next finds
     /// its queue empty.
     func awaitSettle(_ continuation: CheckedContinuation<Void, Never>) {
+        noteCallingThread()
         lock.lock()
         settleWaiters.append(continuation)
         lock.unlock()
@@ -117,6 +126,13 @@ final class VirtualTimeline: @unchecked Sendable {
             waiter.resume()
         }
         return !woken.isEmpty
+    }
+
+    /// Tell the owning run when its clock is used from a thread outside it.
+    private func noteCallingThread() {
+        if let owner, VirtualTimeScheduler.current !== owner {
+            owner.noteEscape(.clockUsedFromOutside)
+        }
     }
 
     /// Wake every sleeper with `CancellationError`, for tearing down a run
