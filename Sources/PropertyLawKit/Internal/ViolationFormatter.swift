@@ -1,3 +1,5 @@
+import Foundation
+
 /// Single source of truth for protocol law check output formatting (PRD §4.6, §4.7).
 ///
 /// Every result includes its strictness tier, the trial budget, the replayable
@@ -8,6 +10,18 @@
 /// counts mean "tracked but found none".
 internal enum ViolationFormatter {
     static func format(_ result: CheckResult) -> String {
+        format(result, deterministicHashing: processHasDeterministicHashing)
+    }
+
+    /// Whether this process runs with `SWIFT_DETERMINISTIC_HASHING=1`. Read
+    /// once: the standard library fixes its hashing seed at launch, so a
+    /// later change to the variable would not change what a replay does.
+    static let processHasDeterministicHashing =
+        ProcessInfo.processInfo.environment["SWIFT_DETERMINISTIC_HASHING"] == "1"
+
+    /// `deterministicHashing` is the test seam for the replay line's hashing
+    /// note; production passes ``processHasDeterministicHashing``.
+    static func format(_ result: CheckResult, deterministicHashing: Bool) -> String {
         var lines: [String] = []
         lines.append(headerLine(result))
         if let outcomeBody = outcomeBodyLines(result.outcome) {
@@ -25,12 +39,27 @@ internal enum ViolationFormatter {
         // A walk consumes no randomness, so printing a seed for one would offer
         // a replay handle that means nothing. It replays from its own space.
         if result.coverage == nil {
-            lines.append("  Replay with seed: \(result.seed.description)")
+            lines.append(replayLine(result, deterministicHashing: deterministicHashing))
         } else {
             lines.append("  Deterministic walk — replays from the space, not a seed.")
         }
         lines.append("  (Empirical evidence, not a proof.)")
         return lines.joined(separator: "\n")
+    }
+
+    /// The seed line. A FIFO result (`environment.scheduling == nil`, which
+    /// covers every law outside virtual time) prints exactly what it always
+    /// has. A seeded one names its strategy, since the seed replays only
+    /// under it, and warns when hashing is randomised: `Dictionary` and `Set`
+    /// then iterate in a per-process order a schedule seed cannot pin.
+    private static func replayLine(_ result: CheckResult, deterministicHashing: Bool) -> String {
+        let line = "  Replay with seed: \(result.seed.description)"
+        guard let scheduling = result.environment.scheduling else { return line }
+        let hashingNote = deterministicHashing
+            ? ""
+            : "; SWIFT_DETERMINISTIC_HASHING is not set to 1, so a replay may differ "
+                + "if the code under test iterates a Dictionary or Set"
+        return line + " (scheduling: \(scheduling)\(hashingNote))"
     }
 
     private static func headerLine(_ result: CheckResult) -> String {

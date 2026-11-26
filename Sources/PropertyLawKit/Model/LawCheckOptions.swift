@@ -31,8 +31,9 @@ public struct LawCheckOptions: Sendable {
     /// ``PropertyBackend``.
     public var backend: any PropertyBackend
 
-    /// When non-nil, the kit verifies this fingerprint matches
-    /// `Environment.current(backend:)` before running and throws
+    /// When non-nil, the kit verifies this fingerprint matches the live one
+    /// (`Environment.current(backend:)`, plus `scheduling` in a suite that
+    /// honours it) before running and throws
     /// `ReplayEnvironmentMismatch` on divergence (PRD §4.6). Pair with
     /// `seed` when replaying a stored CI artifact.
     public var expectedReplayEnvironment: Environment?
@@ -58,6 +59,21 @@ public struct LawCheckOptions: Sendable {
     /// ``EqualValuePairing``.
     public var equalValuePairing: EqualValuePairing
 
+    /// How a virtual-time run orders its runnable jobs. Default `.fifo`. Only
+    /// the laws that run in virtual time honour it (today
+    /// `checkTimedAsyncSequencePropertyLaws` and `checkAsyncLifetimePropertyLaws`);
+    /// every other law ignores it and keeps its `.fifo` draws, fingerprint and
+    /// failure text. See ``SchedulingStrategy``.
+    public var scheduling: SchedulingStrategy
+
+    /// Whether the suite being run honours `scheduling`. Only the virtual-time
+    /// entry points set it to `true`. The fingerprint records `scheduling` only
+    /// when this is `true`, so a sync law run with `.seeded` keeps a `.fifo`
+    /// fingerprint and failure text. The drivers (stamping) and
+    /// `ReplayEnvironmentValidator` (checking) both read it through
+    /// `Environment.current(options:)`, so they cannot disagree.
+    package var schedulingIsInEffect: Bool = false
+
     public init(
         budget: TrialBudget = .standard,
         enforcement: EnforcementMode = .default,
@@ -67,7 +83,8 @@ public struct LawCheckOptions: Sendable {
         expectedReplayEnvironment: Environment? = nil,
         replayRelaxation: EnvironmentRelaxation = .exact,
         allowNaN: Bool = false,
-        equalValuePairing: EqualValuePairing = .independent
+        equalValuePairing: EqualValuePairing = .independent,
+        scheduling: SchedulingStrategy = .fifo
     ) {
         self.budget = budget
         self.enforcement = enforcement
@@ -78,5 +95,6 @@ public struct LawCheckOptions: Sendable {
         self.replayRelaxation = replayRelaxation
         self.allowNaN = allowNaN
         self.equalValuePairing = equalValuePairing
+        self.scheduling = scheduling
     }
 }

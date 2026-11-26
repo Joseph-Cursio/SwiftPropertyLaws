@@ -745,6 +745,30 @@
       "expected": "killed",
       "test": "sampleOnlyBackendContinuesFromAReplacedGenerator",
       "label": "When a `drawing` closure swaps the generator for another type, the default `drawing:` continues from a system-seeded `Xoshiro` instead of one seeded from the replacement, so the rest of the run no longer replays from its seed."
+    },
+    {
+      "id": "validator-checks-against-a-fifo-fingerprint",
+      "patch": "patches/validator-checks-against-a-fifo-fingerprint.patch",
+      "shape": "replay-fingerprint",
+      "expected": "killed",
+      "test": "fifoStoredIsRefusedUnderSeeded",
+      "label": "`ReplayEnvironmentValidator` builds the live fingerprint with `current(backend:)`, which never carries the scheduling strategy, so a FIFO fingerprint replayed under `.seeded` matches and silently tests a different run (and a seeded result's own fingerprint can never be replayed)."
+    },
+    {
+      "id": "relaxation-ignores-the-scheduling-strategy",
+      "patch": "patches/relaxation-ignores-the-scheduling-strategy.patch",
+      "shape": "replay-fingerprint",
+      "expected": "killed",
+      "test": "seededStoredIsRefusedUnderFIFO",
+      "label": "`EnvironmentRelaxation.matches` no longer requires the scheduling strategy to match, so `.matchBackendOnly` and `.matchSwiftVersionOnly` accept a seed recorded under another strategy, which draws different inputs and schedules."
+    },
+    {
+      "id": "strategy-stamped-where-it-is-not-in-effect",
+      "patch": "patches/strategy-stamped-where-it-is-not-in-effect.patch",
+      "shape": "replay-fingerprint",
+      "expected": "killed",
+      "test": "aSyncLawUnderSeededKeepsItsFIFOFingerprintAndText",
+      "label": "`Environment.current(options:)` records the strategy whether or not the suite honours it, so a sync law run with `.seeded` changes its fingerprint and failure text although its draws match FIFO."
     }
   ]
 }

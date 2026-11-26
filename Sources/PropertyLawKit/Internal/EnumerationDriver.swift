@@ -31,7 +31,7 @@ package enum EnumerationDriver {
         property: @Sendable (Element) async throws -> Bool,
         describeFailure: (@Sendable (Element, ErrorBox?) -> String)? = nil
     ) async -> CheckResult {
-        let environment = Environment.current(backend: options.backend)
+        let environment = Environment.current(options: options)
         if let skip = LawSuppressionPolicy.match(
             protocolLaw: protocolLaw,
             kind: .skip,

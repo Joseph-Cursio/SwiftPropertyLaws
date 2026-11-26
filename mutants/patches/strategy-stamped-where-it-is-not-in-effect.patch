@@ -1,0 +1,13 @@
+diff --git a/Sources/PropertyLawKit/Model/Environment.swift b/Sources/PropertyLawKit/Model/Environment.swift
+index d7704d7..749294d 100644
+--- a/Sources/PropertyLawKit/Model/Environment.swift
++++ b/Sources/PropertyLawKit/Model/Environment.swift
+@@ -68,7 +68,7 @@ public struct Environment: Sendable, Hashable, Codable {
+             swiftVersion: base.swiftVersion,
+             backendIdentity: base.backendIdentity,
+             generatorSchemaHash: base.generatorSchemaHash,
+-            scheduling: options.schedulingIsInEffect ? options.scheduling.identifier : nil
++            scheduling: options.scheduling.identifier
+         )
+     }
+ }

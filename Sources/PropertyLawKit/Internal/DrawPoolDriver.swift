@@ -166,7 +166,7 @@ enum DrawPoolDriver {
         verdict: Verdict<Input>,
         loop: (inout any SeededRandomNumberGenerator, Int) async -> Walk<Input>
     ) async -> CheckResult {
-        let environment = Environment.current(backend: options.backend)
+        let environment = Environment.current(options: options)
         if let early = CheckPreflight.earlyResult(
             protocolLaw: identity.protocolLaw, tier: identity.tier, options: options, environment: environment
         ) {

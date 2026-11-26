@@ -1,0 +1,12 @@
+diff --git a/Sources/PropertyLawKit/Public/ReplayEnvironmentMismatch.swift b/Sources/PropertyLawKit/Public/ReplayEnvironmentMismatch.swift
+index 19f250f..6ad0614 100644
+--- a/Sources/PropertyLawKit/Public/ReplayEnvironmentMismatch.swift
++++ b/Sources/PropertyLawKit/Public/ReplayEnvironmentMismatch.swift
+@@ -21,7 +21,6 @@ public enum EnvironmentRelaxation: Sendable, Hashable {
+     case matchSwiftVersionOnly
+ 
+     func matches(expected: Environment, actual: Environment) -> Bool {
+-        guard expected.scheduling == actual.scheduling else { return false }
+         switch self {
+         case .exact:
+             return expected == actual
