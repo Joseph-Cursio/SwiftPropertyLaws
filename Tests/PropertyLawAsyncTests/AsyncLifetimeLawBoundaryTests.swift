@@ -18,13 +18,16 @@ struct AsyncLifetimeLawBoundaryTests {
         #expect(failed.isEmpty, "\(failed)")
     }
 
-    /// The release law's deadline allows a step, so a slow operator's first
-    /// element still arrives in time and its leak is still seen.
-    @Test func aSlowOperatorKeepingUpstreamStillFailsTheReleaseLaw() async throws {
+    /// The release laws' deadline allows a step, so a slow operator's first
+    /// element still arrives in time and its leak is still seen, by both.
+    @Test func aSlowOperatorKeepingUpstreamStillFailsTheReleaseLaws() async throws {
         let failed = try await LifetimeLawResults.failures { source, clock in
             ForwardingSequence(base: source, defect: .keepsUpstreamAfterDrop, delay: (clock, .milliseconds(150)))
         }
-        #expect(Set(failed.keys) == [.releasesUpstreamWhenConsumerLeaves], "\(failed)")
+        #expect(
+            Set(failed.keys) == [.releasesUpstreamWhenConsumerLeaves, .releasesUpstreamWhenSequenceDroppedLast],
+            "\(failed)"
+        )
     }
 
     /// Far past the allowance, an operator is reported as a hang.

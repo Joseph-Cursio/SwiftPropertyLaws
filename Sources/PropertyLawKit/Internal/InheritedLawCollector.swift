@@ -20,7 +20,7 @@ func collectingInheritedLaws(
     rebasing options: LawCheckOptions,
     _ check: (LawCheckOptions) async throws -> [CheckResult]
 ) async throws -> [CheckResult] {
-    // **Mutate a copy.** The rebuild this replaces named five of `LawCheckOptions`' EIGHT fields,
+    // **Mutate a copy.** The rebuild this replaces named five of `LawCheckOptions`' fields (eight then),
     // so `expectedReplayEnvironment`, `replayRelaxation` and `allowNaN` were silently reset to
     // their defaults for every inherited law — a caller who set `allowNaN: true` had it quietly
     // ignored on the parent protocol's laws. The initialiser's parameters have defaults, so the

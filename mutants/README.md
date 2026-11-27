@@ -114,6 +114,9 @@ Requires a clean working tree.
 | `per-trial-driver-bypasses-the-backend` | backend-seam | killed | `drawingOnlyBackendDrivesPerTrialLawsWithItsOwnGenerator` |
 | `sample-default-loses-xoshiro-state` | backend-seam | killed | `sampleCallOnAXoshiroEngineReplaysTheHistoricalDraws` |
 | `replaced-generator-continues-unseeded` | backend-seam | killed | `sampleOnlyBackendContinuesFromAReplacedGenerator` |
+| `validator-checks-against-a-fifo-fingerprint` | replay-fingerprint | killed | `fifoStoredIsRefusedUnderSeeded` |
+| `relaxation-ignores-the-scheduling-strategy` | replay-fingerprint | killed | `seededStoredIsRefusedUnderFIFO` |
+| `strategy-stamped-where-it-is-not-in-effect` | replay-fingerprint | killed | `aSyncLawUnderSeededKeepsItsFIFOFingerprintAndText` |
 
 The first four blind a Strict-tier law by making its `property:` closure return
 `true` unconditionally; the planted violator sails through, and the detection
@@ -187,6 +190,14 @@ A further fault, a
 removed, is not kept: the async defaults then recurse on the heap, never
 overflow the stack, and hang the runner. `implementingNeitherRequirementTraps`
 covers the trap instead.
+
+**`replay-fingerprint` guards `LawCheckOptions.scheduling` in the replay
+fingerprint (M3).** `Environment.scheduling` records the strategy only in a
+suite that honours it, the drivers and the validator share
+`Environment.current(options:)`, and every relaxation requires the strategy to
+match. None of the three mutants changes a FIFO run, so no existing test
+notices: each lets a seed replay under the wrong strategy, or marks a sync
+law's fingerprint with a strategy that played no part.
 
 ## Adding a mutant
 

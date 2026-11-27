@@ -31,6 +31,14 @@ import PropertyLawKit
 ///   `nil` or thrown, every further `next()` returns `nil`. The source
 ///   finishes for an even number of elements and fails for an odd one, so
 ///   both endings are covered.
+/// - `releasesUpstreamWhenSequenceDroppedLast` — the consumer holds the
+///   operator's output too, takes one element, then drops the iterator and,
+///   at once, the output, as `for try await x in shared { break }` followed by
+///   `shared = nil` does; once the run settles, every upstream iterator is
+///   released. It differs from the first law in which goes first: there the
+///   output is gone before the consumer starts. An operator whose teardown
+///   races its own tasks can leak here only for some job orders, so this law
+///   is the one ``SchedulingStrategy/seeded`` exists for.
 ///
 /// The laws assume the operator's output ends once its source ends and that it
 /// needs at most 200 ms of the clock per element; see
@@ -40,6 +48,7 @@ public enum AsyncLifetimeLaw: String, Sendable, Hashable, CaseIterable {
     case cancellationReachesUpstream
     case failureReachesConsumerWithoutDemand
     case finishedStaysFinished
+    case releasesUpstreamWhenSequenceDroppedLast
 }
 
 public extension LawIdentifier {
